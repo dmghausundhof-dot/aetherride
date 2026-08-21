@@ -13,6 +13,7 @@ import '../shared/chrome_glyph.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/gpx.dart';
 import '../../data/export/strava_client.dart';
+import '../../data/local/ride_prefs.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/saved_route_meta_store.dart';
@@ -444,7 +445,12 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     if (ride == null) return;
     if (!await _confirmShareIfNoZone()) return;
     try {
-      final r = await uploadRideToStrava(ride, zones: _privacyZones);
+      final trimEndsM = await RidePrefs.privacyTrimEndsM();
+      final r = await uploadRideToStrava(
+        ride,
+        zones: _privacyZones,
+        trimEndsM: trimEndsM,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(r.message)),
@@ -525,7 +531,12 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     final ride = _ride;
     if (ride == null) return;
     if (!await _confirmShareIfNoZone()) return;
-    final trimmed = rideWithTrimmedTrack(ride, _privacyZones);
+    final trimEndsM = await RidePrefs.privacyTrimEndsM();
+    final trimmed = rideWithTrimmedTrack(
+      ride,
+      _privacyZones,
+      trimEndsM: trimEndsM,
+    );
     if (!rideHasExportableTrack(trimmed)) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -539,6 +550,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         ride,
         zones: _privacyZones,
         bikeName: _bikeName,
+        trimEndsM: trimEndsM,
       );
       final dir = await getTemporaryDirectory();
       final path = p.join(

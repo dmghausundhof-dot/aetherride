@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import {
   beginNavigateIntent,
+  discoverExploreMapTapOpensPlan,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -51,6 +52,22 @@ assert.equal(
 
 assert.equal(placeHitAppliesAsDestination("plan"), true);
 assert.equal(placeHitAppliesAsDestination("quick"), false);
+assert.equal(
+  discoverExploreMapTapOpensPlan({ sheetMode: "quick", picking: false }),
+  true
+);
+assert.equal(
+  discoverExploreMapTapOpensPlan({ sheetMode: "tours", picking: false }),
+  true
+);
+assert.equal(
+  discoverExploreMapTapOpensPlan({ sheetMode: "plan", picking: false }),
+  false
+);
+assert.equal(
+  discoverExploreMapTapOpensPlan({ sheetMode: "quick", picking: true }),
+  false
+);
 
 const frankfurt = {
   label: "Frankfurt (Main) Hauptbahnhof",

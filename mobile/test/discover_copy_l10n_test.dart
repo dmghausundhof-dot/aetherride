@@ -360,6 +360,45 @@ void main() {
       ),
       de.hofPackReadyRideMap('Rhein-Neckar'),
     );
+    expect(
+      de.offlineMapsProfileSubtitle(
+        ready: true,
+        packId: 'rhein-neckar',
+        packName: 'Rhein-Neckar',
+        outside: true,
+      ),
+      de.offlineCoverageOutside('Rhein-Neckar'),
+    );
+    expect(
+      de.offlineMapsProfileSubtitle(
+        ready: true,
+        packId: 'rhein-neckar',
+        packName: 'Rhein-Neckar',
+        outside: true,
+        streetReady: true,
+      ),
+      de.offlineCoverageOutsideStreet('Rhein-Neckar'),
+    );
+    expect(
+      de.offlineMapsProfileSubtitle(
+        ready: true,
+        packId: 'rhein-neckar',
+        packName: 'Rhein-Neckar',
+        streetAway: true,
+      ),
+      de.offlineCoverageStreetAway('Rhein-Neckar'),
+    );
+    // Same copy as Discover snack after activate when GPS is outside.
+    expect(
+      de.offlineMapsProfileSubtitle(
+        ready: true,
+        packId: 'rhein-neckar',
+        packName: 'Rhein-Neckar',
+        outside: true,
+        streetAway: true,
+      ),
+      de.offlineCoverageOutsideStreetAway('Rhein-Neckar'),
+    );
     expect(de.offlineStreetCorridorCta('12 MB'), contains('Standort'));
     expect(de.offlineStreetRouteCta('8 MB'), contains('Tour'));
     expect(de.hofLoadStreetMap, contains('Straßenkarte'));

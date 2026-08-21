@@ -14,6 +14,7 @@ import { COMPONENT_CATALOG_DACH_SCALE9 } from "./componentsDachScale9";
 import { COMPONENT_CATALOG_DACH_SCALE10 } from "./componentsDachScale10";
 import { COMPONENT_CATALOG_DACH_SCALE11 } from "./componentsDachScale11";
 import { COMPONENT_CATALOG_DACH_SCALE12 } from "./componentsDachScale12";
+import { applyShockPairCatalog } from "./componentsDachShockPair";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -1279,24 +1280,26 @@ function dedupeById(models: ComponentModel[]): ComponentModel[] {
   return out;
 }
 
-export const COMPONENT_CATALOG: ComponentModel[] = dedupeById([
-  ...BASE_COMPONENT_CATALOG,
-  ...COMPONENT_CATALOG_DACH,
-  ...COMPONENT_CATALOG_DACH_DEPTH,
-  ...COMPONENT_CATALOG_DACH_SCALE,
-  ...COMPONENT_CATALOG_DACH_SCALE2,
-  ...COMPONENT_CATALOG_DACH_SCALE3,
-  ...COMPONENT_CATALOG_DACH_SCALE4,
-  ...COMPONENT_CATALOG_DACH_SCALE5,
-  ...COMPONENT_CATALOG_DACH_SCALE6,
-  ...COMPONENT_CATALOG_DACH_SCALE7,
-  ...COMPONENT_CATALOG_DACH_SCALE8,
-  ...COMPONENT_CATALOG_DACH_SCALE9,
-  ...COMPONENT_CATALOG_DACH_SCALE10,
-  ...COMPONENT_CATALOG_DACH_SCALE11,
-  ...COMPONENT_CATALOG_DACH_SCALE12,
-  ...mapImportedComponents(),
-]);
+export const COMPONENT_CATALOG: ComponentModel[] = applyShockPairCatalog(
+  dedupeById([
+    ...BASE_COMPONENT_CATALOG,
+    ...COMPONENT_CATALOG_DACH,
+    ...COMPONENT_CATALOG_DACH_DEPTH,
+    ...COMPONENT_CATALOG_DACH_SCALE,
+    ...COMPONENT_CATALOG_DACH_SCALE2,
+    ...COMPONENT_CATALOG_DACH_SCALE3,
+    ...COMPONENT_CATALOG_DACH_SCALE4,
+    ...COMPONENT_CATALOG_DACH_SCALE5,
+    ...COMPONENT_CATALOG_DACH_SCALE6,
+    ...COMPONENT_CATALOG_DACH_SCALE7,
+    ...COMPONENT_CATALOG_DACH_SCALE8,
+    ...COMPONENT_CATALOG_DACH_SCALE9,
+    ...COMPONENT_CATALOG_DACH_SCALE10,
+    ...COMPONENT_CATALOG_DACH_SCALE11,
+    ...COMPONENT_CATALOG_DACH_SCALE12,
+    ...mapImportedComponents(),
+  ])
+);
 
 export function getComponentModel(id: string): ComponentModel | undefined {
   return COMPONENT_CATALOG.find((c) => c.id === id);

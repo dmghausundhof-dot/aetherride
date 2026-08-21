@@ -127,12 +127,13 @@ Future<StravaClientStatus> fetchStravaStatus() async {
 Future<({bool ok, String message})> uploadRideToStrava(
   RideRecord ride, {
   List<PrivacyZone> zones = const [],
+  double trimEndsM = 200,
 }) async {
   final token = await _bearer();
   if (token == null) {
     return (ok: false, message: 'Nicht eingeloggt');
   }
-  final forUpload = rideWithTrimmedTrack(ride, zones);
+  final forUpload = rideWithTrimmedTrack(ride, zones, trimEndsM: trimEndsM);
   final stub = rideToStravaActivityStub(forUpload);
   final hasTrack = rideHasExportableTrack(forUpload);
   final gpx = hasTrack ? rideToGpx(forUpload) : null;

@@ -2350,6 +2350,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Départ et arrivée sur les cartes partagées, l\'export, la heatmap et les photos. Tu vois toujours la trace complète.';
 
   @override
+  String get privacyTrimEndsTitle => 'Raccourcir départ et arrivée (200 m)';
+
+  @override
+  String get privacyTrimEndsBody =>
+      'Pour export, Strava et heatmap. Sans zone, la maison reste souvent visible.';
+
+  @override
+  String get privacyZoneSearchHint => 'Chercher une adresse';
+
+  @override
+  String get privacyZoneSearchEmpty => 'Aucun résultat';
+
+  @override
   String get privacyZoneAdd => 'Ajouter une zone';
 
   @override

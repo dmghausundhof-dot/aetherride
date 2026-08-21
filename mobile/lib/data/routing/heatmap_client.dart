@@ -27,6 +27,7 @@ class HeatmapContributeResult {
 Future<HeatmapContributeResult> contributeHeatmapTrack({
   required List<Map<String, dynamic>> track,
   required List<PrivacyZone> privacyZones,
+  double trimEndsM = 200,
 }) async {
   final token = await _bearer();
   if (token == null) {
@@ -35,7 +36,11 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
       message: 'Wo viele fahren: Anmelden nötig für den Beitrag',
     );
   }
-  final trimmed = trimTrackForPrivacyZones(track, privacyZones);
+  final trimmed = trimTrackForPrivacyZones(
+    track,
+    privacyZones,
+    trimEndsM: trimEndsM,
+  );
   if (trimmed.length < 4) {
     return const HeatmapContributeResult(
       upserted: 0,

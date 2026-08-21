@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FlowLine Release — dein Plan</title>
+  <style>
+    :root {
+      --bg: #121215;
+      --fg: #F2F2F2;
+      --surface: #1E1E26;
+      --elev: #2A2A34;
+      --overlay: #343440;
+      --orange: #FF6A00;
+      --orange-2: #FF8533;
+      --sage: #7A8B73;
+      --muted: #9CA3AF;
+      --border: #484854;
+      --err: #EF4444;
+      --warn: #EAB308;
+      --radius: 14px;
+      --shadow: 0 12px 32px rgba(0,0,0,.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 Inter, system-ui, sans-serif; }
+    a { color: var(--orange); }
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(18,18,21,.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+    }
+    .bar { max-width: 1100px; margin: 0 auto; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .logo { font-weight: 800; letter-spacing: .02em; }
+    .logo span { color: var(--orange); }
+    .progress-wrap { flex: 1; min-width: 180px; }
+    .progress { height: 8px; background: var(--elev); border-radius: 99px; overflow: hidden; }
+    .progress > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--orange), var(--sage)); }
+    .pct { font-size: 13px; color: var(--muted); white-space: nowrap; }
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+    .hero { display: grid; grid-template-columns: 1.4fr .8fr; gap: 16px; margin-bottom: 22px; }
+    @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 20px; margin: 0 0 10px; }
+    h3 { font-size: 15px; margin: 0 0 6px; color: var(--fg); }
+    p.lead { color: var(--muted); margin: 0 0 12px; }
+    .pill { display: inline-block; font-size: 12px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); margin-right: 6px; }
+    .pill.ok { color: #d8ead0; border-color: var(--sage); }
+    .pill.warn { color: #ffe08a; border-color: var(--warn); }
+    .pill.hot { color: #ffd0b0; border-color: var(--orange); }
+    .stat { font-size: 32px; font-weight: 800; color: var(--orange); }
+    .stat small { display: block; font-size: 12px; color: var(--muted); font-weight: 500; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    button, .btn {
+      background: var(--orange); color: #121215; border: 0; border-radius: 10px;
+      padding: 8px 12px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    button.ghost, .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+    nav.toc { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 22px; }
+    nav.toc a { color: var(--muted); text-decoration: none; font-size: 13px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 99px; }
+    nav.toc a:hover { color: var(--fg); border-color: var(--orange); }
+    .phase { margin: 18px 0 28px; }
+    .phase-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .phase-head .meta { color: var(--muted); font-size: 13px; }
+    .task { background: var(--elev); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 8px 0; }
+    .task.done { opacity: .55; }
+    .task.done h3 { text-decoration: line-through; }
+    .task label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+    .task input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--orange); }
+    .why, .how { font-size: 14px; color: var(--muted); margin: 6px 0 0 28px; }
+    .how { color: #cfcfd6; }
+    .cost { font-size: 12px; color: var(--sage); margin: 4px 0 0 28px; }
+    .links a { margin-right: 10px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .callout { border-left: 3px solid var(--orange); padding: 8px 12px; background: #241910; border-radius: 0 10px 10px 0; margin: 10px 0; }
+    .callout.sage { border-left-color: var(--sage); background: #171b18; }
+    .callout.warn { border-left-color: var(--warn); background: #231e0c; }
+    code { background: #121215; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+    .today li { margin: 6px 0; }
+    footer { color: var(--muted); font-size: 12px; margin-top: 40px; }
+    .filter { margin: 0 0 8px; }
+    .filter input { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="logo">Flow<span>Line</span> Release</div>
+      <div class="progress-wrap"><div class="progress"><i id="bar"></i></div></div>
+      <div class="pct" id="pct">0 / 0</div>
+      <button class="ghost" id="exportBtn">Export</button>
+      <button class="ghost" id="resetBtn">Reset</button>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="card">
+        <span class="pill hot">Beta → Play zuerst</span>
+        <span class="pill">iOS später</span>
+        <span class="pill ok">Mail aktiv</span>
+        <h1>Du brauchst keine Firma, um zu starten.</h1>
+        <p class="lead">FlowLine ist produktseitig schon weit (Flutter-App, Routing, Garage, Community-APIs). Was fehlt, ist die <b>öffentliche Identität</b>: ein Store-Konto, Legal-Texte mit deinem echten Namen, 12 echte Tester und ein Launch, der sich nicht leer anfühlt. Dieser Plan ist auf deinem Rechner — Checkboxen bleiben gespeichert.</p>
+        <div class="callout">
+          <b>Kontakt-Mail ab sofort:</b> <code>dmghausundhof+flowline@gmail.com</code><br>
+          Kostenlos, landet in deinem bestehenden Gmail. Kein Captcha, keine neue Anmeldung. Labels in Gmail: FlowLine / Play / Apple / Legal / Support.
+        </div>
+        <div class="row">
+          <a class="btn" href="#heute">Heute dran</a>
+          <a class="btn ghost" href="https://mail.google.com" target="_blank" rel="noopener">Gmail öffnen</a>
+          <a class="btn ghost" href="https://drive.google.com/drive/folders/10mH9LqxOcp3yFbwN4dM-Pc8SFbvVWeJr" target="_blank" rel="noopener">Drive-Ordner</a>
+          <a class="btn ghost" href="https://calendar.google.com" target="_blank" rel="noopener">Kalender</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat" id="openCount">—<small>offene Schritte</small></div>
+        <p class="lead" style="margin-top:10px">Ist-Zustand, 21.08.2026</p>
+        <ul style="margin:0;padding-left:18px;color:var(--muted);font-size:14px">
+          <li>Repo: <code>aetherride</code> · Display-Name FlowLine</li>
+          <li>Package <code>com.aetherride.aetherride_mobile</code> — <b>nie ändern</b></li>
+          <li>Upload-Keystore liegt lokal, Play-Upload offen</li>
+          <li>Impressum-Platzhalter, kein Gewerbe, kein Play-Konto</li>
+          <li>Dev-Stack: Vercel, Supabase EU, Shopify Haus&amp;Hof, Gmail/Workspace</li>
+        </ul>
+      </div>
+    </section>
+
+    <nav class="toc">
+      <a href="#heute">Heute</a>
+      <a href="#entscheidungen">Entscheidungen</a>
+      <a href="#mail">Mail</a>
+      <a href="#phasen">Phasen</a>
+      <a href="#erfolg">Was Erfolg braucht</a>
+      <a href="#geld">Geld &amp; Firma</a>
+      <a href="#ios">iOS</a>
+      <a href="#links">Links</a>
+    </nav>
+
+    <section id="heute" class="card" style="margin-bottom:22px">
+      <h2>Heute dran</h2>
+      <p class="lead">Die nächsten offenen Schritte der frühesten Phase. Haken im Plan unten setzen — diese Liste aktualisiert sich.</p>
+      <ol class="today" id="todayList"></ol>
+    </section>
+
+    <section id="entscheidungen" class="card" style="margin-bottom:22px">
+      <h2>Drei Entscheidungen, die du nicht mehr umwerfen solltest</h2>
+      <ol>
+        <li><b>Play zuerst, iOS danach.</b> Die Android-App ist signierbar, Keystore existiert, iOS-Gerüst ist da — aber Apple kostet 99 USD/Jahr und will Review-Parität. Android ist der billigste Weg zu echten Fahrern.</li>
+        <li><b>Kein Unternehmen jetzt.</b> Personal Play Account + dein Name im Impressum. Kleingewerbe / Kleinunternehmer erst, wenn Pro-Abo oder Shop Geld einnimmt. UG erst bei Haftung, Partnern oder wenn du den Klarnamen aus dem Store willst.</li>
+        <li><b>Haus&amp;Hof und FlowLine trennen.</b> Shopify, Vercel-Team und <code>dmghausundhof@gmail.com</code> sind der Dev-Alltag. Play Console, später Apple und Nutzer-Support laufen unter FlowLine-Mail. Package-Name bleibt <code>aetherride_…</code> — das sieht niemand im Store.</li>
+      </ol>
+      <div class="callout warn">
+        <b>Marken-Risiko:</b> Bosch heißt seine App <i>eBike Flow</i>. FlowLine + Bosch-LDI in einer App kann Verwechslung auslösen. Vor großem Marketing: DPMA-Recherche. Im Store nicht „offizielle Bosch-App“ schreiben. LDI erst bewerben, wenn Hardware-QA durch ist.
+      </div>
+    </section>
+
+    <section id="mail" class="card" style="margin-bottom:22px">
+      <h2>Die FlowLine-Mail — drei Stufen</h2>
+      <table>
+        <thead><tr><th>Stufe</th><th>Adresse</th><th>Status</th><th>Wofür</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1 · jetzt, 0 €</td>
+            <td><code>dmghausundhof+flowline@gmail.com</code></td>
+            <td>aktiv</td>
+            <td>Play-Support, Impressum-Kontakt, Tester, Tool-Logins</td>
+          </tr>
+          <tr>
+            <td>2 · 5 Min, 0 €</td>
+            <td>eigenes Google-Konto z.B. <code>flowline.ride.hq@gmail.com</code></td>
+            <td>du klickst</td>
+            <td>Play Console, 2FA, nicht mit Haus&amp;Hof mischen</td>
+          </tr>
+          <tr>
+            <td>3 · ~12 €/Jahr</td>
+            <td><code>hello@deinedomain</code></td>
+            <td>Domain kaufen</td>
+            <td>Cloudflare Email Routing (kostenlos) → Gmail. Professionell.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin-top:12px">Warum ich kein brandneues @gmail.com-Konto per API anlegen kann: Google verlangt Captcha und SMS an dein Handy. Das Plus-Alias ist dasselbe Postfach, nur sortierbar.</p>
+      <h3>Stufe 2 selbst (empfohlen diese Woche)</h3>
+      <ol>
+        <li>Inkognito: <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">accounts.google.com/signup</a></li>
+        <li>Namen: FlowLine / dein Nachname. Username-Ideen: <code>flowline.ride.hq</code>, <code>ride.flowline.de</code>, <code>flowline.community.hq</code> — <code>flowline@gmail.com</code> ist seit Jahren weg.</li>
+        <li>Handynummer, 2FA (Authenticator, nicht nur SMS), Recovery = deine private Mail.</li>
+        <li>Passwort in den Manager. Dieses Konto ist die Play Console.</li>
+        <li>In Gmail: Einstellungen → Accounts → „Name“ = FlowLine. Signatur mit Support-Adresse.</li>
+      </ol>
+      <h3>Stufe 3 Domain</h3>
+      <p><code>flowline.app</code> ist vergeben. Vor dem Kauf selbst prüfen: <code>flowline.de</code>, <code>rideflowline.com</code>, <code>flowline.bike</code>, <code>flow-line.app</code>. Nicht <code>hello@aetherride.app</code> weiterversprechen — das ist ein Platzhalter im Code.</p>
+      <div class="callout sage">Gmail-Filter (einmal, 20 Sekunden): Zahnrad → Alle Einstellungen → Filter → Neue Filter: <code>deliveredto:dmghausundhof+flowline@gmail.com</code> → Label FlowLine, überspringen Inbox optional.</div>
+    </section>
+
+    <div class="filter"><input id="q" placeholder="Aufgaben filtern … (z.B. Tester, Impressum, Keystore)" /></div>
+    <div id="phasen"></div>
+
+    <section id="erfolg" class="card" style="margin:28px 0">
+      <h2>Was eine Fahrrad-Nav- und Community-App wirklich braucht</h2>
+      <p class="lead">Komoot, Strava, Outdooractive, Trailforks, Bikemap, Bosch Flow existieren. FlowLine gewinnt nicht mit „noch eine Karte“, sondern mit dem Satz: <i>Rad, Strecke, Setup — eine Linie.</i></p>
+      <table>
+        <thead><tr><th>Hebel</th><th>Warum Launch kippt, wenn er fehlt</th><th>FlowLine-Regel</th></tr></thead>
+        <tbody>
+          <tr><td>Erste Fahrt &lt; 60 s</td><td>Nav-Apps sterben im Onboarding</td><td>Sport → GPS → Freeride. Kein Pflicht-Konto vor der ersten Linie.</td></tr>
+          <tr><td>Dichte, nicht Fläche</td><td>Leere Weltkarte = Komoot-Kopie ohne Inhalt</td><td>Rhein-Neckar + DACH 60-Min-Runden zuerst. Rest der Welt später.</td></tr>
+          <tr><td>Ehrliche Community</td><td>Fake-Heatmaps werden in Reviews zerlegt</td><td>Heatmap erst ab k≥5. Seeds als „Idee“ labeln. UGC moderieren.</td></tr>
+          <tr><td>Akku, GPS, Crash</td><td>Ein Review „15 % Akku in 20 min“ tötet ASO</td><td>Sentry an, Flugmodus-Test, Soak auf echtem Android-15-Gerät.</td></tr>
+          <tr><td>Garage als Loop</td><td>Reine Nav hat keinen Grund zur Rückkehr</td><td>Post-Ride → Setup-Tipp → Wartung. Das ist der Graben gegen Strava.</td></tr>
+          <tr><td>Lokale Menschen</td><td>12 Play-Tester sind keine Last, sondern die erste Community</td><td>Clubs, ADFC, Gravel-WhatsApp, Bike-Shops. Opt-in-Link, kein APK per Drive.</td></tr>
+          <tr><td>Recht &amp; Trails</td><td>Illegale Trails + Navigation = Abmahnung / Play-Sperre</td><td>Disclaimer, Report-Button, DSA-Moderation, keine Trailforks-Kopie ohne Lizenz.</td></tr>
+          <tr><td>OSM-Attribution</td><td>ODbL ist Pflicht, Play-Reviews haken da nach</td><td>© OpenStreetMap contributors sichtbar auf der Karte + Stadia/MapLibre.</td></tr>
+          <tr><td>Standort-Policy</td><td>Background-Location ohne Prominent Disclosure = Reject</td><td>Ihr Manifest hat kein ACCESS_BACKGROUND_LOCATION — gut. FGS nur während Ride, Text in der Permission-UI ehrlich halten.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="geld" class="card" style="margin:28px 0">
+      <h2>Geld, Steuern, Firma — die ehrliche Reihenfolge</h2>
+      <table>
+        <thead><tr><th>Was</th><th>Wann</th><th>Ca. Kosten</th></tr></thead>
+        <tbody>
+          <tr><td>Play Console Personal</td><td>diese Woche</td><td>25 USD einmalig</td></tr>
+          <tr><td>Domain + Cloudflare Routing</td><td>sobald Store öffentlich</td><td>10–15 € / Jahr</td></tr>
+          <tr><td>Gewerbeanmeldung (Gewerbeamt, online oft mit eID)</td><td>bevor das erste Pro-Abo kassiert</td><td>20–65 €</td></tr>
+          <tr><td>Fragebogen steuerliche Erfassung (ELSTER), Kleinunternehmer §19 UStG</td><td>mit Gewerbe</td><td>0 €</td></tr>
+          <tr><td>Datenschutz-Generator (eRecht24 o.ä.) oder Anwalt</td><td>vor Store-Listing</td><td>0–120 € / Jahr bzw. 300–1.500 €</td></tr>
+          <tr><td>Apple Developer</td><td>nach stabilem Play</td><td>99 USD / Jahr</td></tr>
+          <tr><td>DPMA-Marke „FlowLine“ (Wort)</td><td>optional vor Werbung</td><td>~290 €</td></tr>
+          <tr><td>UG / GmbH</td><td>erst bei Haftung, Team, Invest</td><td>Stammkapital + Notar</td></tr>
+          <tr><td>Play / Apple Provision</td><td>auf digitale Abos</td><td>15 % Small Business</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        App-Verkauf ist in DE meist <b>Gewerbe</b>, kein klassischer Freiberuf. Kleinunternehmer 2026: Vorjahr unter 25.000 €, laufendes Jahr unter 100.000 € — dann ohne USt. Navigation kann Haftung auslösen (falsche Trails). AGB: „kein Ersatz für Aufmerksamkeit, Nutzer bleibt verantwortlich.“
+      </div>
+    </section>
+
+    <section id="ios" class="card" style="margin:28px 0">
+      <h2>iOS — bewusst Phase 8</h2>
+      <p>Das iOS-Gerüst existiert (<code>mobile/ios</code>, Display-Name FlowLine, Bundle <code>io.aetherride.app</code>, Location/Bluetooth-Strings auf Deutsch). Was noch fehlt, ist kein Code-Wochenende, sondern ein Account und Parität:</p>
+      <ul>
+        <li>Apple-ID nur für FlowLine, 2FA, dann Developer Program 99 USD.</li>
+        <li>Individual reicht. Organisation braucht D-U-N-S und eine Firma.</li>
+        <li>Mac mit Xcode oder CI mit Apple-Zertifikaten. TestFlight = euer Closed Testing.</li>
+        <li>Wenn Google-Login an ist: <b>Sign in with Apple ist Pflicht.</b> Aktuell sind OAuth-Buttons default aus — so lassen bis ihr beide Anbieter habt.</li>
+        <li>Privacy Nutrition Labels, Tracking-Transparenz, genaue Location-Strings.</li>
+        <li>Background-Location auf iOS ist strikter. Ride-Tracking nur mit sichtbarer Anzeige.</li>
+        <li>IAP: StoreKit analog zu <code>aetherride_pro_monthly</code>. Kein Stripe für digitale iOS-Inhalte.</li>
+      </ul>
+    </section>
+
+    <section id="links" class="card">
+      <h2>Direktlinks</h2>
+      <p class="links">
+        <a href="https://play.google.com/console" target="_blank" rel="noopener">Play Console</a>
+        <a href="https://support.google.com/googleplay/android-developer/answer/14151465" target="_blank" rel="noopener">12 Tester / 14 Tage</a>
+        <a href="https://play.google.com/console/developers/app/app-dashboard" target="_blank" rel="noopener">Production Access</a>
+        <a href="https://developer.apple.com/programs/" target="_blank" rel="noopener">Apple Developer</a>
+        <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">Google-Konto anlegen</a>
+        <a href="https://www.denic.de/webwhois/" target="_blank" rel="noopener">DENIC Whois</a>
+        <a href="https://register.dpma.de/DPMAregister/marke/einsteiger" target="_blank" rel="noopener">DPMA Marke</a>
+        <a href="https://www.elster.de" target="_blank" rel="noopener">ELSTER</a>
+        <a href="https://osmfoundation.org/wiki/Licence/Attribution_Guidelines" target="_blank" rel="noopener">OSM Attribution</a>
+        <a href="https://app.notion.com/p/3c38328d6b698113b175de03d44ccae0" target="_blank" rel="noopener">Notion Hub</a>
+        <a href="https://github.com/dmghausundhof-dot/aetherride" target="_blank" rel="noopener">GitHub</a>
+      </p>
+      <p class="lead">Code-Runbooks im Repo: <code>mobile/PLAY_CONSOLE_RUNBOOK.md</code>, <code>mobile/MARKET_READY_PLAN.md</code>, <code>mobile/ANDROID_OPS_CHECKLIST.md</code>.</p>
+    </section>
+
+    <footer>
+      Lokal gespeichert in diesem Browser (localStorage). Datei: /home/luka/Dokumente/FlowLine-Release/index.html · Stand 21.08.2026 · kein Rechtsrat, nur Arbeitsplan.
+    </footer>
+  </main>
+  <script>
+    const PHASES = [
+      {
+        id: "p0",
+        title: "Phase 0 — Identität (diese 72 Stunden)",
+        zeit: "21.–24.08.2026",
+        intro: "Ohne das bricht jeder Store-Schritt. Nichts hiervon braucht eine GmbH.",
+        tasks: [
+          { id: "p0-mail", title: "FlowLine-Plus-Mail als Kontakt nutzen", why: "Store, Legal und Tester brauchen eine Adresse, die nicht nach Haus&Hof klingt.", how: "Überall eintragen: dmghausundhof+flowline@gmail.com. Gmail-Label FlowLine ist schon da. Filter mit deliveredto:… anlegen." },
+          { id: "p0-google", title: "Eigenes Google-Konto nur für FlowLine anlegen", why: "Play Console an Haus&Hof/Shopify zu hängen wird später teuer (Rechte, Sperre, Steuer).", how: "Inkognito → accounts.google.com/signup → 2FA Authenticator → Passwort-Manager. Dieses Konto = Play." },
+          { id: "p0-keystore", title: "Upload-Keystore doppelt sichern", why: "Sobald der erste AAB in Play liegt, ist der Key der Upload-Schlüssel aller Updates.", how: "Dateien: mobile/android/keystore/aetherride-upload.jks und android/key.properties. In Passwort-Manager + verschlüsselten USB/Cloud-Safe. Nie ins Git." },
+          { id: "p0-2fa", title: "2FA auf Gmail, Vercel, GitHub, Supabase, Stripe", why: "Account-Takeover = tote App. Play hängt am Google-Konto.", how: "Authenticator-App, Recovery-Codes ausdrucken in den Drive-Ordner FlowLine Release (nicht ins Repo)." },
+          { id: "p0-inventar", title: "Dev-Konten-Inventar aufschreiben", why: "Du weißt in 6 Monaten nicht mehr, was auf welchem Account läuft.", how: "Im Drive-Ordner eine Tabelle: Dienst, Login, Projektname, ob FlowLine oder Haus&Hof. Vercel team dmghausundhof-9746, Supabase krmgatsugplouzrhhozn, GitHub dmghausundhof-dot/aetherride, Shopify dmg-haus-und-hof-shop." }
+        ]
+      },
+      {
+        id: "p1",
+        title: "Phase 1 — Legal-Minimum (Store lässt sonst nicht zu)",
+        zeit: "bis 28.08.2026",
+        intro: "Play will Privacy-URL. DE will Impressum mit Klarnamen. Community/UGC fällt unter DSA.",
+        tasks: [
+          { id: "p1-name", title: "Klarnamen + ladungsfähige Anschrift festlegen", why: "§ 5 DDG. Die App hat schon /legal/impressum — ohne Name ist sie unvollständig, Marketplace gesperrt.", how: "NEXT_PUBLIC_LEGAL_IMPRINT in Vercel setzen. NEXT_PUBLIC_LEGAL_EMAIL=dmghausundhof+flowline@gmail.com. Private Anschrift ist zulässig; c/o nur wenn zustellbar." },
+          { id: "p1-privacy", title: "Datenschutzerklärung an echte Datenflüsse anpassen", why: "Play Data Safety muss zur Privacy passen. Abweichung = Reject oder Abmahnung.", how: "Abdecken: Konto (Supabase EU), GPS während Ride, BLE Sensoren, Crash (Sentry, erst nach Opt-in), Routing (GraphHopper/Stadia/ORS), Heatmap k≥5, Community-Inhalte, Konto löschen (Route existiert). Kein Analytics-SDK ohne Consent." },
+          { id: "p1-agb", title: "AGB + Haftungsausschluss Navigation", why: "Falsche Trails / Straße. Community-Inhalte sind Nutzer-Inhalte.", how: "Seite /legal/agb existiert. Text: kein Ersatz für Verkehrsregeln, Report-Weg, Jugendschutz, Widerruf für Pro-Abo 14 Tage." },
+          { id: "p1-dsfa", title: "DSFA-Kurzprofil Standort", why: "Tracking von Fahrten ist hohes Risiko nach DSGVO. Das Repo hakt DSFA als offen.", how: "Eine Seite: Zweck, Daten, Speicherdauer, Empfänger, Risiko, Maßnahmen (Privacy-Zonen, Opt-in Heatmap). Reicht als Start, Anwalt kann später schärfen." },
+          { id: "p1-avv", title: "Auftragsverarbeiter-Liste", why: "Play und DSGVO wollen wissen, wohin Daten gehen.", how: "Supabase, Vercel, Stripe, GraphHopper/Stadia, Sentry, ggf. Mapillary. AV-Verträge in deren Dashboards akzeptieren." },
+          { id: "p1-dsa", title: "UGC-Moderation sichtbar machen", why: "Touren, Fotos, Gruppen: DSA notice-and-action.", how: "Report in der App, Mail an die FlowLine-Adresse, bestehende /community/moderation-Queue nutzen. COMMUNITY_MODERATOR_EMAILS setzen." }
+        ]
+      },
+      {
+        id: "p2",
+        title: "Phase 2 — Play Console (25 USD, Ausweis)",
+        zeit: "25.08.2026",
+        intro: "Nur du kannst einloggen, zahlen und den Ausweis hochladen. Code-Runbook: mobile/PLAY_CONSOLE_RUNBOOK.md",
+        tasks: [
+          { id: "p2-pay", title: "Developer-Konto anlegen und 25 USD zahlen", why: "Ohne Console kein Store. Prepaid-Karten werden abgelehnt.", how: "Mit dem FlowLine-Google-Konto auf play.google.com/console. Personal, nicht Organization. 2FA muss an sein. Personal nach Nov 2023 = 12 Tester Pflicht." },
+          { id: "p2-id", title: "Identität verifizieren", why: "Google will Ausweis + Wohnsitz.", how: "Personalausweis oder Reisepass. Developer-Name im Store: FlowLine (Trade name) plus rechtlich dein Name als Verkäufer." },
+          { id: "p2-app", title: "App anlegen", why: "Package ist in Stein gemeißelt.", how: "Name FlowLine, Sprache Deutsch, App nicht Spiel, kostenlos. applicationId exakt com.aetherride.aetherride_mobile." },
+          { id: "p2-aab", title: "Signiertes AAB bauen und Internal Testing hochladen", why: "Play App Signing greift beim ersten Upload.", how: "cd mobile && flutter build appbundle --release mit den dart-defines aus dem Runbook (API_BASE_URL=https://aetherride.vercel.app, Supabase, Stadia). Nicht Debug-Signatur." },
+          { id: "p2-sku", title: "Abo-Produkt anlegen", why: "Code erwartet die Produkt-ID 1:1.", how: "Monetarisieren → Abos → Produkt-ID aetherride_pro_monthly, 6,99 € DACH. License Tester: dein Google-Konto." },
+          { id: "p2-listing", title: "Store-Listing Minimum", why: "Ohne Grafiken und Privacy-URL keine Review.", how: "Kurz 80 Zeichen, Langtext DE, Feature Graphic 1024×500, ≥2 Phone-Screenshots (Ride-HUD, Karte, Werkstatt — kein Engineer-Jargon). Privacy-URL: https://aetherride.vercel.app/legal/datenschutz (oder neue Domain)." },
+          { id: "p2-safety", title: "Data Safety + Content Rating", why: "Standort, Bluetooth, Fotos, Konto — ehrlich ankreuzen.", how: "Location yes (app functionality), ungefähre+genaue. Geteilt: Routing-Anbieter. Gelöscht: Account-Delete. Keine Health-Daten, solange kein HR-Cloud-Sync." },
+          { id: "p2-16kb", title: "16 KB Page-Size an Release-AAB prüfen", why: "Play fordert das für Android 15+. Ops-Checkliste ist noch offen.", how: "readelf -l auf native .so → Align ≥ 0x4000. MapLibre/routing_core nachziehen, sonst Reject später." }
+        ]
+      },
+      {
+        id: "p3",
+        title: "Phase 3 — Produkt-Gates vor fremden Testern",
+        zeit: "parallel zu Phase 2",
+        intro: "12 Tester sehen die Wahrheit. Demo-Content in Release ist bereits fail-closed — trotzdem manuell gegenprüfen.",
+        tasks: [
+          { id: "p3-sentry", title: "Sentry DSN in Release-Build", why: "Ohne Crash-Sicht fliegst du blind durch Closed Testing.", how: "SENTRY_DSN als dart-define, nie NEXT_PUBLIC. Opt-in wenn ihr Consent-UI habt." },
+          { id: "p3-device", title: "Soak-Test auf echtem Android 15-Gerät", why: "Emulator API 36 ist in diesem Projekt unzuverlässig. FGS/Ride-Notification muss Home-Button überleben.", how: "S25 / Testgerät: 40-Min-Ride, Bildschirm aus, Anruf, Flugmodus-Kartenpack." },
+          { id: "p3-offline", title: "Offline-Pack + Flugmodus", why: "Outdoor-App die online-only ist, bekommt 1-Stern.", how: "scripts/smoke-offline-flight.sh plus manuelle Checkliste in ANDROID_OPS_CHECKLIST." },
+          { id: "p3-routing", title: "Live-Routing in Prod, kein Demo-Banner", why: "NEXT_PUBLIC_ROUTING_LIVE erst nach Smoke.", how: "npm run smoke:web:prod. GraphHopper-Key Limits prüfen. ALLOW_DEMO_CONTENT in Prod aus." },
+          { id: "p3-deeplink", title: "App Links SHA in Vercel", why: "Web→App ist euer Share-Weg.", how: "NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS = Upload-SHA + Play App-Signing-SHA. scripts/ops-android-auth.sh" },
+          { id: "p3-shop", title: "Shop aus dem Launch lassen", why: "Shopify ist Haus&Hof und noch password-gated. Reviews würden den Laden zerlegen.", how: "SHOP_ENABLED default false lassen. Pro-Abo über Play Billing, nicht Stripe in der Android-App für digitale Güter." },
+          { id: "p3-bosch", title: "Bosch LDI nicht als fertig bewerben", why: "Hardware-QA offen, iOS folgt, Marken-Nähe zu Bosch Flow.", how: "Store-Text: Navigation, Garage, Community. E-Bike-Sensoren 'in Arbeit' oder weglassen." }
+        ]
+      },
+      {
+        id: "p4",
+        title: "Phase 4 — Closed Testing (die eigentliche Play-Hürde)",
+        zeit: "01.–15.09.2026",
+        intro: "Personal Accounts nach Nov 2023: 12 Tester müssen 14 Tage durchgehend opted-in sein. Interne Spur zählt nicht als Ersatz.",
+        tasks: [
+          { id: "p4-recruit", title: "15 Fahrer mit Google-Konto gewinnen", why: "Puffer. Wenn einer opt-outet, fällt ihr unter 12 und die Uhr stockt.", how: "Freunde, ADFC, MTB-Gruppe, Gravel-WhatsApp Rhein-Neckar. Keine bezahlten Fake-Tester-Farmen — Google prüft Engagement." },
+          { id: "p4-closed", title: "Closed Testing Track, nicht nur Internal", why: "Policy verlangt Closed Test.", how: "Play Console → Testing → Closed testing → E-Mails oder Google-Gruppe. Opt-in-Link schicken. APK per Drive zählt nicht." },
+          { id: "p4-briefing", title: "Tester-Briefing auf einer Seite", why: "Engagement. Google kann Production Access ablehnen, wenn niemand die App öffnet.", how: "Bitte: installieren, einmal fahren oder 60-Min-Runde starten, einen Bug-Satz an die FlowLine-Mail. Kein NDA-Theater." },
+          { id: "p4-feedback", title: "Feedback-Kanal + Crash-Triage", why: "14 Tage sind euer QA-Fenster.", how: "Mail-Label FlowLine/Support. Täglich Sentry. Nur Crash/Blocker hotfixed, keine Feature-Orgie." },
+          { id: "p4-clock", title: "Am 15.09. Dashboard prüfen", why: "Kalender-Termin liegt. Unter 12 opted-in = nachlegen, nicht Production klicken.", how: "Play Dashboard → Testing. Screenshot in den Drive-Ordner." }
+        ]
+      },
+      {
+        id: "p5",
+        title: "Phase 5 — Production Access & öffentlicher Rollout",
+        zeit: "ab 18.09., Ziel 01.10.",
+        intro: "Antrag ist ein Fragebogen zu Tests und Reife. Danach kein Big-Bang auf 100 %.",
+        tasks: [
+          { id: "p5-apply", title: "Production Access beantragen", why: "Ohne Grant bleibt ihr in Testing.", how: "Dashboard → Fragen ehrlich: Zielgruppe DACH-Fahrer, Tests mit 12+ Fahrern, bekannte Limits (kein Bosch-Steuern, Shop aus)." },
+          { id: "p5-countries", title: "Länder: DE, AT, CH, optional NL/FR", why: "Leere Karte in den USA erzeugt 1-Sterne.", how: "Play → Länderverfügbarkeit einschränken. Content ist DACH-dicht." },
+          { id: "p5-rollout", title: "Staged rollout 20 → 50 → 100", why: "Ein Crash in 1.0.0 auf allen Geräten ist teurer als 3 Tage warten.", how: "Production → neues Release → 20 %. Sentry 48 h ruhig, dann erhöhen." },
+          { id: "p5-aso", title: "ASO auf Deutsch, ehrlich", why: "Erste Keywords: Fahrrad Navigation, MTB, Gravel, E-Bike Tour, Radcomputer.", how: "Nicht 'Strava-Killer'. Screenshots Outdoor, ein Satz Differenzierung: Werkstatt + Linie." },
+          { id: "p5-support", title: "Support-SLA die erste Woche", why: "Die ersten 20 Reviews entscheiden die Note.", how: "FlowLine-Mail 1× täglich. In-App Link Impressum und Datenschutz, zwei Klicks, auch offline-fähig." },
+          { id: "p5-billing", title: "Play Billing Verify ohne Trusted-Token", why: "Trusted-Token ist im Code als MVP gelabelt — für Production schwach.", how: "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON in Vercel, Runbook Schritt 6." }
+        ]
+      },
+      {
+        id: "p6",
+        title: "Phase 6 — Community-Launch (das Produkt, nicht der Store)",
+        zeit: "ab Closed Testing, härter nach Public",
+        intro: "Store-Live ≠ Community. Ohne lokale Dichte seid ihr eine leere Karte mit guter UI.",
+        tasks: [
+          { id: "p6-home", title: "Rhein-Neckar als Heimatmarkt behandeln", why: "Ihr habt dort Seeds, ihr fahrt dort, Mundpropaganda ist analog.", how: "10 zuverlässige 60-Min-Runden, 2 Gruppen-Termine, 1 Bike-Shop der die App kennt." },
+          { id: "p6-clubs", title: "3 Clubs / Gruppen als Partner, nicht als Ads", why: "Komoot wurde über Vereine groß, nicht über TV.", how: "ADFC, MTB-Verein, Gravel-Meetup. Angebot: ihre Touren als kuratierte Ideen, sie testen." },
+          { id: "p6-ugc", title: "UGC erst mit Review-Schlange", why: "Illegale Trails und Beleidigungen sind Store-Risiko.", how: "Öffentlich vorschlagen → Moderation. Keine Auto-Publish-Heatmap." },
+          { id: "p6-share", title: "Share-Card Ride+Setup ohne Social-Netz", why: "Viralität ohne Instagram-Abhängigkeit.", how: "P2 im Ausbau-Plan: Bild das man in WhatsApp schickt. Deep Link aetherride:// bleibt intern." },
+          { id: "p6-honesty", title: "Keine Fake-Zahlen im Store", why: "„Community-Heatmap“ ohne k≥5 wird in Foren zerlegt.", how: "Copy nur Features die Release-Builds wirklich tun. Demo-Seeds fail-closed lassen." }
+        ]
+      },
+      {
+        id: "p7",
+        title: "Phase 7 — Gewerbe, sobald Geld fließt",
+        zeit: "vor dem ersten bezahlten Pro-Monat",
+        intro: "Store-Listing geht als Person. Einnahmen nicht.",
+        tasks: [
+          { id: "p7-gewerbe", title: "Gewerbe anmelden", why: "App mit Abo ist gewerblich.", how: "Gewerbeamt / Bund-Portal mit eID. Geschäftsbezeichnung FlowLine, Inhaber dein Name. Tätigkeit: Software / digitale Dienste." },
+          { id: "p7-elster", title: "ELSTER Fragebogen + Kleinunternehmer", why: "Sonst USt auf 6,99 € und Chaos mit Play.", how: "Kleinunternehmer ankreuzen wenn realistisch unter den Schwellen. Steuernummer kommt per Post." },
+          { id: "p7-konto", title: "Separates Konto für Play-Auszahlungen", why: "Play/Apple zahlen auf ein Konto, Finanzamt will nachvollziehbare Bücher.", how: "Geschäftskonto oder Unterkonto. Nicht das private Alltagskonto." },
+          { id: "p7-stripe", title: "Stripe nur für Web/Marketplace, nicht für Android-IAP", why: "Play verbietet Sideload-Zahlungen für digitale Güter.", how: "Pro in der App = Play Billing. Stripe-Preise existieren schon für Web." }
+        ]
+      },
+      {
+        id: "p8",
+        title: "Phase 8 — iOS, nach stabilem Android",
+        zeit: "Ziel ab 01.11.2026",
+        intro: "Parität, nicht Parallelstress. Apple Individual, 99 USD/Jahr.",
+        tasks: [
+          { id: "p8-appleid", title: "Apple-ID nur für FlowLine", why: "Private iCloud und Developer nicht mischen.", how: "appleid.apple.com, 2FA, gleiche Recovery-Disziplin wie Google." },
+          { id: "p8-enroll", title: "Developer Program Individual", why: "Ohne Membership kein TestFlight-Public und kein Store.", how: "developer.apple.com/programs — Individual. Organisation erst mit Firma + D-U-N-S." },
+          { id: "p8-mac", title: "Signieren: Mac oder CI", why: "IPA braucht Zertifikat und Profil.", how: "Xcode Archive, Bundle io.aetherride.app, Team-ID nach Vercel NEXT_PUBLIC_IOS_TEAM_ID für Universal Links." },
+          { id: "p8-tf", title: "TestFlight = euer iOS-Closed-Test", why: "Review sieht frische Crashes.", how: "Interne Tester, dann External. Location/Bluetooth-Strings sind schon auf Deutsch." },
+          { id: "p8-siwa", title: "Sign in with Apple, bevor Google-OAuth an", why: "Guideline 4.8.", how: "ENABLE_GOOGLE_OAUTH erst zusammen mit ENABLE_APPLE_OAUTH." },
+          { id: "p8-iap", title: "StoreKit-Abo analog zur Play-SKU", why: "Gleiche Preise, sonst Support-Horror.", how: "6,99 € / 59,99 € Jahr. Small Business Program (15 %) beantragen." }
+        ]
+      }
+    ];
+
+    const KEY = "flowline-release-v1";
+    const state = JSON.parse(localStorage.getItem(KEY) || "{}");
+    const root = document.getElementById("phasen");
+    const q = document.getElementById("q");
+
+    function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderStats(); renderToday(); }
+
+    function allTasks() {
+      return PHASES.flatMap(p => p.tasks.map(t => ({ ...t, phase: p.id, phaseTitle: p.title })));
+    }
+
+    function render() {
+      const query = (q.value || "").trim().toLowerCase();
+      root.innerHTML = PHASES.map(p => {
+        const tasks = p.tasks.filter(t => {
+          if (!query) return true;
+          return (t.title + t.why + t.how).toLowerCase().includes(query);
+        });
+        if (!tasks.length) return "";
+        const done = p.tasks.filter(t => state[t.id]).length;
+        return `<section class="phase card" id="${p.id}">
+          <div class="phase-head">
+            <h2>${p.title}</h2>
+            <div class="meta">${p.zeit} · ${done}/${p.tasks.length}</div>
+          </div>
+          <p class="lead">${p.intro}</p>
+          ${tasks.map(t => `
+            <div class="task ${state[t.id] ? "done" : ""}" data-id="${t.id}">
+              <label>
+                <input type="checkbox" data-id="${t.id}" ${state[t.id] ? "checked" : ""} />
+                <div>
+                  <h3>${t.title}</h3>
+                </div>
+              </label>
+              <p class="why"><b>Warum:</b> ${t.why}</p>
+              <p class="how"><b>Wie:</b> ${t.how}</p>
+            </div>`).join("")}
+        </section>`;
+      }).join("");
+      root.querySelectorAll("input[type=checkbox]").forEach(el => {
+        el.addEventListener("change", () => {
+          state[el.dataset.id] = el.checked;
+          save();
+          const box = el.closest(".task");
+          box.classList.toggle("done", el.checked);
+        });
+      });
+      renderStats();
+      renderToday();
+    }
+
+    function renderStats() {
+      const all = allTasks();
+      const done = all.filter(t => state[t.id]).length;
+      document.getElementById("bar").style.width = (100 * done / all.length) + "%";
+      document.getElementById("pct").textContent = done + " / " + all.length + " erledigt";
+      document.getElementById("openCount").innerHTML = (all.length - done) + "<small>offene Schritte</small>";
+    }
+
+    function renderToday() {
+      const items = [];
+      for (const p of PHASES) {
+        for (const t of p.tasks) {
+          if (!state[t.id]) items.push({ ...t, phaseTitle: p.title });
+          if (items.length >= 5) break;
+        }
+        if (items.length >= 5) break;
+      }
+      document.getElementById("todayList").innerHTML = items.map((t,i) =>
+        `<li><b>${t.title}</b><br><span style="color:var(--muted)">${t.how}</span></li>`
+      ).join("") || "<li>Alles abgehakt. Dann: Reviews lesen und nicht das Feature-Set aufblasen.</li>";
+    }
+
+    q.addEventListener("input", render);
+    document.getElementById("exportBtn").onclick = () => {
+      const blob = new Blob([JSON.stringify({ when: new Date().toISOString(), state, phases: PHASES.map(p => ({ id: p.id, done: p.tasks.filter(t => state[t.id]).map(t => t.id) })) }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "flowline-release-progress.json";
+      a.click();
+    };
+    document.getElementById("resetBtn").onclick = () => {
+      if (confirm("Alle Haken auf diesem Gerät löschen?")) {
+        Object.keys(state).forEach(k => delete state[k]);
+        save(); render();
+      }
+    };
+    // Mail-Schritt vorausgefüllt, weil wir ihn heute angelegt haben
+    if (state["p0-mail"] === undefined) state["p0-mail"] = true;
+    render();
+  </script>
+</body>
+</html>

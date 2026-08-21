@@ -15,6 +15,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/user_profile_store.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../data/routing/coverage_label.dart';
 import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_dirs.dart';
@@ -70,6 +71,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _privacyZoneCount = 0;
   bool _offlineRoutingReady = false;
   bool _offlineStreetReady = false;
+  bool _offlineRoutingAway = false;
+  bool _offlineStreetAway = false;
   String? _offlinePackId;
   String? _offlinePackName;
 
@@ -202,11 +205,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         }
       } catch (_) {}
       var street = false;
+      var streetInstalled = false;
+      var away = false;
       if (ready) {
         try {
-          street = await OfflineBasemap.streetHudCoversActivatedPack(
+          streetInstalled =
+              await OfflineBasemap.streetHudReadyForActivatedPack();
+          street = streetInstalled
+              ? await OfflineBasemap.streetHudCoversActivatedPack(
+                  lng: lng,
+                  lat: lat,
+                )
+              : false;
+        } catch (_) {}
+        try {
+          final bbox = await OfflinePackDirs.activatedCoverageBbox() ??
+              OfflineMapsPrefs.packBboxFrom(m);
+          final ring = await OfflinePackDirs.activatedCoverageRing();
+          away = coverageRiderOutside(
             lng: lng,
             lat: lat,
+            bbox: bbox,
+            routingReady: true,
+            ring: ring,
           );
         } catch (_) {}
       }
@@ -214,6 +235,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       setState(() {
         _offlineRoutingReady = ready;
         _offlineStreetReady = street;
+        _offlineRoutingAway = away;
+        _offlineStreetAway = streetInstalled && !street;
         _offlinePackId = ready ? id : null;
         _offlinePackName = ready && raw.isNotEmpty ? raw : null;
       });
@@ -226,6 +249,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       packId: _offlinePackId,
       packName: _offlinePackName,
       streetReady: _offlineStreetReady,
+      outside: _offlineRoutingAway,
+      streetAway: _offlineStreetAway,
     );
   }
 
@@ -319,6 +344,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         m['activatedPackPath'] as String?,
       );
     } catch (_) {}
+    if (!mounted) return;
     await openOfflineMapsSheet(
       context,
       userLng: lng,

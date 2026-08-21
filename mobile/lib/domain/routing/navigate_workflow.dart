@@ -14,6 +14,13 @@ class BeginNavigateIntent {
 /// Orts-Chip im Plan wird Ziel, sonst nur Kartenflug.
 bool placeHitAppliesAsDestination({required bool navigating}) => navigating;
 
+/// Explore short-tap opens Plan with a browse pin (Web `discoverExploreMapTapOpensPlan`).
+bool discoverExploreMapTapOpensPlan({
+  required bool planning,
+  required bool picking,
+}) =>
+    !picking && !planning;
+
 /// Navigieren: Ziel tippen/suchen, optional letzter Ort als B.
 BeginNavigateIntent beginNavigateIntent({
   required bool hasEnd,

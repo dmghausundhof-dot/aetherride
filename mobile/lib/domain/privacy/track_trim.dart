@@ -18,30 +18,33 @@ List<Map<String, dynamic>> trimTrackForPrivacyZones(
 
   var start = 0;
   var end = track.length - 1;
-  var acc = 0.0;
-  for (var i = 1; i < track.length; i++) {
-    acc += _distM(
-      lngOf(track[i - 1]),
-      latOf(track[i - 1]),
-      lngOf(track[i]),
-      latOf(track[i]),
-    );
-    if (acc >= trimEndsM) {
-      start = i;
-      break;
+  // trimEndsM <= 0: only zone filter — do not nibble the first/last vertex.
+  if (trimEndsM > 0) {
+    var acc = 0.0;
+    for (var i = 1; i < track.length; i++) {
+      acc += _distM(
+        lngOf(track[i - 1]),
+        latOf(track[i - 1]),
+        lngOf(track[i]),
+        latOf(track[i]),
+      );
+      if (acc >= trimEndsM) {
+        start = i;
+        break;
+      }
     }
-  }
-  acc = 0;
-  for (var i = track.length - 1; i > 0; i--) {
-    acc += _distM(
-      lngOf(track[i]),
-      latOf(track[i]),
-      lngOf(track[i - 1]),
-      latOf(track[i - 1]),
-    );
-    if (acc >= trimEndsM) {
-      end = i;
-      break;
+    acc = 0;
+    for (var i = track.length - 1; i > 0; i--) {
+      acc += _distM(
+        lngOf(track[i]),
+        latOf(track[i]),
+        lngOf(track[i - 1]),
+        latOf(track[i - 1]),
+      );
+      if (acc >= trimEndsM) {
+        end = i;
+        break;
+      }
     }
   }
 

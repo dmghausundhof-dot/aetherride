@@ -39,6 +39,17 @@ export function placeHitAppliesAsDestination(
 }
 
 /**
+ * Explore long-press (not short-tap) opens Plan with a browse pin.
+ * Flutter: `onMapLongClick` outside plan; short-tap stays trail/tour inspect.
+ */
+export function discoverExploreMapTapOpensPlan(opts: {
+  sheetMode: DiscoverSheetMode;
+  picking: boolean;
+}): boolean {
+  return !opts.picking && opts.sheetMode !== "plan";
+}
+
+/**
  * Navigieren öffnen: Ziel tippen/suchen, optional letzter Ort als B.
  * Start bleibt, wenn schon gesetzt — sonst übernimmt der Caller den Origin.
  */

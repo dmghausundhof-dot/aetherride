@@ -15,6 +15,7 @@ import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
 import '../../data/export/strava_client.dart';
 import '../../data/export/strava_stub.dart';
+import '../../data/local/ride_prefs.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../data/sensor/manufacturer_ble_wipe.dart';
@@ -64,6 +65,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   bool _stravaConnected = false;
   String? _stravaAuthorizeUrl;
   StreamSubscription<Uri>? _linkSub;
+  bool _trimEnds = true;
 
   @override
   void initState() {
@@ -166,7 +168,11 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         return;
       }
       final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
-      final r = await uploadRideToStrava(rides.first, zones: zones);
+      final r = await uploadRideToStrava(
+        rides.first,
+        zones: zones,
+        trimEndsM: _trimEndsM,
+      );
       if (mounted) setState(() => _message = r.message);
     } catch (e) {
       if (mounted) setState(() => _message = '$e');
@@ -179,6 +185,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     final garage = ref.read(garageRepositoryProvider);
     final consents = await garage.listConsents();
     final zones = await garage.listPrivacyZones();
+    final trimEnds = await RidePrefs.privacyTrimEndsEnabled();
     final merged = defaultConsentGrants();
     merged.addAll(consents);
     final pending =
@@ -188,9 +195,17 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         _consents = merged;
         _zones = zones;
         _pendingChunks = pending;
+        _trimEnds = trimEnds;
       });
     }
   }
+
+  Future<void> _setTrimEnds(bool value) async {
+    await RidePrefs.setPrivacyTrimEndsEnabled(value);
+    if (mounted) setState(() => _trimEnds = value);
+  }
+
+  double get _trimEndsM => _trimEnds ? 200 : 0;
 
   Future<void> _uploadChunks() async {
     final l10n = AppLocalizations.of(context);
@@ -244,6 +259,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         final res = await contributeHeatmapTrack(
           track: r.track,
           privacyZones: zones,
+          trimEndsM: _trimEndsM,
         );
         n += res.upserted;
       }
@@ -337,6 +353,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         rides.first,
         zones: zones,
         bikeName: bike?.name,
+        trimEndsM: _trimEndsM,
       );
       final path = await _writeExport(
         'aetherride-${rides.first.id.substring(0, 8)}.gpx',
@@ -368,7 +385,11 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         return;
       }
       final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
-      final bytes = exportFitTrimmed(rides.first, zones: zones);
+      final bytes = exportFitTrimmed(
+        rides.first,
+        zones: zones,
+        trimEndsM: _trimEndsM,
+      );
       final path = await _writeBytes(
         'aetherride-${rides.first.id.substring(0, 8)}.fit',
         bytes,
@@ -400,7 +421,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       }
       final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
       final json = rideToStravaActivityJson(
-        rideWithTrimmedTrack(rides.first, zones),
+        rideWithTrimmedTrack(rides.first, zones, trimEndsM: _trimEndsM),
       );
       final path = await _writeExport(
         'aetherride-strava-${rides.first.id.substring(0, 8)}.json',
@@ -473,7 +494,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       final consents = await ref.read(garageRepositoryProvider).listConsents();
       final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
       final trimmedRides = [
-        for (final r in rides) rideWithTrimmedTrack(r, zones),
+        for (final r in rides) rideWithTrimmedTrack(r, zones, trimEndsM: _trimEndsM),
       ];
       final json = fullJsonExport(
         bikes: bikes,
@@ -522,6 +543,17 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           Text(
             l10n.privacyZonesLead,
             style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.privacyTrimEndsTitle),
+            subtitle: Text(
+              l10n.privacyTrimEndsBody,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+            value: _trimEnds,
+            onChanged: _busy ? null : _setTrimEnds,
           ),
           const SizedBox(height: 8),
           if (_zones.isEmpty)

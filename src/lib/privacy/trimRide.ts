@@ -6,8 +6,12 @@ import type { PrivacyZone } from "./consents";
  * Höhe, Zeit und Sensorfelder bleiben auf den behaltenen Punkten. */
 export function rideWithTrimmedTrack(
   ride: Ride,
-  zones: PrivacyZone[]
+  zones: PrivacyZone[],
+  trimEndsM = 200
 ): Ride {
   if (!ride.track || ride.track.length < 3) return ride;
-  return { ...ride, track: trimTrackForHeatmap(ride.track, zones) };
+  return {
+    ...ride,
+    track: trimTrackForHeatmap(ride.track, zones, trimEndsM),
+  };
 }

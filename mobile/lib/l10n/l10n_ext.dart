@@ -1494,12 +1494,14 @@ extension AetherL10n on AppLocalizations {
     };
   }
 
-  /// Profile row: same honesty as the Hof ready line.
+  /// Profile row: same honesty as the Hof ready / outside line.
   String offlineMapsProfileSubtitle({
     required bool ready,
     String? packId,
     String? packName,
     bool streetReady = false,
+    bool outside = false,
+    bool streetAway = false,
   }) {
     if (!ready) return profileOfflineMapsHint;
     final id = packId?.trim() ?? '';
@@ -1507,7 +1509,19 @@ extension AetherL10n on AppLocalizations {
     final name = coverageGlanceName(
       id.isNotEmpty ? overlayRegionNameFor(id, raw.isEmpty ? id : raw) : raw,
     );
-    if (name.isEmpty) return offlineRoutingOn;
+    if (name.isEmpty) {
+      if (outside) return offlineRoutingAway;
+      return offlineRoutingOn;
+    }
+    if (outside || streetAway) {
+      return offlineCoverageEdgeFor(
+        name,
+        outside: outside,
+        packId: id.isEmpty ? null : id,
+        streetReady: streetReady,
+        streetAway: streetAway,
+      );
+    }
     return hofPackReadyLine(name, streetReady: streetReady);
   }
 

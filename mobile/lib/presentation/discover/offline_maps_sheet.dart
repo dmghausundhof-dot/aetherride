@@ -31,10 +31,15 @@ import '../../l10n/l10n_ext.dart';
 import '../shared/chrome_glyph.dart';
 
 /// Offline-Routing: gebaute Region-Packs (Graph + optionale Übersicht).
+///
+/// [userLng]/[userLat] = rider GPS (honesty / Street-Korridor).
+/// [nearLng]/[nearLat] = optional map/dest bias for catalog sort only.
 Future<bool?> openOfflineMapsSheet(
   BuildContext context, {
   double? userLng,
   double? userLat,
+  double? nearLng,
+  double? nearLat,
   List<double>? routeBbox,
   List<List<double>>? routeLine,
   String? focusPackId,
@@ -47,6 +52,8 @@ Future<bool?> openOfflineMapsSheet(
     builder: (_) => OfflineMapsSheet(
       userLng: userLng,
       userLat: userLat,
+      nearLng: nearLng,
+      nearLat: nearLat,
       routeBbox: routeBbox,
       routeLine: routeLine,
       focusPackId: focusPackId,
@@ -61,6 +68,8 @@ class OfflineMapsSheet extends StatefulWidget {
     super.key,
     this.userLng,
     this.userLat,
+    this.nearLng,
+    this.nearLat,
     this.routeBbox,
     this.routeLine,
     this.focusPackId,
@@ -70,6 +79,9 @@ class OfflineMapsSheet extends StatefulWidget {
 
   final double? userLng;
   final double? userLat;
+  /// Map center / destination — sorts the catalog, never fakes GPS honesty.
+  final double? nearLng;
+  final double? nearLat;
   final List<double>? routeBbox;
   final List<List<double>>? routeLine;
   final String? focusPackId;
@@ -118,6 +130,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       ),
   ];
 
+  /// Catalog bias: map/dest first, else real GPS — never invents a rider fix.
+  double? get _sortLng => widget.nearLng ?? widget.userLng;
+  double? get _sortLat => widget.nearLat ?? widget.userLat;
+
   @override
   void initState() {
     super.initState();
@@ -134,8 +150,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       setState(() {
         _regions = sortOfflinePacks(
           merged,
-          userLng: widget.userLng,
-          userLat: widget.userLat,
+          userLng: _sortLng,
+          userLat: _sortLat,
         );
         _catalogNote = ready == 0 ? l10n.offlineDachCatalog : null;
         _catalogReady = true;
@@ -156,8 +172,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     setState(() {
       _regions = sortOfflinePacks(
         _regions,
-        userLng: widget.userLng,
-        userLat: widget.userLat,
+        userLng: _sortLng,
+        userLat: _sortLat,
       );
     });
   }
@@ -1520,8 +1536,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final l10n = AppLocalizations.of(context);
     final split = collapseCountryPacks(
       packs: g.packs,
-      userLng: widget.userLng,
-      userLat: widget.userLat,
+      userLng: _sortLng,
+      userLat: _sortLat,
       pinId: pinId,
       searching: searching,
     );
@@ -1595,8 +1611,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final sections = groupOfflinePacks(
       filtered: filtered,
       installed: _installed,
-      userLng: widget.userLng,
-      userLat: widget.userLat,
+      userLng: _sortLng,
+      userLat: _sortLat,
       searching: searching,
       focusPackId: widget.focusPackId,
     );
@@ -1796,7 +1812,17 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                               onTap: widget.onShowOnMap == null
                                   ? null
                                   : () {
-                                      widget.onShowOnMap!(_packBbox!);
+                                      final ring = _packRing;
+                                      final fromRing = ring != null &&
+                                              ring.length >= 4
+                                          ? coverageBboxOfRing(ring)
+                                          : null;
+                                      final show =
+                                          (fromRing != null &&
+                                                  fromRing.length >= 4)
+                                              ? fromRing
+                                              : _packBbox!;
+                                      widget.onShowOnMap!(show);
                                       Navigator.of(context).pop(false);
                                     },
                             ),

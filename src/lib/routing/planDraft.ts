@@ -1003,6 +1003,67 @@ export function planMapHistoryFabsVisible(opts: {
   );
 }
 
+/**
+ * Browser Discover is plan-only (`browserPlanOnly`). "In App starten" must
+ * persist the draft first so the ride bridge deep-links a library id — never
+ * an ephemeral `engine-*` active route without save.
+ * Mirror: Flutter `planStartRidePersistsDraft`.
+ */
+export function planWebStartInAppRequiresSave(opts: {
+  hasComputed: boolean;
+  /** Group-create handoff leaves Discover — skip ride bridge. */
+  asGroup?: boolean;
+}): boolean {
+  return opts.hasComputed && !opts.asGroup;
+}
+
+/** Library ids hand off to the app; ephemeral engine ids do not. */
+export function planWebRideHandoffId(
+  savedId: string | null | undefined
+): string | null {
+  if (!savedId || savedId.startsWith("engine-")) return null;
+  return savedId;
+}
+
+/**
+ * Stable fingerprint of a planned line so Save + Start can reuse one library
+ * id when the geometry has not changed.
+ */
+export function planDraftGeometryKey(opts: {
+  coordinates: [number, number][] | null | undefined;
+  viaCount?: number;
+  distanceM?: number;
+}): string | null {
+  const c = opts.coordinates;
+  if (!c || c.length < 2) return null;
+  const a = c[0]!;
+  const b = c[c.length - 1]!;
+  const mid = c[Math.floor(c.length / 2)]!;
+  const r = (n: number) => n.toFixed(5);
+  return [
+    String(c.length),
+    String(opts.viaCount ?? 0),
+    opts.distanceM != null ? String(Math.round(opts.distanceM)) : "",
+    r(a[0]),
+    r(a[1]),
+    r(mid[0]),
+    r(mid[1]),
+    r(b[0]),
+    r(b[1]),
+  ].join("|");
+}
+
+/** Reuse last save when the live line still matches that fingerprint. */
+export function planReuseSavedHandoffId(opts: {
+  lastSavedId: string | null | undefined;
+  lastSavedGeomKey: string | null | undefined;
+  currentGeomKey: string | null | undefined;
+}): string | null {
+  if (!opts.currentGeomKey || !opts.lastSavedGeomKey) return null;
+  if (opts.currentGeomKey !== opts.lastSavedGeomKey) return null;
+  return planWebRideHandoffId(opts.lastSavedId);
+}
+
 /** Finger-chip while the engine reshapes an existing line (not the first A–B). */
 export function planMapAdaptingHintOnMap(opts: {
   routingBusy: boolean;

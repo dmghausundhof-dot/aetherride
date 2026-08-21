@@ -1703,6 +1703,68 @@ void main() {
         isFalse,
       );
       expect(
+        planStartRidePersistsDraft(
+          hasComputed: true,
+          fromCatalogSuggestion: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planStartRidePersistsDraft(
+          hasComputed: true,
+          fromCatalogSuggestion: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planStartRidePersistsDraft(
+          hasComputed: false,
+          fromCatalogSuggestion: false,
+        ),
+        isFalse,
+      );
+      expect(planRideHandoffId('saved-1'), 'saved-1');
+      expect(planRideHandoffId('engine-99'), isNull);
+      expect(planRideHandoffId(null), isNull);
+      final key = planDraftGeometryKey(
+        coordinates: [
+          [8.1, 49.1],
+          [8.2, 49.2],
+          [8.3, 49.3],
+        ],
+        viaCount: 1,
+        distanceM: 1234.6,
+      );
+      expect(key, isNotNull);
+      expect(
+        planDraftGeometryKey(
+          coordinates: [
+            [8.1, 49.1],
+            [8.2, 49.2],
+            [8.3, 49.3],
+          ],
+          viaCount: 1,
+          distanceM: 1234.6,
+        ),
+        key,
+      );
+      expect(
+        planReuseSavedHandoffId(
+          lastSavedId: 'saved-9',
+          lastSavedGeomKey: key,
+          currentGeomKey: key,
+        ),
+        'saved-9',
+      );
+      expect(
+        planReuseSavedHandoffId(
+          lastSavedId: 'saved-9',
+          lastSavedGeomKey: key,
+          currentGeomKey: '${key}|x',
+        ),
+        isNull,
+      );
+      expect(
         planParkedFingerClearsWhenIdle(routingBusy: true),
         isFalse,
         reason: 'keep parked finger while reshape is in flight',

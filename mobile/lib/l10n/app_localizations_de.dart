@@ -2343,6 +2343,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Start und Ziel auf geteilten Karten, Export, Heatmap und Fotos. Du siehst den vollen Track.';
 
   @override
+  String get privacyTrimEndsTitle => 'Start und Ziel kürzen (200 m)';
+
+  @override
+  String get privacyTrimEndsBody =>
+      'Bei Export, Strava und Heatmap. Ohne Zone bleibt das Haus oft erkennbar.';
+
+  @override
+  String get privacyZoneSearchHint => 'Adresse suchen';
+
+  @override
+  String get privacyZoneSearchEmpty => 'Keine Treffer';
+
+  @override
   String get privacyZoneAdd => 'Zone hinzufügen';
 
   @override

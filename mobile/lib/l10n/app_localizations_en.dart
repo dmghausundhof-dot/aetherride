@@ -2326,6 +2326,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start and end on shared maps, export, heatmap and photos. You still see the full track.';
 
   @override
+  String get privacyTrimEndsTitle => 'Trim start and end (200 m)';
+
+  @override
+  String get privacyTrimEndsBody =>
+      'Applies to export, Strava and heatmap. Without a zone, home often stays visible.';
+
+  @override
+  String get privacyZoneSearchHint => 'Search address';
+
+  @override
+  String get privacyZoneSearchEmpty => 'No results';
+
+  @override
   String get privacyZoneAdd => 'Add zone';
 
   @override

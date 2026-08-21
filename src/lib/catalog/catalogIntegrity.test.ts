@@ -12,7 +12,7 @@ function assert(cond: boolean, msg: string) {
 
 const stats = catalogStats();
 assert(stats.manufacturers >= 57, `Erwarte ≥57 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 139, `Erwarte ≥139 Bikes, got ${stats.bikes}`);
+assert(stats.bikes >= 140, `Erwarte ≥140 Bikes, got ${stats.bikes}`);
 assert(
   COMPONENT_CATALOG.length >= 250,
   `Erwarte ≥250 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
@@ -138,6 +138,25 @@ const cats = new Set(
 );
 for (const need of ["cargo", "folding", "kids"] as const) {
   assert(cats.has(need), `Kategorie ${need} fehlt im OEM-Katalog`);
+}
+
+/** Marken ohne aktuelles Analog-OEM — bewusst E-only, nicht erfinden. */
+const INTENTIONAL_E_ONLY = new Set([
+  "Rotwild",
+  "Haibike",
+  "Flyer",
+  "Riese & Müller",
+  "Kalkhoff",
+]);
+for (const m of BIKE_CATALOG) {
+  const hasAnalog = m.bikes.some((b) => !b.isEbike);
+  const hasE = m.bikes.some((b) => b.isEbike);
+  if (hasE && !hasAnalog) {
+    assert(
+      INTENTIONAL_E_ONLY.has(m.name),
+      `E-only ohne Intent-Whitelist: ${m.name} — Analog nur mit OEM-Beleg ergänzen`
+    );
+  }
 }
 
 console.log(

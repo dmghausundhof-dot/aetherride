@@ -23,8 +23,10 @@ function testArb() {
   assert.equal(privacyCopy("fr").consents, "Consentements");
   assert.equal(privacyCopy("it").familyTitle, "Famiglia in bici");
   assert.equal(privacyCopy("nl").zones, "Privacyzones");
-  assert.ok(privacyCopy("en").noZonesWeb.includes("app"));
+  assert.ok(privacyCopy("en").noZonesWeb.includes("200"));
   assert.doesNotMatch(privacyCopy("en").noZonesWeb, /Heimat-Zone/);
+  assert.ok(privacyCopy("de").zoneAdd.length > 3);
+  assert.ok(privacyCopy("en").trimEndsTitle.includes("200"));
   assert.equal(
     presentPrivacyStatus("Strava OAuth nicht konfiguriert.", "en"),
     "Strava OAuth is not configured."
@@ -42,8 +44,13 @@ function testWiring() {
   assert.ok(!page.includes("Familie am Rad"), "family heading is copy");
   assert.ok(!page.includes("Letzten Ride als GPX"), "gpx button is copy");
   assert.ok(
+    page.includes("addPrivacyZone"),
+    "web can create zones without inventing a pin"
+  );
+  assert.ok(page.includes("setPrivacyTrimEnds"), "trim toggle on web");
+  assert.ok(
     page.includes("noZonesWeb"),
-    "web empty zones stay honest (app map)"
+    "web empty zones stay honest"
   );
   const stand = readFileSync("src/components/home/HofStand.tsx", "utf8");
   assert.ok(stand.includes("hofSportLabel("), "hof stand uses sport label");

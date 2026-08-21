@@ -42,7 +42,10 @@ export default function PrivacyExportPage() {
   const [stravaStatusMsg, setStravaStatusMsg] = useState<string | null>(null);
   const [stravaBusy, setStravaBusy] = useState(false);
   const privacyZones = useAppStore((s) => s.privacyZones);
+  const addPrivacyZone = useAppStore((s) => s.addPrivacyZone);
   const removePrivacyZone = useAppStore((s) => s.removePrivacyZone);
+  const privacyTrimEnds = useAppStore((s) => s.privacyTrimEnds);
+  const setPrivacyTrimEnds = useAppStore((s) => s.setPrivacyTrimEnds);
   const familyRiders = useAppStore((s) => s.familyRiders);
   const addFamilyRider = useAppStore((s) => s.addFamilyRider);
   const activeFamilyRiderId = useAppStore((s) => s.activeFamilyRiderId);
@@ -51,8 +54,14 @@ export default function PrivacyExportPage() {
 
   const [riderName, setRiderName] = useState("");
   const [riderWeight, setRiderWeight] = useState(70);
+  const [zoneLabel, setZoneLabel] = useState("");
+  const [zoneLat, setZoneLat] = useState("");
+  const [zoneLng, setZoneLng] = useState("");
+  const [zoneRadiusM, setZoneRadiusM] = useState(500);
+  const [zoneError, setZoneError] = useState<string | null>(null);
   const lastRide = rides[0];
   const activeBike = bikes.find((b) => b.isActive) || bikes[0];
+  const trimEndsM = privacyTrimEnds ? 200 : 0;
 
   const jsonPreview = useMemo(
     () =>
@@ -60,10 +69,10 @@ export default function PrivacyExportPage() {
         bikes,
         rides: rides
           .slice(0, 3)
-          .map((r) => rideWithTrimmedTrack(r, privacyZones)),
+          .map((r) => rideWithTrimmedTrack(r, privacyZones, trimEndsM)),
         profile,
       }).slice(0, 400) + "…",
-    [bikes, rides, profile, privacyZones]
+    [bikes, rides, profile, privacyZones, trimEndsM]
   );
 
   useEffect(() => {
@@ -122,7 +131,7 @@ export default function PrivacyExportPage() {
     setStravaBusy(true);
     setStravaStatusMsg(null);
     try {
-      const forUpload = rideWithTrimmedTrack(lastRide, privacyZones);
+      const forUpload = rideWithTrimmedTrack(lastRide, privacyZones, trimEndsM);
       const stub = rideToStravaActivityStub(forUpload) as {
         name?: string;
         type?: string;
@@ -213,7 +222,7 @@ export default function PrivacyExportPage() {
                 return;
               }
               const gpx = rideToGpx(
-                rideWithTrimmedTrack(lastRide, privacyZones),
+                rideWithTrimmedTrack(lastRide, privacyZones, trimEndsM),
                 activeBike?.name
               );
               downloadText(
@@ -231,7 +240,9 @@ export default function PrivacyExportPage() {
             onClick={() => {
               const json = fullJsonExport({
                 bikes,
-                rides: rides.map((r) => rideWithTrimmedTrack(r, privacyZones)),
+                rides: rides.map((r) =>
+                  rideWithTrimmedTrack(r, privacyZones, trimEndsM)
+                ),
                 profile,
               });
               downloadText(
@@ -250,7 +261,7 @@ export default function PrivacyExportPage() {
             onClick={() => {
               if (!lastRide) return;
               const fit = rideToFit(
-                rideWithTrimmedTrack(lastRide, privacyZones)
+                rideWithTrimmedTrack(lastRide, privacyZones, trimEndsM)
               );
               downloadBytes(
                 `aetherride-${lastRide.id.slice(0, 8)}.fit`,
@@ -390,27 +401,144 @@ export default function PrivacyExportPage() {
           {p.zones}
         </h3>
         <p className="mb-2 text-xs text-text-secondary">{p.zonesLead}</p>
+        <label className="mb-3 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={privacyTrimEnds}
+            onChange={(e) => setPrivacyTrimEnds(e.target.checked)}
+          />
+          <span>
+            <span className="font-medium">{p.trimEndsTitle}</span>
+            <span className="mt-0.5 block text-[11px] text-text-secondary">
+              {p.trimEndsBody}
+            </span>
+          </span>
+        </label>
         {privacyZones.length === 0 ? (
           <p className="mb-2 text-sm text-text-secondary">{p.noZonesWeb}</p>
         ) : (
           privacyZones.map((z) => (
-          <div
-            key={z.id}
-            className="mb-2 flex items-center justify-between rounded-xl bg-surface-elevated px-3 py-2 text-sm"
-          >
-            <span>
-              {z.label} · {z.radiusM} m · {z.lat.toFixed(3)}, {z.lng.toFixed(3)}
-            </span>
-            <button
-              type="button"
-              className="text-xs text-error"
-              onClick={() => removePrivacyZone(z.id)}
+            <div
+              key={z.id}
+              className="mb-2 flex items-center justify-between rounded-xl bg-surface-elevated px-3 py-2 text-sm"
             >
-              {p.zoneDelete}
-            </button>
-          </div>
+              <span>
+                {z.label} · {z.radiusM} m · {z.lat.toFixed(3)},{" "}
+                {z.lng.toFixed(3)}
+              </span>
+              <button
+                type="button"
+                className="text-xs text-error"
+                onClick={() => removePrivacyZone(z.id)}
+              >
+                {p.zoneDelete}
+              </button>
+            </div>
           ))
         )}
+        <div className="mt-3 space-y-2 rounded-xl border border-border p-3">
+          <p className="text-xs font-semibold">{p.zoneAdd}</p>
+          <input
+            value={zoneLabel}
+            onChange={(e) => setZoneLabel(e.target.value)}
+            placeholder={p.zoneLabel}
+            className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                [200, p.zoneRadius200],
+                [500, p.zoneRadius500],
+                [1000, p.zoneRadius1000],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setZoneRadiusM(m)}
+                className={`rounded-lg border px-2.5 py-1 text-xs ${
+                  zoneRadiusM === m
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={zoneLat}
+              onChange={(e) => setZoneLat(e.target.value)}
+              placeholder={p.zoneLat}
+              inputMode="decimal"
+              className="w-1/2 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+            />
+            <input
+              value={zoneLng}
+              onChange={(e) => setZoneLng(e.target.value)}
+              placeholder={p.zoneLng}
+              inputMode="decimal"
+              className="w-1/2 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-border px-3 py-2 text-xs"
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  setZoneError(p.zoneInvalid);
+                  return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setZoneLat(pos.coords.latitude.toFixed(5));
+                    setZoneLng(pos.coords.longitude.toFixed(5));
+                    setZoneError(null);
+                  },
+                  () => setZoneError(p.zoneInvalid),
+                  { enableHighAccuracy: true, timeout: 12000 }
+                );
+              }}
+            >
+              {p.zoneUseGps}
+            </button>
+            <button
+              type="button"
+              className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-on-accent"
+              onClick={() => {
+                const lat = Number(zoneLat.replace(",", "."));
+                const lng = Number(zoneLng.replace(",", "."));
+                if (
+                  !Number.isFinite(lat) ||
+                  !Number.isFinite(lng) ||
+                  Math.abs(lat) > 90 ||
+                  Math.abs(lng) > 180 ||
+                  (Math.abs(lat) < 1e-4 && Math.abs(lng) < 1e-4)
+                ) {
+                  setZoneError(p.zoneInvalid);
+                  return;
+                }
+                addPrivacyZone({
+                  label: zoneLabel.trim() || "Zone",
+                  lat,
+                  lng,
+                  radiusM: zoneRadiusM,
+                });
+                setZoneError(null);
+                setZoneLat("");
+                setZoneLng("");
+              }}
+            >
+              {p.zoneSave}
+            </button>
+          </div>
+          {zoneError && (
+            <p className="text-xs text-error">{zoneError}</p>
+          )}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">

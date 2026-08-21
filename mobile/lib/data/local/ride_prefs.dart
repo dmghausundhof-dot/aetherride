@@ -86,6 +86,20 @@ abstract final class RidePrefs {
     await merge({'hud_media_prompt_dismissed': value});
   }
 
+  /// Start/Ziel-Kapsel (200 m) bei Export, Strava, Heatmap. Default an.
+  static Future<bool> privacyTrimEndsEnabled() async {
+    final m = await read();
+    return m['privacy_trim_ends'] != false;
+  }
+
+  static Future<void> setPrivacyTrimEndsEnabled(bool value) async {
+    await merge({'privacy_trim_ends': value ? null : false});
+  }
+
+  static Future<double> privacyTrimEndsM() async {
+    return (await privacyTrimEndsEnabled()) ? 200 : 0;
+  }
+
   /// Live engine picker. Hybrid = server chooses GraphHopper / ORS per profile.
   static Future<LiveRoutingEngine> routingEngine() async {
     final m = await read();

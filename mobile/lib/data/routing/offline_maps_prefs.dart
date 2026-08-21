@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'coverage_graph_ring.dart';
+import 'coverage_label.dart';
+
 /// Shared prefs file for offline maps / region packs (`offline_maps_prefs.json`).
 abstract final class OfflineMapsPrefs {
   static const fileName = 'offline_maps_prefs.json';
@@ -145,7 +148,7 @@ abstract final class OfflineMapsPrefs {
     return true;
   }
 
-  /// True when the activated pack covers this GPS point.
+  /// True when the activated pack covers this GPS point (occupancy ring when cached).
   static Future<bool> coversPoint(double lng, double lat) async {
     try {
       final m = await read();
@@ -153,7 +156,12 @@ abstract final class OfflineMapsPrefs {
       if (path.isEmpty) return false;
       final bbox = packBboxFrom(m);
       if (bbox == null) return false;
-      return pointInBbox(bbox, lng, lat);
+      return coveragePointInCoverage(
+        lng: lng,
+        lat: lat,
+        bbox: bbox,
+        ring: await _occupancyRingOutline(path),
+      );
     } catch (_) {
       return false;
     }
@@ -174,17 +182,33 @@ abstract final class OfflineMapsPrefs {
       if (path.isEmpty) return false;
       final bbox = packBboxFrom(m);
       if (bbox == null) return false;
-      return routeCoveredByBbox(
+      return coverageCoversLngLats(
+        points: [
+          (lng: fromLng, lat: fromLat),
+          (lng: toLng, lat: toLat),
+          ...vias,
+          ...along,
+        ],
         bbox: bbox,
-        fromLng: fromLng,
-        fromLat: fromLat,
-        toLng: toLng,
-        toLat: toLat,
-        vias: vias,
-        along: along,
+        ring: await _occupancyRingOutline(path),
       );
     } catch (_) {
       return false;
+    }
+  }
+
+  static Future<List<List<double>>?> _occupancyRingOutline(String packDir) async {
+    try {
+      final graph = File(p.join(packDir, 'offline_graph.json'));
+      if (!await graph.exists()) return null;
+      final cache = File(p.join(packDir, kCoverageRingFileName));
+      if (!await cache.exists()) return null;
+      return coverageRingFromCacheJson(
+        await cache.readAsString(),
+        graphBytes: await graph.length(),
+      )?.outline;
+    } catch (_) {
+      return null;
     }
   }
 }

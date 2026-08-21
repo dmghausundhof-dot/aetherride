@@ -76,7 +76,12 @@ function frameHardtail(opts: {
   bb?: string;
   motor?: string;
   maxTireMm?: number;
+  /** Default Boost; QR-Hardtails (z. B. Backfire Pro) setzen 135x10. */
+  axleRear?: string;
+  rearSpacing?: string;
 }): ComponentModel {
+  const axleRear = opts.axleRear ?? "12x148_boost";
+  const rearSpacing = opts.rearSpacing ?? "148x12_boost";
   return {
     id: opts.id,
     slot: "frame",
@@ -85,8 +90,8 @@ function frameHardtail(opts: {
     variant: opts.variant,
     modelYear: opts.year,
     attributes: [
-      attr("rear_spacing", { enum: "148x12_boost" }),
-      attr("axle_rear", { enum: "12x148_boost" }),
+      attr("rear_spacing", { enum: rearSpacing }),
+      attr("axle_rear", { enum: axleRear }),
       attr("headset_top", { enum: "ZS44" }),
       attr("headset_bottom", { enum: "ZS56" }),
       attr("bb_standard", { enum: opts.bb ?? "BSA73" }),
@@ -589,5 +594,135 @@ export const COMPONENT_CATALOG_DACH_SCALE12: ComponentModel[] = [
     variant: "29 6-bolt",
     url: CORRATEC,
     attrs: [attr("wheel_size", { enum: "29" })],
+  }),
+
+  // —— Centurion Backfire Pro 600 (analog Hardtail, OEM Spec) ——
+  frameHardtail({
+    id: "cm-centurion-backfire-pro-frame",
+    manufacturer: "Centurion",
+    model: "Backfire Pro",
+    variant: "600",
+    year: 2025,
+    url: "https://www.centurion.de/de-de/bike/967/backfire-pro-600",
+    seatpostMm: 27.2,
+    maxTireMm: 57,
+    axleRear: "135x10",
+    rearSpacing: "135x10",
+  }),
+  part("cm-suntour-xcr32-100-qr", "fork", "SR Suntour", "XCR32 Coil RLR", {
+    variant: "100mm 29 QR Remote",
+    year: 2025,
+    url: "https://www.srsuntour.com/",
+    safety: true,
+    attrs: [
+      attr("travel_mm", { num: 100, unit: "mm" }),
+      attr("wheel_size", { enum: "29" }),
+      attr("axle_front", { enum: "9x100_qr" }),
+      attr("offset_mm", { num: 51, unit: "mm" }),
+    ],
+  }),
+  part("cm-shimano-cues-lg400-cassette", "cassette", "Shimano", "CUES CS-LG400", {
+    variant: "11-50 11s",
+    url: SHIMANO,
+    attrs: [
+      attr("cassette_speed", { num: 11 }),
+      attr("freehub_body", { enum: "HG" }),
+    ],
+  }),
+  part("cm-shimano-cues-u6000-crank", "crankset", "Shimano", "CUES FC-U6000-1", {
+    variant: "175 Narrow-Wide",
+    url: SHIMANO,
+    attrs: [attr("speed", { num: 11 })],
+  }),
+  part("cm-shimano-cues-u6000-ring-32", "chainring", "Shimano", "CUES FC-U6000", {
+    variant: "32T Narrow-Wide",
+    url: SHIMANO,
+    attrs: [attr("teeth", { num: 32 })],
+  }),
+  part("cm-shimano-mt4100-front", "brake_front", "Shimano", "BR-MT4100", {
+    variant: "2-Kolben · BL-M4100",
+    url: SHIMANO,
+    safety: true,
+    attrs: [attr("brake_mount", { enum: "post_mount" })],
+  }),
+  part("cm-shimano-mt4100-rear", "brake_rear", "Shimano", "BR-MT4100", {
+    variant: "2-Kolben · BL-M4100",
+    url: SHIMANO,
+    safety: true,
+    attrs: [attr("brake_mount", { enum: "post_mount" })],
+  }),
+  part("cm-shimano-rt10-180-front", "rotor_front", "Shimano", "SM-RT10", {
+    variant: "180 mm Centerlock",
+    url: SHIMANO,
+    attrs: [attr("rotor_size_mm", { num: 180, unit: "mm" })],
+  }),
+  part("cm-maxxis-ikon-29-22", "tire_front", "Maxxis", "Ikon", {
+    variant: "29×2.20",
+    url: "https://www.maxxis.com/",
+    attrs: [
+      attr("wheel_size", { enum: "29" }),
+      attr("tire_width_mm", { num: 55, unit: "mm" }),
+    ],
+  }),
+  part("cm-maxxis-ikon-29-22-rear", "tire_rear", "Maxxis", "Ikon", {
+    variant: "29×2.20",
+    url: "https://www.maxxis.com/",
+    attrs: [
+      attr("wheel_size", { enum: "29" }),
+      attr("tire_width_mm", { num: 55, unit: "mm" }),
+    ],
+  }),
+  part("cm-centurion-backfire-pro-hub-front", "front_hub", "Centurion", "QR 6-bolt", {
+    variant: "9×100",
+    url: CENTURION,
+    attrs: [attr("axle_front", { enum: "9x100_qr" })],
+  }),
+  part("cm-centurion-backfire-pro-hub-rear", "rear_hub", "Centurion", "QR HG", {
+    variant: "10×135",
+    url: CENTURION,
+    attrs: [
+      attr("axle_rear", { enum: "135x10" }),
+      attr("freehub_body", { enum: "HG" }),
+    ],
+  }),
+  part("cm-centurion-iw23-rim-front", "front_rim", "Centurion", "IW 23", {
+    variant: "29 tubeless ready",
+    url: CENTURION,
+    attrs: [attr("wheel_size", { enum: "29" })],
+  }),
+  part("cm-centurion-iw23-rim-rear", "rear_rim", "Centurion", "IW 23", {
+    variant: "29 tubeless ready",
+    url: CENTURION,
+    attrs: [attr("wheel_size", { enum: "29" })],
+  }),
+  part("cm-procraft-sport-comp-grips", "grips", "Procraft", "Sport Comp", {
+    url: CENTURION,
+  }),
+  part("cm-procraft-race-saddle", "saddle", "Procraft", "Race", {
+    url: CENTURION,
+  }),
+  part("cm-procraft-alloy-stem-31-8", "stem", "Procraft", "Alloy", {
+    variant: "31.8 · 7°",
+    url: CENTURION,
+    attrs: [attr("handlebar_clamp_mm", { enum: "31.8", num: 31.8, unit: "mm" })],
+  }),
+  part("cm-procraft-alloy-bar-31-8-720", "handlebar", "Procraft", "Alloy Riser", {
+    variant: "31.8 · 720 · 15 rise",
+    url: CENTURION,
+    attrs: [
+      attr("handlebar_clamp_mm", { enum: "31.8", num: 31.8, unit: "mm" }),
+      attr("width_mm", { num: 720, unit: "mm" }),
+    ],
+  }),
+  part("cm-procraft-seatpost-27-2", "seatpost", "Procraft", "Alloy", {
+    variant: "27.2",
+    url: CENTURION,
+    attrs: [
+      attr("diameter_mm", { num: 27.2, unit: "mm" }),
+      attr("seatpost_diameter_mm", { num: 27.2, unit: "mm" }),
+    ],
+  }),
+  part("cm-vp-vpe-899", "pedals", "VP", "VPE-899", {
+    url: CENTURION,
   }),
 ];

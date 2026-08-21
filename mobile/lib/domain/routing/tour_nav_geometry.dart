@@ -2651,6 +2651,57 @@ bool planMapHistoryFabsVisible({
     !coachVisible &&
     !routingWaitBanner;
 
+/// Planned A→B "Losfahren" / web "In App starten" persists the draft first so
+/// the ride (or bridge) carries a library id — never a bare `engine-*` ghost.
+bool planStartRidePersistsDraft({
+  required bool hasComputed,
+  required bool fromCatalogSuggestion,
+}) =>
+    hasComputed && !fromCatalogSuggestion;
+
+/// Library ids hand off to ride; ephemeral engine ids do not count as saved.
+String? planRideHandoffId(String? savedId) {
+  if (savedId == null || savedId.startsWith('engine-')) return null;
+  return savedId;
+}
+
+/// Stable fingerprint of a planned line so Save + Losfahren reuse one library id.
+String? planDraftGeometryKey({
+  required List<List<double>>? coordinates,
+  int viaCount = 0,
+  double? distanceM,
+}) {
+  final c = coordinates;
+  if (c == null || c.length < 2) return null;
+  final a = c.first;
+  final b = c.last;
+  final mid = c[c.length ~/ 2];
+  if (a.length < 2 || b.length < 2 || mid.length < 2) return null;
+  String r(double n) => n.toStringAsFixed(5);
+  return [
+    '${c.length}',
+    '$viaCount',
+    if (distanceM != null) '${distanceM.round()}' else '',
+    r(a[0]),
+    r(a[1]),
+    r(mid[0]),
+    r(mid[1]),
+    r(b[0]),
+    r(b[1]),
+  ].join('|');
+}
+
+/// Reuse last save when the live line still matches that fingerprint.
+String? planReuseSavedHandoffId({
+  required String? lastSavedId,
+  required String? lastSavedGeomKey,
+  required String? currentGeomKey,
+}) {
+  if (currentGeomKey == null || lastSavedGeomKey == null) return null;
+  if (currentGeomKey != lastSavedGeomKey) return null;
+  return planRideHandoffId(lastSavedId);
+}
+
 /// Finger-chip while the engine reshapes an existing line (not the first A–B).
 bool planMapAdaptingHintOnMap({
   required bool routingBusy,

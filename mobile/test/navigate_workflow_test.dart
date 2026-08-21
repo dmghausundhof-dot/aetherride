@@ -39,4 +39,19 @@ void main() {
     expect(placeHitAppliesAsDestination(navigating: true), isTrue);
     expect(placeHitAppliesAsDestination(navigating: false), isFalse);
   });
+
+  test('Explore-Tap öffnet Planen ohne Pick', () {
+    expect(
+      discoverExploreMapTapOpensPlan(planning: false, picking: false),
+      isTrue,
+    );
+    expect(
+      discoverExploreMapTapOpensPlan(planning: true, picking: false),
+      isFalse,
+    );
+    expect(
+      discoverExploreMapTapOpensPlan(planning: false, picking: true),
+      isFalse,
+    );
+  });
 }

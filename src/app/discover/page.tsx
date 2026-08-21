@@ -59,7 +59,7 @@ import {
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
 import {
-  activeRouteFromEngine,
+  activeRouteFromSaved,
   activeRouteFromSuggestion,
 } from "@/lib/routing/activeRoute";
 import { parseGpx } from "@/lib/import/gpx";
@@ -128,6 +128,10 @@ import {
   planViaMapCaption,
   planMapShowsRoutingWait,
   planMapHistoryFabsVisible,
+  planWebStartInAppRequiresSave,
+  planWebRideHandoffId,
+  planDraftGeometryKey,
+  planReuseSavedHandoffId,
   planMapAdaptingHintOnMap,
   planParkedFingerClearsWhenIdle,
   planMapDestWaitHintOnMap,
@@ -247,6 +251,7 @@ import {
 } from "@/lib/discover/browsePlaceSearch";
 import {
   beginNavigateIntent,
+  discoverExploreMapTapOpensPlan,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -644,6 +649,7 @@ function DiscoverPageInner() {
   const [publicMeetGroups, setPublicMeetGroups] = useState<RideGroup[]>([]);
   const [valhallaLive, setValhallaLive] = useState(false);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
+  const [lastSavedGeomKey, setLastSavedGeomKey] = useState<string | null>(null);
   const [manualProfile, setManualProfile] = useState<RoutingProfile | null>(
     null
   );
@@ -1809,14 +1815,6 @@ function DiscoverPageInner() {
     [setActiveRoute, router]
   );
 
-  const startWithComputed = useCallback(
-    (name: string, result: ClientRouteResult) => {
-      setActiveRoute(activeRouteFromEngine(name, result));
-      router.push("/ride");
-    },
-    [setActiveRoute, router]
-  );
-
   const toggleSave = useCallback(
     async (r: RouteSuggestion | SavedRoute) => {
       if (isRouteSaved(r.id)) {
@@ -1876,8 +1874,8 @@ function DiscoverPageInner() {
     [draft.computed?.geometry?.coordinates, isRouteSaved, planElev, saveRoute, unsaveRoute],
   );
 
-  const saveCurrentDraft = useCallback(async () => {
-    if (!draft.computed) return;
+  const saveCurrentDraft = useCallback(async (): Promise<SavedRoute | null> => {
+    if (!draft.computed) return null;
     const id = `saved-${Date.now()}`;
     const distanceKm =
       Math.round((draft.computed.distanceM / 1000) * 10) / 10;
@@ -1925,13 +1923,78 @@ function DiscoverPageInner() {
     };
     saveRoute(entry);
     setLastSavedId(id);
+    setLastSavedGeomKey(
+      planDraftGeometryKey({
+        coordinates: draft.computed.geometry.coordinates as [number, number][],
+        viaCount: draft.waypoints.filter((w) => w.role === "via").length,
+        distanceM: draft.computed.distanceM,
+      })
+    );
     if (asGroup) {
       const url = new URL(window.location.href);
       url.searchParams.delete("asGroup");
       window.history.replaceState({}, "", `${url.pathname}${url.search}`);
       router.push(`/library?groupCreate=${encodeURIComponent(id)}`);
+      return entry;
     }
+    return entry;
   }, [asGroup, draft, planElev, router, saveRoute]);
+
+  /** Persist draft, then ride bridge — browser never live-navs. */
+  const startPlanInApp = useCallback(async () => {
+    if (!draft.computed) return;
+    if (asGroup) {
+      await saveCurrentDraft();
+      return;
+    }
+    if (
+      !planWebStartInAppRequiresSave({
+        hasComputed: true,
+        asGroup: false,
+      })
+    ) {
+      return;
+    }
+    const geomKey = planDraftGeometryKey({
+      coordinates: draft.computed.geometry.coordinates as [number, number][],
+      viaCount: draft.waypoints.filter((w) => w.role === "via").length,
+      distanceM: draft.computed.distanceM,
+    });
+    const reuseId = planReuseSavedHandoffId({
+      lastSavedId,
+      lastSavedGeomKey,
+      currentGeomKey: geomKey,
+    });
+    if (reuseId) {
+      const existing = savedRoutes.find((r) => r.id === reuseId);
+      if (existing) {
+        const active = activeRouteFromSaved(existing);
+        if (active) {
+          setActiveRoute(active);
+          router.push("/ride");
+          return;
+        }
+      }
+    }
+    const entry = await saveCurrentDraft();
+    if (!entry) return;
+    const handoffId = planWebRideHandoffId(entry.id);
+    if (!handoffId) return;
+    const active = activeRouteFromSaved(entry);
+    if (!active) return;
+    setActiveRoute(active);
+    router.push("/ride");
+  }, [
+    asGroup,
+    draft.computed,
+    draft.waypoints,
+    lastSavedGeomKey,
+    lastSavedId,
+    router,
+    saveCurrentDraft,
+    savedRoutes,
+    setActiveRoute,
+  ]);
 
   const importGpxFile = useCallback(
     async (file: File | null) => {
@@ -2787,6 +2850,49 @@ function DiscoverPageInner() {
     [liveOsmTrails]
   );
 
+  const applyExploreBrowsePin = useCallback(
+    (lngLat: [number, number]) => {
+      const trails = trailsForViaSnap(liveOsmTrails);
+      const snapVia = (p: [number, number]) => snapPointOntoTrails(p, trails);
+      const tourPreviewOnMap = Boolean(previewTour || detailId);
+      setDraft((prev) => {
+        const next = applyBrowseMapPin(prev, lngLat, {
+          gps: userPos,
+          startLabel: d.onMapPlace,
+          endLabel: d.onMapPlace,
+          myPosLabel: DISCOVER_PIN_DE.myPos,
+          snapVia,
+          tourPreviewOnMap: Boolean(
+            tourPreviewOnMap ||
+              prev.baseTour ||
+              prev.layers?.tour ||
+              prev.mode === "tour"
+          ),
+        });
+        if (!startOf(prev) && !userPos) setMapCenter(lngLat);
+        setHoldMapFit(false);
+        commitPlanEdit(next);
+        void fillPlaceholderLabels(next);
+        return next;
+      });
+      setPreviewTour(null);
+      setDetailId(null);
+      setPickTarget(null);
+      setSheetMode("plan");
+      pulseDestConfirm();
+    },
+    [
+      commitPlanEdit,
+      d.onMapPlace,
+      detailId,
+      fillPlaceholderLabels,
+      liveOsmTrails,
+      previewTour,
+      pulseDestConfirm,
+      userPos,
+    ]
+  );
+
   const onMapLongPress = (lngLat: [number, number]) => {
     if (pickTarget) {
       onMapClick(lngLat);
@@ -2827,35 +2933,8 @@ function DiscoverPageInner() {
       setPickTarget(null);
       return;
     }
-    setDraft((prev) => {
-      const next = applyBrowseMapPin(prev, lngLat, {
-        gps: userPos,
-        startLabel: d.onMapPlace,
-        endLabel: d.onMapPlace,
-        myPosLabel: DISCOVER_PIN_DE.myPos,
-        snapVia,
-        tourPreviewOnMap: Boolean(
-          tourPreviewOnMap ||
-            prev.baseTour ||
-            prev.layers?.tour ||
-            prev.mode === "tour"
-        ),
-      });
-      if (!startOf(prev) && !userPos) setMapCenter(lngLat);
-      setHoldMapFit(false);
-      commitPlanEdit(next);
-      void fillPlaceholderLabels(next);
-      return next;
-    });
-    setPreviewTour(null);
-    setDetailId(null);
-    setPickTarget(null);
-    setSheetMode("plan");
-    pulseDestConfirm();
+    applyExploreBrowsePin(lngLat);
   };
-
-  const onMapClick = (lngLat: [number, number], mods?: { alt?: boolean }) => {
-    if (!pickTarget && sheetMode !== "plan") return;
     const trails = trailsForViaSnap(liveOsmTrails);
     setDraft((prev) => {
       const line = (prev.computed?.geometry?.coordinates ?? []) as
@@ -4488,12 +4567,7 @@ function DiscoverPageInner() {
             </button>
             <button
               type="button"
-              onClick={() =>
-                startWithComputed(
-                  draft.label || DISCOVER_PIN_DE.planned,
-                  draft.computed!
-                )
-              }
+              onClick={() => void startPlanInApp()}
               className="flex-[2] rounded-xl bg-chrome py-2.5 text-sm font-semibold text-on-accent"
             >
               {d.startInApp}
@@ -5120,13 +5194,7 @@ function DiscoverPageInner() {
               ) : null}
               <button
                 type="button"
-                onClick={() =>
-                  draft.computed &&
-                  startWithComputed(
-                    draft.label || DISCOVER_PIN_DE.planned,
-                    draft.computed
-                  )
-                }
+                onClick={() => void startPlanInApp()}
                 className="flex items-center gap-1 rounded-xl bg-chrome px-2.5 py-1 font-semibold text-on-accent"
               >
                 <ChromeGlyph name="play" size={14} current /> {d.startInApp}

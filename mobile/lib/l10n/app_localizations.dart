@@ -4238,6 +4238,30 @@ abstract class AppLocalizations {
   /// **'Start und Ziel auf geteilten Karten, Export, Heatmap und Fotos. Du siehst den vollen Track.'**
   String get privacyZonesLead;
 
+  /// No description provided for @privacyTrimEndsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Start und Ziel kürzen (200 m)'**
+  String get privacyTrimEndsTitle;
+
+  /// No description provided for @privacyTrimEndsBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Bei Export, Strava und Heatmap. Ohne Zone bleibt das Haus oft erkennbar.'**
+  String get privacyTrimEndsBody;
+
+  /// No description provided for @privacyZoneSearchHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Adresse suchen'**
+  String get privacyZoneSearchHint;
+
+  /// No description provided for @privacyZoneSearchEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Treffer'**
+  String get privacyZoneSearchEmpty;
+
   /// No description provided for @privacyZoneAdd.
   ///
   /// In de, this message translates to:

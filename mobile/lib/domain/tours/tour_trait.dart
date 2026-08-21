@@ -34,7 +34,6 @@ abstract final class TourTrait {
     'schotter': 'Schotter',
   };
 
-  /// Anzeigename. Unbekannte slugs werden zu Wörtern (`box-berg` → Box Berg).
   static String keyOf(String raw) => _key(raw);
 
   /// Anzeigename. Unbekannte slugs werden zu Wörtern (`box-berg` → Box Berg).

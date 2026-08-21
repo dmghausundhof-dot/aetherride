@@ -105,26 +105,29 @@ export function trimTrackForHeatmap<T extends { lat: number; lng: number }>(
   if (track.length < 3) return [];
   let start = 0;
   let end = track.length - 1;
-  let acc = 0;
-  for (let i = 1; i < track.length; i++) {
-    acc += distM(
-      [track[i - 1].lng, track[i - 1].lat],
-      [track[i].lng, track[i].lat]
-    );
-    if (acc >= trimEndsM) {
-      start = i;
-      break;
+  // trimEndsM <= 0: zones only — keep first/last vertices.
+  if (trimEndsM > 0) {
+    let acc = 0;
+    for (let i = 1; i < track.length; i++) {
+      acc += distM(
+        [track[i - 1].lng, track[i - 1].lat],
+        [track[i].lng, track[i].lat]
+      );
+      if (acc >= trimEndsM) {
+        start = i;
+        break;
+      }
     }
-  }
-  acc = 0;
-  for (let i = track.length - 1; i > 0; i--) {
-    acc += distM(
-      [track[i].lng, track[i].lat],
-      [track[i - 1].lng, track[i - 1].lat]
-    );
-    if (acc >= trimEndsM) {
-      end = i;
-      break;
+    acc = 0;
+    for (let i = track.length - 1; i > 0; i--) {
+      acc += distM(
+        [track[i].lng, track[i].lat],
+        [track[i - 1].lng, track[i - 1].lat]
+      );
+      if (acc >= trimEndsM) {
+        end = i;
+        break;
+      }
     }
   }
   return track.slice(start, end + 1).filter((p) => {

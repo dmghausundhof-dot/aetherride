@@ -10,12 +10,14 @@ import 'gpx.dart';
 /// leak a ride that sat entirely inside a zone).
 RideRecord rideWithTrimmedTrack(
   RideRecord ride,
-  List<PrivacyZone> zones,
-) {
+  List<PrivacyZone> zones, {
+  double trimEndsM = 200,
+}) {
   if (ride.track.length < 3) return ride;
   final trimmed = trimTrackForPrivacyZones(
     List<Map<String, dynamic>>.from(ride.track),
     zones,
+    trimEndsM: trimEndsM,
   );
   return RideRecord(
     id: ride.id,
@@ -38,13 +40,20 @@ String exportGpxTrimmed(
   RideRecord ride, {
   required List<PrivacyZone> zones,
   String? bikeName,
+  double trimEndsM = 200,
 }) {
-  return rideToGpx(rideWithTrimmedTrack(ride, zones), bikeName: bikeName);
+  return rideToGpx(
+    rideWithTrimmedTrack(ride, zones, trimEndsM: trimEndsM),
+    bikeName: bikeName,
+  );
 }
 
 List<int> exportFitTrimmed(
   RideRecord ride, {
   required List<PrivacyZone> zones,
+  double trimEndsM = 200,
 }) {
-  return rideToFit(rideWithTrimmedTrack(ride, zones));
+  return rideToFit(
+    rideWithTrimmedTrack(ride, zones, trimEndsM: trimEndsM),
+  );
 }

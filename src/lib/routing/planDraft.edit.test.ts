@@ -49,6 +49,10 @@ import {
   planRibbonAllowsGrab,
   planMapShowsRoutingWait,
   planMapHistoryFabsVisible,
+  planWebStartInAppRequiresSave,
+  planWebRideHandoffId,
+  planDraftGeometryKey,
+  planReuseSavedHandoffId,
   planMapAdaptingHintOnMap,
   planParkedFingerClearsWhenIdle,
   planMapHintAnchorLngLat,
@@ -795,6 +799,82 @@ assert.equal(
   }),
   false
 );
+assert.equal(
+  planWebStartInAppRequiresSave({ hasComputed: true }),
+  true
+);
+assert.equal(
+  planWebStartInAppRequiresSave({ hasComputed: false }),
+  false
+);
+assert.equal(
+  planWebStartInAppRequiresSave({ hasComputed: true, asGroup: true }),
+  false,
+  "group-create leaves Discover — no ride bridge"
+);
+assert.equal(planWebRideHandoffId("saved-1"), "saved-1");
+assert.equal(planWebRideHandoffId("engine-99"), null);
+assert.equal(planWebRideHandoffId(null), null);
+{
+  const key = planDraftGeometryKey({
+    coordinates: [
+      [8.1, 49.1],
+      [8.2, 49.2],
+      [8.3, 49.3],
+    ],
+    viaCount: 1,
+    distanceM: 1234.6,
+  });
+  assert.ok(key);
+  assert.equal(
+    planDraftGeometryKey({
+      coordinates: [
+        [8.1, 49.1],
+        [8.2, 49.2],
+        [8.3, 49.3],
+      ],
+      viaCount: 1,
+      distanceM: 1234.6,
+    }),
+    key
+  );
+  assert.notEqual(
+    planDraftGeometryKey({
+      coordinates: [
+        [8.1, 49.1],
+        [8.2, 49.2],
+        [8.3, 49.3],
+      ],
+      viaCount: 2,
+      distanceM: 1234.6,
+    }),
+    key
+  );
+  assert.equal(
+    planReuseSavedHandoffId({
+      lastSavedId: "saved-9",
+      lastSavedGeomKey: key,
+      currentGeomKey: key,
+    }),
+    "saved-9"
+  );
+  assert.equal(
+    planReuseSavedHandoffId({
+      lastSavedId: "saved-9",
+      lastSavedGeomKey: key,
+      currentGeomKey: key + "|x",
+    }),
+    null
+  );
+  assert.equal(
+    planReuseSavedHandoffId({
+      lastSavedId: "engine-1",
+      lastSavedGeomKey: key,
+      currentGeomKey: key,
+    }),
+    null
+  );
+}
 assert.equal(
   planParkedFingerClearsWhenIdle(true),
   false,

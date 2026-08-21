@@ -40,6 +40,8 @@ const CENTURION_NUMINIS =
   "https://www.centurion.de/de-de/bike/1213/numinis-r2000";
 const CENTURION_BACKFIRE =
   "https://www.centurion.de/de-de/bike/1191/backfire-r2000";
+const CENTURION_BACKFIRE_PRO =
+  "https://www.centurion.de/de-de/bike/967/backfire-pro-600";
 const GHOST_PATH_RIOT =
   "https://ghost-bikes.com/en-int/products/path-riot-advanced-gfat1";
 const HAIBIKE_LYKE = "https://haibike.com/de-de/products/lyke-cf-11-hmqt1";
@@ -57,6 +59,8 @@ const CUBE_NUROAD =
   "https://www.cube.eu/de-en/cube-nuroad-c-62-pro-vulcan-n-prism/130200";
 const TREK_CHECKPOINT =
   "https://www.trekbikes.com/us/en_US/bikes/bikepacking-touring-bikes/checkpoint/checkpoint-sl/checkpoint-sl-5-gen-2/p/5298080/";
+const YT_DECOY =
+  "https://www.yt-industries.com/en-de/E-MTB/Enduro-Full-Support-DecoyMX/CORE-5/";
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
@@ -785,6 +789,65 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 74,
       chainstayMm: 460,
       wheelbaseMm: 1251,
+    }),
+  ],
+  "cat-centurion-backfire-pro-600-2025": [
+    g("XS", 397, 608, CENTURION_BACKFIRE_PRO, {
+      headAngleDeg: 69,
+      seatAngleEffectiveDeg: 73,
+      chainstayMm: 440,
+      wheelbaseMm: 1096,
+    }),
+    g("S", 411, 622, CENTURION_BACKFIRE_PRO, {
+      headAngleDeg: 69,
+      seatAngleEffectiveDeg: 73,
+      chainstayMm: 440,
+      wheelbaseMm: 1115,
+    }),
+    g("M", 423, 640, CENTURION_BACKFIRE_PRO, {
+      headAngleDeg: 69,
+      seatAngleEffectiveDeg: 73,
+      chainstayMm: 440,
+      wheelbaseMm: 1135,
+    }),
+    g("L", 435, 659, CENTURION_BACKFIRE_PRO, {
+      headAngleDeg: 69,
+      seatAngleEffectiveDeg: 73,
+      chainstayMm: 440,
+      wheelbaseMm: 1153,
+    }),
+    g("XL", 447, 678, CENTURION_BACKFIRE_PRO, {
+      headAngleDeg: 69,
+      seatAngleEffectiveDeg: 73,
+      chainstayMm: 440,
+      wheelbaseMm: 1173,
+    }),
+  ],
+  // BikeRadar Decoy MX Core 5 geometry table (low/high mid); Reach/Stack published.
+  "cat-yt-decoy-mx-2024": [
+    g("S", 429, 629, YT_DECOY, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 442,
+      wheelbaseMm: 1213,
+    }),
+    g("M", 449, 633, YT_DECOY, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 442,
+      wheelbaseMm: 1235,
+    }),
+    g("L", 469, 643, YT_DECOY, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 442,
+      wheelbaseMm: 1259,
+    }),
+    g("XL", 489, 652, YT_DECOY, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 442,
+      wheelbaseMm: 1284,
     }),
   ],
 };

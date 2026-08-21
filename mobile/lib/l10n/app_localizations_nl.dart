@@ -2337,6 +2337,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Start en finish op gedeelde kaarten, export, heatmap en foto\'s. Jij ziet het volledige spoor.';
 
   @override
+  String get privacyTrimEndsTitle => 'Start en finish inkorten (200 m)';
+
+  @override
+  String get privacyTrimEndsBody =>
+      'Bij export, Strava en heatmap. Zonder zone blijft thuis vaak herkenbaar.';
+
+  @override
+  String get privacyZoneSearchHint => 'Adres zoeken';
+
+  @override
+  String get privacyZoneSearchEmpty => 'Geen resultaten';
+
+  @override
   String get privacyZoneAdd => 'Zone toevoegen';
 
   @override

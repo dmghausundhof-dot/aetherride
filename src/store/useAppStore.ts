@@ -133,6 +133,8 @@ interface AppState {
   profileExplanations: Record<string, string>;
   consents: ConsentState[];
   privacyZones: PrivacyZone[];
+  /** Start/end 200 m trim on export/Strava/heatmap. Default on. */
+  privacyTrimEnds: boolean;
   familyRiders: FamilyRider[];
   activeFamilyRiderId: string | null;
   /** bikeId → last setup while "Ich" was selected */
@@ -234,6 +236,7 @@ interface AppState {
   setConsent: (purpose: ConsentPurpose, granted: boolean) => void;
   addPrivacyZone: (zone: Omit<PrivacyZone, "id">) => void;
   removePrivacyZone: (id: string) => void;
+  setPrivacyTrimEnds: (enabled: boolean) => void;
   addFamilyRider: (name: string, weightKg: number) => string;
   setActiveFamilyRider: (id: string | null, bikeId?: string) => void;
   assignSetupToRider: (riderId: string, setupId: string) => void;
@@ -513,6 +516,7 @@ export const useAppStore = create<AppState>()(
       profileExplanations: PROFILE_EXPLANATIONS,
       consents: DEFAULT_CONSENTS,
       privacyZones: DEFAULT_PRIVACY_ZONES,
+      privacyTrimEnds: true,
       familyRiders: [],
       activeFamilyRiderId: null,
       ownSetupByBikeId: {},
@@ -614,6 +618,8 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           privacyZones: s.privacyZones.filter((z) => z.id !== id),
         })),
+
+      setPrivacyTrimEnds: (enabled) => set({ privacyTrimEnds: enabled }),
 
       addFamilyRider: (name, weightKg) => {
         const rider = createFamilyRider(name, weightKg);
@@ -1823,6 +1829,7 @@ export const useAppStore = create<AppState>()(
           privacyZones: base.privacyZones?.length
             ? base.privacyZones
             : DEFAULT_PRIVACY_ZONES,
+          privacyTrimEnds: base.privacyTrimEnds !== false,
           familyRiders: base.familyRiders ?? [],
           activeFamilyRiderId: base.activeFamilyRiderId ?? null,
           ownSetupByBikeId: base.ownSetupByBikeId ?? {},
@@ -1859,6 +1866,7 @@ export const useAppStore = create<AppState>()(
         rangeCalibration: s.rangeCalibration,
         consents: s.consents,
         privacyZones: s.privacyZones,
+        privacyTrimEnds: s.privacyTrimEnds,
         familyRiders: s.familyRiders,
         activeFamilyRiderId: s.activeFamilyRiderId,
         ownSetupByBikeId: s.ownSetupByBikeId,

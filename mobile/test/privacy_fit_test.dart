@@ -48,6 +48,17 @@ void main() {
     expect(out.length, lessThan(track.length));
   });
 
+  test('trimEndsM 0 keeps first and last vertices when outside zones', () {
+    final track = [
+      for (var i = 0; i < 10; i++)
+        {'lat': 48.1 + i * 0.001, 'lng': 8.7 + i * 0.001},
+    ];
+    final out = trimTrackForPrivacyZones(track, const [], trimEndsM: 0);
+    expect(out.length, track.length);
+    expect(out.first['lat'], track.first['lat']);
+    expect(out.last['lat'], track.last['lat']);
+  });
+
   test('rideWithTrimmedTrack does not leak a ride that sat in the zone', () {
     const zone = PrivacyZone(
       id: 'z1',

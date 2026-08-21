@@ -36,6 +36,7 @@ import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/hillshade.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/overview_browse_paint.dart';
+import '../../data/routing/coverage_graph_ring.dart';
 import '../../data/routing/coverage_label.dart';
 import '../../data/routing/coverage_overlay.dart';
 import '../../data/routing/offline_maps_prefs.dart';
@@ -92,6 +93,7 @@ import '../../domain/routing/route_variant.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
 import '../../domain/tours/add_route_start.dart';
+import '../../domain/tours/tour_trait.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/saved_ride_start.dart';
 import '../../domain/tours/tour_akte.dart';
@@ -120,6 +122,7 @@ import '../shared/map_loading_scrim.dart';
 import '../shared/status_bar_scrim.dart';
 import 'add_to_collection_sheet.dart';
 import 'discover_browse_sheet_snaps.dart';
+import 'plan_sheet_snaps.dart';
 import 'discover_explore_chrome.dart';
 import 'discover_shell_mode.dart';
 import 'discover_map_line_style.dart';
@@ -842,6 +845,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   int _previewGen = 0;
 
   RouteResult? _computed;
+
+  /// Last library save of the live A→B line — reuse on Losfahren if unchanged.
+  String? _lastPersistedPlanId;
+  String? _lastPersistedPlanKey;
   RouteResult? _approach;
   RouteResult? _tourLayer;
   List<GeoPoint>? _trailOverlay;
@@ -907,6 +914,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   final DraggableScrollableController _discoverSheetCtrl =
       DraggableScrollableController();
+  final DraggableScrollableController _planSheetCtrl =
+      DraggableScrollableController();
+
+  /// Startgröße, bis der Plan-Sheet-Controller hängt.
+  double _planInitialSnap = PlanSheetSnaps.form;
+  double _planSheetExtentLogged = PlanSheetSnaps.form;
+
+  /// Umschaltbare Merkmal-Chips (Detail + Liste).
+  final Set<String> _activeTraits = {};
 
   /// Strecken-/Los-Leiste: einziehbar (Drag/Tap), sonst blockiert sie die Map.
   bool _rideBarExpanded = true;
@@ -1002,7 +1018,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   /// geöffneter Tastatur zusammen mit ihr über den sichtbaren Bereich
   /// hinausragen und ihren oberen Rand — Griff und „Zurück" — nach oben
   /// aus dem Bild schieben, ohne dass ein Overflow-Fehler das anzeigt.
-  static const _minMapPeekHeight = 96.0;
+
 
   RouteRepository get _routes => ref.read(routeRepositoryProvider);
   final _elevationClient = ElevationClient();
@@ -1123,6 +1139,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     _planHintScreen.dispose();
     _map?.removeListener(_onMapCameraTick);
     _discoverSheetCtrl.dispose();
+    _planSheetCtrl.dispose();
     _startAddrCtrl.dispose();
     _startAddrFocus.dispose();
     _endAddrCtrl.dispose();
@@ -1170,6 +1187,45 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         curve: Curves.easeOutCubic,
       );
     } catch (_) {}
+  }
+
+  bool get _planSheetActive =>
+      _surface == _Surface.plan ||
+      _surface == _Surface.detail ||
+      _shellMode == DiscoverShellMode.navigate;
+
+  double get _planSheetExtent {
+    if (_planSheetCtrl.isAttached) return _planSheetCtrl.size;
+    return _planInitialSnap;
+  }
+
+  void _syncPlanSheetExtent(double extent) {
+    final h = extent * MediaQuery.sizeOf(context).height;
+    _panelInset = h;
+    final wasPeek = PlanSheetSnaps.isPeek(_planSheetExtentLogged);
+    final nowPeek = PlanSheetSnaps.isPeek(extent);
+    final wasFull = PlanSheetSnaps.isFull(_planSheetExtentLogged);
+    final nowFull = PlanSheetSnaps.isFull(extent);
+    _planSheetExtentLogged = extent;
+    if (wasPeek == nowPeek && wasFull == nowFull) return;
+    setState(() {});
+  }
+
+  Future<void> _snapPlanSheet(double size) async {
+    final target = PlanSheetSnaps.nearest(size);
+    _planInitialSnap = target;
+    if (!_planSheetCtrl.isAttached) {
+      if (mounted) setState(() {});
+      return;
+    }
+    try {
+      await _planSheetCtrl.animateTo(
+        target,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {}
+    if (mounted) setState(() {});
   }
 
   AppLocalizations get _l10n => AppLocalizations.of(context);
@@ -1295,6 +1351,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (mode != DiscoverShellMode.navigate) {
       _clearPlanAsGroupIfUnused();
     }
+    final adapting = adaptingTourName != null ||
+        (!clearAdapting && _adaptingTourName != null);
+    if (mode == DiscoverShellMode.navigate) {
+      _planInitialSnap = PlanSheetSnaps.openTarget(adapting: adapting);
+      _planSheetExtentLogged = _planInitialSnap;
+    }
     setState(() {
       _shellMode = mode;
       _detailId = null;
@@ -1343,6 +1405,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
     if (mode == DiscoverShellMode.navigate) {
       unawaited(_hydratePlanGeocodeRecents());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_snapPlanSheet(_planInitialSnap));
+      });
     }
     unawaited(_syncBikeOverlayVisibility());
   }
@@ -1367,10 +1433,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   /// ist, wovon das Panel gerade erzählt (Komoot/AllTrails tun das genauso).
   Future<void> _openDetail(String tourId, LatLng center) async {
     _skipAutoCameraFit = false;
+    _planInitialSnap = PlanSheetSnaps.form;
+    _planSheetExtentLogged = PlanSheetSnaps.form;
     setState(() {
       _detailId = tourId;
       _selectedTourId = tourId;
       _surface = _Surface.detail;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_snapPlanSheet(PlanSheetSnaps.form));
     });
     // Höhenprofil im Hintergrund — braucht echte Geometrie (lädt bei Seeds
     // nebenbei das Live-Routing für Karte + Mini-Map nach).
@@ -1424,6 +1496,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (_surface == _Surface.detail) return true;
     if (_pick != _PickMode.none) return true;
     if (_shellMode == DiscoverShellMode.navigate) return true;
+    if (_planSheetActive && !PlanSheetSnaps.isPeek(_planSheetExtent)) {
+      return true;
+    }
     if (_shellMode == DiscoverShellMode.mine) return true;
     if (_showRideBar && _rideBarExpanded) return true;
     if (_listBrowseMode) return true;
@@ -1447,6 +1522,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       return true;
     }
     if (_surface == _Surface.detail) {
+      if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
+        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+        return true;
+      }
       _closeDetail();
       return true;
     }
@@ -1455,6 +1534,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       return true;
     }
     if (_shellMode == DiscoverShellMode.navigate) {
+      if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
+        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+        return true;
+      }
       _closePlan();
       return true;
     }
@@ -2283,7 +2366,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   Future<void> _fitOfflinePackBbox() async {
-    final bbox = _offlinePackBbox;
+    final ring = _offlinePackRing;
+    final fromRing =
+        ring != null && ring.length >= 4 ? coverageBboxOfRing(ring) : null;
+    final bbox = (fromRing != null && fromRing.length >= 4)
+        ? fromRing
+        : _offlinePackBbox;
     if (bbox == null) return;
     await _fitCameraToBbox(bbox);
   }
@@ -2360,8 +2448,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     var paused = false;
     final changed = await openOfflineMapsSheet(
       context,
-      userLng: focus?.lng ?? _mapCenter.lng,
-      userLat: focus?.lat ?? _mapCenter.lat,
+      // Honesty / Street: only real GPS — never map center.
+      userLng: _userPos?.lng,
+      userLat: _userPos?.lat,
+      // Catalog sort: dest / map view is fine as bias.
+      nearLng: focus?.lng ?? _mapCenter.lng,
+      nearLat: focus?.lat ?? _mapCenter.lat,
       routeBbox: _streetHudRouteBbox(),
       routeLine: _streetHudRouteLine(),
       focusPackId: focusPackId,
@@ -2391,18 +2483,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       if (!paused && _offlineRoutingReady) {
         final name = coverageGlanceName(_offlinePackLabel ?? '');
         final street = await OfflineBasemap.streetHudCoversActivatedPack(
-          lng: _userPos?.lng ?? _mapCenter.lng,
-          lat: _userPos?.lat ?? _mapCenter.lat,
+          lng: _userPos?.lng,
+          lat: _userPos?.lat,
         );
         if (!mounted) return;
+        final outside = _coverageRiderIsOutside;
+        final streetAway = _offlineStreetInstalled && !street;
+        final snack = name.isEmpty
+            ? (outside
+                ? _l10n.offlineRoutingAway
+                : _l10n.offlineGraphReadySnack)
+            : _l10n.offlineMapsProfileSubtitle(
+                ready: true,
+                packId: _offlinePackId,
+                packName: name,
+                streetReady: street,
+                outside: outside,
+                streetAway: streetAway,
+              );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              name.isEmpty
-                  ? _l10n.offlineGraphReadySnack
-                  : _l10n.hofPackReadyLine(name, streetReady: street),
-            ),
-          ),
+          SnackBar(content: Text(snack)),
         );
       }
     }
@@ -3638,6 +3738,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         _planShapeHintAt = finger;
         if (scrub != null) _planElevScrubT = scrub;
       });
+      if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
+        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+      }
       if (_planHintScreen.value != null) _planHintScreen.value = null;
     } else {
       _planShapeHintAt = finger;
@@ -6268,8 +6371,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           r.sportLabel ?? '',
           _l10n.sportTagLabel(r.sportLabel),
           _sourceLabelOf(r),
+          ...r.apiTags,
+          ...r.apiTags.map(TourTrait.label),
         ].join(' ').toLowerCase();
         if (!hay.contains(q)) return false;
+      }
+      if (_activeTraits.isNotEmpty) {
+        for (final wire in _activeTraits) {
+          if (!TourTrait.matches(
+            tags: r.apiTags,
+            name: r.name,
+            wire: wire,
+          )) {
+            return false;
+          }
+        }
       }
       // Seed-Nähe: nicht hart auf 35 km kappen — Coverage füllt die Liste.
       return true;
@@ -9055,6 +9171,28 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         _planPulseChevronsOnDraw = false;
         if (_planChevronSymbols.isNotEmpty) _markPlanChevronsFresh();
       }
+      if (_aroundYouApplied &&
+          _computed != null &&
+          _computed!.coordinates.length >= 4) {
+        final mid =
+            _computed!.coordinates[_computed!.coordinates.length ~/ 2];
+        await c.addSymbol(
+          SymbolOptions(
+            fontNames: _symbolFonts,
+            geometry: LatLng(mid.lat, mid.lng),
+            iconImage: _pinImagesReady ? 'aether-pin-halo' : null,
+            iconSize: mapPinSdfIconSize(0.72),
+            iconOpacity: 0.55,
+            iconAnchor: 'center',
+            textField: _l10n.discoverAroundYouUncertainShort,
+            textSize: 11,
+            textColor: '#E65100',
+            textHaloColor: '#FFFFFF',
+            textHaloWidth: 1.4,
+            textOffset: const Offset(0, 1.1),
+          ),
+        );
+      }
       unawaited(_syncPlanGrabScreen());
       if (_planElevScrubT != null &&
           _computed != null &&
@@ -9740,11 +9878,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       final coords = engine.coordinates.map((p) => [p.lng, p.lat]).toList();
       final durationMin = (engine.durationS / 60).round();
       final catalogId = _selectedTourId;
-      final routeId = catalogId != null &&
-              _adaptingTourName != null &&
-              catalogTourIdOf(catalogId) != null
-          ? catalogId
-          : 'engine-${DateTime.now().millisecondsSinceEpoch}';
+      String routeId;
+      if (catalogId != null &&
+          _adaptingTourName != null &&
+          catalogTourIdOf(catalogId) != null) {
+        routeId = catalogId;
+      } else if (planStartRidePersistsDraft(
+        hasComputed: true,
+        fromCatalogSuggestion: suggestion != null,
+      )) {
+        final entry = await _persistCurrentPlan(
+          announce: false,
+          offerOffline: false,
+        );
+        if (!mounted) return;
+        final handoff = planRideHandoffId(entry?.id);
+        if (handoff == null) return;
+        routeId = handoff;
+      } else {
+        routeId = 'engine-${DateTime.now().millisecondsSinceEpoch}';
+      }
       _openRideHud(
         ActiveRoute(
           id: routeId,
@@ -9797,8 +9950,41 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   Future<void> _saveCurrent() async {
+    await _persistCurrentPlan();
+  }
+
+  /// Persists the live A→B draft. Returns null if nothing to save or group
+  /// handoff already left Discover (caller must not start ride).
+  Future<SavedRouteEntry?> _persistCurrentPlan({
+    bool announce = true,
+    bool offerOffline = true,
+  }) async {
     final r = _computed;
-    if (r == null) return;
+    if (r == null) return null;
+    final geomKey = planDraftGeometryKey(
+      coordinates: [
+        for (final p in r.coordinates) [p.lng, p.lat],
+      ],
+      viaCount: _vias.length,
+      distanceM: r.distanceM,
+    );
+    final reuseId = planReuseSavedHandoffId(
+      lastSavedId: _lastPersistedPlanId,
+      lastSavedGeomKey: _lastPersistedPlanKey,
+      currentGeomKey: geomKey,
+    );
+    if (reuseId != null) {
+      final list =
+          ref.read(savedRoutesProvider).valueOrNull ?? const <SavedRouteEntry>[];
+      for (final e in list) {
+        if (e.id == reuseId) {
+          if (announce && mounted) {
+            setState(() => _setStatus(_l10n.discoverSaved));
+          }
+          return e;
+        }
+      }
+    }
     final waypoints = <SavedWaypoint>[
       if (_start != null)
         SavedWaypoint(
@@ -9837,12 +10023,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       elevationSource: _planElevSource,
     );
     ref.invalidate(savedRoutesProvider);
-    if (_continuePlanAsGroup(entry.id)) return;
-    if (!mounted) return;
-    setState(() => _setStatus(_l10n.discoverSaved));
+    _lastPersistedPlanId = entry.id;
+    _lastPersistedPlanKey = geomKey;
+    if (_continuePlanAsGroup(entry.id)) return null;
+    if (!mounted) return entry;
+    if (announce) {
+      setState(() => _setStatus(_l10n.discoverSaved));
+    }
+    if (!offerOffline) return entry;
     final a = _start;
     final b = _end;
-    if (a == null || b == null) return;
+    if (a == null || b == null) return entry;
     final covered = await OfflinePackDirs.legitimateCoversRoute(
       fromLng: a.lng,
       fromLat: a.lat,
@@ -9851,7 +10042,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       vias: _offlineViaLngLats(),
       along: _offlineAlongLngLats(r.coordinates),
     );
-    if (!mounted || covered) return;
+    if (!mounted || covered) return entry;
     OfflinePackRow? pack;
     try {
       pack = suggestedPackForRoute(
@@ -9866,14 +10057,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ],
       );
     } catch (_) {}
-    if (!mounted) return;
+    if (!mounted) return entry;
     final offer = shouldOfferOfflinePackDownload(
       covered: false,
       suggestedPackId: pack?.id,
       installedIds: await OfflinePackDirs.legitimateIds(),
       hasActivatedPack: await OfflinePackDirs.hasLegitimateActivatedPack(),
     );
-    if (!mounted || !offer) return;
+    if (!mounted || !offer) return entry;
     var snack = _l10n.discoverOfflineAfterSave;
     if (pack != null) {
       snack = _l10n.discoverOfflineAfterSaveForPack(
@@ -9894,6 +10085,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ),
       ),
     );
+    return entry;
   }
 
   Future<void> _openTourOverflow(_RouteSuggestion r) async {
@@ -10710,60 +10902,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final style = _mapStyle;
 
     final size = MediaQuery.sizeOf(context);
-    // `size` bleibt bei geöffneter Tastatur unverändert — nur `viewInsets`
-    // wächst. Planen hat zwei Adressfelder; ohne diesen Abzug rechnet die
-    // Panel-Höhe unten so, als wäre der ganze Screen frei, und die Tastatur
-    // frisst den Platz dann von der Kartenseite statt vom Panel.
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    // Plan/Detail/Navigate: feste Höhen. Entdecken/Meine: Draggable Sheet.
-    final desiredPanelHeight = switch (_surface) {
-      _Surface.plan => size.height *
-          planEditorSheetHeightFraction(
-            shaping: planEditorSheetRecedes(
-              rubberBand: _planDragAlongLabel != null,
-              adapting: _planWaitHidesChrome,
-            ),
-            ideaPin: _ideaPin != null,
-          ),
-      _Surface.detail => size.height * 0.52,
-      _Surface.discover => size.height * _discoverSheetExtent,
-    };
-    // Tour-Fokus / Peek: mehr Map für die Strecke.
-    final mapPeekHeight = _tourMapFocus
-        ? 176.0
-        : (_surface == _Surface.discover &&
-                DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent))
-            ? 240.0
-            : _minMapPeekHeight;
-    // Obere Grenze weicht der Tastatur statt des Kartenrests — die untere
-    // Grenze bleibt 220, außer die Tastatur lässt selbst dafür keinen Platz
-    // mehr (sehr kleines Gerät + Tastatur): dann gewinnt der verfügbare
-    // Raum, damit `clamp` nicht mit min > max abstürzt.
-    final maxPanelHeight = math.max(
-      220.0,
-      math.min(560.0, size.height - keyboardInset - mapPeekHeight),
-    );
-    final shapingSheet = planEditorSheetRecedes(
-      rubberBand: _planDragAlongLabel != null,
-      adapting: _planWaitHidesChrome,
-    );
-    final sheetMinPx = planEditorSheetMinPx(shaping: shapingSheet);
     final panelHeight = _surface == _Surface.discover
-        ? desiredPanelHeight
-            .clamp(
-              size.height * DiscoverBrowseSheetSnaps.peek,
-              size.height * DiscoverBrowseSheetSnaps.full,
-            )
-            .toDouble()
-        : desiredPanelHeight
-            .clamp(
-              sheetMinPx,
-              math.max(sheetMinPx, maxPanelHeight),
-            )
-            .toDouble();
+        ? size.height * _discoverSheetExtent
+        : size.height * _planSheetExtent;
     if (_hofChoice) {
       _panelInset = 248;
-    } else if (_surface != _Surface.discover) {
+    } else if (_planSheetActive) {
       _panelInset = panelHeight;
     } else if (!_discoverSheetCtrl.isAttached) {
       _panelInset = panelHeight;
@@ -11084,15 +11228,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               // umbricht, und beide würden sich überlappen.
               if (!_hofChoice)
                 ListenableBuilder(
-                  listenable: _discoverSheetCtrl,
+                  listenable: Listenable.merge([
+                    _discoverSheetCtrl,
+                    _planSheetCtrl,
+                  ]),
                   builder: (context, _) {
                     final extent = _surface == _Surface.discover
                         ? _discoverSheetExtent
-                        : panelHeight / size.height;
+                        : _planSheetExtent;
                     final bottom = extent * size.height + AppSpacing.s;
                     // Während Drag: Inset live für Kamera-Padding.
                     if (_surface == _Surface.discover &&
                         _discoverSheetCtrl.isAttached) {
+                      _panelInset = extent * size.height;
+                    } else if (_planSheetActive &&
+                        _planSheetCtrl.isAttached) {
                       _panelInset = extent * size.height;
                     }
                     return Positioned(
@@ -11126,6 +11276,35 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                       hasSelection: _hasExploreSelection,
                                     ),
                                   ),
+                                ),
+                                icon: const ChromeGlyph('karte', size: 18),
+                                label: Text(
+                                  AppLocalizations.of(context).mapToggleFab,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          if (PlanSheetSnaps.isFull(extent) &&
+                              _planSheetActive) ...[
+                            Center(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.charcoal,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                ),
+                                onPressed: () => unawaited(
+                                  _snapPlanSheet(PlanSheetSnaps.peek),
                                 ),
                                 icon: const ChromeGlyph('karte', size: 18),
                                 label: Text(
@@ -11238,17 +11417,27 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                   ),
                 )
               else
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.bottomCenter,
-                    child: SizedBox(
-                      height: panelHeight,
-                      child: _buildBottomPanel(),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: NotificationListener<DraggableScrollableNotification>(
+                    onNotification: (n) {
+                      _syncPlanSheetExtent(n.extent);
+                      return false;
+                    },
+                    child: DraggableScrollableSheet(
+                      key: const Key('plan-detail-sheet'),
+                      expand: false,
+                      controller: _planSheetCtrl,
+                      initialChildSize: _planInitialSnap,
+                      minChildSize: PlanSheetSnaps.peek,
+                      maxChildSize: PlanSheetSnaps.full,
+                      snap: true,
+                      snapSizes: PlanSheetSnaps.sheetSnapSizes,
+                      builder: (context, scrollController) {
+                        return _buildBottomPanel(
+                          scrollController: scrollController,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -12368,13 +12557,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (_surface == _Surface.detail) {
       panelChild = KeyedSubtree(
         key: ValueKey('panel-detail-$_detailId'),
-        child: _buildDetailPanel(),
+        child: _buildDetailPanel(scrollController: scrollController),
       );
     } else if (_shellMode == DiscoverShellMode.navigate ||
         _surface == _Surface.plan) {
       panelChild = KeyedSubtree(
         key: const ValueKey('panel-navigate'),
-        child: _buildPlanPanel(),
+        child: _buildPlanPanel(scrollController: scrollController),
       );
     } else if (_shellMode == DiscoverShellMode.mine) {
       panelChild = KeyedSubtree(
@@ -12430,24 +12619,48 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   Widget _panelHandle({String? semanticsLabel}) {
     final l10n = AppLocalizations.of(context);
-    final closed = DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent);
-    final full = DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent);
-    final label = closed
-        ? '${l10n.mappeKicker}. ${semanticsLabel ?? l10n.sheetDragHandle}'
-        : (semanticsLabel ?? l10n.sheetDragHandle);
+    final planning = _planSheetActive;
+    final closed = !planning &&
+        DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent);
+    final peekPlan = planning && PlanSheetSnaps.isPeek(_planSheetExtent);
+    final full = planning
+        ? PlanSheetSnaps.isFull(_planSheetExtent)
+        : DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent);
+    final kicker = planning
+        ? (full ? l10n.browseMap : l10n.planRouteTitle)
+        : (closed ? l10n.mappeKicker : null);
+    final showKicker = closed || peekPlan || (planning && full);
+    final label = [
+      if (kicker != null) kicker,
+      semanticsLabel ??
+          (planning ? l10n.sheetDragHandleNavigate : l10n.sheetDragHandle),
+    ].join('. ');
     return Semantics(
       label: label,
       button: true,
       child: GestureDetector(
         key: const Key('discover-sheet-handle'),
         behavior: HitTestBehavior.opaque,
-        onTap: () => unawaited(
-          _snapDiscoverSheet(
-            DiscoverBrowseSheetSnaps.handleTapTarget(_discoverSheetExtent),
-          ),
-        ),
+        onTap: () {
+          if (planning) {
+            unawaited(
+              _snapPlanSheet(
+                PlanSheetSnaps.handleTapTarget(_planSheetExtent),
+              ),
+            );
+            return;
+          }
+          unawaited(
+            _snapDiscoverSheet(
+              DiscoverBrowseSheetSnaps.handleTapTarget(
+                _discoverSheetExtent,
+                hasSelection: _hasExploreSelection,
+              ),
+            ),
+          );
+        },
         child: SizedBox(
-          height: closed ? 48 : 36,
+          height: showKicker ? 48 : 36,
           width: double.infinity,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -12460,10 +12673,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              if (closed) ...[
+              if (showKicker && kicker != null) ...[
                 const SizedBox(height: 6),
                 Text(
-                  l10n.mappeKicker,
+                  kicker,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -12576,7 +12789,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _effortFilter == null &&
       _elevationFilter == null &&
       _maxLengthKm == null &&
-      _trailScaleFilter.isEmpty;
+      _trailScaleFilter.isEmpty &&
+      _activeTraits.isEmpty;
 
   bool get _filtersAtDefaults =>
       _sheetFiltersAtDefaults && _maxDistanceKm == null;
@@ -12594,6 +12808,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (_elevationFilter != null) n++;
     if (_maxLengthKm != null) n++;
     if (_trailScaleFilter.isNotEmpty) n++;
+    if (_activeTraits.isNotEmpty) n += _activeTraits.length;
     return n;
   }
 
@@ -12608,6 +12823,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _elevationFilter = null;
       _maxLengthKm = null;
       _trailScaleFilter.clear();
+      _activeTraits.clear();
     });
     unawaited(_drawAll());
   }
@@ -12629,6 +12845,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _maxDistanceKm = null;
       _maxLengthKm = null;
       _trailScaleFilter.clear();
+      _activeTraits.clear();
     });
     unawaited(_drawAll());
   }
@@ -13810,6 +14027,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   String _planStickyKmMin() {
     final r = _computed;
+    final adapting = _adaptingTour;
+    if (r != null && r.distanceM >= 80) {
+      final km = r.distanceM / 1000;
+      return '${km.toStringAsFixed(km < 10 ? 1 : 0)} km · ${(r.durationS / 60).round()} min';
+    }
+    if (adapting != null && adapting.distanceKm > 0) {
+      final km = adapting.distanceKm;
+      return '${km.toStringAsFixed(km < 10 ? 1 : 0)} km · ${adapting.durationMin.round()} min';
+    }
     if (r == null) return '';
     final km = r.distanceM / 1000;
     return '${km.toStringAsFixed(km < 10 ? 1 : 0)} km · ${(r.durationS / 60).round()} min';
@@ -13840,22 +14066,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             ),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
+                Tooltip(
+                  message: l10n.save,
+                  child: OutlinedButton(
+                    onPressed: () => unawaited(_saveCurrent()),
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
+                      minimumSize: const Size(52, 52),
+                      padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                       ),
                     ),
-                    onPressed: () => unawaited(_saveCurrent()),
-                    icon: const ChromeGlyph('merken', size: 20),
-                    label: Text(l10n.save),
+                    child: const ChromeGlyph('merken', size: 22),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  flex: 2,
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
@@ -13950,74 +14176,95 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     return const SizedBox.shrink();
   }
 
-  /// Navigieren — A→B als erster Klasse-Modus (Komoot-ähnlich).
-  /// Bei Tour-Anpassen bleibt ein Zurück; sonst steuert der Shell-Toggle.
-  Widget _buildPlanPanel() {
-    final l10n = AppLocalizations.of(context);
-    final adapting = _adaptingTourName;
-    return Column(
-      children: [
-        _panelHandle(semanticsLabel: l10n.sheetDragHandleNavigate),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xs,
-            AppSpacing.xs,
-            AppSpacing.m,
-            0,
+  Widget _planPeekChrome(AppLocalizations l10n) {
+    final dest = _endAddrCtrl.text.trim();
+    final destLabel = dest.isEmpty
+        ? (_pick == _PickMode.end
+            ? l10n.discoverTapStart
+            : l10n.discoverSetEndCta)
+        : dest;
+    final stats = _planStickyKmMin();
+    final title = _adaptingTourName ?? l10n.planRouteTitle;
+    final canGo = _computed != null && _start != null && _end != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.m,
+        0,
+        AppSpacing.m,
+        AppSpacing.s,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
-          child: Row(
+          const SizedBox(height: 2),
+          Text(
+            [
+              if (stats.isNotEmpty) stats,
+              destLabel,
+            ].join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
             children: [
-              if (adapting != null)
-                IconButton(
-                  tooltip: l10n.navigateBackToExplore,
-                  onPressed: _closePlan,
-                  icon: const Icon(Icons.arrow_back),
-                  visualDensity: VisualDensity.compact,
-                ),
+              IconButton(
+                tooltip: l10n.save,
+                onPressed:
+                    canGo ? () => unawaited(_saveCurrent()) : null,
+                icon: const ChromeGlyph('merken', size: 22),
+              ),
+              const SizedBox(width: 4),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      adapting != null
-                          ? l10n.adaptTourTitle
-                          : l10n.planRouteTitle,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      adapting != null
-                          ? l10n.discoverAdjustStops
-                          : _planDragAlongLabel ??
-                              (_pick == _PickMode.via
-                                  ? l10n.navigateSubtitleVia
-                                  : (_end != null && _start == null)
-                                      ? l10n.discoverDestSetWaitingGps
-                                      : _start == null
-                                          ? l10n.discoverTapStart
-                                          : (_computed != null
-                                              ? l10n.navigateSubtitleShape
-                                              : l10n.navigateSubtitle)),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.onAccent,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: canGo
+                      ? () => unawaited(_startRide())
+                      : () => unawaited(_snapPlanSheet(PlanSheetSnaps.form)),
+                  icon: ChromeGlyph(
+                    canGo ? 'play' : 'flag',
+                    size: 20,
+                    color: AppColors.onAccent,
+                  ),
+                  label: Text(canGo ? l10n.goRide : l10n.discoverSetEndCta),
                 ),
               ),
-              if (_navProfileChipVisible) _profileChip(),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigieren — A→B als erster Klasse-Modus (Komoot-ähnlich).
+  /// Bei Tour-Anpassen bleibt ein Zurück; sonst steuert der Shell-Toggle.
+  Widget _buildPlanPanel({ScrollController? scrollController}) {
+    final l10n = AppLocalizations.of(context);
+    final peek = PlanSheetSnaps.isPeek(_planSheetExtent);
+    return Column(
+      children: [
+        Expanded(
+          child: _withLoadingVeil(
+            _buildPlanSheet(scrollController: scrollController),
+          ),
         ),
-        _panelMessages(),
-        Expanded(child: _withLoadingVeil(_buildPlanSheet())),
-        if (_computed != null &&
+        if (!peek &&
+            _computed != null &&
             _start != null &&
             _end != null &&
             _showNavigateOfflineHint)
@@ -14052,7 +14299,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               ),
             ),
           ),
-        _planStickyCta(l10n),
+        if (!peek) _planStickyCta(l10n),
       ],
     );
   }
@@ -14061,7 +14308,59 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   /// Antippen einer Tour die ganze Karte wegriss. Jetzt derselbe Platz wie
   /// Planen: ein Panel über der Karte, die im Hintergrund auf die Tour
   /// zentriert bleibt (siehe [_openDetail]).
-  Widget _buildDetailPanel() {
+  Widget _detailPeekChrome(_RouteSuggestion detail) {
+    final km = detail.distanceKm;
+    final kmLabel = km < 10 ? km.toStringAsFixed(1) : km.round().toString();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.m,
+        0,
+        AppSpacing.m,
+        AppSpacing.s,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            detail.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${detail.durationMin.round()} Min  ·  $kmLabel km',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.chrome,
+              foregroundColor: AppColors.onAccent,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            onPressed: _loading
+                ? null
+                : () => unawaited(_startRide(suggestion: detail)),
+            icon: const ChromeGlyph(
+              'play',
+              size: 20,
+              color: AppColors.onAccent,
+            ),
+            label: Text(_l10n.goRide),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailPanel({ScrollController? scrollController}) {
     final detail = _detailTour;
     if (detail == null) {
       // Tour ist aus der Liste gefallen (Filter geändert, Daten neu
@@ -14121,33 +14420,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final tipRow =
         (tip != null && tip.isNotEmpty && tip != description) ? tip : null;
 
+    final peek = PlanSheetSnaps.isPeek(_planSheetExtent);
+    if (peek) {
+      return ListView(
+        controller: scrollController,
+        children: [
+          _panelHandle(),
+          _detailPeekChrome(detail),
+        ],
+      );
+    }
     return Column(
       children: [
-        _panelHandle(),
-        // Komoot/AllTrails: Zurück — Anpassen lebt nur in der Sticky-Bar.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xs,
-            AppSpacing.xs,
-            AppSpacing.m,
-            0,
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                tooltip: _l10n.navigateBackToExplore,
-                onPressed: _closeDetail,
-                icon: const Icon(Icons.arrow_back),
-                visualDensity: VisualDensity.compact,
-              ),
-              const Spacer(),
-            ],
-          ),
-        ),
-        _panelMessages(),
         Expanded(
           child: _withLoadingVeil(
             ListView(
+              controller: scrollController,
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.l,
                 0,
@@ -14155,6 +14443,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 AppSpacing.l + 88,
               ),
               children: [
+                _panelHandle(),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    tooltip: _l10n.navigateBackToExplore,
+                    onPressed: _closeDetail,
+                    icon: const Icon(Icons.arrow_back),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                _panelMessages(),
                 if (detail.isSeed || detail.thumbnailUrl != null) ...[
                   _tourHero(
                     detail,
@@ -14514,7 +14813,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   /// „Tipps & Infos" — Tipp, Saison, Untergrund, Disziplin, Korridor, API-Tags
   /// als Icon-Zeilen (ersetzt die früheren Einzel-Überschriften).
   List<Widget> _detailInfoSection(_RouteSuggestion detail, String? tipRow) {
-    final tagLine = _detailTagLine(detail);
+    final traits = _detailTraitChips(detail);
     // Untergrund steht schon im Stats-Grid — hier nicht wiederholen.
     final rows = <({String mark, String label, String text})>[
       if (tipRow != null)
@@ -14525,10 +14824,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         (mark: 'nav', label: _l10n.discoverDiscipline, text: d),
       if (detail.corridorNote case final c?)
         (mark: 'split', label: _l10n.discoverCorridor, text: c),
-      if (tagLine != null)
-        (mark: 'layers', label: _l10n.discoverTraits, text: tagLine),
     ];
-    if (rows.isEmpty) return const [];
+    if (rows.isEmpty && traits == null) return const [];
     return [
       const SizedBox(height: AppSpacing.l),
       _detailSectionTitle(_l10n.discoverTipsInfo),
@@ -14563,32 +14860,56 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             ],
           ),
         ),
+      if (traits != null) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            _l10n.discoverTraits,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.muted,
+            ),
+          ),
+        ),
+        traits,
+      ],
     ];
   }
 
-  /// Compact trail/catalog tags — skip noise already shown as source/sport.
-  String? _detailTagLine(_RouteSuggestion detail) {
-    final skip = <String>{
-      detail.sourceKind,
-      'outdooractive',
-      'osm',
-      'catalog',
-      'seed',
-      if (detail.sportLabel != null) detail.sportLabel!.toLowerCase(),
-    };
-    final seen = <String>{};
-    final out = <String>[];
-    for (final raw in detail.apiTags) {
-      final t = raw.trim();
-      if (t.isEmpty) continue;
-      final key = t.toLowerCase();
-      if (skip.contains(key) || seen.contains(key)) continue;
-      seen.add(key);
-      out.add(t);
-      if (out.length >= 5) break;
-    }
-    if (out.isEmpty) return null;
-    return out.join(' · ');
+  Widget? _detailTraitChips(_RouteSuggestion detail) {
+    final wires = TourTrait.visibleWires(
+      detail.apiTags,
+      extraSkip: [
+        detail.sourceKind,
+        if (detail.sportLabel != null) detail.sportLabel!,
+      ],
+    );
+    if (wires.isEmpty) return null;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        for (final w in wires)
+          FilterChip(
+            label: Text(TourTrait.label(w)),
+            selected: _activeTraits.contains(TourTrait.keyOf(w)),
+            onSelected: (_) => _toggleTrait(w),
+          ),
+      ],
+    );
+  }
+
+  void _toggleTrait(String wire) {
+    final key = TourTrait.keyOf(wire);
+    setState(() {
+      if (_activeTraits.contains(key)) {
+        _activeTraits.remove(key);
+      } else {
+        _activeTraits.add(key);
+      }
+    });
+    unawaited(_drawAll());
   }
 
   /// „Startpunkt · X km von hier" + „Anfahrt" (Komoot-Detail) —
@@ -14954,13 +15275,79 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (_end != null) await _calcAb();
   }
 
-  Widget _buildPlanSheet() {
+  Widget _buildPlanSheet({ScrollController? scrollController}) {
     final l10n = AppLocalizations.of(context);
+    final peek = PlanSheetSnaps.isPeek(_planSheetExtent);
+    final adapting = _adaptingTourName;
     final ideaTour = _ideaPin != null ? _tourById(_selectedTourId) : null;
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.m),
+      controller: scrollController,
+      padding: peek
+          ? EdgeInsets.zero
+          : const EdgeInsets.fromLTRB(
+              AppSpacing.m,
+              0,
+              AppSpacing.m,
+              AppSpacing.m,
+            ),
       children: [
-        if (_adaptingTour != null) ...[
+        _panelHandle(semanticsLabel: l10n.sheetDragHandleNavigate),
+        if (peek) _planPeekChrome(l10n),
+        if (!peek) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, AppSpacing.xs, 0, 0),
+            child: Row(
+              children: [
+                if (adapting != null)
+                  IconButton(
+                    tooltip: l10n.navigateBackToExplore,
+                    onPressed: _closePlan,
+                    icon: const Icon(Icons.arrow_back),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        adapting != null
+                            ? l10n.adaptTourTitle
+                            : l10n.planRouteTitle,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        adapting != null
+                            ? l10n.discoverAdjustStops
+                            : _planDragAlongLabel ??
+                                (_pick == _PickMode.via
+                                    ? l10n.navigateSubtitleVia
+                                    : (_end != null && _start == null)
+                                        ? l10n.discoverDestSetWaitingGps
+                                        : _start == null
+                                            ? l10n.discoverTapStart
+                                            : (_computed != null
+                                                ? l10n.navigateSubtitleShape
+                                                : l10n.navigateSubtitle)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_navProfileChipVisible) _profileChip(),
+              ],
+            ),
+          ),
+          _panelMessages(),
+          if (_adaptingTour != null) ...[
           PlanAdaptBanner(
             name: _adaptingTour!.name,
             photoUrl: _adaptingTour!.heroPhotoUrls.isNotEmpty
@@ -15357,6 +15744,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 ],
               ),
             ),
+        ],
         ],
       ],
     );

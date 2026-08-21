@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/routing/basemap_street_contrast.dart';
+import '../../data/routing/geocode_client.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/privacy_zone_map.dart';
@@ -52,6 +53,8 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
   late final TextEditingController _labelCtrl;
   late final TextEditingController _latCtrl;
   late final TextEditingController _lngCtrl;
+  late final TextEditingController _searchCtrl;
+  final _geocode = GeocodeClient();
 
   String _style = AppConfig.mapStyleUrl;
   PrivacyZoneMapOrigin? _origin;
@@ -68,6 +71,9 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
   double? _centerLat;
   double? _centerLng;
   double _radiusM = kPrivacyZoneDefaultRadiusM;
+  List<GeocodeHit> _searchHits = const [];
+  bool _searchBusy = false;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -89,6 +95,7 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
     _lngCtrl = TextEditingController(
       text: existing != null ? existing.lng.toStringAsFixed(5) : '',
     );
+    _searchCtrl = TextEditingController();
     AppConfig.resolveMapStyleUrl().then((s) {
       if (mounted && s != _style) setState(() => _style = s);
     });
@@ -98,9 +105,11 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _labelCtrl.dispose();
     _latCtrl.dispose();
     _lngCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -280,6 +289,48 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
     unawaited(_fitToZone());
   }
 
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    final q = raw.trim();
+    if (q.length < 3) {
+      if (_searchHits.isNotEmpty) setState(() => _searchHits = const []);
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 380), () {
+      unawaited(_runSearch(q));
+    });
+  }
+
+  Future<void> _runSearch(String q) async {
+    setState(() => _searchBusy = true);
+    try {
+      final bias = _centerLat != null && _centerLng != null
+          ? (_centerLat!, _centerLng!)
+          : _origin != null
+              ? (_origin!.lat, _origin!.lng)
+              : null;
+      final hits = await _geocode.search(
+        q,
+        biasLat: bias?.$1,
+        biasLng: bias?.$2,
+      );
+      if (!mounted || _searchCtrl.text.trim() != q) return;
+      setState(() => _searchHits = hits.take(5).toList());
+    } catch (_) {
+      if (mounted) setState(() => _searchHits = const []);
+    } finally {
+      if (mounted) setState(() => _searchBusy = false);
+    }
+  }
+
+  void _pickSearchHit(GeocodeHit hit) {
+    FocusScope.of(context).unfocus();
+    _searchCtrl.text = hit.label;
+    setState(() => _searchHits = const []);
+    _placeAt(hit.lat, hit.lng);
+    unawaited(_fitToZone());
+  }
+
   void _save() {
     final l10n = AppLocalizations.of(context);
     if (!_placed) {
@@ -408,15 +459,80 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
                     bottom: MediaQuery.viewInsetsOf(context).bottom,
                   ),
                   child: SingleChildScrollView(
-                    child: PrivacyZoneEditorPanel(
-                      labelController: _labelCtrl,
-                      radiusM: _radiusM,
-                      onRadiusChanged: _onRadiusChanged,
-                      onRadiusChangeEnd: (_) => unawaited(_fitToZone()),
-                      latController: _latCtrl,
-                      lngController: _lngCtrl,
-                      onApplyCoords: _applyCoords,
-                      placed: _placed,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Material(
+                          color: AppColors.elevated,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                TextField(
+                                  controller: _searchCtrl,
+                                  textInputAction: TextInputAction.search,
+                                  onChanged: _onSearchChanged,
+                                  onSubmitted: (q) {
+                                    if (q.trim().length >= 3) {
+                                      unawaited(_runSearch(q.trim()));
+                                    }
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: l10n.privacyZoneSearchHint,
+                                    border: const OutlineInputBorder(),
+                                    isDense: true,
+                                    suffixIcon: _searchBusy
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12),
+                                            child: SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                                if (_searchHits.isNotEmpty)
+                                  ..._searchHits.map(
+                                    (h) => ListTile(
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(h.label),
+                                      onTap: () => _pickSearchHit(h),
+                                    ),
+                                  )
+                                else if (_searchCtrl.text.trim().length >= 3 &&
+                                    !_searchBusy)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      l10n.privacyZoneSearchEmpty,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        PrivacyZoneEditorPanel(
+                          labelController: _labelCtrl,
+                          radiusM: _radiusM,
+                          onRadiusChanged: _onRadiusChanged,
+                          onRadiusChangeEnd: (_) => unawaited(_fitToZone()),
+                          latController: _latCtrl,
+                          lngController: _lngCtrl,
+                          onApplyCoords: _applyCoords,
+                          placed: _placed,
+                        ),
+                      ],
                     ),
                   ),
                 ),

@@ -1,6 +1,6 @@
 /**
  * Privacy / export chrome. Headings follow Flutter ARB where keys exist.
- * Zones stay App-only — the web page does not invent a home pin.
+ * Web can add a zone via coords/GPS — never invents a home pin.
  */
 import type { ConsentPurpose } from "@/lib/privacy/consents";
 import type { ChromeLang } from "./chromeLang";
@@ -18,6 +18,18 @@ export type PrivacyCopy = {
   zonesLead: string;
   noZonesWeb: string;
   zoneDelete: string;
+  zoneAdd: string;
+  zoneLabel: string;
+  zoneLat: string;
+  zoneLng: string;
+  zoneSave: string;
+  zoneInvalid: string;
+  zoneUseGps: string;
+  trimEndsTitle: string;
+  trimEndsBody: string;
+  zoneRadius200: string;
+  zoneRadius500: string;
+  zoneRadius1000: string;
   familyTitle: string;
   familyHint: string;
   familyOneBike: string;
@@ -54,8 +66,20 @@ const DE: PrivacyCopy = {
   zonesLead:
     "Tracks werden in diesen Radien gekappt — für Export und wo viele fahren.",
   noZonesWeb:
-    "Keine Zone. Die ersten und letzten 200 m werden trotzdem gekürzt — Zuhause bleibt oft erkennbar. Zonen setzt du in der App auf der Karte. Hier keine erfundene Heimat-Zone.",
+    "Keine Zone. Die ersten und letzten 200 m werden trotzdem gekürzt — Zuhause bleibt oft erkennbar. Keine erfundene Heimat-Zone.",
   zoneDelete: "Zone löschen",
+  zoneAdd: "Zone anlegen",
+  zoneLabel: "Bezeichnung",
+  zoneLat: "Breite",
+  zoneLng: "Länge",
+  zoneSave: "Zone speichern",
+  zoneInvalid: "Koordinaten ungültig",
+  zoneUseGps: "Aktuellen Standort nutzen",
+  trimEndsTitle: "Start und Ziel kürzen (200 m)",
+  trimEndsBody: "Bei Export, Strava und Heatmap. Ohne Zone bleibt das Haus oft erkennbar.",
+  zoneRadius200: "200 m",
+  zoneRadius500: "500 m",
+  zoneRadius1000: "1000 m",
   familyTitle: "Familie am Rad",
   familyHint: "Familien-Link / Mitfahrer: Gewicht und Setup für diesen Fahrer.",
   familyOneBike: "Ein Rad, mehrere Fahrer mit eigenen Setups.",
@@ -118,8 +142,20 @@ const EN: PrivacyCopy = {
   zonesLead:
     "Tracks are clipped in these radii — for export and where many ride.",
   noZonesWeb:
-    "No zone. The first and last 200 m are still trimmed — home often remains identifiable. Set zones on the map in the app. No invented home pin here.",
+    "No zone. The first and last 200 m are still trimmed — home often remains identifiable. No invented home pin.",
   zoneDelete: "Delete zone",
+  zoneAdd: "Add zone",
+  zoneLabel: "Label",
+  zoneLat: "Latitude",
+  zoneLng: "Longitude",
+  zoneSave: "Save zone",
+  zoneInvalid: "Invalid coordinates",
+  zoneUseGps: "Use current location",
+  trimEndsTitle: "Trim start and end (200 m)",
+  trimEndsBody: "Applies to export, Strava and heatmap. Without a zone, home often stays visible.",
+  zoneRadius200: "200 m",
+  zoneRadius500: "500 m",
+  zoneRadius1000: "1000 m",
   familyTitle: "Family on the bike",
   familyHint: "Family / extra riders: weight and setup for this rider.",
   familyOneBike: "One bike, several riders with their own setups.",
@@ -182,8 +218,20 @@ const FR: PrivacyCopy = {
   zonesLead:
     "Les traces sont coupées dans ces rayons — pour l’export et là où on roule.",
   noZonesWeb:
-    "Aucune zone. Les 200 m de départ et d’arrivée sont quand même coupés — la maison reste souvent identifiable. Tu poses les zones sur la carte dans l’app. Pas de pin maison inventé ici.",
+    "Aucune zone. Les 200 m de départ et d’arrivée sont quand même coupés — la maison reste souvent identifiable. Pas de pin maison inventé.",
   zoneDelete: "Supprimer la zone",
+  zoneAdd: "Ajouter une zone",
+  zoneLabel: "Libellé",
+  zoneLat: "Latitude",
+  zoneLng: "Longitude",
+  zoneSave: "Enregistrer la zone",
+  zoneInvalid: "Coordonnées invalides",
+  zoneUseGps: "Utiliser la position actuelle",
+  trimEndsTitle: "Raccourcir départ et arrivée (200 m)",
+  trimEndsBody: "Pour export, Strava et heatmap. Sans zone, la maison reste souvent visible.",
+  zoneRadius200: "200 m",
+  zoneRadius500: "500 m",
+  zoneRadius1000: "1000 m",
   familyTitle: "Famille au vélo",
   familyHint: "Famille / autres riders : poids et setup pour ce rider.",
   familyOneBike: "Un vélo, plusieurs riders avec leurs propres setups.",
@@ -246,8 +294,20 @@ const IT: PrivacyCopy = {
   zonesLead:
     "Le tracce vengono tagliate in questi raggi — per export e dove si gira.",
   noZonesWeb:
-    "Nessuna zona. I primi e gli ultimi 200 m vengono comunque tagliati — casa resta spesso riconoscibile. Le zone le metti sulla mappa nell’app. Nessun pin di casa inventato qui.",
+    "Nessuna zona. I primi e gli ultimi 200 m vengono comunque tagliati — casa resta spesso riconoscibile. Nessun pin di casa inventato.",
   zoneDelete: "Elimina zona",
+  zoneAdd: "Aggiungi zona",
+  zoneLabel: "Etichetta",
+  zoneLat: "Latitudine",
+  zoneLng: "Longitudine",
+  zoneSave: "Salva zona",
+  zoneInvalid: "Coordinate non valide",
+  zoneUseGps: "Usa posizione attuale",
+  trimEndsTitle: "Accorcia partenza e arrivo (200 m)",
+  trimEndsBody: "Per export, Strava e heatmap. Senza zona, casa resta spesso riconoscibile.",
+  zoneRadius200: "200 m",
+  zoneRadius500: "500 m",
+  zoneRadius1000: "1000 m",
   familyTitle: "Famiglia in bici",
   familyHint: "Famiglia / altri rider: peso e setup per questo rider.",
   familyOneBike: "Una bici, più rider con i propri setup.",
@@ -310,8 +370,20 @@ const NL: PrivacyCopy = {
   zonesLead:
     "Spoor wordt in deze stralen geknipt — voor export en waar velen rijden.",
   noZonesWeb:
-    "Geen zone. De eerste en laatste 200 m worden toch geknipt — thuis blijft vaak herkenbaar. Zones zet je in de app op de kaart. Hier geen verzonnen thuispin.",
+    "Geen zone. De eerste en laatste 200 m worden toch geknipt — thuis blijft vaak herkenbaar. Geen verzonnen thuispin.",
   zoneDelete: "Zone verwijderen",
+  zoneAdd: "Zone toevoegen",
+  zoneLabel: "Label",
+  zoneLat: "Breedte",
+  zoneLng: "Lengte",
+  zoneSave: "Zone opslaan",
+  zoneInvalid: "Ongeldige coördinaten",
+  zoneUseGps: "Huidige locatie gebruiken",
+  trimEndsTitle: "Start en finish inkorten (200 m)",
+  trimEndsBody: "Bij export, Strava en heatmap. Zonder zone blijft thuis vaak herkenbaar.",
+  zoneRadius200: "200 m",
+  zoneRadius500: "500 m",
+  zoneRadius1000: "1000 m",
   familyTitle: "Gezin aan de fiets",
   familyHint: "Gezin / extra rijders: gewicht en setup voor deze rijder.",
   familyOneBike: "Eén fiets, meerdere rijders met eigen setups.",
