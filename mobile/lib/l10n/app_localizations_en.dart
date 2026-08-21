@@ -2971,6 +2971,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineReadyRouting => 'Routing ready — overview not downloaded.';
 
   @override
+  String get offlineStreetTooBig =>
+      'The street map for this region is too large for the device.';
+
+  @override
+  String get offlineConfirmStreetTitle => 'Download street map for the ride?';
+
+  @override
+  String offlineConfirmStreetBody(String name, String size) {
+    return '$name is $size. Street zoom for ride navigation, larger than the overview.';
+  }
+
+  @override
+  String get offlineStreetReady =>
+      'Street map ready — ride navigation without network.';
+
+  @override
+  String get offlineStreetOn => 'Street on';
+
+  @override
+  String get offlineStreetOff => 'No street';
+
+  @override
+  String get offlineReadyAll => 'Routing, overview and street map ready.';
+
+  @override
+  String get offlineReadyStreet =>
+      'Routing and street map ready — overview not downloaded.';
+
+  @override
+  String get offlineSketchGraph => 'Graph';
+
+  @override
+  String offlineStreetCta(String size) {
+    return 'Download street map ($size)';
+  }
+
+  @override
+  String get offlineStreetExplain =>
+      'For ride navigation. Larger than the overview — best over Wi-Fi.';
+
+  @override
   String get offlineLoadBelow =>
       'Load a pack below. Graph only, not the 540 MB map.';
 

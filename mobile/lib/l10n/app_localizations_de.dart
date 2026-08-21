@@ -2989,6 +2989,47 @@ class AppLocalizationsDe extends AppLocalizations {
   String get offlineReadyRouting => 'Routing bereit — Übersicht nicht geladen.';
 
   @override
+  String get offlineStreetTooBig =>
+      'Straßenkarte für diese Region ist zu groß fürs Gerät.';
+
+  @override
+  String get offlineConfirmStreetTitle => 'Straßenkarte fürs Ride laden?';
+
+  @override
+  String offlineConfirmStreetBody(String name, String size) {
+    return '$name ist $size. Zoom für Navigation im Ride, größer als die Übersicht.';
+  }
+
+  @override
+  String get offlineStreetReady =>
+      'Straßenkarte bereit — Navigation im Ride ohne Netz.';
+
+  @override
+  String get offlineStreetOn => 'Straße an';
+
+  @override
+  String get offlineStreetOff => 'Keine Straße';
+
+  @override
+  String get offlineReadyAll => 'Routing, Übersicht und Straßenkarte bereit.';
+
+  @override
+  String get offlineReadyStreet =>
+      'Routing und Straßenkarte bereit — Übersicht nicht geladen.';
+
+  @override
+  String get offlineSketchGraph => 'Graph';
+
+  @override
+  String offlineStreetCta(String size) {
+    return 'Straßenkarte laden ($size)';
+  }
+
+  @override
+  String get offlineStreetExplain =>
+      'Für Navigation im Ride. Größer als die Übersicht — am besten über WLAN.';
+
+  @override
   String get offlineLoadBelow =>
       'Unten ein Pack laden. Nur der Graph, nicht die 540-MB-Karte.';
 

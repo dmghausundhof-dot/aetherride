@@ -1506,6 +1506,28 @@
   "offlineNoRegion": "Kein Routing aktiv",
   "offlineReadyBoth": "Routing bereit. Übersicht geladen (kein Street-Zoom im Ride).",
   "offlineReadyRouting": "Routing bereit — Übersicht nicht geladen.",
+  "offlineStreetTooBig": "Straßenkarte für diese Region ist zu groß fürs Gerät.",
+  "offlineConfirmStreetTitle": "Straßenkarte fürs Ride laden?",
+  "offlineConfirmStreetBody": "{name} ist {size}. Zoom für Navigation im Ride, größer als die Übersicht.",
+  "@offlineConfirmStreetBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetReady": "Straßenkarte bereit — Navigation im Ride ohne Netz.",
+  "offlineStreetOn": "Straße an",
+  "offlineStreetOff": "Keine Straße",
+  "offlineReadyAll": "Routing, Übersicht und Straßenkarte bereit.",
+  "offlineReadyStreet": "Routing und Straßenkarte bereit — Übersicht nicht geladen.",
+  "offlineSketchGraph": "Graph",
+  "offlineStreetCta": "Straßenkarte laden ({size})",
+  "@offlineStreetCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetExplain": "Für Navigation im Ride. Größer als die Übersicht — am besten über WLAN.",
   "offlineLoadBelow": "Unten ein Pack laden. Nur der Graph, nicht die 540-MB-Karte.",
   "offlineRoutingOn": "Routing an",
   "offlineRoutingOff": "Kein Routing",
@@ -1519,6 +1541,28 @@
     }
   },
   "offlineOverviewExplain": "Übersicht bis Zoom 11. Im Ride braucht die Straßenkarte oft Netz.",
+  "offlineStreetOn": "Straßenkarte an",
+  "offlineStreetOff": "Keine Straßenkarte",
+  "offlineStreetCta": "Straßenkarte laden ({size})",
+  "@offlineStreetCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetExplain": "OpenFreeMap fürs Ride, Zoom 12–15. Nicht das Übersichtsblatt.",
+  "offlineStreetReady": "Straßenkarte fürs Ride gespeichert.",
+  "offlineStreetTooBig": "Diese Box ist zu groß für eine Offline-Straßenkarte.",
+  "offlineConfirmStreetTitle": "Straßenkarte fürs Ride laden?",
+  "offlineConfirmStreetBody": "{name} ist etwa {size}. Nur für Navigation, nicht die 540-MB-Übersicht.",
+  "@offlineConfirmStreetBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineSketchGraph": "Wege",
+  "offlineReadyStreet": "Routing bereit. Straßenkarte fürs Ride geladen.",
+  "offlineReadyAll": "Routing, Übersicht und Straßenkarte geladen.",
   "offlineStorageLine": "Auf dem Gerät: {size}",
   "@offlineStorageLine": {
     "placeholders": {

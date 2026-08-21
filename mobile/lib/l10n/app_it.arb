@@ -1444,6 +1444,28 @@
   "offlineNoRegion": "Nessun routing attivo",
   "offlineReadyBoth": "Routing pronto. Panoramica caricata (non lo zoom strada in ride).",
   "offlineReadyRouting": "Routing pronto — panoramica non scaricata.",
+  "offlineStreetTooBig": "La mappa stradale di questa regione è troppo grande per il dispositivo.",
+  "offlineConfirmStreetTitle": "Scaricare la mappa stradale per il ride?",
+  "offlineConfirmStreetBody": "{name} è {size}. Zoom strada per la navigazione, più grande della panoramica.",
+  "@offlineConfirmStreetBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetReady": "Mappa stradale pronta — navigazione in ride senza rete.",
+  "offlineStreetOn": "Strada on",
+  "offlineStreetOff": "Niente strada",
+  "offlineReadyAll": "Routing, panoramica e mappa stradale pronti.",
+  "offlineReadyStreet": "Routing e mappa stradale pronti — panoramica non scaricata.",
+  "offlineSketchGraph": "Grafo",
+  "offlineStreetCta": "Scarica mappa stradale ({size})",
+  "@offlineStreetCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetExplain": "Per la navigazione in ride. Più grande della panoramica — meglio in Wi-Fi.",
   "offlineLoadBelow": "Carica un pack sotto. Solo il grafo, non la mappa da 540 MB.",
   "offlineRoutingOn": "Routing attivo",
   "offlineRoutingOff": "Nessun routing",

@@ -5342,6 +5342,72 @@ abstract class AppLocalizations {
   /// **'Routing bereit — Übersicht nicht geladen.'**
   String get offlineReadyRouting;
 
+  /// No description provided for @offlineStreetTooBig.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte für diese Region ist zu groß fürs Gerät.'**
+  String get offlineStreetTooBig;
+
+  /// No description provided for @offlineConfirmStreetTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte fürs Ride laden?'**
+  String get offlineConfirmStreetTitle;
+
+  /// No description provided for @offlineConfirmStreetBody.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} ist {size}. Zoom für Navigation im Ride, größer als die Übersicht.'**
+  String offlineConfirmStreetBody(String name, String size);
+
+  /// No description provided for @offlineStreetReady.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte bereit — Navigation im Ride ohne Netz.'**
+  String get offlineStreetReady;
+
+  /// No description provided for @offlineStreetOn.
+  ///
+  /// In de, this message translates to:
+  /// **'Straße an'**
+  String get offlineStreetOn;
+
+  /// No description provided for @offlineStreetOff.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Straße'**
+  String get offlineStreetOff;
+
+  /// No description provided for @offlineReadyAll.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing, Übersicht und Straßenkarte bereit.'**
+  String get offlineReadyAll;
+
+  /// No description provided for @offlineReadyStreet.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing und Straßenkarte bereit — Übersicht nicht geladen.'**
+  String get offlineReadyStreet;
+
+  /// No description provided for @offlineSketchGraph.
+  ///
+  /// In de, this message translates to:
+  /// **'Graph'**
+  String get offlineSketchGraph;
+
+  /// No description provided for @offlineStreetCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte laden ({size})'**
+  String offlineStreetCta(String size);
+
+  /// No description provided for @offlineStreetExplain.
+  ///
+  /// In de, this message translates to:
+  /// **'Für Navigation im Ride. Größer als die Übersicht — am besten über WLAN.'**
+  String get offlineStreetExplain;
+
   /// No description provided for @offlineLoadBelow.
   ///
   /// In de, this message translates to:

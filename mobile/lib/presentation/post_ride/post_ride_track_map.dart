@@ -9,6 +9,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_pmtiles_store.dart';
 import '../../domain/ride/ride_telemetry.dart';
 import '../../l10n/app_localizations.dart';
@@ -68,10 +69,16 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
     try {
       final s = await AppConfig.resolveMapStyleUrl();
       final online = await rideHasNetwork();
-      final street = rideHudUsesOfflineStreetTiles(
-        liveStyle: AppConfig.mapStyleUrl,
-        resolvedStyle: s,
-      );
+      var street = false;
+      try {
+        street = await OfflineBasemap.streetHudReadyForActivatedPack();
+      } catch (_) {}
+      if (!street) {
+        street = rideHudUsesOfflineStreetTiles(
+          liveStyle: AppConfig.mapStyleUrl,
+          resolvedStyle: s,
+        );
+      }
       var empty = '';
       try {
         empty = await OfflinePmtilesStore.emptyHudStyleUri();

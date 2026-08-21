@@ -1454,6 +1454,28 @@
   "offlineNoRegion": "No routing active",
   "offlineReadyBoth": "Routing ready. Overview loaded (not street zoom in the ride).",
   "offlineReadyRouting": "Routing ready — overview not downloaded.",
+  "offlineStreetTooBig": "The street map for this region is too large for the device.",
+  "offlineConfirmStreetTitle": "Download street map for the ride?",
+  "offlineConfirmStreetBody": "{name} is {size}. Street zoom for ride navigation, larger than the overview.",
+  "@offlineConfirmStreetBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetReady": "Street map ready — ride navigation without network.",
+  "offlineStreetOn": "Street on",
+  "offlineStreetOff": "No street",
+  "offlineReadyAll": "Routing, overview and street map ready.",
+  "offlineReadyStreet": "Routing and street map ready — overview not downloaded.",
+  "offlineSketchGraph": "Graph",
+  "offlineStreetCta": "Download street map ({size})",
+  "@offlineStreetCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetExplain": "For ride navigation. Larger than the overview — best over Wi-Fi.",
   "offlineLoadBelow": "Load a pack below. Graph only, not the 540 MB map.",
   "offlineRoutingOn": "Routing on",
   "offlineRoutingOff": "No routing",

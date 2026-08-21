@@ -2981,6 +2981,47 @@ class AppLocalizationsNl extends AppLocalizations {
   String get offlineReadyRouting => 'Routing klaar — overzicht niet geladen.';
 
   @override
+  String get offlineStreetTooBig =>
+      'De straatkaart voor deze regio is te groot voor het toestel.';
+
+  @override
+  String get offlineConfirmStreetTitle => 'Straatkaart voor de rit laden?';
+
+  @override
+  String offlineConfirmStreetBody(String name, String size) {
+    return '$name is $size. Straatzoom voor navigatie, groter dan het overzicht.';
+  }
+
+  @override
+  String get offlineStreetReady =>
+      'Straatkaart klaar — navigatie in de rit zonder netwerk.';
+
+  @override
+  String get offlineStreetOn => 'Straat aan';
+
+  @override
+  String get offlineStreetOff => 'Geen straat';
+
+  @override
+  String get offlineReadyAll => 'Routing, overzicht en straatkaart klaar.';
+
+  @override
+  String get offlineReadyStreet =>
+      'Routing en straatkaart klaar — overzicht niet geladen.';
+
+  @override
+  String get offlineSketchGraph => 'Graaf';
+
+  @override
+  String offlineStreetCta(String size) {
+    return 'Straatkaart laden ($size)';
+  }
+
+  @override
+  String get offlineStreetExplain =>
+      'Voor navigatie in de rit. Groter dan het overzicht — het beste via wifi.';
+
+  @override
   String get offlineLoadBelow =>
       'Laad hieronder een pack. Alleen de graaf, niet de kaart van 540 MB.';
 

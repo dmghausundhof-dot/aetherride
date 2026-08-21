@@ -2992,6 +2992,48 @@ class AppLocalizationsIt extends AppLocalizations {
       'Routing pronto — panoramica non scaricata.';
 
   @override
+  String get offlineStreetTooBig =>
+      'La mappa stradale di questa regione è troppo grande per il dispositivo.';
+
+  @override
+  String get offlineConfirmStreetTitle =>
+      'Scaricare la mappa stradale per il ride?';
+
+  @override
+  String offlineConfirmStreetBody(String name, String size) {
+    return '$name è $size. Zoom strada per la navigazione, più grande della panoramica.';
+  }
+
+  @override
+  String get offlineStreetReady =>
+      'Mappa stradale pronta — navigazione in ride senza rete.';
+
+  @override
+  String get offlineStreetOn => 'Strada on';
+
+  @override
+  String get offlineStreetOff => 'Niente strada';
+
+  @override
+  String get offlineReadyAll => 'Routing, panoramica e mappa stradale pronti.';
+
+  @override
+  String get offlineReadyStreet =>
+      'Routing e mappa stradale pronti — panoramica non scaricata.';
+
+  @override
+  String get offlineSketchGraph => 'Grafo';
+
+  @override
+  String offlineStreetCta(String size) {
+    return 'Scarica mappa stradale ($size)';
+  }
+
+  @override
+  String get offlineStreetExplain =>
+      'Per la navigazione in ride. Più grande della panoramica — meglio in Wi-Fi.';
+
+  @override
   String get offlineLoadBelow =>
       'Carica un pack sotto. Solo il grafo, non la mappa da 540 MB.';
 

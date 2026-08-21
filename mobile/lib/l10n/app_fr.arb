@@ -1444,6 +1444,28 @@
   "offlineNoRegion": "Aucun routing actif",
   "offlineReadyBoth": "Routing prêt. Vue d’ensemble chargée (pas le zoom rue en ride).",
   "offlineReadyRouting": "Routing prêt — vue d’ensemble non chargée.",
+  "offlineStreetTooBig": "La carte rue de cette région est trop grande pour l’appareil.",
+  "offlineConfirmStreetTitle": "Charger la carte rue pour le ride ?",
+  "offlineConfirmStreetBody": "{name} fait {size}. Zoom rue pour la navigation, plus grand que la vue d’ensemble.",
+  "@offlineConfirmStreetBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetReady": "Carte rue prête — navigation en ride sans réseau.",
+  "offlineStreetOn": "Rue on",
+  "offlineStreetOff": "Pas de rue",
+  "offlineReadyAll": "Routing, vue d’ensemble et carte rue prêts.",
+  "offlineReadyStreet": "Routing et carte rue prêts — vue d’ensemble non chargée.",
+  "offlineSketchGraph": "Graphe",
+  "offlineStreetCta": "Charger la carte rue ({size})",
+  "@offlineStreetCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetExplain": "Pour la navigation en ride. Plus grand que la vue d’ensemble — plutôt en Wi-Fi.",
   "offlineLoadBelow": "Charge un pack plus bas. Graphe seulement, pas la carte de 540 Mo.",
   "offlineRoutingOn": "Routing actif",
   "offlineRoutingOff": "Pas de routing",
