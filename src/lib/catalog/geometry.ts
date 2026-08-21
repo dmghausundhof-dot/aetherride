@@ -78,6 +78,10 @@ const CANYON_LUX_TRAIL =
 const SPEC_EPIC =
   "https://www.specialized.com/us/en/epic-comp-sram-gx-eagle-rockshox-sid-slbrain/p/205825";
 const ORBEA_OIZ = "https://www.orbea.com/en-us/oiz-h30";
+const SANTA_CRUZ_BLUR =
+  "https://www.santacruzbicycles.com/en-eu/products/blur-frame-2025";
+const BMC_FOURSTROKE =
+  "https://www.bmc-switzerland.com/eu_en/fourstroke-01-two.html";
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
@@ -1159,6 +1163,60 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 76.5,
       chainstayMm: 436,
       wheelbaseMm: 1223,
+    }),
+  ],
+  // Santa Cruz Blur C TR geometry (120/115 — matches catalog travel).
+  "cat-santa-cruz-blur-c-2025": [
+    g("S", 412, 587, SANTA_CRUZ_BLUR, {
+      headAngleDeg: 67.1,
+      seatAngleEffectiveDeg: 75.1,
+      chainstayMm: 431,
+      wheelbaseMm: 1126,
+    }),
+    g("M", 438, 597, SANTA_CRUZ_BLUR, {
+      headAngleDeg: 67.1,
+      seatAngleEffectiveDeg: 75,
+      chainstayMm: 433,
+      wheelbaseMm: 1157,
+    }),
+    g("L", 458, 607, SANTA_CRUZ_BLUR, {
+      headAngleDeg: 67.1,
+      seatAngleEffectiveDeg: 74.9,
+      chainstayMm: 436,
+      wheelbaseMm: 1183,
+    }),
+    g("XL", 483, 621, SANTA_CRUZ_BLUR, {
+      headAngleDeg: 67.1,
+      seatAngleEffectiveDeg: 74.8,
+      chainstayMm: 438,
+      wheelbaseMm: 1216,
+    }),
+  ],
+  // BMC Fourstroke 01 TWO (dealer / BikeRadar OEM chart).
+  "cat-bmc-fourstroke-2024": [
+    g("S", 437, 584, BMC_FOURSTROKE, {
+      headAngleDeg: 66.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 432,
+      wheelbaseMm: 1139,
+    }),
+    g("M", 457, 592, BMC_FOURSTROKE, {
+      headAngleDeg: 66.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 432,
+      wheelbaseMm: 1171,
+    }),
+    g("L", 477, 600, BMC_FOURSTROKE, {
+      headAngleDeg: 66.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 432,
+      wheelbaseMm: 1188,
+    }),
+    g("XL", 500, 615, BMC_FOURSTROKE, {
+      headAngleDeg: 66.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 432,
+      wheelbaseMm: 1218,
     }),
   ],
 };

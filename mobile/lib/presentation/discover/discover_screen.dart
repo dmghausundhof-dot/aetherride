@@ -3754,6 +3754,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ..clear()
         ..addAll(session.labeledVias);
       _pick = _PickMode.none;
+      _trailOverlay = null;
+      _tourLayer = null;
     });
     unawaited(HapticFeedback.selectionClick());
     final taught = _afterPlanViaInserted();

@@ -29,6 +29,7 @@ import {
   planUnpavedLineSlices,
   planElevScrubT,
   planFarTapInsertsVia,
+  planEditorMapTapAddsVia,
   planLongPressSetsDest,
   planMapTapInsertsViaAlong,
   planReshapeHandles,
@@ -252,6 +253,33 @@ assert.equal(
     hasLiveLine: true,
   }),
   true
+);
+assert.equal(
+  planFarTapInsertsVia({
+    hasStart: true,
+    hasEnd: true,
+    hasLiveLine: false,
+  }),
+  true,
+  "A+B is enough — waiting on the engine still inserts via"
+);
+assert.equal(
+  planEditorMapTapAddsVia({
+    editorActive: true,
+    hasStart: true,
+    hasEnd: true,
+    pickingStartOrEnd: false,
+  }),
+  true
+);
+assert.equal(
+  planEditorMapTapAddsVia({
+    editorActive: true,
+    hasStart: true,
+    hasEnd: true,
+    pickingStartOrEnd: true,
+  }),
+  false
 );
 assert.equal(
   planLongPressSetsDest({

@@ -1871,6 +1871,17 @@ export function planFarTapInsertsVia(opts: {
   return opts.hasStart && opts.hasEnd;
 }
 
+/** Plan editor: any map tap after A+B is a via — line optional. */
+export function planEditorMapTapAddsVia(opts: {
+  editorActive: boolean;
+  hasStart: boolean;
+  hasEnd: boolean;
+  pickingStartOrEnd: boolean;
+}): boolean {
+  if (!opts.editorActive || opts.pickingStartOrEnd) return false;
+  return opts.hasStart && opts.hasEnd;
+}
+
 /**
  * Long-press / Alt-hold “Set as destination” (Komoot).
  * Explicit via-pick or start-pick still places that pin. A+B required.
