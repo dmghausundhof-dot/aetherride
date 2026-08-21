@@ -7,7 +7,7 @@ process.env.ALLOW_DEMO_CONTENT = "true";
 import assert from "node:assert/strict";
 import { buildDemoGeometry, centerOfGeometry } from "./demoGeometry";
 import { buildNavCues, cueBannerText, nextCue } from "./navCues";
-import { activeRouteFromSuggestion } from "./activeRoute";
+import { activeRouteFromSuggestion, savedRouteForWebRideHandoff, activeRouteForWebRideBridge } from "./activeRoute";
 import type { RouteSuggestion } from "./suggestions";
 import { pointAlongLine, trackDistanceM } from "@/lib/geo/trackMath";
 
@@ -48,6 +48,40 @@ assert.equal(ar.source, "suggestion");
 const arLive = activeRouteFromSuggestion(sample, g);
 assert.ok((arLive.geometry?.coordinates.length ?? 0) > 10);
 assert.equal(arLive.source, "engine");
+
+const handoff = savedRouteForWebRideHandoff({
+  id: sample.id,
+  name: sample.name,
+  distanceKm: sample.distanceKm,
+  elevationM: sample.elevationM,
+  durationMin: sample.durationMin,
+  geometry: g,
+  source: "suggestion",
+});
+assert.ok(handoff);
+assert.equal(handoff!.id, sample.id);
+assert.equal(activeRouteForWebRideBridge(handoff)?.id, sample.id);
+assert.equal(
+  savedRouteForWebRideHandoff({
+    id: "engine-1",
+    name: "x",
+    distanceKm: 1,
+    durationMin: 10,
+    geometry: g,
+  }),
+  null,
+  "ephemeral engine ids are not library handoffs"
+);
+assert.equal(
+  savedRouteForWebRideHandoff({
+    id: "ok",
+    name: "x",
+    distanceKm: 1,
+    durationMin: 10,
+    geometry: null,
+  }),
+  null
+);
 
 const a = pointAlongLine(g, 0);
 const b = pointAlongLine(g, 0.5);

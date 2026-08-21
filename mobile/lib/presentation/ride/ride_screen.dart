@@ -504,8 +504,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
               OfflineMapsPrefs.streetHudKindRawFrom(prefs),
             );
           } else {
+            // Region without matching prefs — not pack-wide coverage.
             _streetHudBbox = null;
-            _streetHudKind = StreetHudOfferKind.pack;
+            _streetHudKind = null;
           }
         } catch (_) {
           _streetHudBbox = null;

@@ -82,3 +82,50 @@ export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
     setAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Browser ride bridge needs a library entry — not a bare `engine-*` ghost.
+ * Returns a SavedRoute ready to persist + hand off when geometry is real.
+ */
+export function savedRouteForWebRideHandoff(opts: {
+  id: string;
+  name: string;
+  distanceKm: number;
+  elevationM?: number | null;
+  durationMin: number;
+  geometry: GeoJSON.LineString | null | undefined;
+  source?: SavedRoute["source"];
+  mtbScale?: string;
+  surface?: string;
+  loop?: boolean;
+  reasons?: [string, string, string];
+}): SavedRoute | null {
+  const coords = opts.geometry?.coordinates;
+  if (!coords || coords.length < 2) return null;
+  if (opts.id.startsWith("engine-")) return null;
+  return {
+    id: opts.id,
+    name: opts.name,
+    distanceKm: opts.distanceKm,
+    elevationM: opts.elevationM ?? 0,
+    durationMin: opts.durationMin,
+    mtbScale: opts.mtbScale,
+    surface: opts.surface,
+    loop: opts.loop,
+    reasons: opts.reasons,
+    savedAt: new Date().toISOString(),
+    source: opts.source ?? "engine",
+    geometry: {
+      type: "LineString",
+      coordinates: coords,
+    },
+  };
+}
+
+/** ActiveRoute for the bridge after a library save (never ephemeral engine-*). */
+export function activeRouteForWebRideBridge(
+  entry: SavedRoute | null | undefined
+): ActiveRoute | null {
+  if (!entry) return null;
+  return activeRouteFromSaved(entry);
+}

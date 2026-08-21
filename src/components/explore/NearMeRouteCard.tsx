@@ -7,7 +7,10 @@ import { useRouter } from "next/navigation";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import type { ClientRouteResult } from "@/lib/routing/profiles";
 import { useAppStore } from "@/store/useAppStore";
-import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
+import {
+  activeRouteForWebRideBridge,
+  savedRouteForWebRideHandoff,
+} from "@/lib/routing/activeRoute";
 import {
   formatDistanceElevation,
   sanitizeElevationM,
@@ -21,7 +24,7 @@ import { profileAllowsOsmRoundTrip } from "@/lib/routing/osmRoundTrip";
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
  * Rundkurs mode: reject engine results that are not closed (≤300 m).
- * Preview first — Mappe only after explicit Merken.
+ * Preview first — Mappe after Merken; „In App“ speichert vor der Bridge.
  */
 export function NearMeRouteCard({
   center,
@@ -134,7 +137,27 @@ export function NearMeRouteCard({
         onLoopPreview?.(result, name);
       }
       if (andStart) {
-        setActiveRoute(activeRouteFromEngine(name, result));
+        const entry = savedRouteForWebRideHandoff({
+          id: j.tourId || `near-${Date.now()}`,
+          name,
+          distanceKm,
+          elevationM: elev,
+          durationMin: Math.round(result.durationS / 60),
+          geometry: result.geometry,
+          source: "engine",
+          loop: isLoop,
+        });
+        if (!entry) {
+          setMsg(d.routingFail);
+          return;
+        }
+        saveRoute(entry);
+        const active = activeRouteForWebRideBridge(entry);
+        if (!active) {
+          setMsg(d.routingFail);
+          return;
+        }
+        setActiveRoute(active);
         router.push("/ride");
       }
     } catch (e) {
