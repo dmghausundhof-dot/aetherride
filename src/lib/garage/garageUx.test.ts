@@ -496,7 +496,7 @@ assert(
 );
 assert(
   garagePageSrc.includes("workshopTitle"),
-  "garage heading is Rad, not Werkstatt chrome"
+  "garage heading is Garage, not Workshop chrome"
 );
 assert(
   readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(

@@ -8,7 +8,7 @@ export const HOF_NAV = [
   { id: "hof", href: "/home", label: "Start" },
   { id: "karte", href: "/discover", label: "Karte" },
   { id: "platz", href: "/library", label: "Touren" },
-  { id: "werkstatt", href: "/garage", label: "Rad" },
+  { id: "werkstatt", href: "/garage", label: "Garage" },
 ] as const;
 
 export type HofNavId = (typeof HOF_NAV)[number]["id"];
