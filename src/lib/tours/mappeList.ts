@@ -48,6 +48,16 @@ export function mappeGoRideDiscoverHref(route: SavedRoute): string | null {
 }
 
 /**
+ * Mappe „Auf Karte“: track → browse highlight; pin-only → Plan (same as ride).
+ */
+export function mappeShowOnMapHref(route: SavedRoute): string {
+  return (
+    mappeGoRideDiscoverHref(route) ??
+    `/discover?route=${encodeURIComponent(route.id)}`
+  );
+}
+
+/**
  * Discover Mappe open/ride: track → draft; catalog hit → suggestion;
  * else Plan (never empty `/ride`).
  */

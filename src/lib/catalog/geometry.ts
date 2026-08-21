@@ -82,6 +82,13 @@ const SANTA_CRUZ_BLUR =
   "https://www.santacruzbicycles.com/en-eu/products/blur-frame-2025";
 const BMC_FOURSTROKE =
   "https://www.bmc-switzerland.com/eu_en/fourstroke-01-two.html";
+const SPEC_ENDURO =
+  "https://www.specialized.com/us/en/enduro-comp/p/200513";
+const TREK_FUEL_EXE =
+  "https://www.trekbikes.com/us/en_US/bikes/mountain-bikes/electric-mountain-bikes/fuel-exe/fuel-exe-5/p/5298753/";
+const ORBEA_RISE =
+  "https://www.planetarycycles.com/product/orbea-rise-h30-399396-1.htm";
+const YT_CAPRA = "https://www.yt-industries.com/";
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
@@ -1217,6 +1224,126 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 76.7,
       chainstayMm: 432,
       wheelbaseMm: 1218,
+    }),
+  ],
+  // Specialized Enduro Comp low BB (OEM S-Sizing).
+  "cat-specialized-enduro-2024": [
+    g("S2", 437, 616, SPEC_ENDURO, {
+      setting: "low",
+      headAngleDeg: 63.9,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1217,
+    }),
+    g("S3", 464, 620, SPEC_ENDURO, {
+      setting: "low",
+      headAngleDeg: 63.9,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1246,
+    }),
+    g("S4", 487, 629, SPEC_ENDURO, {
+      setting: "low",
+      headAngleDeg: 63.9,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1274,
+    }),
+    g("S5", 511, 638, SPEC_ENDURO, {
+      setting: "low",
+      headAngleDeg: 63.9,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1302,
+    }),
+  ],
+  // Trek Fuel EXe 5 MinoLink low (Tredz / Trek chart).
+  "cat-trek-fuel-exe-5-2025": [
+    g("S", 428, 620, TREK_FUEL_EXE, {
+      setting: "low",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 76.8,
+      chainstayMm: 440,
+      wheelbaseMm: 1188,
+    }),
+    g("M", 453, 629, TREK_FUEL_EXE, {
+      setting: "low",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 76.8,
+      chainstayMm: 440,
+      wheelbaseMm: 1217,
+    }),
+    g("L", 483, 629, TREK_FUEL_EXE, {
+      setting: "low",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 76.8,
+      chainstayMm: 440,
+      wheelbaseMm: 1247,
+    }),
+    g("XL", 508, 638, TREK_FUEL_EXE, {
+      setting: "low",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 76.8,
+      chainstayMm: 440,
+      wheelbaseMm: 1276,
+    }),
+  ],
+  // Orbea Rise H30 hydro OEM chart (alloy platform).
+  "cat-orbea-rise-h30-2025": [
+    g("S", 425, 604, ORBEA_RISE, {
+      headAngleDeg: 66,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 445,
+      wheelbaseMm: 1180,
+    }),
+    g("M", 450, 613, ORBEA_RISE, {
+      headAngleDeg: 66,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 445,
+      wheelbaseMm: 1205,
+    }),
+    g("L", 474, 627, ORBEA_RISE, {
+      headAngleDeg: 66,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 445,
+      wheelbaseMm: 1229,
+    }),
+    g("XL", 500, 646, ORBEA_RISE, {
+      headAngleDeg: 66,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 445,
+      wheelbaseMm: 1255,
+    }),
+  ],
+  // YT Capra MX low (Vital / bikes.fan MX chart).
+  "cat-yt-capra-2024": [
+    g("S", 424, 627, YT_CAPRA, {
+      setting: "low",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 433,
+      wheelbaseMm: 1199,
+    }),
+    g("M", 444, 636, YT_CAPRA, {
+      setting: "low",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 433,
+      wheelbaseMm: 1223,
+    }),
+    g("L", 464, 636, YT_CAPRA, {
+      setting: "low",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77.4,
+      chainstayMm: 433,
+      wheelbaseMm: 1243,
+    }),
+    g("XL", 484, 645, YT_CAPRA, {
+      setting: "low",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77.4,
+      chainstayMm: 438,
+      wheelbaseMm: 1272,
     }),
   ],
 };

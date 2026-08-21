@@ -672,6 +672,23 @@ void main() {
       expect(hint?.outside, isTrue);
       expect(hint?.regionId, 'karlsruhe');
     });
+
+    test('dormant covering pack is activate CTA, not ready', () {
+      final hint = hofHintForLocation(
+        overlayId: null,
+        overlayName: null,
+        overlayIsEnvelope: false,
+        suggestedId: 'rhein-neckar',
+        suggestedName: 'Rhein-Neckar',
+        packReady: false,
+        readyId: 'freiburg',
+        readyName: 'Freiburg',
+        installedIds: const {},
+      );
+      expect(hint?.ready, isFalse);
+      expect(hint?.outside, isFalse);
+      expect(hint?.regionId, 'rhein-neckar');
+    });
   });
 
   group('formatHofGateAway', () {

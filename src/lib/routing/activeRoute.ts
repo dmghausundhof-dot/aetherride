@@ -6,6 +6,7 @@ import {
   formatDistanceElevation,
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
+import { savedRouteTrackCoords } from "@/lib/tours/mappeList";
 
 export function activeRouteFromSuggestion(
   suggestion: RouteSuggestion,
@@ -60,10 +61,10 @@ export function formatRouteChip(route: ActiveRoute): string {
   return `${route.name} · ${formatDistanceElevation(route.distanceKm, elev)}`;
 }
 
-/** HUD nur mit echtem Track — kein stiller Tab. */
+/** HUD nur mit echtem Track (geometry oder layers.tour) — kein stiller Tab. */
 export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
-  const coords = route.geometry?.coordinates;
-  if (!coords || coords.length < 2) return null;
+  const coords = savedRouteTrackCoords(route);
+  if (coords.length < 2) return null;
   return {
     id: route.id,
     name: route.name,
@@ -72,7 +73,7 @@ export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
     durationMin: route.durationMin,
     mtbScale: route.mtbScale,
     surface: route.surface,
-    geometry: route.geometry ?? null,
+    geometry: { type: "LineString", coordinates: coords },
     source:
       route.source === "import"
         ? "import"

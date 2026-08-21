@@ -18,6 +18,7 @@ export function MappeTourCard({
   loopLabel,
   noTrackLabel,
   rideLabel,
+  planLabel,
   open,
   onOpen,
   onGoRide,
@@ -32,6 +33,7 @@ export function MappeTourCard({
   loopLabel: string;
   noTrackLabel: string;
   rideLabel: string;
+  planLabel?: string;
   open: boolean;
   onOpen: () => void;
   onGoRide?: () => void;
@@ -41,10 +43,14 @@ export function MappeTourCard({
   sourceChip?: string;
   children?: ReactNode;
 }) {
-  const canRide = Boolean(onGoRide) && savedRouteHasTrack(route);
+  const hasTrack = savedRouteHasTrack(route);
+  const canRide = Boolean(onGoRide) && hasTrack;
+  const canPlan = Boolean(onGoRide) && !hasTrack;
+  const actionLabel = canPlan ? planLabel ?? rideLabel : rideLabel;
   const coords = savedRouteTrackCoords(route);
   const loop = savedRouteIsLoop(route);
   const spark = mappeElevSpark(coords);
+  const sparkPad = canRide || canPlan;
 
   return (
     <li
@@ -62,7 +68,7 @@ export function MappeTourCard({
         {spark.length >= 2 ? (
           <svg
             viewBox="0 0 100 16"
-            className={`pointer-events-none absolute bottom-2.5 h-4 text-accent ${canRide ? "inset-x-3 right-14" : "inset-x-3"}`}
+            className={`pointer-events-none absolute bottom-2.5 h-4 text-accent ${sparkPad ? "inset-x-3 right-14" : "inset-x-3"}`}
             aria-hidden
             preserveAspectRatio="none"
           >
@@ -82,15 +88,23 @@ export function MappeTourCard({
             />
           </svg>
         ) : null}
-        {canRide ? (
+        {canRide || canPlan ? (
           <button
             type="button"
             className="absolute bottom-2 right-2 rounded-full bg-background/80 p-1"
-            data-testid={`platz-tour-ride-${route.id}`}
+            data-testid={
+              canRide
+                ? `platz-tour-ride-${route.id}`
+                : `platz-tour-plan-${route.id}`
+            }
             onClick={onGoRide}
-            aria-label={rideLabel}
+            aria-label={actionLabel}
           >
-            <MappeGlyph name="ride" size={36} alt={rideLabel} />
+            <MappeGlyph
+              name={canRide ? "ride" : "mappe"}
+              size={36}
+              alt={actionLabel}
+            />
           </button>
         ) : null}
       </div>

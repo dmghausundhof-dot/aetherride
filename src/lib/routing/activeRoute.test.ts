@@ -9,11 +9,13 @@ import { buildDemoGeometry, centerOfGeometry } from "./demoGeometry";
 import { buildNavCues, cueBannerText, nextCue } from "./navCues";
 import {
   activeRouteFromSuggestion,
+  activeRouteFromSaved,
   savedRouteForWebRideHandoff,
   activeRouteForWebRideBridge,
   webRideBridgeNeedsTrack,
 } from "./activeRoute";
 import type { RouteSuggestion } from "./suggestions";
+import type { SavedRoute } from "@/types/route";
 import { pointAlongLine, trackDistanceM } from "@/lib/geo/trackMath";
 
 const sample: RouteSuggestion = {
@@ -90,6 +92,32 @@ assert.equal(
 assert.equal(webRideBridgeNeedsTrack(2), true);
 assert.equal(webRideBridgeNeedsTrack(1), false);
 assert.equal(webRideBridgeNeedsTrack(null), false);
+
+const layeredOnly: SavedRoute = {
+  id: "mappe-layer",
+  name: "Layer Tour",
+  distanceKm: 2,
+  elevationM: 0,
+  durationMin: 20,
+  savedAt: new Date().toISOString(),
+  source: "planned",
+  geometry: null,
+  layers: {
+    tour: {
+      type: "LineString",
+      coordinates: [
+        [8.6, 49.4],
+        [8.7, 49.5],
+      ],
+    },
+  },
+};
+assert.equal(activeRouteFromSaved(layeredOnly)?.geometry?.coordinates.length, 2);
+assert.equal(
+  activeRouteFromSaved({ ...layeredOnly, layers: undefined }),
+  null,
+  "pin-only stays null"
+);
 
 const a = pointAlongLine(g, 0);
 const b = pointAlongLine(g, 0.5);

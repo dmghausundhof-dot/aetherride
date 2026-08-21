@@ -20,6 +20,7 @@ import { savedRouteHasTrack, savedRouteTrackCoords, mappeCardStatParts } from "@
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { platzCopy, platzShareHonesty } from "@/lib/i18n/platzCopy";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
 import { useAppStore } from "@/store/useAppStore";
 import type { SavedRoute } from "@/types/route";
 
@@ -41,6 +42,7 @@ export function TourAkte({
   const copy = useHofCopy();
   const lang = useChromeLang();
   const p = platzCopy(lang);
+  const openPlanner = catalogCopy(lang).tour.openPlanner;
 
   const [shelf, setShelf] = useState<Shelf>("mein");
   const bikes = useAppStore((s) => s.bikes);
@@ -65,6 +67,7 @@ export function TourAkte({
   const lastRideBikeId = last?.bikeId ?? route.preferredBikeId ?? null;
   const riddenWith = bikes.find((b) => b.id === lastRideBikeId)?.name ?? null;
   const hasTrack = savedRouteHasTrack(route);
+  const mapCta = hasTrack ? p.showOnMap : openPlanner;
   const stats = mappeCardStatParts(route);
   const caption = joinMappeCaption([
     riddenWith ? p.riddenWith(riddenWith) : null,
@@ -178,7 +181,7 @@ export function TourAkte({
           onClick={onShowOnMap}
         >
           <MappeGlyph name="mappe" size={22} />
-          <span className="text-sm font-extrabold">{p.showOnMap}</span>
+          <span className="text-sm font-extrabold">{mapCta}</span>
         </button>
       ) : null}
 

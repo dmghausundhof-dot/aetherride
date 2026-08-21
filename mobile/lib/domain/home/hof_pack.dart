@@ -18,10 +18,11 @@ class HofPackHint {
   final bool outside;
 }
 
-/// Ready Katalog-Pack zuerst. Overlay nur wenn der Katalog nichts liefert.
-/// Liegt ein Pack bereit, Statuszeile statt Download. Ist dasselbe Pack
-/// schon installiert, aber GPS außerhalb der Occupancy: „Außerhalb“, nicht
-/// noch einmal laden.
+/// Ready only when the *activated* pack covers GPS. Overlay only when the
+/// catalog has nothing better. Dormant installed packs that cover GPS should
+/// surface as a load/activate suggestion — not „Routing offline“.
+/// Liegt das aktivierte Pack bereit, Statuszeile statt Download. Ist dasselbe
+/// Pack schon installiert, aber GPS außerhalb der Occupancy: „Außerhalb“.
 HofPackHint? hofHintForLocation({
   required String? overlayId,
   required String? overlayName,

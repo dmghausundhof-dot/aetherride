@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { simpleNamedRoute } from "@/lib/library/simpleAddRoute";
+import { mappeGoRideDiscoverHref } from "@/lib/tours/mappeList";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { platzCopy } from "@/lib/i18n/platzCopy";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
 
 export function AddRouteForm({
   defaultStart,
@@ -26,15 +29,19 @@ export function AddRouteForm({
   tone?: "accent" | "ghost";
 }) {
   const saveRoute = useAppStore((s) => s.saveRoute);
-  const p = platzCopy(useChromeLang());
+  const lang = useChromeLang();
+  const p = platzCopy(lang);
+  const openPlanner = catalogCopy(lang).tour.openPlanner;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [planHref, setPlanHref] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
     setBusy(true);
     setMsg(null);
+    setPlanHref(null);
     let start = defaultStart ?? undefined;
     if (!start && typeof navigator !== "undefined" && navigator.geolocation) {
       start = await new Promise<[number, number] | undefined>((resolve) => {
@@ -54,6 +61,7 @@ export function AddRouteForm({
     setOpen(false);
     setBusy(false);
     setMsg(p.savedNamed(entry.name));
+    setPlanHref(mappeGoRideDiscoverHref(entry));
     onSaved?.(entry.name);
   };
 
@@ -76,6 +84,14 @@ export function AddRouteForm({
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">
             {msg}
+            {planHref ? (
+              <>
+                {" · "}
+                <Link href={planHref} className="font-semibold text-accent">
+                  {openPlanner}
+                </Link>
+              </>
+            ) : null}
           </p>
         )}
       </div>

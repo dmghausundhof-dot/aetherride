@@ -43,6 +43,7 @@ import {
   mappeStartAwayKm,
   mappeTrackClimbM,
   mappeGoRideDiscoverHref,
+  mappeShowOnMapHref,
   savedRouteNeedsElevBackfill,
   savedRouteTrackCoords,
   sortMappe,
@@ -65,7 +66,9 @@ export default function LibraryPage() {
   const copy = useHofCopy();
   const lang = useChromeLang();
   const g = platzCopy(lang);
-  const stimme = catalogCopy(lang).stimmen;
+  const cat = catalogCopy(lang);
+  const stimme = cat.stimmen;
+  const openPlannerLabel = cat.tour.openPlanner;
   const router = useRouter();
 
   const savedRoutes = useAppStore((s) => s.savedRoutes);
@@ -508,6 +511,7 @@ export default function LibraryPage() {
                   loopLabel={g.loopTag}
                   noTrackLabel={g.noTrackLabel}
                   rideLabel={g.goRide}
+                  planLabel={openPlannerLabel}
                   caption={caption}
                   awayLabel={awayLabel}
                   conditionLabel={tag ? stimme.tagLabel(tag) : undefined}
@@ -528,9 +532,7 @@ export default function LibraryPage() {
                     onShowOnMap={() => {
                       const route = activeRouteFromSaved(r);
                       if (route) setActiveRoute(route);
-                      router.push(
-                        `/discover?route=${encodeURIComponent(r.id)}`,
-                      );
+                      router.push(mappeShowOnMapHref(r));
                     }}
                     onCreateGroup={() => setGroupCreateId(r.id)}
                     onRemoveFromMappe={() => {

@@ -398,7 +398,8 @@ function DiscoverPageInner() {
   const lang = useChromeLang();
   const d = discoverUi(lang);
   const g = platzCopy(lang);
-  const stimme = catalogCopy(lang).stimmen;
+  const cat = catalogCopy(lang);
+  const stimme = cat.stimmen;
   const chrome = webChrome(lang);
 
   const router = useRouter();
@@ -4625,6 +4626,7 @@ function DiscoverPageInner() {
                         akteLabel={copy.akteMein}
                         removeLabel={d.remove}
                         rideLabel={g.goRide}
+                        planLabel={cat.tour.openPlanner}
                         onOpen={() => loadSavedRoute(r)}
                         onAkte={() =>
                           router.push(

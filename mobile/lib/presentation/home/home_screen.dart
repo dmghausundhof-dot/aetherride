@@ -612,27 +612,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!mounted) return;
     String? suggestedId;
     String? suggestedName;
-    String? readyId;
-    String? readyName;
+    String? activatedId;
+    String? activatedName;
     var installedIds = <String>{};
     final overlayIsEnvelope = region != null && isEnvelopePackId(region.id);
     try {
       final m = await OfflineMapsPrefs.read();
-      readyId = OfflineMapsPrefs.packIdFromActivatedPath(
+      activatedId = OfflineMapsPrefs.packIdFromActivatedPath(
         m['activatedPackPath'] as String?,
       );
       final raw = (m['regionPack'] as String?)?.trim();
-      if (readyId != null && readyId.isNotEmpty) {
-        readyName = l10n.overlayRegionNameFor(readyId, raw);
+      if (activatedId != null && activatedId.isNotEmpty) {
+        activatedName = l10n.overlayRegionNameFor(activatedId, raw);
       } else if (raw != null && raw.isNotEmpty) {
-        readyId = raw;
-        readyName = raw;
+        activatedId = raw;
+        activatedName = raw;
       }
     } catch (_) {}
     if (!mounted) return;
+    // Ready only when the *activated* graph covers GPS — not a dormant pack.
+    var packReady = false;
+    String? readyId = activatedId;
+    String? readyName = activatedName;
     if (covering != null) {
-      readyId = covering.id;
-      readyName = l10n.overlayRegionNameFor(covering.id, covering.name);
+      final coverName = l10n.overlayRegionNameFor(covering.id, covering.name);
+      if (activatedId != null &&
+          activatedId.isNotEmpty &&
+          covering.id == activatedId) {
+        packReady = true;
+        readyId = covering.id;
+        readyName = coverName;
+      } else {
+        // Installed pack covers here but Dijkstra uses another (or none).
+        suggestedId = covering.id;
+        suggestedName = coverName;
+      }
     } else {
       try {
         installedIds = await OfflinePackDirs.legitimateIds();
@@ -652,7 +666,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       overlayIsEnvelope: overlayIsEnvelope,
       suggestedId: suggestedId,
       suggestedName: suggestedName,
-      packReady: covering != null,
+      packReady: packReady,
       readyId: readyId,
       readyName: readyName,
       installedIds: installedIds,

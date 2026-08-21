@@ -17,11 +17,35 @@ import {
   rideOpenPath,
 } from "@/lib/web/appLinks";
 import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
+import { webRideBridgeNeedsTrack } from "@/lib/routing/activeRoute";
+import { mappeGoRideDiscoverHref } from "@/lib/tours/mappeList";
+import type { SavedRoute } from "@/types/route";
 
 export default function RideAppBridgePage() {
   const copy = useHofCopy();
   const activeRoute = useAppStore((s) => s.activeRoute);
+  const savedRoutes = useAppStore((s) => s.savedRoutes);
   const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
+
+  const hasTrack = webRideBridgeNeedsTrack(
+    activeRoute?.geometry?.coordinates?.length
+  );
+  const planHref = useMemo(() => {
+    if (!activeRoute || hasTrack) return null;
+    const saved = savedRoutes.find((r) => r.id === activeRoute.id);
+    if (saved) return mappeGoRideDiscoverHref(saved);
+    const stub: SavedRoute = {
+      id: activeRoute.id,
+      name: activeRoute.name,
+      distanceKm: activeRoute.distanceKm,
+      elevationM: activeRoute.elevationM,
+      durationMin: activeRoute.durationMin,
+      savedAt: activeRoute.setAt,
+      source: "suggestion",
+      geometry: null,
+    };
+    return mappeGoRideDiscoverHref(stub);
+  }, [activeRoute, hasTrack, savedRoutes]);
 
   const deepLink = useMemo(() => {
     return appDeepLink(rideOpenPath(activeRoute?.id));
@@ -60,7 +84,7 @@ export default function RideAppBridgePage() {
           {copy.rideBridgeHint}
         </p>
 
-        {activeRoute ? (
+        {activeRoute && hasTrack ? (
           <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/30 text-chrome">
@@ -106,6 +130,26 @@ export default function RideAppBridgePage() {
               Tour-Auswahl verwerfen
             </button>
           </div>
+        ) : activeRoute && planHref ? (
+          <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
+            <p className="text-sm font-semibold">{activeRoute.name}</p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Noch kein Track — zuerst Ziel setzen im Planer.
+            </p>
+            <Link
+              href={planHref}
+              className="mt-4 inline-flex rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent"
+            >
+              Im Planer öffnen
+            </Link>
+            <button
+              type="button"
+              onClick={() => clearActiveRoute()}
+              className="mt-3 block text-xs text-text-secondary underline hover:text-foreground"
+            >
+              Tour-Auswahl verwerfen
+            </button>
+          </div>
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-5 text-sm text-text-secondary">
             Noch keine Tour ausgewählt. Plane eine Route unter{" "}
@@ -121,6 +165,7 @@ export default function RideAppBridgePage() {
           <AppDownloadButtons size="lg" />
         </div>
 
+        {hasTrack ? (
         <details className="mt-6 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
           <summary className="cursor-pointer font-medium text-text-secondary">
             App direkt öffnen
@@ -141,6 +186,7 @@ export default function RideAppBridgePage() {
             </a>
           </div>
         </details>
+        ) : null}
 
         <div className="mt-12 grid gap-3">
           <Link
