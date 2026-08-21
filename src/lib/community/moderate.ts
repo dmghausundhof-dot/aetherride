@@ -214,7 +214,9 @@ export async function callModerationModel(input: ModerationInput): Promise<{
   if (!key) return null;
   const hasImage = Boolean(input.imageUrl);
   const model = hasImage
-    ? process.env.XAI_VISION_MODEL || "grok-2-vision-1212"
+    ? process.env.XAI_VISION_MODEL ||
+      process.env.XAI_MODEL ||
+      "grok-4.6"
     : process.env.XAI_MODEL || "grok-3-mini";
 
   const userText =

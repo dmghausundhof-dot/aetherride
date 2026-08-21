@@ -2,8 +2,8 @@ import '../ble.dart';
 import '../hud_bike_peek.dart';
 import 'bike_ble_kind.dart';
 
-/// Pair sheet covers the shell, including the tab bar. Content scrolls inside.
-const kBlePairSheetHeightFactor = 0.92;
+/// Pair sheet height — same factor as [WatchPairSheet] (one pairing language).
+const kBlePairSheetHeightFactor = 0.52;
 
 /// Bottom-sheet height: leaves the status bar, includes the home-indicator
 /// zone. The widget pads [safeBottom] inside so the footer never overflows.

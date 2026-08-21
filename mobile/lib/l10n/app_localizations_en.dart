@@ -4029,7 +4029,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get watchNoDeviceId => 'Connected, but no device ID';
 
   @override
-  String get bleBikeTitle => 'Connect';
+  String get bleBikeTitle => 'Pair bike';
 
   @override
   String get blePairLeadAny =>

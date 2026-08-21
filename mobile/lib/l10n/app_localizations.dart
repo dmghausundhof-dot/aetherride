@@ -7121,7 +7121,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleBikeTitle.
   ///
   /// In de, this message translates to:
-  /// **'Verbinden'**
+  /// **'Rad koppeln'**
   String get bleBikeTitle;
 
   /// No description provided for @blePairLeadAny.
@@ -7157,7 +7157,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleScanningDrive.
   ///
   /// In de, this message translates to:
-  /// **'Suche …'**
+  /// **'Suche Antrieb und Sensoren …'**
   String get bleScanningDrive;
 
   /// No description provided for @bleEmptyEbike.

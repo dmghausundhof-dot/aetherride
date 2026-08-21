@@ -2050,7 +2050,7 @@
   "watchEmptyHint": "Broadcast on, phone close. Apple Watch does not send standard HR.",
   "watchNoHr": "No heart-rate signal — check broadcast on the watch.",
   "watchNoDeviceId": "Connected, but no device ID",
-  "bleBikeTitle": "Connect",
+  "bleBikeTitle": "Pair bike",
   "blePairLeadAny": "Bosch: battery from the display. Shimano and others: name only, speed from the wheel sensor.",
   "bleFlowRowName": "Bosch",
   "bleFlowRowKind": "Flow",

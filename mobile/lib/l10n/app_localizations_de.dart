@@ -4051,7 +4051,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get watchNoDeviceId => 'Verbunden, aber ohne Geräte-ID';
 
   @override
-  String get bleBikeTitle => 'Verbinden';
+  String get bleBikeTitle => 'Rad koppeln';
 
   @override
   String get blePairLeadAny =>
@@ -4071,7 +4071,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bleRememberAnyway => 'Trotzdem merken';
 
   @override
-  String get bleScanningDrive => 'Suche …';
+  String get bleScanningDrive => 'Suche Antrieb und Sensoren …';
 
   @override
   String get bleEmptyEbike =>

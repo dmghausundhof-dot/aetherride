@@ -19,7 +19,10 @@ async function visionHints(
 ): Promise<{ queries: string[]; parts: VisionPartHint[] }> {
   const key = process.env.XAI_API_KEY;
   if (!key) return { queries: [], parts: [] };
-  const model = process.env.XAI_VISION_MODEL || "grok-2-vision-1212";
+  const model =
+    process.env.XAI_VISION_MODEL ||
+    process.env.XAI_MODEL ||
+    "grok-4.6";
   const catalog = catalogNameIndex();
   const res = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",

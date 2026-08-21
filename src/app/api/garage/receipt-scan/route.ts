@@ -27,7 +27,10 @@ export async function POST(req: Request) {
     return NextResponse.json(emptyReceiptScan("no_key"));
   }
 
-  const model = process.env.XAI_VISION_MODEL || "grok-2-vision-1212";
+  const model =
+    process.env.XAI_VISION_MODEL ||
+    process.env.XAI_MODEL ||
+    "grok-4.6";
   try {
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",

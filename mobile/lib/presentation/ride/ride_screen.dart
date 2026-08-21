@@ -2911,9 +2911,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final online = await rideHasNetwork();
     if (!mounted) return;
     if (!online) {
-      final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
+      // Far off-route needs a graph that covers *this* fix, not just a pack on disk.
+      final graphReady = await _probeOfflineRoutingReady();
       if (!mounted) return;
-      // Close enough: splice remainder, no routing. Far: graph required.
       if (!graphReady && _crossTrackM > 25) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2981,7 +2981,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
     final online = await rideHasNetwork();
     if (!online) {
-      final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
+      final graphReady = await _probeOfflineRoutingReady();
       if (!graphReady && _crossTrackM > 25) return;
     }
     _autoRerouteBusy = true;
