@@ -3,7 +3,7 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { resolveTourPage } from "./tourPageResolve";
+import { hasPublicTourPage, resolveTourPage } from "./tourPageResolve";
 import { getPublicTour, listPublicTourIds } from "@/lib/catalog/publicTours";
 
 const catalog = resolveTourPage("r-heidelberg-city");
@@ -24,6 +24,9 @@ const pinOnly = resolveTourPage("seed-loop-tempelhofer-60");
 assert.equal(pinOnly?.kind, "seed");
 
 assert.equal(resolveTourPage("no-such-tour"), null);
+assert.equal(hasPublicTourPage("r-heidelberg-road"), true);
+assert.equal(hasPublicTourPage("seed-loop-titisee-feldberg-mtb-60"), true);
+assert.equal(hasPublicTourPage("engine-loop-not-a-page"), false);
 
 assert.ok(
   !listPublicTourIds().some((id) => id.startsWith("seed-loop-")),

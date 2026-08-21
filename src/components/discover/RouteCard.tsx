@@ -16,6 +16,7 @@ import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverUi } from "@/lib/i18n/discoverUi";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { bikeMatchLine, riderFacingReasons } from "@/lib/discover/riderHonesty";
+import { hasPublicTourPage } from "@/lib/tours/tourPageResolve";
 import { useAppStore } from "@/store/useAppStore";
 
 export function RouteCard({
@@ -126,12 +127,14 @@ export function RouteCard({
             <ChromeGlyph name="merken" size={16} current className="text-text-secondary" />
           )}
         </button>
-        <Link
-          href={`/tours/${route.id}`}
-          className="inline-flex items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-text-secondary hover:text-foreground"
-        >
-          <ExternalLink className="h-3.5 w-3.5" /> {d.pageLink}
-        </Link>
+        {hasPublicTourPage(route.id) ? (
+          <Link
+            href={`/tours/${route.id}`}
+            className="inline-flex items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-text-secondary hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> {d.pageLink}
+          </Link>
+        ) : null}
         <button
           type="button"
           onClick={onStart}

@@ -37,8 +37,10 @@ assert.ok(!reviews.includes("STIMME_TAG_WIRES.map"), "top/works not offered");
 
 assert.ok(card.includes("bikeMatchLine"), "cards hide match without a bike");
 assert.ok(!card.includes("matchScore}%"), "no naked match percent on cards");
+assert.ok(card.includes("hasPublicTourPage"), "cards link only existing tour pages");
 assert.ok(detail.includes("bikeMatchLine"), "detail match needs a bike");
 assert.ok(!detail.includes("matchScore}%"), "no naked match percent on detail");
+assert.ok(detail.includes("hasPublicTourPage"), "detail links only existing tour pages");
 assert.ok(detail.includes("emptyLayers"), "empty Popular/Photos/Elevation are one line");
 
 assert.ok(

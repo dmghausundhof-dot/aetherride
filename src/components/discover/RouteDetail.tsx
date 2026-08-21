@@ -33,6 +33,7 @@ import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import { TourFunctionKit } from "@/components/tours/TourFunctionKit";
 import { getPublicTour } from "@/lib/catalog/publicTours";
+import { hasPublicTourPage } from "@/lib/tours/tourPageResolve";
 import type { RangeEstimate } from "@/lib/ebike/range";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
@@ -634,12 +635,14 @@ export function RouteDetail({
           ) : null}
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Link
-            href={`/tours/${route.id}`}
-            className="text-xs font-medium text-accent hover:underline"
-          >
-            {d.publicTour}
-          </Link>
+          {hasPublicTourPage(route.id) ? (
+            <Link
+              href={`/tours/${route.id}`}
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              {d.publicTour}
+            </Link>
+          ) : null}
           <Link
             href={`/discover?panel=plan&tour=${encodeURIComponent(route.id)}`}
             className="text-xs font-medium text-accent hover:underline"

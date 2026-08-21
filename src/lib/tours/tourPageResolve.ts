@@ -16,3 +16,8 @@ export function resolveTourPage(id: string): ResolvedTourPage | null {
   if (seed) return { kind: "seed", seed };
   return null;
 }
+
+/** Discover may show engine routes that have no public page — do not 404. */
+export function hasPublicTourPage(id: string): boolean {
+  return resolveTourPage(id) != null;
+}
