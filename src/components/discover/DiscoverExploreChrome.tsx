@@ -13,6 +13,7 @@ import {
   resetDiscoverAround,
   resetDiscoverSheetFilters,
 } from "@/lib/discover/discoverExploreChrome";
+import { exploreFilterChipLabel } from "@/lib/discover/riderHonesty";
 import { discoverCopy } from "@/lib/i18n/discoverCopy";
 import { discoverUi } from "@/lib/i18n/discoverUi";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -236,7 +237,7 @@ export function DiscoverExploreChrome({
             }`}
           >
             <ChromeGlyph name="filter" size={14} current />
-            {filterActive ? `${d.filter} ${filterCount}` : d.filter}
+            {exploreFilterChipLabel(filters, minutes, d, filterCount)}
           </button>
           {onOfflineMaps ? (
             <button

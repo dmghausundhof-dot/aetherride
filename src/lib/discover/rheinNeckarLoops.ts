@@ -87,9 +87,9 @@ export function rheinNeckarLoopSuggestions(
       uncertainKmPct: 12,
       matchScore: s.duration_band === "60" ? 82 : 70,
       reasons: [
-        loop ? "Rundkurs-Seed Rhein-Neckar" : "Nähe-Peek Rhein-Neckar",
-        s.duration_band === "60" ? "~60 Min Feierabend-Lens" : "Kuratierte Region-Seed",
-        "Kuratierte P0 Seeds (nicht Demo-gated)",
+        loop ? "Rundkurs" : "In der Nähe",
+        s.duration_band === "60" ? "~60 Min" : "In der Region",
+        "In der Region",
       ],
       center,
       distanceFromOriginKm:

@@ -3791,14 +3791,6 @@ function DiscoverPageInner() {
                 geometry={selectedTourGeometry}
                 onSelectPoi={setHighlightPoiId}
               />
-              <button
-                type="button"
-                disabled={routingBusy}
-                onClick={() => void runHybridSnap(suggestionToTour(detailRoute))}
-                className="rounded-xl border border-chrome/40 bg-chrome/10 py-2.5 text-sm font-semibold text-chrome"
-              >
-                {d.fromHereStart}
-              </button>
             </div>
           ) : (
             <>

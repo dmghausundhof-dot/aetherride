@@ -34,7 +34,7 @@ function testDeMatchesCurrentChrome() {
   assert.equal(c.toHof, "Zum Hof");
   assert.equal(c.signIn, "Anmelden");
   assert.equal(c.arriveAtHof, "Am Hof ankommen");
-  assert.equal(c.hofNav.werkstatt, "Rad");
+  assert.equal(c.hofNav.werkstatt, "Garage");
   assert.equal(c.fourDoors, "Vier Türen");
   assert.equal(c.tabOf(2, 4), "Tab 2 von 4");
   assert.equal(c.dataPrivacy, "Daten & Privatsphäre");
@@ -49,7 +49,7 @@ function testEnFrItChrome() {
   assert.equal(webChrome("en").profile, "Profile");
   assert.equal(webChrome("en").stillToHof, "To Home anyway");
   assert.equal(webChrome("fr").arriveAtHof, "Arriver");
-  assert.equal(webChrome("fr").hofNav.werkstatt, "Vélo");
+  assert.equal(webChrome("fr").hofNav.werkstatt, "Garage");
   assert.equal(webChrome("it").profile, "Profilo");
   assert.equal(webChrome("it").hofNav.karte, "Mappa");
   assert.equal(webChrome("nl").hofNav.karte, "Kaart");

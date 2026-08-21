@@ -12,6 +12,9 @@ function testDe() {
   assert.equal(c.tour.atGate, "Vor dem Tor");
   assert.equal(c.stimmen.heading, "Stimmen");
   assert.equal(c.stimmen.empty, "Noch keine Stimmen.");
+  assert.equal(c.stimmen.namePlaceholder, "Name");
+  assert.equal(c.stimmen.tagLabel("zu"), "gesperrt");
+  assert.equal(c.stimmen.tagLabel("viel_los"), "voll");
   assert.ok(c.tour.honestBody.includes("Stimmen"));
   assert.ok(c.tour.flashSaved.includes("Mappe"));
 }
@@ -29,6 +32,10 @@ function testParity() {
     assert.ok(!JSON.stringify(Object.values(c.tour)).includes("Musterstraße"), lang);
     assert.ok(c.stimmen.crowdEasier(6).includes("6"), lang);
     assert.ok(c.stimmen.pinOnLine.length > 0, lang);
+    assert.ok(!c.stimmen.namePlaceholder.toLowerCase().includes("empty stays"), lang);
+    assert.ok(!c.stimmen.nameAria.toLowerCase().includes("empty stays"), lang);
+    assert.ok(c.tour.seedKicker.length > 0, lang);
+    assert.ok(c.tour.seedHonestBody.length > 20, lang);
     assert.ok(c.elevation.noteMeta.includes("km"), lang);
     assert.ok(c.tour.kitTitle.length > 0, lang);
     assert.equal(Object.keys(c.tour.fn).length, 13, lang);

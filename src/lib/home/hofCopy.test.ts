@@ -30,6 +30,8 @@ function testDeFallback() {
   assert.equal(HOF_COPY.shopKicker, "Über den Hof");
   assert.equal(HOF_COPY.shopPartsForBike, "Teile für dein Rad");
   assert.equal(HOF_COPY.shopLookupInShop, "Im Laden nachschlagen");
+  assert.equal(HOF_COPY.workshopTitle, "Garage");
+  assert.equal(hofCopy("en").workshopTitle, "Garage");
   assert.equal(HOF_COPY.workshopAdd, "Rad anlegen");
   assert.equal(HOF_COPY.workshopAddPart, "Teil hinzufügen");
   assert.equal(hofCopy("nl").workshopMore, "Meer op de fiets");

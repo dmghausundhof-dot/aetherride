@@ -1,9 +1,11 @@
 /** Zustand-Tags an einer Stimme. Unbekannte Werte fallen weg. */
 
+/** Rider condition pills — wet / closed / busy. top/works are not conditions. */
+export const STIMME_FORM_TAG_WIRES = ["nass", "zu", "viel_los"] as const;
+
+/** Stored wires still parse historical top/works so old Stimmen stay readable. */
 export const STIMME_TAG_WIRES = [
-  "nass",
-  "zu",
-  "viel_los",
+  ...STIMME_FORM_TAG_WIRES,
   "top",
   "baustelle",
 ] as const;

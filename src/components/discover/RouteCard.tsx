@@ -14,6 +14,9 @@ import {
 } from "@/lib/discover/elevationGuard";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverUi } from "@/lib/i18n/discoverUi";
+import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { bikeMatchLine, riderFacingReasons } from "@/lib/discover/riderHonesty";
+import { useAppStore } from "@/store/useAppStore";
 
 export function RouteCard({
   route,
@@ -30,7 +33,17 @@ export function RouteCard({
   onStart: () => void;
   onToggleSave: () => void;
 }) {
-  const d = discoverUi(useChromeLang());
+  const lang = useChromeLang();
+  const d = discoverUi(lang);
+  const reasons = riderFacingReasons(route.reasons);
+  const bikes = useAppStore((s) => s.bikes);
+  const activeBikeId = useAppStore((s) => s.activeBikeId);
+  const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+  const matchLine = bikeMatchLine(
+    Boolean(activeBike),
+    activeBike ? bikeCategoryLabel(activeBike.category, lang) : null,
+    d.fitsYourBike,
+  );
   const elev = sanitizeElevationM(route.elevationM, route.distanceKm);
   return (
     <article
@@ -55,9 +68,11 @@ export function RouteCard({
               {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""}
             </p>
           </div>
-          <div className="rounded-full bg-accent/20 px-2 py-1 text-xs font-bold text-accent">
-            {route.matchScore}%
-          </div>
+          {matchLine ? (
+            <div className="rounded-full bg-accent/20 px-2 py-1 text-xs font-semibold text-accent">
+              {matchLine}
+            </div>
+          ) : null}
         </div>
         {elev != null && (
           <div className="mt-2 text-accent">
@@ -89,7 +104,7 @@ export function RouteCard({
         </div>
         <p className="mt-2 line-clamp-2 text-xs text-text-secondary">
           {d.because}
-          {route.reasons.slice(0, 2).join(" — ")}
+          {reasons.slice(0, 2).join(" — ")}
         </p>
         {route.rangeNote && (
           <p className="mt-2 text-xs text-warning">{route.rangeNote}</p>

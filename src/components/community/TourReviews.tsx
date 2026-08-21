@@ -9,7 +9,10 @@ import {
   hasCommunity,
   type TourCommunityCounts,
 } from "@/lib/community/tourCommunity";
-import { parseStimmeTags, STIMME_TAG_WIRES } from "@/lib/community/stimmeTags";
+import {
+  parseStimmeTags,
+  STIMME_FORM_TAG_WIRES,
+} from "@/lib/community/stimmeTags";
 import { parseDifficultyDelta } from "@/lib/community/difficultyAggregate";
 import {
   createClient,
@@ -72,7 +75,7 @@ export function TourReviews({
   const s = catalogCopy(useChromeLang()).stimmen;
   const chrome = webChrome(useChromeLang());
 
-  const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(4);
+  const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [body, setBody] = useState("");
   const [name, setName] = useState(publicProfile.displayName || "");
   const [tags, setTags] = useState<string[]>([]);
@@ -125,6 +128,10 @@ export function TourReviews({
   };
 
   const onSubmit = async () => {
+    if (rating == null) {
+      setMsg({ text: s.ratingRange });
+      return;
+    }
     const local = submitReview({
       tourId,
       rating,
@@ -353,14 +360,18 @@ export function TourReviews({
                 name="star"
                 size={24}
                 current
-                className={n <= rating ? "text-accent" : "text-text-secondary"}
+                className={
+                  rating != null && n <= rating
+                    ? "text-accent"
+                    : "text-text-secondary"
+                }
               />
             </button>
           ))}
         </div>
         <p className="mt-3 text-[11px] text-text-secondary">{s.tagsHint}</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          {STIMME_TAG_WIRES.map((wire) => (
+          {STIMME_FORM_TAG_WIRES.map((wire) => (
             <button
               key={wire}
               type="button"
