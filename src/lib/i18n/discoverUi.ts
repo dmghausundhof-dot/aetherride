@@ -304,6 +304,8 @@ export type DiscoverUi = {
   match: string;
   pinIdea: string;
   pinOnlyHint: string;
+  emptyLayers: string;
+  fitsYourBike: (label: string) => string;
   whySuggestion: string;
   rangeSpan: (lo: number, hi: number) => string;
   rangeTight: string;
@@ -646,6 +648,8 @@ const DE: DiscoverUi = {
   pinIdea: "Idee",
   pinOnlyHint:
     "Nur Ortspunkt — kein gespeicherter Track. Live-Routing, Planen oder GPX für eine echte Linie.",
+  emptyLayers: "Noch keine Popularität, Fotos oder Höhe — nur der Pin.",
+  fitsYourBike: (label) => `passt zu deinem ${label}`,
   whySuggestion: "Warum dieser Vorschlag?",
   rangeSpan: (lo, hi) => `Reichweite ${lo}–${hi} km`,
   rangeTight: " — eng für diese Tour",
@@ -992,6 +996,8 @@ const EN: DiscoverUi = {
   pinIdea: "Idea",
   pinOnlyHint:
     "Pin only — no stored track. Live routing, Plan or GPX for a real line.",
+  emptyLayers: "No popularity, photos or elevation yet — pin only.",
+  fitsYourBike: (label) => `fits your ${label}`,
   whySuggestion: "Why this suggestion?",
   rangeSpan: (lo, hi) => `Range ${lo}–${hi} km`,
   rangeTight: " — tight for this tour",
@@ -1343,6 +1349,8 @@ const FR: DiscoverUi = {
   pinIdea: "Idée",
   pinOnlyHint:
     "Simple pin — pas de trace enregistrée. Routing live, Planifier ou GPX pour une vraie ligne.",
+  emptyLayers: "Pas encore de popularité, photos ou dénivelé — seulement le pin.",
+  fitsYourBike: (label) => `va à ton ${label}`,
   whySuggestion: "Pourquoi cette suggestion ?",
   rangeSpan: (lo, hi) => `Autonomie ${lo}–${hi} km`,
   rangeTight: " — juste pour cette sortie",
@@ -1693,6 +1701,8 @@ const IT: DiscoverUi = {
   pinIdea: "Idea",
   pinOnlyHint:
     "Solo pin — nessuna traccia salvata. Routing live, Pianifica o GPX per una linea vera.",
+  emptyLayers: "Ancora niente popolarità, foto o dislivello — solo il pin.",
+  fitsYourBike: (label) => `sta alla tua ${label}`,
   whySuggestion: "Perché questo suggerimento?",
   rangeSpan: (lo, hi) => `Autonomia ${lo}–${hi} km`,
   rangeTight: " — stretta per questa uscita",
@@ -2043,6 +2053,8 @@ const NL: DiscoverUi = {
   pinIdea: "Idee",
   pinOnlyHint:
     "Alleen pin — geen opgeslagen track. Live-routing, Plannen of GPX voor een echte lijn.",
+  emptyLayers: "Nog geen populariteit, foto's of hoogte — alleen de pin.",
+  fitsYourBike: (label) => `past bij je ${label}`,
   whySuggestion: "Waarom deze suggestie?",
   rangeSpan: (lo, hi) => `Bereik ${lo}–${hi} km`,
   rangeTight: " — krap voor deze tocht",

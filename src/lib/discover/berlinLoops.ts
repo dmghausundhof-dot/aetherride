@@ -153,9 +153,9 @@ function seedToSuggestion(
     uncertainKmPct: 12,
     matchScore: s.duration_band === "60" ? 82 : 70,
     reasons: [
-      loop ? "Rundkurs-Seed" : "Nähe-Peek",
-      s.duration_band === "60" ? "~60 Min Feierabend-Lens" : "Kuratierte Region-Seed",
-      "Kuratierte ~60-Min Seeds (nicht Demo-gated)",
+      loop ? "Rundkurs" : "In der Nähe",
+      s.duration_band === "60" ? "~60 Min" : "In der Region",
+      "~60 Min",
     ],
     center,
     distanceFromOriginKm,

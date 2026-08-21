@@ -34,6 +34,8 @@ function testDeExact() {
   assert.notEqual(d.mappeHeading, d.mappeHeading.toUpperCase());
   assert.notEqual(d.collectionsTitle, d.collectionsTitle.toUpperCase());
   assert.ok(d.sixtyLead.includes("Tempelhofer"));
+  assert.equal(d.fitsYourBike("Enduro"), "passt zu deinem Enduro");
+  assert.ok(d.emptyLayers.includes("Pin"));
 }
 
 function testBrands() {
