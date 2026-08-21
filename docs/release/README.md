@@ -20,18 +20,14 @@ Kopie im Repo: `/home/luka/Projects/aetherride/docs/release/index.html`
 
 | Ding | Wert |
 |------|------|
-| FlowLine-Mail (kostenlos, sofort) | `dmghausundhof+flowline@gmail.com` |
-| Gmail-Labels | FlowLine, Play, Apple, Legal, Support, Zahlungen, Community, Accounts |
+| FlowLine-Mail | `flowline.ride@gmail.com` (eigenes Google-Konto, nicht Haus&Hof) |
+| Nächster Schritt | 2FA auf diesem Konto, dann Play Console damit anmelden (25 USD) |
 | Google Drive | [FlowLine Release](https://drive.google.com/drive/folders/10mH9LqxOcp3yFbwN4dM-Pc8SFbvVWeJr) |
 | Notion | [FlowLine Release Hub](https://app.notion.com/p/3c38328d6b698113b175de03d44ccae0) |
-| Kalender | Meilensteine 21.08. → 01.11. auf `info@dmgservice.org` |
+| Kalender | Meilensteine 21.08. → 01.11. |
 | Wöchentlicher Check | montags 09:00 Europe/Berlin |
 
-## Warum keine brandneue @gmail.com per Klick?
-
-Google verlangt Captcha + SMS. Das kann niemand remote abschließen. Das Plus-Alias ist dasselbe Postfach und für Play-Support, Impressum und Tester sofort gültig.
-
-Eigenes Google-Konto für die Play Console (empfohlen, 5 Minuten): https://accounts.google.com/signup
+Haus&Hof (`dmghausundhof@gmail.com`, `info@dmgservice.org`) bleibt die andere Firma. Nicht für Play Console verwenden.
 
 ## Nicht ändern
 

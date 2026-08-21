@@ -100,12 +100,12 @@
       <div class="card">
         <span class="pill hot">Beta → Play zuerst</span>
         <span class="pill">iOS später</span>
-        <span class="pill ok">Mail aktiv</span>
+        <span class="pill ok">Mail: flowline.ride@gmail.com</span>
         <h1>Du brauchst keine Firma, um zu starten.</h1>
         <p class="lead">FlowLine ist produktseitig schon weit (Flutter-App, Routing, Garage, Community-APIs). Was fehlt, ist die <b>öffentliche Identität</b>: ein Store-Konto, Legal-Texte mit deinem echten Namen, 12 echte Tester und ein Launch, der sich nicht leer anfühlt. Dieser Plan ist auf deinem Rechner — Checkboxen bleiben gespeichert.</p>
         <div class="callout">
-          <b>Kontakt-Mail ab sofort:</b> <code>dmghausundhof+flowline@gmail.com</code><br>
-          Kostenlos, landet in deinem bestehenden Gmail. Kein Captcha, keine neue Anmeldung. Labels in Gmail: FlowLine / Play / Apple / Legal / Support.
+          <b>FlowLine-Mail:</b> <code>flowline.ride@gmail.com</code> — eigenes Google-Konto, getrennt von Haus&amp;Hof.<br>
+          Nächster Schritt: 2FA an diesem Konto, dann Play Console damit anmelden (25 USD). Nicht mit <code>dmghausundhof@gmail.com</code> einloggen.
         </div>
         <div class="row">
           <a class="btn" href="#heute">Heute dran</a>
@@ -157,42 +157,35 @@
     </section>
 
     <section id="mail" class="card" style="margin-bottom:22px">
-      <h2>Die FlowLine-Mail — drei Stufen</h2>
+      <h2>Die FlowLine-Mail</h2>
       <table>
         <thead><tr><th>Stufe</th><th>Adresse</th><th>Status</th><th>Wofür</th></tr></thead>
         <tbody>
           <tr>
-            <td>1 · jetzt, 0 €</td>
-            <td><code>dmghausundhof+flowline@gmail.com</code></td>
-            <td>aktiv</td>
-            <td>Play-Support, Impressum-Kontakt, Tester, Tool-Logins</td>
+            <td>1 · erledigt</td>
+            <td><code>flowline.ride@gmail.com</code></td>
+            <td>dein Konto</td>
+            <td>Play Console, Support, Impressum, alle FlowLine-Logins</td>
           </tr>
           <tr>
-            <td>2 · 5 Min, 0 €</td>
-            <td>eigenes Google-Konto z.B. <code>flowline.ride.hq@gmail.com</code></td>
-            <td>du klickst</td>
-            <td>Play Console, 2FA, nicht mit Haus&amp;Hof mischen</td>
-          </tr>
-          <tr>
-            <td>3 · ~12 €/Jahr</td>
+            <td>2 · später, ~12 €/Jahr</td>
             <td><code>hello@deinedomain</code></td>
             <td>Domain kaufen</td>
-            <td>Cloudflare Email Routing (kostenlos) → Gmail. Professionell.</td>
+            <td>Cloudflare Email Routing (kostenlos) → dieses Gmail. Nicht nötig für den Store-Start.</td>
           </tr>
         </tbody>
       </table>
-      <p class="lead" style="margin-top:12px">Warum ich kein brandneues @gmail.com-Konto per API anlegen kann: Google verlangt Captcha und SMS an dein Handy. Das Plus-Alias ist dasselbe Postfach, nur sortierbar.</p>
-      <h3>Stufe 2 selbst (empfohlen diese Woche)</h3>
+      <p class="lead" style="margin-top:12px">Haus&amp;Hof-Mail und das alte Plus-Alias werden für FlowLine nicht genutzt.</p>
+      <h3>Dieses Konto jetzt absichern (10 Minuten)</h3>
       <ol>
-        <li>Inkognito: <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">accounts.google.com/signup</a></li>
-        <li>Namen: FlowLine / dein Nachname. Username-Ideen: <code>flowline.ride.hq</code>, <code>ride.flowline.de</code>, <code>flowline.community.hq</code> — <code>flowline@gmail.com</code> ist seit Jahren weg.</li>
-        <li>Handynummer, 2FA (Authenticator, nicht nur SMS), Recovery = deine private Mail.</li>
-        <li>Passwort in den Manager. Dieses Konto ist die Play Console.</li>
-        <li>In Gmail: Einstellungen → Accounts → „Name“ = FlowLine. Signatur mit Support-Adresse.</li>
+        <li>Eingeloggt als <code>flowline.ride@gmail.com</code>: <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">Google-Sicherheit</a></li>
+        <li>2FA: Authenticator-App, nicht nur SMS. Recovery-Codes in den Passwort-Manager.</li>
+        <li>Wiederherstellungs-E-Mail: deine private Mail — nicht Haus&amp;Hof als einzige Rettung.</li>
+        <li>Gmail → Einstellungen → Konto → Name: <b>FlowLine</b>.</li>
+        <li>Danach: Play Console mit genau diesem Konto.</li>
       </ol>
-      <h3>Stufe 3 Domain</h3>
-      <p><code>flowline.app</code> ist vergeben. Vor dem Kauf selbst prüfen: <code>flowline.de</code>, <code>rideflowline.com</code>, <code>flowline.bike</code>, <code>flow-line.app</code>. Nicht <code>hello@aetherride.app</code> weiterversprechen — das ist ein Platzhalter im Code.</p>
-      <div class="callout sage">Gmail-Filter (einmal, 20 Sekunden): Zahnrad → Alle Einstellungen → Filter → Neue Filter: <code>deliveredto:dmghausundhof+flowline@gmail.com</code> → Label FlowLine, überspringen Inbox optional.</div>
+      <h3>Domain später</h3>
+      <p><code>flowline.app</code>, <code>flowline.de</code> und <code>flowline.org</code> sind vergeben. Vor dem Kauf prüfen: <code>rideflowline.com</code>, <code>flowline.bike</code>, <code>flow-line.app</code>.</p>
     </section>
 
     <div class="filter"><input id="q" placeholder="Aufgaben filtern … (z.B. Tester, Impressum, Keystore)" /></div>
@@ -282,8 +275,8 @@
         zeit: "21.–24.08.2026",
         intro: "Ohne das bricht jeder Store-Schritt. Nichts hiervon braucht eine GmbH.",
         tasks: [
-          { id: "p0-mail", title: "FlowLine-Plus-Mail als Kontakt nutzen", why: "Store, Legal und Tester brauchen eine Adresse, die nicht nach Haus&Hof klingt.", how: "Überall eintragen: dmghausundhof+flowline@gmail.com. Gmail-Label FlowLine ist schon da. Filter mit deliveredto:… anlegen." },
-          { id: "p0-google", title: "Eigenes Google-Konto nur für FlowLine anlegen", why: "Play Console an Haus&Hof/Shopify zu hängen wird später teuer (Rechte, Sperre, Steuer).", how: "Inkognito → accounts.google.com/signup → 2FA Authenticator → Passwort-Manager. Dieses Konto = Play." },
+          { id: "p0-mail", title: "FlowLine-Mail nutzen: flowline.ride@gmail.com", why: "Store, Legal und Tester brauchen eine Adresse ohne Haus&Hof.", how: "Überall nur noch flowline.ride@gmail.com. Nicht dmghausundhof, nicht das Plus-Alias." },
+          { id: "p0-google", title: "2FA + Recovery auf flowline.ride@gmail.com", why: "Play hängt an diesem Konto. Verlust = tote Console.", how: "myaccount.google.com/security → Authenticator, Recovery-Codes, private Recovery-Mail. Passwort-Manager." },
           { id: "p0-keystore", title: "Upload-Keystore doppelt sichern", why: "Sobald der erste AAB in Play liegt, ist der Key der Upload-Schlüssel aller Updates.", how: "Dateien: mobile/android/keystore/aetherride-upload.jks und android/key.properties. In Passwort-Manager + verschlüsselten USB/Cloud-Safe. Nie ins Git." },
           { id: "p0-2fa", title: "2FA auf Gmail, Vercel, GitHub, Supabase, Stripe", why: "Account-Takeover = tote App. Play hängt am Google-Konto.", how: "Authenticator-App, Recovery-Codes ausdrucken in den Drive-Ordner FlowLine Release (nicht ins Repo)." },
           { id: "p0-inventar", title: "Dev-Konten-Inventar aufschreiben", why: "Du weißt in 6 Monaten nicht mehr, was auf welchem Account läuft.", how: "Im Drive-Ordner eine Tabelle: Dienst, Login, Projektname, ob FlowLine oder Haus&Hof. Vercel team dmghausundhof-9746, Supabase krmgatsugplouzrhhozn, GitHub dmghausundhof-dot/aetherride, Shopify dmg-haus-und-hof-shop." }
@@ -295,7 +288,7 @@
         zeit: "bis 28.08.2026",
         intro: "Play will Privacy-URL. DE will Impressum mit Klarnamen. Community/UGC fällt unter DSA.",
         tasks: [
-          { id: "p1-name", title: "Klarnamen + ladungsfähige Anschrift festlegen", why: "§ 5 DDG. Die App hat schon /legal/impressum — ohne Name ist sie unvollständig, Marketplace gesperrt.", how: "NEXT_PUBLIC_LEGAL_IMPRINT in Vercel setzen. NEXT_PUBLIC_LEGAL_EMAIL=dmghausundhof+flowline@gmail.com. Private Anschrift ist zulässig; c/o nur wenn zustellbar." },
+          { id: "p1-name", title: "Klarnamen + ladungsfähige Anschrift festlegen", why: "§ 5 DDG. Die App hat schon /legal/impressum — ohne Name ist sie unvollständig, Marketplace gesperrt.", how: "NEXT_PUBLIC_LEGAL_IMPRINT in Vercel setzen. NEXT_PUBLIC_LEGAL_EMAIL=flowline.ride@gmail.com. Private Anschrift ist zulässig; c/o nur wenn zustellbar." },
           { id: "p1-privacy", title: "Datenschutzerklärung an echte Datenflüsse anpassen", why: "Play Data Safety muss zur Privacy passen. Abweichung = Reject oder Abmahnung.", how: "Abdecken: Konto (Supabase EU), GPS während Ride, BLE Sensoren, Crash (Sentry, erst nach Opt-in), Routing (GraphHopper/Stadia/ORS), Heatmap k≥5, Community-Inhalte, Konto löschen (Route existiert). Kein Analytics-SDK ohne Consent." },
           { id: "p1-agb", title: "AGB + Haftungsausschluss Navigation", why: "Falsche Trails / Straße. Community-Inhalte sind Nutzer-Inhalte.", how: "Seite /legal/agb existiert. Text: kein Ersatz für Verkehrsregeln, Report-Weg, Jugendschutz, Widerruf für Pro-Abo 14 Tage." },
           { id: "p1-dsfa", title: "DSFA-Kurzprofil Standort", why: "Tracking von Fahrten ist hohes Risiko nach DSGVO. Das Repo hakt DSFA als offen.", how: "Eine Seite: Zweck, Daten, Speicherdauer, Empfänger, Risiko, Maßnahmen (Privacy-Zonen, Opt-in Heatmap). Reicht als Start, Anwalt kann später schärfen." },
@@ -309,7 +302,7 @@
         zeit: "25.08.2026",
         intro: "Nur du kannst einloggen, zahlen und den Ausweis hochladen. Code-Runbook: mobile/PLAY_CONSOLE_RUNBOOK.md",
         tasks: [
-          { id: "p2-pay", title: "Developer-Konto anlegen und 25 USD zahlen", why: "Ohne Console kein Store. Prepaid-Karten werden abgelehnt.", how: "Mit dem FlowLine-Google-Konto auf play.google.com/console. Personal, nicht Organization. 2FA muss an sein. Personal nach Nov 2023 = 12 Tester Pflicht." },
+          { id: "p2-pay", title: "Developer-Konto anlegen und 25 USD zahlen", why: "Ohne Console kein Store. Prepaid-Karten werden abgelehnt.", how: "Inkognito oder Konto wechseln: NUR flowline.ride@gmail.com auf play.google.com/console. Personal, nicht Organization. 2FA muss an sein. Personal nach Nov 2023 = 12 Tester Pflicht." },
           { id: "p2-id", title: "Identität verifizieren", why: "Google will Ausweis + Wohnsitz.", how: "Personalausweis oder Reisepass. Developer-Name im Store: FlowLine (Trade name) plus rechtlich dein Name als Verkäufer." },
           { id: "p2-app", title: "App anlegen", why: "Package ist in Stein gemeißelt.", how: "Name FlowLine, Sprache Deutsch, App nicht Spiel, kostenlos. applicationId exakt com.aetherride.aetherride_mobile." },
           { id: "p2-aab", title: "Signiertes AAB bauen und Internal Testing hochladen", why: "Play App Signing greift beim ersten Upload.", how: "cd mobile && flutter build appbundle --release mit den dart-defines aus dem Runbook (API_BASE_URL=https://aetherride.vercel.app, Supabase, Stadia). Nicht Debug-Signatur." },
@@ -342,7 +335,7 @@
         tasks: [
           { id: "p4-recruit", title: "15 Fahrer mit Google-Konto gewinnen", why: "Puffer. Wenn einer opt-outet, fällt ihr unter 12 und die Uhr stockt.", how: "Freunde, ADFC, MTB-Gruppe, Gravel-WhatsApp Rhein-Neckar. Keine bezahlten Fake-Tester-Farmen — Google prüft Engagement." },
           { id: "p4-closed", title: "Closed Testing Track, nicht nur Internal", why: "Policy verlangt Closed Test.", how: "Play Console → Testing → Closed testing → E-Mails oder Google-Gruppe. Opt-in-Link schicken. APK per Drive zählt nicht." },
-          { id: "p4-briefing", title: "Tester-Briefing auf einer Seite", why: "Engagement. Google kann Production Access ablehnen, wenn niemand die App öffnet.", how: "Bitte: installieren, einmal fahren oder 60-Min-Runde starten, einen Bug-Satz an die FlowLine-Mail. Kein NDA-Theater." },
+          { id: "p4-briefing", title: "Tester-Briefing auf einer Seite", why: "Engagement. Google kann Production Access ablehnen, wenn niemand die App öffnet.", how: "Bitte: installieren, einmal fahren oder 60-Min-Runde starten, einen Bug-Satz an flowline.ride@gmail.com. Kein NDA-Theater." },
           { id: "p4-feedback", title: "Feedback-Kanal + Crash-Triage", why: "14 Tage sind euer QA-Fenster.", how: "Mail-Label FlowLine/Support. Täglich Sentry. Nur Crash/Blocker hotfixed, keine Feature-Orgie." },
           { id: "p4-clock", title: "Am 15.09. Dashboard prüfen", why: "Kalender-Termin liegt. Unter 12 opted-in = nachlegen, nicht Production klicken.", how: "Play Dashboard → Testing. Screenshot in den Drive-Ordner." }
         ]
@@ -491,6 +484,7 @@
     };
     // Mail-Schritt vorausgefüllt, weil wir ihn heute angelegt haben
     if (state["p0-mail"] === undefined) state["p0-mail"] = true;
+    if (state["p0-google"] === undefined) state["p0-google"] = false;
     render();
   </script>
 </body>

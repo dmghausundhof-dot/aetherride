@@ -1,0 +1,33 @@
+FlowLine — Store-Listing Entwurf (DE)
+Kontakt / Support: flowline.ride@gmail.com
+Package: com.aetherride.aetherride_mobile
+SKU: aetherride_pro_monthly
+Privacy-URL (solange keine eigene Domain): https://aetherride.vercel.app/legal/datenschutz
+
+Kurzbeschreibung (max. 80 Zeichen):
+
+Fahrrad-Navigation, Werkstatt und Community. Eine Linie für MTB, Gravel und Stadt.
+
+Vollbeschreibung:
+
+FlowLine ist die All-in-one-App für Leute, die wirklich fahren: Navigation, Garage und eine lokale Community — ohne Fake-Heatmap und ohne Social-Feed-Lärm.
+
+Was du damit machst
+• Linie finden: 60-Minuten-Runden in deiner Nähe, Sportprofile für MTB, Gravel, Rennrad, Stadt und E-Bike
+• Fahren: Karte, Abbiegehinweise, Offline-Packs für unterwegs
+• Rad verstehen: Werkstatt mit Setup, Wartung und passenden Teilen — ein Rad in der Free-Version
+• Teilen, wenn du willst: Touren und Fahrten, Heatmap erst wenn genug echte Beiträge da sind
+
+Was FlowLine nicht ist
+• Kein Strava-Klon
+• Keine offizielle Bosch-App
+• Kein Shop-Zwang — der Laden bleibt zu, bis er steht
+
+Pro (In-App, 6,99 €/Monat)
+Mehr als ein Rad, erweiterte Garage- und Analyse-Funktionen. Jederzeit kündbar. Widerruf 14 Tage, soweit gesetzlich vorgesehen.
+
+Datenschutz
+Standort nur für Navigation und Fahrten. Du entscheidest, was in die Community geht. Konto löschen geht in der App.
+
+Kontakt: flowline.ride@gmail.com
+Kartenmaterial: © OpenStreetMap contributors und die jeweiligen Kartenanbieter.
