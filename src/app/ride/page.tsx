@@ -113,79 +113,78 @@ export default function RideAppBridgePage() {
                 </p>
                 {activeRoute.surface && (
                   <p className="mt-1 text-xs text-text-secondary">
-                    Belag: {activeRoute.surface}
+                    {copy.rideSurface(activeRoute.surface)}
                   </p>
                 )}
               </div>
             </div>
-      <p className="mt-4 text-xs text-text-secondary">
-              Die Route ist in deinem Browser gemerkt. Nach dem Login in der App
-              erscheint sie unter Karte bzw. als aktive Tour (Sync).
+            <p className="mt-4 text-xs text-text-secondary">
+              {copy.rideSyncedHint}
             </p>
             <button
               type="button"
               onClick={() => clearActiveRoute()}
               className="mt-3 text-xs text-text-secondary underline hover:text-foreground"
             >
-              Tour-Auswahl verwerfen
+              {copy.rideClearSelection}
             </button>
           </div>
         ) : activeRoute && planHref ? (
           <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
             <p className="text-sm font-semibold">{activeRoute.name}</p>
             <p className="mt-2 text-sm text-text-secondary">
-              Noch kein Track — zuerst Ziel setzen im Planer.
+              {copy.rideNoTrackHint}
             </p>
             <Link
               href={planHref}
               className="mt-4 inline-flex rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent"
             >
-              Im Planer öffnen
+              {copy.rideOpenPlanner}
             </Link>
             <button
               type="button"
               onClick={() => clearActiveRoute()}
               className="mt-3 block text-xs text-text-secondary underline hover:text-foreground"
             >
-              Tour-Auswahl verwerfen
+              {copy.rideClearSelection}
             </button>
           </div>
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-5 text-sm text-text-secondary">
-            Noch keine Tour ausgewählt. Plane eine Route unter{" "}
+            {copy.rideNoTourBefore}
             <Link href="/discover" className="font-medium text-chrome">
-              Karte
+              {copy.rideNoTourLink}
             </Link>
-            , speichere sie und starte dann in der App.
+            {copy.rideNoTourAfter}
           </div>
         )}
 
         <div className="mt-10">
-          <p className="mb-4 text-sm font-medium">App herunterladen</p>
+          <p className="mb-4 text-sm font-medium">{copy.rideDownloadApp}</p>
           <AppDownloadButtons size="lg" />
         </div>
 
         {hasTrack ? (
-        <details className="mt-6 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
-          <summary className="cursor-pointer font-medium text-text-secondary">
-            App direkt öffnen
-          </summary>
-          <div className="mt-3 flex flex-col gap-2">
-            <a
-              href={deepLink}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent transition hover:bg-chrome/90"
-            >
-              <ExternalLink className="h-4 w-4" />
-              In der App öffnen
-            </a>
-            <a
-              href={universalLink}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
-            >
-              Web-Link zur App
-            </a>
-          </div>
-        </details>
+          <details className="mt-6 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+            <summary className="cursor-pointer font-medium text-text-secondary">
+              {copy.rideOpenAppDirect}
+            </summary>
+            <div className="mt-3 flex flex-col gap-2">
+              <a
+                href={deepLink}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent transition hover:bg-chrome/90"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {copy.rideOpenInApp}
+              </a>
+              <a
+                href={universalLink}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
+              >
+                {copy.rideWebLinkToApp}
+              </a>
+            </div>
+          </details>
         ) : null}
 
         <div className="mt-12 grid gap-3">
@@ -195,9 +194,9 @@ export default function RideAppBridgePage() {
           >
             <ChromeGlyph name="karte" size={20} current className="text-chrome" />
             <span>
-              <span className="font-semibold">Weiter auf der Karte</span>
+              <span className="font-semibold">{copy.rideContinueOnMap}</span>
               <span className="block text-xs text-text-secondary">
-                OSM · Rundkurse · Planen
+                {copy.rideContinueOnMapHint}
               </span>
             </span>
           </Link>
@@ -207,9 +206,9 @@ export default function RideAppBridgePage() {
           >
             <ChromeGlyph name="phone" size={20} current className="text-chrome" />
             <span>
-              <span className="font-semibold">Warum die App?</span>
+              <span className="font-semibold">{copy.rideWhyApp}</span>
               <span className="block text-xs text-text-secondary">
-                Navigation, Offline, Sensoren
+                {copy.rideWhyAppHint}
               </span>
             </span>
           </Link>

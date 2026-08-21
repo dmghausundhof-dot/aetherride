@@ -202,6 +202,22 @@ export type HofCopy = {
   rideBridgeHint: string;
   ridePlannedKicker: string;
   rideBackToMap: string;
+  rideSurface: (surface: string) => string;
+  rideSyncedHint: string;
+  rideClearSelection: string;
+  rideNoTrackHint: string;
+  rideOpenPlanner: string;
+  rideNoTourBefore: string;
+  rideNoTourLink: string;
+  rideNoTourAfter: string;
+  rideDownloadApp: string;
+  rideOpenAppDirect: string;
+  rideOpenInApp: string;
+  rideWebLinkToApp: string;
+  rideContinueOnMap: string;
+  rideContinueOnMapHint: string;
+  rideWhyApp: string;
+  rideWhyAppHint: string;
   downloadTitle: string;
   downloadHint: string;
   activitiesTitle: string;
@@ -462,6 +478,23 @@ const DE: HofCopy = {
   rideBridgeHint: "Live-GPS, Offline-Routing, Sensoren und Hintergrund-Aufzeichnung laufen nur nativ — nicht im Browser.",
   ridePlannedKicker: "Geplante Tour",
   rideBackToMap: "Zurück zur Karte",
+  rideSurface: (surface) => `Belag: ${surface}`,
+  rideSyncedHint:
+    "Die Route ist in deinem Browser gemerkt. Nach dem Login in der App erscheint sie unter Karte bzw. als aktive Tour (Sync).",
+  rideClearSelection: "Tour-Auswahl verwerfen",
+  rideNoTrackHint: "Noch kein Track — zuerst Ziel setzen im Planer.",
+  rideOpenPlanner: "Im Planer öffnen",
+  rideNoTourBefore: "Noch keine Tour ausgewählt. Plane eine Route unter ",
+  rideNoTourLink: "Karte",
+  rideNoTourAfter: ", speichere sie und starte dann in der App.",
+  rideDownloadApp: "App herunterladen",
+  rideOpenAppDirect: "App direkt öffnen",
+  rideOpenInApp: "In der App öffnen",
+  rideWebLinkToApp: "Web-Link zur App",
+  rideContinueOnMap: "Weiter auf der Karte",
+  rideContinueOnMapHint: "OSM · Rundkurse · Planen",
+  rideWhyApp: "Warum die App?",
+  rideWhyAppHint: "Navigation, Offline, Sensoren",
   downloadTitle: "Die App für unterwegs",
   downloadHint: "Der Hof, die Karte und das Rad laufen im Browser. Rausfahren mit HUD — nur in der App.",
   activitiesTitle: "Was reinkam",
@@ -718,6 +751,23 @@ const EN: HofCopy = {
   rideBridgeHint: "Live GPS, offline routing, sensors and background recording run native only — not in the browser.",
   ridePlannedKicker: "Planned tour",
   rideBackToMap: "Back to the map",
+  rideSurface: (surface) => `Surface: ${surface}`,
+  rideSyncedHint:
+    "This route is saved in your browser. After signing in on the app it shows under Map or as the active tour (sync).",
+  rideClearSelection: "Clear tour selection",
+  rideNoTrackHint: "No track yet — set a finish in the planner first.",
+  rideOpenPlanner: "Open planner",
+  rideNoTourBefore: "No tour selected yet. Plan a route on the ",
+  rideNoTourLink: "map",
+  rideNoTourAfter: ", save it, then start in the app.",
+  rideDownloadApp: "Download the app",
+  rideOpenAppDirect: "Open the app directly",
+  rideOpenInApp: "Open in the app",
+  rideWebLinkToApp: "Web link to the app",
+  rideContinueOnMap: "Continue on the map",
+  rideContinueOnMapHint: "OSM · loops · plan",
+  rideWhyApp: "Why the app?",
+  rideWhyAppHint: "Navigation, offline, sensors",
   downloadTitle: "The app for the road",
   downloadHint: "Home, map and bike run in the browser. Ride out with HUD — only in the app.",
   activitiesTitle: "What came in",
@@ -974,6 +1024,23 @@ const FR: HofCopy = {
   rideBridgeHint: "GPS live, routage hors ligne, capteurs et enregistrement en arrière-plan tournent seulement en natif — pas dans le navigateur.",
   ridePlannedKicker: "Tour prévu",
   rideBackToMap: "Retour à la carte",
+  rideSurface: (surface) => `Revêtement : ${surface}`,
+  rideSyncedHint:
+    "La route est mémorisée dans ton navigateur. Après connexion dans l'app, elle apparaît sous Carte ou comme tour active (sync).",
+  rideClearSelection: "Annuler la sélection",
+  rideNoTrackHint: "Pas encore de trace — indique d'abord l'arrivée dans le planificateur.",
+  rideOpenPlanner: "Ouvrir le planificateur",
+  rideNoTourBefore: "Aucune tour sélectionnée. Planifie une route sous ",
+  rideNoTourLink: "Carte",
+  rideNoTourAfter: ", enregistre-la, puis démarre dans l'app.",
+  rideDownloadApp: "Télécharger l'app",
+  rideOpenAppDirect: "Ouvrir l'app directement",
+  rideOpenInApp: "Ouvrir dans l'app",
+  rideWebLinkToApp: "Lien web vers l'app",
+  rideContinueOnMap: "Continuer sur la carte",
+  rideContinueOnMapHint: "OSM · boucles · planifier",
+  rideWhyApp: "Pourquoi l'app ?",
+  rideWhyAppHint: "Navigation, hors ligne, capteurs",
   downloadTitle: "L'app pour la route",
   downloadHint: "Home, carte et vélo tournent dans le navigateur. Sortir avec HUD — seulement dans l'app.",
   activitiesTitle: "Ce qui est rentré",
@@ -1230,6 +1297,23 @@ const IT: HofCopy = {
   rideBridgeHint: "GPS live, routing offline, sensori e registrazione in background girano solo in nativo — non nel browser.",
   ridePlannedKicker: "Tour pianificato",
   rideBackToMap: "Torna alla mappa",
+  rideSurface: (surface) => `Superficie: ${surface}`,
+  rideSyncedHint:
+    "Il percorso è salvato nel browser. Dopo l'accesso in app compare sotto Mappa o come tour attivo (sync).",
+  rideClearSelection: "Annulla selezione tour",
+  rideNoTrackHint: "Ancora nessuna traccia — imposta prima l'arrivo nel planner.",
+  rideOpenPlanner: "Apri il planner",
+  rideNoTourBefore: "Nessun tour selezionato. Pianifica un percorso su ",
+  rideNoTourLink: "Mappa",
+  rideNoTourAfter: ", salvalo e poi parti dall'app.",
+  rideDownloadApp: "Scarica l'app",
+  rideOpenAppDirect: "Apri l'app direttamente",
+  rideOpenInApp: "Apri nell'app",
+  rideWebLinkToApp: "Link web all'app",
+  rideContinueOnMap: "Continua sulla mappa",
+  rideContinueOnMapHint: "OSM · anelli · pianifica",
+  rideWhyApp: "Perché l'app?",
+  rideWhyAppHint: "Navigazione, offline, sensori",
   downloadTitle: "L'app per la strada",
   downloadHint: "Home, mappa e bici girano nel browser. Esci con HUD — solo nell'app.",
   activitiesTitle: "Cosa è rientrato",
@@ -1498,6 +1582,23 @@ const NL: HofCopy = {
     "Live-GPS, offline-routing, sensoren en achtergrondopname lopen alleen native — niet in de browser.",
   ridePlannedKicker: "Geplande tocht",
   rideBackToMap: "Terug naar de kaart",
+  rideSurface: (surface) => `Ondergrond: ${surface}`,
+  rideSyncedHint:
+    "De route staat in je browser. Na inloggen in de app zie je hem onder Kaart of als actieve tocht (sync).",
+  rideClearSelection: "Tourselectie wissen",
+  rideNoTrackHint: "Nog geen track — zet eerst de finish in de planner.",
+  rideOpenPlanner: "Planner openen",
+  rideNoTourBefore: "Nog geen tocht gekozen. Plan een route onder ",
+  rideNoTourLink: "Kaart",
+  rideNoTourAfter: ", sla op en start dan in de app.",
+  rideDownloadApp: "App downloaden",
+  rideOpenAppDirect: "App direct openen",
+  rideOpenInApp: "Openen in de app",
+  rideWebLinkToApp: "Weblink naar de app",
+  rideContinueOnMap: "Verder op de kaart",
+  rideContinueOnMapHint: "OSM · rondes · plannen",
+  rideWhyApp: "Waarom de app?",
+  rideWhyAppHint: "Navigatie, offline, sensoren",
   downloadTitle: "De app onderweg",
   downloadHint:
     "Home, kaart en fiets lopen in de browser. Eruit met HUD — alleen in de app.",

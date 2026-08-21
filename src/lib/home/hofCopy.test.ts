@@ -44,6 +44,9 @@ function testDeFallback() {
   );
   assert.notEqual(HOF_COPY.shopKicker, HOF_COPY.shopKicker.toUpperCase());
   assert.equal(HOF_COPY.ridePlannedKicker, "Geplante Tour");
+  assert.equal(HOF_COPY.rideOpenPlanner, "Im Planer öffnen");
+  assert.equal(hofCopy("en").rideOpenPlanner, "Open planner");
+  assert.ok(HOF_COPY.rideNoTrackHint.includes("Track"));
   assert.notEqual(
     HOF_COPY.ridePlannedKicker,
     HOF_COPY.ridePlannedKicker.toUpperCase(),
