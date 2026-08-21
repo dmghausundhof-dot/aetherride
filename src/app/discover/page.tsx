@@ -59,10 +59,10 @@ import {
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
 import {
-  activeRouteFromSuggestion,
   activeRouteFromSaved,
   activeRouteForWebRideBridge,
   savedRouteForWebRideHandoff,
+  webRideBridgeNeedsTrack,
 } from "@/lib/routing/activeRoute";
 import { parseGpx } from "@/lib/import/gpx";
 import { fitTourLine } from "@/lib/tours/tourLine";
@@ -1800,8 +1800,11 @@ function DiscoverPageInner() {
         );
         if (res.ok) {
           const j = await res.json();
-          if (j?.geometry?.coordinates?.length >= 2) {
-            const withEle = await lineWithApiElevation(j.geometry.coordinates);
+          const coords = j?.geometry?.coordinates as
+            | [number, number][]
+            | undefined;
+          if (webRideBridgeNeedsTrack(coords?.length) && coords) {
+            const withEle = await lineWithApiElevation(coords);
             const entry = savedRouteForWebRideHandoff({
               id: r.id,
               name: r.name,
@@ -1824,23 +1827,15 @@ function DiscoverPageInner() {
                 return;
               }
             }
-            setActiveRoute(
-              activeRouteFromSuggestion(r, {
-                type: "LineString",
-                coordinates: withEle,
-              }, j.steps)
-            );
-            router.push("/ride");
-            return;
           }
         }
       } catch {
         /* pin-only */
       }
-      setActiveRoute(activeRouteFromSuggestion(r));
-      router.push("/ride");
+      setSheetMode("plan");
+      setRoutingMsg(d.inPlanNeedEnd(r.name));
     },
-    [isRouteSaved, router, saveRoute, setActiveRoute]
+    [d, isRouteSaved, router, saveRoute, setActiveRoute]
   );
 
   const toggleSave = useCallback(

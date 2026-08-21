@@ -7,7 +7,12 @@ process.env.ALLOW_DEMO_CONTENT = "true";
 import assert from "node:assert/strict";
 import { buildDemoGeometry, centerOfGeometry } from "./demoGeometry";
 import { buildNavCues, cueBannerText, nextCue } from "./navCues";
-import { activeRouteFromSuggestion, savedRouteForWebRideHandoff, activeRouteForWebRideBridge } from "./activeRoute";
+import {
+  activeRouteFromSuggestion,
+  savedRouteForWebRideHandoff,
+  activeRouteForWebRideBridge,
+  webRideBridgeNeedsTrack,
+} from "./activeRoute";
 import type { RouteSuggestion } from "./suggestions";
 import { pointAlongLine, trackDistanceM } from "@/lib/geo/trackMath";
 
@@ -82,6 +87,9 @@ assert.equal(
   }),
   null
 );
+assert.equal(webRideBridgeNeedsTrack(2), true);
+assert.equal(webRideBridgeNeedsTrack(1), false);
+assert.equal(webRideBridgeNeedsTrack(null), false);
 
 const a = pointAlongLine(g, 0);
 const b = pointAlongLine(g, 0.5);

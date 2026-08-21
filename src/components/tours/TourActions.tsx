@@ -7,7 +7,11 @@ import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
-import { activeRouteFromSuggestion, activeRouteForWebRideBridge, savedRouteForWebRideHandoff } from "@/lib/routing/activeRoute";
+import {
+  activeRouteForWebRideBridge,
+  savedRouteForWebRideHandoff,
+  webRideBridgeNeedsTrack,
+} from "@/lib/routing/activeRoute";
 import { lineWithApiElevation } from "@/lib/routing/elevationAttach";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
@@ -93,20 +97,18 @@ export function TourActions({ tour }: { tour: PublicTour }) {
 
   const startInApp = useCallback(async () => {
     let geometry: GeoJSON.LineString | null = null;
-    let steps: unknown = undefined;
     try {
       const r = await fetch(
         `/api/tours/geometry?id=${encodeURIComponent(tour.id)}`
       );
       if (r.ok) {
         const j = await r.json();
-        if (j?.geometry?.coordinates?.length >= 2) {
+        if (webRideBridgeNeedsTrack(j?.geometry?.coordinates?.length)) {
           geometry = j.geometry;
-          steps = j.steps;
         }
       }
     } catch {
-      /* pin-only fallback */
+      /* pin-only */
     }
     if (geometry) {
       const withEle = await lineWithApiElevation(geometry.coordinates);
@@ -132,19 +134,11 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           return;
         }
       }
-      setActiveRoute(
-        activeRouteFromSuggestion(
-          suggestion,
-          { type: "LineString", coordinates: withEle },
-          steps as never
-        )
-      );
-      router.push("/ride");
-      return;
     }
-    setActiveRoute(activeRouteFromSuggestion(suggestion));
-    router.push("/ride");
+    setFlash(copy.noTrackHint);
+    setTimeout(() => setFlash(null), 3500);
   }, [
+    copy.noTrackHint,
     isRouteSaved,
     router,
     saveRoute,

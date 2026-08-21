@@ -251,6 +251,8 @@ export type DiscoverUi = {
   inPlanNeedEnd: (name: string) => string;
   waypointStart: (label: string) => string;
   waypointEnd: (label: string) => string;
+  /** Explore place fly — not yet a plan destination. */
+  browsePlace: (label: string) => string;
   gpxImported: (name: string, km: string) => string;
   hybridStats: (km: string, min: string) => string;
   trailInserted: (name: string) => string;
@@ -579,6 +581,7 @@ const DE: DiscoverUi = {
     `In Planen: ${name} — Ziel auf der Karte oder als Adresse setzen (kein Track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Ziel: ${label}`,
+  browsePlace: (label) => `Ort: ${label}`,
   gpxImported: (name, km) => `GPX importiert: ${name} · ${km} km`,
   hybridStats: (km, min) => `Hybrid · ${km} km · ${min} min`,
   trailInserted: (name) => `${name} eingefügt`,
@@ -923,6 +926,7 @@ const EN: DiscoverUi = {
     `In Plan: ${name} — set finish on the map or as an address (no track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Finish: ${label}`,
+  browsePlace: (label) => `Place: ${label}`,
   gpxImported: (name, km) => `GPX imported: ${name} · ${km} km`,
   hybridStats: (km, min) => `Hybrid · ${km} km · ${min} min`,
   trailInserted: (name) => `${name} inserted`,
@@ -1272,6 +1276,7 @@ const FR: DiscoverUi = {
     `Dans Planifier : ${name} — pose l’arrivée sur la carte ou en adresse (pas de trace).`,
   waypointStart: (label) => `Départ : ${label}`,
   waypointEnd: (label) => `Arrivée : ${label}`,
+  browsePlace: (label) => `Lieu : ${label}`,
   gpxImported: (name, km) => `GPX importé : ${name} · ${km} km`,
   hybridStats: (km, min) => `Hybrid · ${km} km · ${min} min`,
   trailInserted: (name) => `${name} inséré`,
@@ -1621,6 +1626,7 @@ const IT: DiscoverUi = {
     `In Pianifica: ${name} — imposta l’arrivo sulla mappa o come indirizzo (niente traccia).`,
   waypointStart: (label) => `Partenza: ${label}`,
   waypointEnd: (label) => `Arrivo: ${label}`,
+  browsePlace: (label) => `Luogo: ${label}`,
   gpxImported: (name, km) => `GPX importato: ${name} · ${km} km`,
   hybridStats: (km, min) => `Hybrid · ${km} km · ${min} min`,
   trailInserted: (name) => `${name} inserito`,
@@ -1970,6 +1976,7 @@ const NL: DiscoverUi = {
     `In Plannen: ${name} — zet finish op de kaart of als adres (geen track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Finish: ${label}`,
+  browsePlace: (label) => `Plek: ${label}`,
   gpxImported: (name, km) => `GPX geïmporteerd: ${name} · ${km} km`,
   hybridStats: (km, min) => `Hybrid · ${km} km · ${min} min`,
   trailInserted: (name) => `${name} ingevoegd`,
@@ -2204,6 +2211,8 @@ export function discoverStatus(
   if (start) return d.waypointStart(start[1]);
   const end = raw.match(/^Ziel: (.+)$/);
   if (end) return d.waypointEnd(end[1]);
+  const place = raw.match(/^Ort: (.+)$/);
+  if (place) return d.browsePlace(place[1]);
   const gpx = raw.match(/^GPX importiert: (.+) · (.+) km$/);
   if (gpx) return d.gpxImported(gpx[1], gpx[2]);
   const hybrid = raw.match(/^Hybrid · (.+) km · (.+) min$/);

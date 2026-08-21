@@ -83,6 +83,13 @@ export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
   };
 }
 
+/** Browser ride bridge needs a real polyline — pin-only stays in Plan. */
+export function webRideBridgeNeedsTrack(
+  coordinateCount: number | null | undefined
+): boolean {
+  return (coordinateCount ?? 0) >= 2;
+}
+
 /**
  * Browser ride bridge needs a library entry — not a bare `engine-*` ghost.
  * Returns a SavedRoute ready to persist + hand off when geometry is real.
