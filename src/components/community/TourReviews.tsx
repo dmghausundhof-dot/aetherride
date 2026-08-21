@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Camera, MapPin, Star, Trash2 } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import {
   countsFromPayload,
@@ -299,7 +300,7 @@ export function TourReviews({
               ) : null}
               {pin ? (
                 <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-text-secondary">
-                  <MapPin className="h-3 w-3" />
+                  <ChromeGlyph name="karte" size={12} />
                   {s.pinOnLine} · {pin.lat.toFixed(4)}, {pin.lng.toFixed(4)}
                 </p>
               ) : null}
@@ -415,7 +416,7 @@ export function TourReviews({
           className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
         />
         <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 text-xs text-text-secondary">
-          <Camera className="h-3.5 w-3.5" />
+          <ChromeGlyph name="photo" size={14} current className="text-text-secondary" />
           {s.photo}
           <input
             type="file"

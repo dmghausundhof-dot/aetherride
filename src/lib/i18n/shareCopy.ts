@@ -40,6 +40,8 @@ export type ShareCopy = {
   toursNoGps: (n: number) => string;
   open: string;
   sharedSuffix: (name: string) => string;
+  revoked: string;
+  revokedBody: string;
 };
 
 const DE: ShareCopy = {
@@ -85,6 +87,9 @@ const DE: ShareCopy = {
   toursNoGps: (n) => `${n} Touren · ohne GPS-Tracks`,
   open: "Öffnen",
   sharedSuffix: (name) => `${name} (geteilt)`,
+  revoked: "Freigabe zurückgezogen",
+  revokedBody:
+    "Dieser Link gilt nicht mehr. Die Tour ist wieder privat — kein stiller Track.",
 };
 
 const EN: ShareCopy = {
@@ -130,6 +135,9 @@ const EN: ShareCopy = {
   toursNoGps: (n) => `${n} tours · no GPS tracks`,
   open: "Open",
   sharedSuffix: (name) => `${name} (shared)`,
+  revoked: "Share withdrawn",
+  revokedBody:
+    "This link is no longer valid. The tour is private again — no silent track.",
 };
 
 const FR: ShareCopy = {
@@ -175,6 +183,9 @@ const FR: ShareCopy = {
   toursNoGps: (n) => `${n} sorties · sans traces GPS`,
   open: "Ouvrir",
   sharedSuffix: (name) => `${name} (partagé)`,
+  revoked: "Partage retiré",
+  revokedBody:
+    "Ce lien n’est plus valable. La sortie est de nouveau privée — pas de trace silencieuse.",
 };
 
 const IT: ShareCopy = {
@@ -220,6 +231,9 @@ const IT: ShareCopy = {
   toursNoGps: (n) => `${n} uscite · senza tracce GPS`,
   open: "Apri",
   sharedSuffix: (name) => `${name} (condiviso)`,
+  revoked: "Condivisione ritirata",
+  revokedBody:
+    "Questo link non vale più. L’uscita è di nuovo privata — niente traccia silenziosa.",
 };
 
 const NL: ShareCopy = {
@@ -265,6 +279,9 @@ const NL: ShareCopy = {
   toursNoGps: (n) => `${n} tochten · zonder GPS-tracks`,
   open: "Openen",
   sharedSuffix: (name) => `${name} (gedeeld)`,
+  revoked: "Deel-link ingetrokken",
+  revokedBody:
+    "Deze link geldt niet meer. De tocht is weer privé — geen stille track.",
 };
 
 const BY_LANG: Record<ChromeLang, ShareCopy> = {

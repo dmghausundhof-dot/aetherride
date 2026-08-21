@@ -55,6 +55,11 @@ assert.equal(tour!.kind, "tour");
 assert.equal(tour!.id, "gpx-neckar");
 assert.equal(tour!.includeTrack, true);
 assert.equal(tour!.track?.length, 3);
+assert.equal(tour!.epoch, 0);
+const revoked: SavedRoute = { ...gpx, shareEpoch: 3 };
+const revokedTok = encodeTourShareToken(revoked, "Test");
+const revokedPayload = decodeTourSharePayload(revokedTok.token);
+assert.equal(revokedPayload?.epoch, 3);
 assert.equal(decodeTourSharePayload(token), null);
 
 assert.equal(isShareDemoToken("demo"), true);

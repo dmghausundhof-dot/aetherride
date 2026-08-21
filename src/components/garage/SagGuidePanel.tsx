@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import type { Bike, BikeCategory } from "@/types";
-import { estimateAirPsi, sagMeasureSteps } from "@/lib/setup/sagGuide";
+import { estimateAirPsi } from "@/lib/setup/sagGuide";
 import { recommendedSagPct } from "@/lib/setup/ranges";
+import { sagGuideCopy } from "@/lib/i18n/sagGuideCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 
 export function SagGuidePanel({
   category,
@@ -18,6 +20,7 @@ export function SagGuidePanel({
   defaultWeightKg?: number;
   bikeWeightKg?: number;
 }) {
+  const copy = sagGuideCopy(useChromeLang());
   const [weight, setWeight] = useState(defaultWeightKg ?? 75);
   const [gear, setGear] = useState(5);
   const [end, setEnd] = useState<"fork" | "shock">("fork");
@@ -35,21 +38,18 @@ export function SagGuidePanel({
     [weight, gear, bikeWeightKg, category, end, travelFrontMm, travelRearMm]
   );
 
-  const steps = sagMeasureSteps(end);
+  const steps = copy.steps(end);
   const forkSag = recommendedSagPct(category, "fork");
   const shockSag = recommendedSagPct(category, "shock");
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <h3 className="font-semibold">SAG einstellen</h3>
-      <p className="mt-1 text-xs text-text-secondary">
-        Gewicht → Luft-Richtwert → am Rad messen. Quellen: Enduro MTB Mag /
-        Simplon / Dirt (SAG-Spannen).
-      </p>
+      <h3 className="font-semibold">{copy.title}</h3>
+      <p className="mt-1 text-xs text-text-secondary">{copy.hint}</p>
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-text-secondary">Fahrer (kg)</span>
+          <span className="text-xs text-text-secondary">{copy.rider}</span>
           <input
             type="number"
             min={40}
@@ -60,7 +60,7 @@ export function SagGuidePanel({
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-text-secondary">Ausrüstung (kg)</span>
+          <span className="text-xs text-text-secondary">{copy.gear}</span>
           <input
             type="number"
             min={0}
@@ -75,8 +75,8 @@ export function SagGuidePanel({
       <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-surface-elevated p-1 text-xs">
         {(
           [
-            ["fork", "Gabel"],
-            ["shock", "Dämpfer"],
+            ["fork", copy.fork],
+            ["shock", copy.shock],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -99,25 +99,28 @@ export function SagGuidePanel({
             {estimate.sagMm != null ? ` · ${estimate.sagMm}` : ""}
           </div>
           <div className="text-[10px] text-text-secondary">
-            SAG-Ziel ({estimate.sag.min}–{estimate.sag.max}
-            {estimate.sagMm != null ? " %, mm" : ""})
+            {copy.sagTarget(
+              estimate.sag.min,
+              estimate.sag.max,
+              estimate.sagMm != null
+            )}
           </div>
         </div>
         <div className="rounded-xl bg-surface-elevated p-2">
           <div className="tabular-nums text-lg font-bold">
             {estimate.psiTarget}
           </div>
-          <div className="text-[10px] text-text-secondary">psi Start</div>
+          <div className="text-[10px] text-text-secondary">{copy.psiStart}</div>
         </div>
         <div className="rounded-xl bg-surface-elevated p-2">
           <div className="tabular-nums text-lg font-bold">
             {estimate.psiMin}–{estimate.psiMax}
           </div>
-          <div className="text-[10px] text-text-secondary">psi Spanne</div>
+          <div className="text-[10px] text-text-secondary">{copy.psiRange}</div>
         </div>
       </div>
 
-      <p className="mt-2 text-[11px] text-text-secondary">{estimate.note}</p>
+      <p className="mt-2 text-[11px] text-text-secondary">{copy.note}</p>
 
       <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs text-text-secondary">
         {steps.map((s) => (
@@ -126,8 +129,7 @@ export function SagGuidePanel({
       </ol>
 
       <p className="mt-3 text-[11px] text-text-secondary">
-        Magazin-Spannen: Gabel {forkSag.min}–{forkSag.max} % · Dämpfer{" "}
-        {shockSag.min}–{shockSag.max} %
+        {copy.magazine(forkSag.min, forkSag.max, shockSag.min, shockSag.max)}
       </p>
     </section>
   );

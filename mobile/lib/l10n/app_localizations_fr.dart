@@ -2332,6 +2332,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Famille / autres riders : sous Profil → Famille au vélo, ajoute des riders avec leur propre poids.';
 
   @override
+  String get privacyBleTitle => 'Capteurs et montre';
+
+  @override
+  String get privacyBleForget => 'Supprimer les couplages fabricant';
+
+  @override
+  String get privacyBleForgetBody =>
+      'Supprime les identifiants roue, moteur et montre mémorisés sur cet appareil. Les valeurs live fabricant ne vont pas dans le cloud — seulement le couplage.';
+
+  @override
+  String get privacyBleForgotten => 'Couplages BLE supprimés';
+
+  @override
   String get privacyExportTitle => 'Export (art. 20)';
 
   @override

@@ -6,21 +6,50 @@ import 'dart:math' as math;
 const kCoverageRingFileName = 'coverage_ring.json';
 
 /// Bump when the occupancy grid or smoothing changes so old rings rebuild.
-const kCoverageRingCacheVersion = 3;
+const kCoverageRingCacheVersion = 4;
 
-/// Finer than the first 32-cell wash; two dilates keep the same geographic pad.
-const kCoverageRingCells = 64;
+/// 128-cell wash; two dilates keep the same geographic pad.
+const kCoverageRingCells = 128;
 const kCoverageRingDilate = 2;
+const kCoverageSketchDotCap = 96;
 
 /// Occupancy outline, or a filled extract that should keep the chamfered bbox.
 class CoverageRingCache {
-  const CoverageRingCache({required this.solid, required this.ring});
+  const CoverageRingCache({
+    required this.solid,
+    required this.ring,
+    this.dots = const [],
+  });
 
   final bool solid;
   final List<List<double>> ring;
 
+  /// Downsampled graph nodes for the sheet sketch — not fake relief.
+  final List<List<double>> dots;
+
   List<List<double>>? get outline =>
       solid || ring.length < 5 ? null : ring;
+}
+
+/// Evenly spaced nodes so the 88 px sketch shows the trail cloud.
+List<List<double>> coverageSketchDots(
+  List<List<double>> lngLat, {
+  int cap = kCoverageSketchDotCap,
+}) {
+  if (lngLat.isEmpty || cap < 1) return const [];
+  if (lngLat.length <= cap) {
+    return [
+      for (final p in lngLat)
+        if (p.length >= 2) [p[0], p[1]],
+    ];
+  }
+  final step = lngLat.length / cap;
+  final out = <List<double>>[];
+  for (var i = 0; i < cap; i++) {
+    final p = lngLat[(i * step).floor().clamp(0, lngLat.length - 1)];
+    if (p.length >= 2) out.add([p[0], p[1]]);
+  }
+  return out;
 }
 
 bool _sameLngLat(List<double> a, List<double> b) =>
@@ -28,6 +57,20 @@ bool _sameLngLat(List<double> a, List<double> b) =>
     b.length >= 2 &&
     (a[0] - b[0]).abs() < 1e-12 &&
     (a[1] - b[1]).abs() < 1e-12;
+
+List<List<double>> coverageLngLatListFromJson(dynamic raw) {
+  if (raw is! List) return const [];
+  final out = <List<double>>[];
+  for (final p in raw) {
+    if (p is! List || p.length < 2) continue;
+    final lng = p[0];
+    final lat = p[1];
+    if (lng is num && lat is num) {
+      out.add([lng.toDouble(), lat.toDouble()]);
+    }
+  }
+  return out;
+}
 
 List<double> coverageBboxOfRing(List<List<double>> ring) {
   var west = double.infinity;
@@ -118,14 +161,22 @@ CoverageRingCache coverageOccupancy({
   double solidFrac = 0.94,
 }) {
   if (lngLat.length < 8 || cells < 8) {
-    return const CoverageRingCache(solid: false, ring: []);
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
   }
   var box = bbox;
   if (box == null || box.length < 4) {
     box = coverageBboxOfRing(lngLat);
   }
   if (box.length < 4) {
-    return const CoverageRingCache(solid: false, ring: []);
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
   }
   final west = box[0];
   final south = box[1];
@@ -134,7 +185,11 @@ CoverageRingCache coverageOccupancy({
   final spanLng = east - west;
   final spanLat = north - south;
   if (!(spanLng > 1e-8) || !(spanLat > 1e-8)) {
-    return const CoverageRingCache(solid: false, ring: []);
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
   }
 
   final occ = List<List<bool>>.generate(
@@ -177,9 +232,19 @@ CoverageRingCache coverageOccupancy({
       if (v) filled++;
     }
   }
-  if (filled < 6) return const CoverageRingCache(solid: false, ring: []);
+  if (filled < 6) {
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
+  }
   if (filled / (cells * cells) >= solidFrac) {
-    return const CoverageRingCache(solid: true, ring: []);
+    return CoverageRingCache(
+      solid: true,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
   }
 
   final adj = <String, List<String>>{};
@@ -204,7 +269,13 @@ CoverageRingCache coverageOccupancy({
       if (!occupied(r + 1, c)) add(c, r + 1, c + 1, r + 1);
     }
   }
-  if (adj.isEmpty) return const CoverageRingCache(solid: false, ring: []);
+  if (adj.isEmpty) {
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
+  }
 
   String edgeKey(String a, String b) => a.compareTo(b) < 0 ? '$a|$b' : '$b|$a';
 
@@ -246,7 +317,13 @@ CoverageRingCache coverageOccupancy({
       if (path != null && path.length > best.length) best = path;
     }
   }
-  if (best.length < 5) return const CoverageRingCache(solid: false, ring: []);
+  if (best.length < 5) {
+    return CoverageRingCache(
+      solid: false,
+      ring: const [],
+      dots: coverageSketchDots(lngLat),
+    );
+  }
 
   List<double> toLngLat(String key) {
     final parts = key.split(',');
@@ -261,10 +338,11 @@ CoverageRingCache coverageOccupancy({
   final ring = [for (final k in best) toLngLat(k)];
   final cell = math.max(spanLng, spanLat) / cells;
   final simplified = coverageSimplifyClosedRing(ring, cell * 0.35);
-  final smooth = coverageChaikinClosedRing(simplified);
+  final smooth = coverageChaikinClosedRing(simplified, iterations: 3);
   return CoverageRingCache(
     solid: false,
     ring: coverageSimplifyClosedRing(smooth, cell * 0.12),
+    dots: coverageSketchDots(lngLat),
   );
 }
 
@@ -373,6 +451,7 @@ Map<String, Object?> coverageRingEvaluateGraphFile(String path) {
       'ok': true,
       'solid': occ.solid,
       'ring': occ.ring,
+      'dots': occ.dots,
     };
   } catch (_) {
     return <String, Object?>{'ok': false};
@@ -382,21 +461,21 @@ Map<String, Object?> coverageRingEvaluateGraphFile(String path) {
 CoverageRingCache? coverageRingCacheFromPayload(Map payload) {
   if (payload['ok'] != true) return null;
   final solid = payload['solid'] == true;
-  final ringRaw = payload['ring'];
-  final ring = <List<double>>[];
-  if (ringRaw is List) {
-    for (final p in ringRaw) {
-      if (p is! List || p.length < 2) continue;
-      final lng = p[0];
-      final lat = p[1];
-      if (lng is num && lat is num) {
-        ring.add([lng.toDouble(), lat.toDouble()]);
-      }
-    }
+  final ring = coverageLngLatListFromJson(payload['ring']);
+  final dots = coverageLngLatListFromJson(payload['dots']);
+  if (solid) {
+    return CoverageRingCache(
+      solid: true,
+      ring: coverageClosedRing(ring),
+      dots: dots,
+    );
   }
-  if (solid) return CoverageRingCache(solid: true, ring: coverageClosedRing(ring));
   if (ring.length < 5) return null;
-  return CoverageRingCache(solid: false, ring: coverageClosedRing(ring));
+  return CoverageRingCache(
+    solid: false,
+    ring: coverageClosedRing(ring),
+    dots: dots,
+  );
 }
 
 /// Parse nodes from a graph file and build the occupancy ring.
@@ -422,23 +501,21 @@ CoverageRingCache? coverageRingFromCacheJson(
     final bytes = decoded['graphBytes'];
     if (bytes is! num || bytes.toInt() != graphBytes) return null;
     final solid = decoded['solid'] == true;
-    final ring = decoded['ring'];
-    final out = <List<double>>[];
-    if (ring is List) {
-      for (final p in ring) {
-        if (p is! List || p.length < 2) continue;
-        final lng = p[0];
-        final lat = p[1];
-        if (lng is num && lat is num) {
-          out.add([lng.toDouble(), lat.toDouble()]);
-        }
-      }
-    }
+    final out = coverageLngLatListFromJson(decoded['ring']);
+    final dots = coverageLngLatListFromJson(decoded['dots']);
     if (solid) {
-      return CoverageRingCache(solid: true, ring: coverageClosedRing(out));
+      return CoverageRingCache(
+        solid: true,
+        ring: coverageClosedRing(out),
+        dots: dots,
+      );
     }
     return out.length >= 5
-        ? CoverageRingCache(solid: false, ring: coverageClosedRing(out))
+        ? CoverageRingCache(
+            solid: false,
+            ring: coverageClosedRing(out),
+            dots: dots,
+          )
         : null;
   } catch (_) {
     return null;
@@ -449,6 +526,7 @@ String coverageRingCacheJson({
   required List<List<double>> ring,
   required int graphBytes,
   bool solid = false,
+  List<List<double>> dots = const [],
 }) {
   return jsonEncode({
     'v': kCoverageRingCacheVersion,
@@ -456,5 +534,6 @@ String coverageRingCacheJson({
     'graphBytes': graphBytes,
     'solid': solid,
     'ring': ring,
+    'dots': dots,
   });
 }

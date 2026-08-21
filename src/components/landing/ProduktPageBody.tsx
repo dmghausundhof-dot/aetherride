@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Smartphone } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { DoorIcon } from "@/components/landing/DoorIcon";
 import { ScreenGallery } from "@/components/landing/ScreenGallery";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -88,7 +88,7 @@ export function ProduktPageBody() {
             </ul>
           </div>
           <div className="rounded-2xl border border-border bg-background/60 p-8">
-            <Smartphone className="h-8 w-8 text-sage" />
+            <ChromeGlyph name="phone" size={32} current className="text-sage" />
             <h2 className="mt-4 text-xl font-bold">{h.ui.inApp}</h2>
             <ul className="mt-4 space-y-3 text-sm text-text-secondary">
               {h.appSurfaces.map((s) => (

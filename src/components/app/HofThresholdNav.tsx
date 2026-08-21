@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, BookOpen } from "lucide-react";
+import { ChromeGlyph, type ChromeMarkName } from "@/components/chrome/ChromeGlyph";
 import { RadNavMark } from "@/components/garage/RadNavMark";
 import { HOF_NAV, isHofNavActive } from "@/lib/nav/hofNav";
 import { useHofTitle } from "@/hooks/useHofTitle";
@@ -16,12 +16,6 @@ import { useCommunityStore } from "@/store/useCommunityStore";
 import { useRideGroupStore } from "@/store/useRideGroupStore";
 import { useMemo } from "react";
 
-const ICONS = {
-  hof: Home,
-  karte: Map,
-  platz: BookOpen,
-} as const;
-
 function HofTabMark({
   id,
   active,
@@ -30,20 +24,18 @@ function HofTabMark({
   active: boolean;
 }) {
   if (id === "werkstatt") return <RadNavMark active={active} />;
-  const Icon = ICONS[id];
   return (
-    <Icon
-      className="h-[22px] w-[22px]"
-      strokeWidth={active ? 1.5 : 1.8}
-      fill={active ? "currentColor" : "none"}
-      aria-hidden
+    <ChromeGlyph
+      name={id as ChromeMarkName}
+      size={22}
+      current
     />
   );
 }
 
 /**
  * Schwelle zum Hof — Haarlinie, Orange aktiv.
- * Lucide für Hof/Karte/Touren; Rad bekommt die Stand-Marke.
+ * FlowLine-Marken für Hof/Karte/Touren; Rad bekommt die Stand-Marke.
  */
 export function HofThresholdNav() {
   const pathname = usePathname();

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
+import { useContext } from "react";
+import { ChromeLangContext } from "@/components/i18n/ChromeLangProvider";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 
-/** Browser UI language after mount — DE until then, like [useHofTitle]. */
+/** Hof UI language. Server seeds from cookie / Accept-Language. */
 export function useChromeLang(): ChromeLang {
-  const [lang, setLang] = useState<ChromeLang>("de");
-  useEffect(() => {
-    setLang(chromeLangFrom(navigator.language));
-  }, []);
-  return lang;
+  return useContext(ChromeLangContext).lang;
+}
+
+/** Device (auto) vs this-browser override. Not synced to the phone app. */
+export function useChromeLangPreference() {
+  return useContext(ChromeLangContext);
 }

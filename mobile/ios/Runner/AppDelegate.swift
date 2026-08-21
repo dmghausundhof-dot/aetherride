@@ -14,5 +14,6 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     SensorCorePlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "SensorCorePlugin")!)
     LocationCorePlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "LocationCorePlugin")!)
+    BoschLdiPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "BoschLdiPlugin")!)
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 
 import 'map_style_url.dart';
+import 'offline_maps_prefs.dart';
 import 'offline_pack_catalog.dart';
 
 enum OfflineBasemapResult { success, failed, timedOut, skippedPmtiles }
@@ -16,6 +17,7 @@ enum OfflineBasemapResult { success, failed, timedOut, skippedPmtiles }
 abstract final class OfflineBasemap {
   static const tileCountLimit = 100000;
   static const downloadTimeout = Duration(seconds: 180);
+  static const streetDownloadTimeout = Duration(minutes: 8);
 
   static Future<void> applyNetworkMode({required bool online}) async {
     try {
@@ -77,6 +79,44 @@ abstract final class OfflineBasemap {
     }
   }
 
+  static Future<bool> hasStreetHudRegion(String packId) =>
+      hasRegionId(streetHudRegionId(packId));
+
+  static Future<bool> streetHudReadyForActivatedPack() async {
+    try {
+      final path = await OfflineMapsPrefs.activatedPackPath();
+      final id = OfflineMapsPrefs.packIdFromActivatedPath(path);
+      if (id == null || id.isEmpty) return false;
+      return hasStreetHudRegion(id);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<OfflineBasemapResult> downloadStreetHud({
+    required String packId,
+    required String name,
+    required List<double> bbox,
+    required String mapStyleUrl,
+    void Function(double progress01)? onProgress,
+  }) async {
+    final maxZ = maxStreetZoomForBbox(bbox);
+    if (maxZ < kStreetHudMinZoom) return OfflineBasemapResult.failed;
+    if (!packOffersStreetHud(packId: packId, bbox: bbox)) {
+      return OfflineBasemapResult.failed;
+    }
+    return download(
+      regionId: streetHudRegionId(packId),
+      name: name,
+      bbox: bbox,
+      mapStyleUrl: mapStyleUrl,
+      minZoom: kStreetHudMinZoom,
+      maxZoom: maxZ,
+      timeout: streetDownloadTimeout,
+      onProgress: onProgress,
+    );
+  }
+
   static Future<void> deleteRegionId(String regionId) async {
     try {
       final list = await ml.getListOfRegions();
@@ -94,6 +134,9 @@ abstract final class OfflineBasemap {
     required List<double> bbox,
     required String mapStyleUrl,
     void Function(double progress01)? onProgress,
+    double? minZoom,
+    double? maxZoom,
+    Duration? timeout,
   }) async {
     if (bbox.length < 4) return OfflineBasemapResult.failed;
     if (skipMapLibreOfflineRegion(mapStyleUrl)) {
@@ -107,6 +150,8 @@ abstract final class OfflineBasemap {
     } catch (_) {}
     await deleteRegionId(regionId);
     final done = Completer<OfflineBasemapResult>();
+    final zMin = minZoom ?? kBasemapMinZoom;
+    final zMax = maxZoom ?? maxBasemapZoomForBbox(bbox);
     try {
       await ml.downloadOfflineRegion(
         ml.OfflineRegionDefinition(
@@ -115,8 +160,8 @@ abstract final class OfflineBasemap {
             northeast: ml.LatLng(bbox[3], bbox[2]),
           ),
           mapStyleUrl: mapStyleUrl,
-          minZoom: kBasemapMinZoom,
-          maxZoom: maxBasemapZoomForBbox(bbox),
+          minZoom: zMin,
+          maxZoom: zMax,
           includeIdeographs: false,
         ),
         metadata: {'regionId': regionId, 'name': name},
@@ -139,7 +184,7 @@ abstract final class OfflineBasemap {
         },
       );
       return await done.future.timeout(
-        downloadTimeout,
+        timeout ?? downloadTimeout,
         onTimeout: () {
           debugPrint('OfflineBasemap.download: tile wait timed out');
           return OfflineBasemapResult.timedOut;

@@ -500,6 +500,8 @@ interface MapViewProps {
   fitRoute?: boolean;
   /** Frame these points when no route line is ready (GPS → new pin). */
   fitPoints?: [number, number][];
+  /** Frame current markers (region tour map). */
+  fitMarkers?: boolean;
   bikeOverlayUrl?: string | null;
   bikeOverlayKind?: "pmtiles" | "geojson";
   bikeOverlayFamily?: BikeOverlayFamily;
@@ -959,6 +961,7 @@ export function MapView({
   onZoomChange,
   fitRoute = false,
   fitPoints,
+  fitMarkers = false,
   shapeInteractive = false,
   shapeAnchors = null,
   onShapeHover,
@@ -1897,7 +1900,12 @@ export function MapView({
       recs.set(m.id, { marker, key });
     }
     markersRef.current = [...recs.values()].map((r) => r.marker);
-  }, [markers, ready]);
+    if (fitMarkers && markers.length >= 2) {
+      const bounds = new maplibregl.LngLatBounds();
+      for (const m of markers) bounds.extend(m.lngLat);
+      map.fitBounds(bounds, { padding: 56, maxZoom: 11.4, duration: 500 });
+    }
+  }, [markers, ready, fitMarkers]);
 
   const sourceLabel =
     tileSource === "stadia"

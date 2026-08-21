@@ -754,6 +754,40 @@ assert(
   "bracketing chrome uses copy"
 );
 assert(
+  readFileSync("src/app/garage/page.tsx", "utf8").includes("lang,"),
+  "service report download uses chrome language"
+);
+assert(
+  readFileSync("src/lib/garage/serviceReport.ts", "utf8").includes(
+    "serviceReportCopy"
+  ),
+  "service report body uses copy"
+);
+assert(
+  readFileSync("src/components/garage/SagGuidePanel.tsx", "utf8").includes(
+    "sagGuideCopy"
+  ),
+  "sag helper uses copy"
+);
+assert(
+  !readFileSync("src/components/garage/SagGuidePanel.tsx", "utf8").includes(
+    "SAG einstellen"
+  ),
+  "sag helper has no hardcoded German heading"
+);
+assert(
+  readFileSync("src/components/garage/AddBikeWizard.tsx", "utf8").includes(
+    "addBikeCopy"
+  ),
+  "add-bike wizard uses copy"
+);
+assert(
+  readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "presentMaintActivity"
+  ),
+  "maintenance log titles map off German keys"
+);
+assert(
   !readFileSync("src/components/garage/BracketingPanel.tsx", "utf8").includes(
     "Zwei Varianten testen"
   ),

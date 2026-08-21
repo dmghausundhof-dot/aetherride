@@ -15,7 +15,10 @@ assert.equal(HILLSHADE_SOURCE.type, "raster-dem");
 assert.equal(HILLSHADE_SOURCE.encoding, "terrarium");
 assert.equal(HILLSHADE_LAYER.type, "hillshade");
 assert.equal(HILLSHADE_LAYER.source, HILLSHADE_SOURCE_ID);
-assert.equal(HILLSHADE_LAYER.paint["hillshade-exaggeration"], 0.48);
+assert.ok(
+  (HILLSHADE_LAYER.paint["hillshade-exaggeration"] as number) < 0.2,
+  "browse relief stays quiet so ways stay readable"
+);
 
 assert.equal(
   hillshadeBeforeLayerId((id) => (id === "roads" ? {} : undefined)),

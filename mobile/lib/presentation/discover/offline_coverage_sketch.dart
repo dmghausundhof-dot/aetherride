@@ -28,6 +28,7 @@ class OfflineCoverageSketch extends StatelessWidget {
     super.key,
     required this.bbox,
     this.ring,
+    this.dots,
     this.height = 88,
     this.userLng,
     this.userLat,
@@ -41,6 +42,8 @@ class OfflineCoverageSketch extends StatelessWidget {
   final List<double> bbox;
   /// Graph occupancy ring `[lng, lat]`. Falls back to the bbox plate.
   final List<List<double>>? ring;
+  /// Graph nodes for a trail stipple — not fake hillshade.
+  final List<List<double>>? dots;
   final double height;
   final double? userLng;
   final double? userLat;
@@ -59,6 +62,7 @@ class OfflineCoverageSketch extends StatelessWidget {
         painter: CoverageSketchPainter(
           bbox: bbox,
           ring: ring,
+          dots: dots,
           userLng: userLng,
           userLat: userLat,
           overviewReady: overviewReady,
@@ -87,6 +91,7 @@ class CoverageSketchPainter extends CustomPainter {
   CoverageSketchPainter({
     required this.bbox,
     this.ring,
+    this.dots,
     this.userLng,
     this.userLat,
     this.overviewReady = false,
@@ -95,6 +100,7 @@ class CoverageSketchPainter extends CustomPainter {
 
   final List<double> bbox;
   final List<List<double>>? ring;
+  final List<List<double>>? dots;
   final double? userLng;
   final double? userLat;
   final bool overviewReady;
@@ -208,6 +214,14 @@ class CoverageSketchPainter extends CustomPainter {
       packPath,
       Paint()..color = AppColors.chrome.withValues(alpha: 0.28),
     );
+    final stipple = dots;
+    if (stipple != null && stipple.isNotEmpty) {
+      final ink = Paint()..color = AppColors.chrome.withValues(alpha: 0.55);
+      for (final p in stipple) {
+        if (p.length < 2) continue;
+        canvas.drawCircle(map(p[0], p[1]), 1.15, ink);
+      }
+    }
     final p = (progress ?? 0).clamp(0.0, 1.0);
     if (p > 0) {
       canvas.save();
@@ -267,6 +281,7 @@ class CoverageSketchPainter extends CustomPainter {
   bool shouldRepaint(covariant CoverageSketchPainter oldDelegate) =>
       oldDelegate.bbox != bbox ||
       oldDelegate.ring != ring ||
+      oldDelegate.dots != dots ||
       oldDelegate.userLng != userLng ||
       oldDelegate.userLat != userLat ||
       oldDelegate.overviewReady != overviewReady ||

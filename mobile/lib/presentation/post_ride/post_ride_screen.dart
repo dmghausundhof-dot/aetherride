@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../shared/chrome_glyph.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/gpx.dart';
 import '../../data/export/strava_client.dart';
@@ -800,7 +801,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.bookmark_add_outlined),
+                        : const ChromeGlyph('merken', size: 22),
                     label: Text(l10n.postRideToMappe),
                   )
                 else if (engineNav)
@@ -836,7 +837,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       onPressed: (_savingAsTour || _savedAsTour)
                           ? null
                           : () => unawaited(_saveAsTour()),
-                      icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                      icon: const ChromeGlyph('merken', size: 18),
                       label: Text(l10n.postRideToMappe),
                     ),
                   ),
@@ -871,7 +872,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _shareGpx,
-                        icon: const Icon(Icons.download),
+                        icon: const ChromeGlyph('download', size: 20),
                         label: const Text('GPX'),
                       ),
                     ),

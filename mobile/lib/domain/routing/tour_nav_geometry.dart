@@ -704,11 +704,11 @@ bool shouldShowLiveRouteStats({
   );
 }
 
-/// A–B plan: live ORS/GraphHopper with net. Pack Dijkstra only without
-/// net (A–B, covering pack). Vias never go to the FFI graph.
+/// A–B plan: live ORS/GraphHopper with net. Pack Dijkstra without net
+/// (A–B or via-leg chain on the covering pack).
 ///
 /// With net, the client may still Dijkstra *after* ORS fails — if a pack
-/// on disk covers A–B. Alps + Schwarzwald must not sneak in first.
+/// on disk covers the trip. Alps + Schwarzwald must not sneak in first.
 ({
   bool preferOffline,
   bool allowOfflineFirst,
@@ -718,12 +718,12 @@ bool shouldShowLiveRouteStats({
   required bool online,
   bool viasEmpty = true,
 }) {
-  final graph = !online && viasEmpty;
+  final graph = !online;
   return (
     preferOffline: graph,
     allowOfflineFirst: graph,
     allowOnline: online,
-    allowOfflineFallback: viasEmpty,
+    allowOfflineFallback: true,
   );
 }
 
@@ -1963,17 +1963,17 @@ bool planLastDestShouldOffer({
   return true;
 }
 
-/// Live-ribbon opacity while the rubber-band is up (Komoot dims the old line).
-/// ~0.10× so a native grab translate is almost invisible behind the ghost.
+/// Live-ribbon opacity while the rubber-band is up.
+/// Whisper-faint so the solid pull reads as the editor, not a second route.
 double planRibbonDimOpacity(double base, {required bool dimmed}) {
   if (!dimmed) return base.clamp(0.0, 1.0);
-  return (base * 0.10).clamp(0.05, 0.14);
+  return (base * 0.045).clamp(0.028, 0.07);
 }
 
 /// Grab discs recede with the ribbon but stay visible as hit targets.
 double planGrabHandleOpacity(double base, {required bool dimmed}) {
   if (!dimmed) return base.clamp(0.0, 1.0);
-  return (base * 0.45).clamp(0.22, 0.55);
+  return (base * 0.28).clamp(0.14, 0.36);
 }
 
 /// Compact legend keys from OSM bands + optional steep flag.
@@ -2030,6 +2030,9 @@ double planMapMetersPerPixel({
   return math.cos(lat * math.pi / 180).abs() * 2 * math.pi * 6378137 / z;
 }
 
+/// MapLibre default vertical FOV (~36.87°). Pitch uses the same camera.
+const kPlanMapFovRad = 0.6435011087932844;
+
 ({double lng, double lat})? planMapScreenToLngLat({
   required double localX,
   required double localY,
@@ -2042,7 +2045,21 @@ double planMapMetersPerPixel({
   double tiltDeg = 0,
   double tileSize = kPlanMapTileSize,
 }) {
-  if (width <= 4 || height <= 4 || tiltDeg.abs() > 1) return null;
+  if (width <= 4 || height <= 4) return null;
+  if (tiltDeg.abs() > 1) {
+    return _planMapScreenToLngLatPitched(
+      localX: localX,
+      localY: localY,
+      width: width,
+      height: height,
+      centerLng: centerLng,
+      centerLat: centerLat,
+      zoom: zoom,
+      bearingDeg: bearingDeg,
+      tiltDeg: tiltDeg,
+      tileSize: tileSize,
+    );
+  }
   var dx = localX - width / 2;
   var dy = localY - height / 2;
   if (bearingDeg.abs() > 0.01) {
@@ -2078,7 +2095,21 @@ double planMapMetersPerPixel({
   double tiltDeg = 0,
   double tileSize = kPlanMapTileSize,
 }) {
-  if (width <= 4 || height <= 4 || tiltDeg.abs() > 1) return null;
+  if (width <= 4 || height <= 4) return null;
+  if (tiltDeg.abs() > 1) {
+    return _planMapLngLatToScreenPitched(
+      lng: lng,
+      lat: lat,
+      width: width,
+      height: height,
+      centerLng: centerLng,
+      centerLat: centerLat,
+      zoom: zoom,
+      bearingDeg: bearingDeg,
+      tiltDeg: tiltDeg,
+      tileSize: tileSize,
+    );
+  }
   final world = tileSize * math.pow(2, zoom);
   double mercX(double lo) => (lo + 180) / 360 * world;
   double mercY(double la) {
@@ -2169,3 +2200,287 @@ bool planMapShowsRoutingWait({
   required bool hasEnd,
 }) =>
     editorActive && routingBusy && hasStart && hasEnd;
+
+/// Finger-chip while the engine reshapes an existing line (not the first A–B).
+bool planMapAdaptingHintOnMap({
+  required bool routingBusy,
+  required bool hasLiveLine,
+  required bool hasFinger,
+}) =>
+    routingBusy && hasLiveLine && hasFinger;
+
+const _kPlanHorizonDeg = 89.25;
+
+({double lng, double lat})? _planMapScreenToLngLatPitched({
+  required double localX,
+  required double localY,
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  required double bearingDeg,
+  required double tiltDeg,
+  required double tileSize,
+}) {
+  if (tiltDeg.abs() > 80) return null;
+  final pixel = _planMapPixelMatrix(
+    width: width,
+    height: height,
+    centerLng: centerLng,
+    centerLat: centerLat,
+    zoom: zoom,
+    bearingDeg: bearingDeg,
+    tiltDeg: tiltDeg,
+    tileSize: tileSize,
+  );
+  if (pixel == null) return null;
+  final inv = _m4Invert(pixel);
+  if (inv == null) return null;
+  final a = _m4Vec4(inv, localX, localY, 0, 1);
+  final b = _m4Vec4(inv, localX, localY, 1, 1);
+  if (a[3].abs() < 1e-12 || b[3].abs() < 1e-12) return null;
+  final x0 = a[0] / a[3], y0 = a[1] / a[3], z0 = a[2] / a[3];
+  final x1 = b[0] / b[3], y1 = b[1] / b[3], z1 = b[2] / b[3];
+  final dz = z1 - z0;
+  if (dz.abs() < 1e-12) return null;
+  final t = (0 - z0) / dz;
+  if (!t.isFinite) return null;
+  final world = tileSize * math.pow(2, zoom);
+  return _planMapWorldToLngLat(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, world);
+}
+
+({double x, double y})? _planMapLngLatToScreenPitched({
+  required double lng,
+  required double lat,
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  required double bearingDeg,
+  required double tiltDeg,
+  required double tileSize,
+}) {
+  if (tiltDeg.abs() > 80) return null;
+  final pixel = _planMapPixelMatrix(
+    width: width,
+    height: height,
+    centerLng: centerLng,
+    centerLat: centerLat,
+    zoom: zoom,
+    bearingDeg: bearingDeg,
+    tiltDeg: tiltDeg,
+    tileSize: tileSize,
+  );
+  if (pixel == null) return null;
+  final world = tileSize * math.pow(2, zoom);
+  final merc = _planMapLngLatToWorld(lng, lat, world);
+  final p = _m4Vec4(pixel, merc.x, merc.y, 0, 1);
+  if (p[3] <= 1e-8) return null;
+  final x = p[0] / p[3];
+  final y = p[1] / p[3];
+  if (!x.isFinite || !y.isFinite) return null;
+  return (x: x, y: y);
+}
+
+({double x, double y}) _planMapLngLatToWorld(
+  double lng,
+  double lat,
+  num world,
+) {
+  final w = world.toDouble();
+  final s = math.sin(lat.clamp(-85.0, 85.0) * math.pi / 180);
+  return (
+    x: (lng + 180) / 360 * w,
+    y: (0.5 - math.log((1 + s) / (1 - s)) / (4 * math.pi)) * w,
+  );
+}
+
+({double lng, double lat})? _planMapWorldToLngLat(
+  double x,
+  double y,
+  num world,
+) {
+  final w = world.toDouble();
+  if (!(w > 0)) return null;
+  final lng = (x / w) * 360 - 180;
+  final n = math.pi - 2 * math.pi * y / w;
+  final lat = 180 / math.pi * math.atan(0.5 * (math.exp(n) - math.exp(-n)));
+  if (!lng.isFinite || !lat.isFinite) return null;
+  return (lng: lng, lat: lat.clamp(-85.0, 85.0));
+}
+
+double _planMapCameraToCenter(double height) =>
+    0.5 / math.tan(kPlanMapFovRad / 2) * height;
+
+double _planMapFarZ({required double height, required double pitchRad}) {
+  final d = _planMapCameraToCenter(height);
+  final limited = math.min(pitchRad.abs(), _kPlanHorizonDeg * math.pi / 180);
+  const groundBase = math.pi / 2;
+  final groundAngle = groundBase + pitchRad;
+  final fovAbove = kPlanMapFovRad * 0.5;
+  double surface(double angle) {
+    final denom = math.sin(
+      (math.pi - groundAngle - angle).clamp(0.01, math.pi - 0.01),
+    );
+    return math.sin(angle) * d / denom;
+  }
+
+  final topHalf = surface(fovAbove);
+  final horizon = d *
+      math.tan(
+        ((_kPlanHorizonDeg * math.pi / 180) - pitchRad).clamp(0.01, math.pi / 2),
+      );
+  final horizonAngle = math.atan(horizon / d);
+  final minFov = (90 - _kPlanHorizonDeg) * math.pi / 180;
+  final fovHorizon = horizonAngle > minFov ? horizonAngle : minFov;
+  final topMin = math.min(topHalf, surface(fovHorizon));
+  return (math.cos(groundBase - limited) * topMin + d) * 1.01;
+}
+
+List<double>? _planMapPixelMatrix({
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  required double bearingDeg,
+  required double tiltDeg,
+  required double tileSize,
+}) {
+  final world = tileSize * math.pow(2, zoom);
+  final merc = _planMapLngLatToWorld(centerLng, centerLat, world);
+  final pitch = tiltDeg * math.pi / 180;
+  final bearing = bearingDeg * math.pi / 180;
+  final cam = _planMapCameraToCenter(height);
+  final nearZ = height / 50;
+  final farZ = _planMapFarZ(height: height, pitchRad: pitch);
+  if (!(farZ > nearZ) || !(cam > 0)) return null;
+  var m = _m4Perspective(kPlanMapFovRad, width / height, nearZ, farZ);
+  m = _m4Scale(m, 1, -1, 1);
+  m = _m4Translate(m, 0, 0, -cam);
+  m = _m4RotateX(m, pitch);
+  m = _m4RotateZ(m, -bearing);
+  m = _m4Translate(m, -merc.x, -merc.y, 0);
+  var clip = _m4Scale(_m4I(), width / 2, -height / 2, 1);
+  clip = _m4Translate(clip, 1, -1, 0);
+  return _m4Mul(clip, m);
+}
+
+List<double> _m4I() => <double>[
+      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+    ];
+
+List<double> _m4Mul(List<double> a, List<double> b) {
+  final o = List<double>.filled(16, 0);
+  for (var col = 0; col < 4; col++) {
+    for (var row = 0; row < 4; row++) {
+      var s = 0.0;
+      for (var k = 0; k < 4; k++) {
+        s += a[k * 4 + row] * b[col * 4 + k];
+      }
+      o[col * 4 + row] = s;
+    }
+  }
+  return o;
+}
+
+List<double> _m4Translate(List<double> a, double x, double y, double z) =>
+    _m4Mul(a, <double>[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
+
+List<double> _m4Scale(List<double> a, double x, double y, double z) =>
+    _m4Mul(a, <double>[x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]);
+
+List<double> _m4RotateX(List<double> a, double rad) {
+  final c = math.cos(rad);
+  final s = math.sin(rad);
+  return _m4Mul(a, <double>[
+    1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1,
+  ]);
+}
+
+List<double> _m4RotateZ(List<double> a, double rad) {
+  final c = math.cos(rad);
+  final s = math.sin(rad);
+  return _m4Mul(a, <double>[
+    c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+  ]);
+}
+
+List<double> _m4Perspective(
+  double fovy,
+  double aspect,
+  double near,
+  double far,
+) {
+  final f = 1 / math.tan(fovy / 2);
+  final nf = 1 / (near - far);
+  return <double>[
+    f / aspect,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (far + near) * nf,
+    -1,
+    0,
+    0,
+    2 * far * near * nf,
+    0,
+  ];
+}
+
+List<double> _m4Vec4(List<double> m, double x, double y, double z, double w) =>
+    <double>[
+      m[0] * x + m[4] * y + m[8] * z + m[12] * w,
+      m[1] * x + m[5] * y + m[9] * z + m[13] * w,
+      m[2] * x + m[6] * y + m[10] * z + m[14] * w,
+      m[3] * x + m[7] * y + m[11] * z + m[15] * w,
+    ];
+
+List<double>? _m4Invert(List<double> a) {
+  final a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+  final a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+  final a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+  final a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+  final b00 = a00 * a11 - a01 * a10;
+  final b01 = a00 * a12 - a02 * a10;
+  final b02 = a00 * a13 - a03 * a10;
+  final b03 = a01 * a12 - a02 * a11;
+  final b04 = a01 * a13 - a03 * a11;
+  final b05 = a02 * a13 - a03 * a12;
+  final b06 = a20 * a31 - a21 * a30;
+  final b07 = a20 * a32 - a22 * a30;
+  final b08 = a20 * a33 - a23 * a30;
+  final b09 = a21 * a32 - a22 * a31;
+  final b10 = a21 * a33 - a23 * a31;
+  final b11 = a22 * a33 - a23 * a32;
+  var det =
+      b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+  if (det.abs() < 1e-20) return null;
+  det = 1.0 / det;
+  return <double>[
+    (a11 * b11 - a12 * b10 + a13 * b09) * det,
+    (a02 * b10 - a01 * b11 - a03 * b09) * det,
+    (a31 * b05 - a32 * b04 + a33 * b03) * det,
+    (a22 * b04 - a21 * b05 - a23 * b03) * det,
+    (a12 * b08 - a10 * b11 - a13 * b07) * det,
+    (a00 * b11 - a02 * b08 + a03 * b07) * det,
+    (a32 * b02 - a30 * b05 - a33 * b01) * det,
+    (a20 * b05 - a22 * b02 + a23 * b01) * det,
+    (a10 * b10 - a11 * b08 + a13 * b06) * det,
+    (a01 * b08 - a00 * b10 - a03 * b06) * det,
+    (a30 * b04 - a31 * b02 + a33 * b00) * det,
+    (a21 * b02 - a20 * b04 - a23 * b00) * det,
+    (a11 * b07 - a10 * b09 - a12 * b06) * det,
+    (a00 * b09 - a01 * b07 + a02 * b06) * det,
+    (a31 * b01 - a30 * b03 - a32 * b00) * det,
+    (a20 * b03 - a21 * b01 + a22 * b00) * det,
+  ];
+}

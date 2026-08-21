@@ -17,6 +17,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../../providers/shop_providers.dart';
 import '../garage/rad_nav_mark.dart';
+import '../shared/chrome_glyph.dart';
 import '../garage/rad_stand_frame.dart';
 import '../shell/shell_tabs.dart';
 import 'shop_product_sheet.dart';
@@ -453,7 +454,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: l10n.shopSearchHint,
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    prefixIcon: const ChromeGlyph(
+                      'search',
+                      size: 20,
+                      color: AppColors.muted,
+                    ),
                     filled: true,
                     fillColor: AppColors.surfaceDark,
                     border: OutlineInputBorder(

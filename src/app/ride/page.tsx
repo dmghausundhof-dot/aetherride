@@ -6,13 +6,8 @@
  */
 import Link from "next/link";
 import { useMemo } from "react";
-import {
-  Smartphone,
-  Map as MapIcon,
-  Navigation,
-  ArrowLeft,
-  ExternalLink,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { useHofCopy } from "@/hooks/useHofCopy";
@@ -55,7 +50,7 @@ export default function RideAppBridgePage() {
 
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-10">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-chrome/15 text-chrome">
-          <Smartphone className="h-7 w-7" />
+          <ChromeGlyph name="phone" size={28} current />
         </div>
 
         <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
@@ -69,7 +64,7 @@ export default function RideAppBridgePage() {
           <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/30 text-chrome">
-                <Navigation className="h-5 w-5" />
+                <ChromeGlyph name="nav" size={20} current />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium tracking-wide text-text-secondary">
@@ -152,7 +147,7 @@ export default function RideAppBridgePage() {
             href="/discover"
             className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-chrome/40"
           >
-            <MapIcon className="h-5 w-5 text-chrome" />
+            <ChromeGlyph name="karte" size={20} current className="text-chrome" />
             <span>
               <span className="font-semibold">Weiter auf der Karte</span>
               <span className="block text-xs text-text-secondary">
@@ -164,7 +159,7 @@ export default function RideAppBridgePage() {
             href="/download"
             className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-chrome/40"
           >
-            <Smartphone className="h-5 w-5 text-chrome" />
+            <ChromeGlyph name="phone" size={20} current className="text-chrome" />
             <span>
               <span className="font-semibold">Warum die App?</span>
               <span className="block text-xs text-text-secondary">

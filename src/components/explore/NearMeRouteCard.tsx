@@ -1,6 +1,7 @@
 "use client";
 
-import { Navigation, Play, Loader2, Bookmark } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoutingProfile } from "@/lib/routing/profiles";
@@ -162,7 +163,7 @@ export function NearMeRouteCard({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
-        <Navigation className="h-4 w-4 text-accent" />
+        <ChromeGlyph name="karte" size={16} />
         <h3 className="text-sm font-semibold">{d.fromHereTitle}</h3>
       </div>
       <p className="mt-1 text-[11px] text-text-secondary">
@@ -215,7 +216,7 @@ export function NearMeRouteCard({
           onClick={() => void run(true)}
           className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-accent py-2 text-xs font-semibold text-on-accent disabled:opacity-40"
         >
-          <Play className="h-3.5 w-3.5 fill-current" /> {d.inApp}
+          <ChromeGlyph name="play" size={14} current /> {d.inApp}
         </button>
       </div>
       {preview && previewMeta ? (
@@ -224,7 +225,7 @@ export function NearMeRouteCard({
           onClick={savePreview}
           className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-chrome/40 py-2 text-xs font-medium text-chrome"
         >
-          <Bookmark className="h-3.5 w-3.5" />
+          <ChromeGlyph name="merken" size={14} current />
           {d.savePreview}
         </button>
       ) : null}

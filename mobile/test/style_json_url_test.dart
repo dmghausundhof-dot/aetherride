@@ -226,6 +226,8 @@ void main() {
       isTrue,
     );
     expect(isRideHudEmptyStyle(kRideHudEmptyStyleJson), isTrue);
+    expect(kRideHudEmptyStyleJson.contains(kRideHudEmptyPaper), isTrue);
+    expect(kRideHudEmptyPaper, '#2A2A2A');
     expect(isRideHudEmptyStyle(kOpenFreeMapBrightStyleUrl), isFalse);
     expect(
       rideHudMapStyle(
@@ -563,16 +565,18 @@ void main() {
     expect(layer('buildings')['minzoom'], kOverviewBrowseBuildingsMinZoom);
     expect(layer('roads')['paint']['line-color'], kOverviewBrowseRoad);
     expect(layer('places')['minzoom'], kOverviewBrowsePlacesMinZoom);
-    expect(ensureOverviewBrowseStyle(Map<String, dynamic>.from({
-      'version': 8,
-      'layers': [
-        {
-          'id': 'background',
-          'type': 'background',
-          'paint': {'background-color': '#e8eee9'},
-        },
-      ],
-    })), isTrue);
+    expect(
+        ensureOverviewBrowseStyle(Map<String, dynamic>.from({
+          'version': 8,
+          'layers': [
+            {
+              'id': 'background',
+              'type': 'background',
+              'paint': {'background-color': '#e8eee9'},
+            },
+          ],
+        })),
+        isTrue);
     restyleOverviewBrowse(style);
     expect(layer('background')['paint']['background-color'], kOverviewBrowseBg);
     expect(ensureOverviewBrowseStyle(style), isFalse);

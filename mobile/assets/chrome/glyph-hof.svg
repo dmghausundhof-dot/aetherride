@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Hof">
+  <title>FlowLine Hof</title>
+  <path d="M4.4 11.4 L12 4.6 L19.6 11.4" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.4 11.6 V18.6 H17.6 V11.6" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M10 18.6 V14.2 H14 V18.6" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M4.2 19.2 H19.8" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

@@ -18,6 +18,7 @@ import { HofPageHeader } from "@/components/hof/HofPageHeader";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { ChromeLangPicker } from "@/components/profile/ChromeLangPicker";
 import { isCommerceOpen } from "@/lib/config/appStage";
 import type { BikeCategory } from "@/types/garage";
 import { rideSportLabel } from "@/lib/i18n/rideSportLabel";
@@ -339,6 +340,8 @@ export default function ProfilePage() {
           <p className="mt-2 text-xs text-text-secondary">{authMsg}</p>
         )}
       </section>
+
+      <ChromeLangPicker />
 
       <PublicProfilePanel />
 

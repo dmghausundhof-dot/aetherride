@@ -175,6 +175,9 @@ export type HofCopy = {
   profileKicker: string;
   profileTitle: string;
   profileHint: string;
+  profileLanguage: string;
+  profileLanguageHint: string;
+  profileLanguageAuto: string;
   profileDisciplines: string;
   profileDisciplinesHint: string;
   profilePrimary: string;
@@ -423,6 +426,10 @@ const DE: HofCopy = {
   profileKicker: "Du",
   profileTitle: "Profil",
   profileHint: "Konto und Fahrstil. Nach dem Anmelden stehst du am Hof — kein Sync-Theater mit der nativen App.",
+  profileLanguage: "Sprache",
+  profileLanguageHint:
+    "Dieselben fünf Sprachen wie die App. Gerät folgt diesem Browser — nicht dem Handy.",
+  profileLanguageAuto: "Gerät",
   profileDisciplines: "Deine Disziplinen",
   profileDisciplinesHint:
     "Vorlieben für Touren. Routing folgt dem aktiven Rad, nicht dieser Liste allein.",
@@ -669,6 +676,10 @@ const EN: HofCopy = {
   profileKicker: "You",
   profileTitle: "Profile",
   profileHint: "Account and riding style. After sign-in you stand at Home — no sync theatre with the native app.",
+  profileLanguage: "Language",
+  profileLanguageHint:
+    "The same five languages as the app. Device follows this browser — it does not sync from the phone.",
+  profileLanguageAuto: "Device",
   profileDisciplines: "Your disciplines",
   profileDisciplinesHint:
     "Tour preferences. Routing follows the active bike, not this list alone.",
@@ -915,6 +926,10 @@ const FR: HofCopy = {
   profileKicker: "Toi",
   profileTitle: "Profil",
   profileHint: "Compte et style. Après connexion tu es à Home — pas de théâtre de sync avec l'app native.",
+  profileLanguage: "Langue",
+  profileLanguageHint:
+    "Les cinq langues de l'app. L'appareil suit ce navigateur — pas de sync depuis le téléphone.",
+  profileLanguageAuto: "Appareil",
   profileDisciplines: "Tes disciplines",
   profileDisciplinesHint:
     "Préférences de tours. Le routing suit le vélo actif, pas seulement cette liste.",
@@ -1161,6 +1176,10 @@ const IT: HofCopy = {
   profileKicker: "Tu",
   profileTitle: "Profilo",
   profileHint: "Account e stile. Dopo l'accesso stai a Home — niente teatro di sync con l'app nativa.",
+  profileLanguage: "Lingua",
+  profileLanguageHint:
+    "Le cinque lingue dell'app. Il dispositivo segue questo browser — niente sync dal telefono.",
+  profileLanguageAuto: "Dispositivo",
   profileDisciplines: "Le tue discipline",
   profileDisciplinesHint:
     "Preferenze per i tour. Il routing segue la bici attiva, non solo questa lista.",
@@ -1417,6 +1436,10 @@ const NL: HofCopy = {
   profileTitle: "Profiel",
   profileHint:
     "Account en rijstijl. Na aanmelden sta je op Home — geen sync-theater met de native app.",
+  profileLanguage: "Taal",
+  profileLanguageHint:
+    "De vijf talen van de app. Apparaat volgt deze browser — geen sync vanaf de telefoon.",
+  profileLanguageAuto: "Apparaat",
   profileDisciplines: "Jouw disciplines",
   profileDisciplinesHint:
     "Voorkeuren voor tochten. Routing volgt de actieve fiets, niet alleen deze lijst.",

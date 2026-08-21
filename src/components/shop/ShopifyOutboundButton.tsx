@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Lock } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { cn } from "@/lib/utils";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHofCopy } from "@/hooks/useHofCopy";
@@ -96,7 +97,7 @@ export function ShopifyOutboundButton({
           className
         )}
       >
-        <Lock className="h-3.5 w-3.5" />
+        <ChromeGlyph name="lock" size={14} current />
         {shown}
       </button>
       {open ? (

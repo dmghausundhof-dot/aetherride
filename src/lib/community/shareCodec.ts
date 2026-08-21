@@ -169,6 +169,7 @@ export function buildTourSharePayload(
     track: includeTrack ? downsampleTrack(usable) : undefined,
     authorLabel,
     createdAt: new Date().toISOString(),
+    epoch: route.shareEpoch ?? 0,
   };
 }
 

@@ -4214,6 +4214,30 @@ abstract class AppLocalizations {
   /// **'Familien-Link / Mitfahrer: unter Profil → Familie am Rad weitere Fahrer mit eigenem Gewicht anlegen.'**
   String get privacyFamilyHint;
 
+  /// No description provided for @privacyBleTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Sensoren & Uhr'**
+  String get privacyBleTitle;
+
+  /// No description provided for @privacyBleForget.
+  ///
+  /// In de, this message translates to:
+  /// **'Hersteller-Kopplungen löschen'**
+  String get privacyBleForget;
+
+  /// No description provided for @privacyBleForgetBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernt gemerkte Rad-, Antriebs- und Uhr-IDs auf diesem Gerät. Live-Werte der Hersteller werden nicht in die Cloud geschrieben — nur die Kopplung.'**
+  String get privacyBleForgetBody;
+
+  /// No description provided for @privacyBleForgotten.
+  ///
+  /// In de, this message translates to:
+  /// **'BLE-Kopplungen gelöscht'**
+  String get privacyBleForgotten;
+
   /// No description provided for @privacyExportTitle.
   ///
   /// In de, this message translates to:

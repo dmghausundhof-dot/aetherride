@@ -17,6 +17,7 @@ import '../../data/export/strava_client.dart';
 import '../../data/export/strava_stub.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/saved_route_meta_store.dart';
+import '../../data/sensor/manufacturer_ble_wipe.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/privacy_zone_map.dart';
@@ -417,6 +418,48 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     }
   }
 
+  Future<void> _forgetManufacturerBle() async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(dialogL10n.privacyBleForget),
+          content: Text(dialogL10n.privacyBleForgetBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(dialogL10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(dialogL10n.bleRemoveDevice),
+            ),
+          ],
+        );
+      },
+    );
+    if (ok != true) return;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await wipeManufacturerBleData(
+        store: ref.read(bikeBleStoreProvider),
+        ble: ref.read(bleCoreProvider),
+      );
+      if (mounted) {
+        setState(() => _message = l10n.privacyBleForgotten);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _exportJson() async {
     final l10n = AppLocalizations.of(context);
     setState(() {
@@ -555,6 +598,25 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               onPressed: _busy ? null : _uploadChunks,
               child: Text(l10n.privacyUploadNow),
             ),
+          const SizedBox(height: 20),
+          Text(
+            l10n.privacyBleTitle,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.privacyBleForgetBody,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('privacy-ble-forget'),
+            onPressed: _busy ? null : _forgetManufacturerBle,
+            icon: const Icon(Icons.bluetooth_disabled),
+            label: Text(l10n.privacyBleForget),
+          ),
           const SizedBox(height: 20),
           Text(
             l10n.privacyExportTitle,

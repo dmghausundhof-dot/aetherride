@@ -9,13 +9,15 @@ import {
   defaultWheelFor,
   persistCategory,
   persistIsEbike,
-  subtypeLabel,
   type BikeAssistMode,
 } from "@/lib/garage/bikeAssist";
-import { hofSportLabel } from "@/lib/home/hofSportLabel";
+import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { useAppStore } from "@/store/useAppStore";
 import { notifyGarageBikeShopify, garageBikeInputFromBike } from "@/lib/shop/notifyGarageBikeShopify";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import { addBikeCopy } from "@/lib/i18n/addBikeCopy";
 import { radSilhouetteSrc } from "@/lib/garage/radMark";
 import { RadStandFrame } from "@/components/garage/RadStandFrame";
 import { RadGlyph } from "@/components/garage/RadGlyph";
@@ -30,6 +32,9 @@ export function AddBikeWizard({
   initialCategory?: BikeCategory;
 }) {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const tab = garageTabCopy(lang);
+  const wizard = addBikeCopy(lang);
   const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const bikes = useAppStore((s) => s.bikes);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
@@ -55,7 +60,7 @@ export function AddBikeWizard({
   const submit = () => {
     setError(null);
     if (freeBlocked) {
-      setError("Im Free-Tarif nur ein Rad. Pro unter Profil freischalten.");
+      setError(wizard.freeOne);
       return;
     }
     try {
@@ -73,7 +78,7 @@ export function AddBikeWizard({
       }
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Anlegen fehlgeschlagen");
+      setError(e instanceof Error ? e.message : wizard.addFailed);
     }
   };
 
@@ -88,7 +93,7 @@ export function AddBikeWizard({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={tab.close}
             className="touch-target p-2"
           >
             <X className="h-5 w-5" aria-hidden />
@@ -97,8 +102,7 @@ export function AddBikeWizard({
 
         {freeBlocked && (
           <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-            Im Free-Tarif bereits ein Rad. Weitere Räder sind Pro — unter Profil
-            freischalten.
+            {wizard.freeMore}
           </div>
         )}
         {error && (
@@ -116,22 +120,22 @@ export function AddBikeWizard({
         </div>
 
         <label className="mb-4 block text-sm">
-          Name (optional)
+          {wizard.nameOptional}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={hofSportLabel(persisted, isEbike)}
+            placeholder={bikeCategoryLabel(persisted, lang)}
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           />
         </label>
 
         <div className="mb-4">
-          <span className="mb-1 block text-sm tracking-wide">Antrieb</span>
+          <span className="mb-1 block text-sm tracking-wide">{wizard.drive}</span>
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                ["muscle", "Muskel"],
-                ["ebike", "E-Bike"],
+                ["muscle", wizard.muscle],
+                ["ebike", wizard.ebike],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -151,7 +155,7 @@ export function AddBikeWizard({
         </div>
 
         <div>
-          <span className="mb-1 block text-sm tracking-wide">Typ</span>
+          <span className="mb-1 block text-sm tracking-wide">{wizard.type}</span>
           <div className="grid grid-cols-3 gap-2">
             {types.map((c) => {
               const on = addTileSelected(c, category, assistMode);
@@ -175,9 +179,7 @@ export function AddBikeWizard({
                     heightClass="h-12"
                   />
                   <span className="block truncate px-2 py-1.5 text-[11px] font-medium">
-                    {assistMode === "muscle"
-                      ? hofSportLabel(c)
-                      : subtypeLabel(c, assistMode)}
+                    {bikeCategoryLabel(c, lang)}
                   </span>
                 </button>
               );

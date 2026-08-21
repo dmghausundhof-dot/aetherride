@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Schutz">
+  <title>FlowLine Schutz</title>
+  <path d="M12 3.8 L18.6 6.2 V12.4 C18.6 16.2 15.8 19.2 12 20.4 C8.2 19.2 5.4 16.2 5.4 12.4 V6.2 Z" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M9 12.2 L11.2 14.4 L15.4 9.6" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

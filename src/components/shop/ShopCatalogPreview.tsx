@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import type { Bike } from "@/types";
 import type { PartsProduct } from "@/lib/shop/partsCatalog";
 import { filterAndRankParts } from "@/lib/shop/partsCatalog";
@@ -119,7 +119,12 @@ export function ShopCatalogPreview({
   return (
     <section className="space-y-3">
       <label className="relative block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
+        <ChromeGlyph
+          name="search"
+          size={16}
+          current
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+        />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}

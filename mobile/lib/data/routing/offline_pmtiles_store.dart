@@ -92,8 +92,9 @@ abstract final class OfflinePmtilesStore {
   /// Charcoal HUD canvas when street tiles cannot load. Not the z11 Blatt.
   static Future<String> emptyHudStyleUri() async {
     final file = File(p.join((await dir()).path, kRideHudEmptyStyleFileName));
-    if (!await file.exists()) {
-      await file.parent.create(recursive: true);
+    await file.parent.create(recursive: true);
+    if (!await file.exists() ||
+        await file.readAsString() != kRideHudEmptyStyleJson) {
       await file.writeAsString(kRideHudEmptyStyleJson);
     }
     return file.uri.toString();
@@ -323,8 +324,7 @@ abstract final class OfflinePmtilesStore {
         'name': id,
         'glyphs':
             '$kOfflinePacksPublicCdnRoot/basemap/assets/fonts/{fontstack}/{range}.pbf',
-        'sprite':
-            '$kOfflinePacksPublicCdnRoot/basemap/assets/sprites/v4/light',
+        'sprite': '$kOfflinePacksPublicCdnRoot/basemap/assets/sprites/v4/light',
         'sources': {
           'protomaps': {
             'type': 'vector',

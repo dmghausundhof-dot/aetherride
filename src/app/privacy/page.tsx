@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Download,
-  FileJson,
-  Map as MapIcon,
-  Shield,
-  Users,
-} from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import {
   downloadText,
@@ -186,7 +180,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Download className="h-4 w-4 text-chrome" /> Export (Art. 20)
+          <ChromeGlyph name="download" size={16} current className="text-chrome" /> Export (Art. 20)
         </h3>
         <div className="flex flex-col gap-2">
           <button
@@ -230,7 +224,7 @@ export default function PrivacyExportPage() {
             }}
             className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
           >
-            <FileJson className="h-4 w-4" /> JSON-Vollexport
+            <ChromeGlyph name="download" size={16} current /> JSON-Vollexport
           </button>
           <button
             type="button"
@@ -345,7 +339,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Shield className="h-4 w-4 text-chrome" /> Einwilligungen
+          <ChromeGlyph name="shield" size={16} current className="text-chrome" /> Einwilligungen
         </h3>
         {consents.map((c) => (
           <label
@@ -378,7 +372,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <MapIcon className="h-4 w-4 text-chrome" /> Privatsphärenzonen
+          <ChromeGlyph name="karte" size={16} current className="text-chrome" /> Privatsphärenzonen
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
           Tracks werden in diesen Radien gekappt — für Export und wo viele fahren.
@@ -411,7 +405,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Users className="h-4 w-4 text-chrome" /> Familie am Rad
+          <ChromeGlyph name="users" size={16} current className="text-chrome" /> Familie am Rad
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
           Ein Rad, mehrere Fahrer mit eigenen Setups.

@@ -8,6 +8,7 @@ import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ble/garage_ble_live.dart';
+import '../../domain/ble/manufacturer_live.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
@@ -223,7 +224,46 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         'ble pair: connect ok=$ok '
         'status=${ble.statusDetail} last=${ble.lastRemoteId}',
       );
-      if (blePairSheetSuccess(connected: ok)) {
+      final next = blePairNextStep(
+        connected: ok,
+        kind: hit.kind,
+        hasLiveMetrics: ble.hasBikeLiveMetrics,
+      );
+      if (next == BlePairNextStep.tryBoschLdi) {
+        if (ok) {
+          await store.saveForBike(
+            bikeId,
+            BikeBleDevice(
+              deviceId: blePairDeviceId(
+                lastRemoteId: ble.lastRemoteId,
+                scanDeviceId: hit.deviceId,
+              ),
+              name: ble.connectedDeviceName ?? hit.displayName,
+              kind: bikeBleKindToStorage(ble.connectedKind ?? hit.kind),
+            ),
+          );
+        }
+        setState(() => _pairStatus = 'ldi_waiting_flow');
+        final ldiOk = await ble.startLdiAccessory(pairing: true);
+        if (ldiOk) {
+          await store.saveForBike(
+            bikeId,
+            BikeBleDevice(
+              deviceId: boschLdiAccessoryId,
+              name: ble.connectedDeviceName ?? 'Intuvia',
+              kind: bikeBleKindToStorage(BikeBleKind.bosch),
+            ),
+          );
+          if (!mounted) return;
+          Navigator.of(context).pop(true);
+          return;
+        }
+        if (ok) {
+          await _keepScanningForWheel(hit);
+          return;
+        }
+      }
+      if (next == BlePairNextStep.done && blePairSheetSuccess(connected: ok)) {
         final id = blePairDeviceId(
           lastRemoteId: ble.lastRemoteId,
           scanDeviceId: hit.deviceId,
@@ -242,22 +282,22 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         Navigator.of(context).pop(true);
         return;
       }
-      if (!ok && hit.kind == BikeBleKind.bosch) {
-        setState(() => _pairStatus = 'ldi_waiting_flow');
-        final ldiOk = await ble.startLdiAccessory(pairing: true);
-        if (ldiOk) {
+      if (next == BlePairNextStep.keepScanningWheel) {
+        if (ok || blePairAccepted(connected: false, kind: hit.kind)) {
           await store.saveForBike(
             bikeId,
             BikeBleDevice(
-              deviceId: boschLdiAccessoryId,
-              name: ble.connectedDeviceName ?? 'Intuvia',
-              kind: bikeBleKindToStorage(BikeBleKind.bosch),
+              deviceId: blePairDeviceId(
+                lastRemoteId: ble.lastRemoteId,
+                scanDeviceId: hit.deviceId,
+              ),
+              name: ble.connectedDeviceName ?? hit.displayName,
+              kind: bikeBleKindToStorage(ble.connectedKind ?? hit.kind),
             ),
           );
-          if (!mounted) return;
-          Navigator.of(context).pop(true);
-          return;
         }
+        await _keepScanningForWheel(hit);
+        return;
       }
       if (!ok) {
         if (!mounted) return;
@@ -291,6 +331,17 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
             blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
       });
     }
+  }
+
+  Future<void> _keepScanningForWheel(BikeBleScanHit hit) async {
+    if (!mounted) return;
+    setState(() {
+      _pairingId = null;
+      _pairStatus = null;
+      _error = AppLocalizations.of(context).bleDriveFailFor(hit.kind);
+      _rememberHit = null;
+    });
+    await _start();
   }
 
   Future<void> _rememberWithoutGatt(BikeBleScanHit hit) async {

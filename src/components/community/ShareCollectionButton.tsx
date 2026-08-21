@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, Check } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import {
@@ -104,9 +104,9 @@ export function ShareCollectionButton({
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:border-accent/40"
       >
         {copied ? (
-          <Check className="h-3.5 w-3.5 text-success" />
+          <ChromeGlyph name="check" size={14} current className="text-success" />
         ) : (
-          <Link2 className="h-3.5 w-3.5 text-accent" />
+          <ChromeGlyph name="share" size={14} current className="text-accent" />
         )}
         {copied ? p.shareCopied : p.share}
       </button>

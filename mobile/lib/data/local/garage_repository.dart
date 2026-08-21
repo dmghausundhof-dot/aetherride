@@ -14,6 +14,7 @@ import '../../domain/rider_profile.dart';
 import '../../domain/setup.dart';
 import '../routing/route_collections.dart';
 import '../routing/saved_route_meta_store.dart';
+import '../sensor/bike_ble_store.dart';
 import '../sync/sync_payload.dart';
 import 'app_database.dart';
 import 'setup_repository.dart';
@@ -511,11 +512,12 @@ class GarageRepository {
     await touchLocalSync();
   }
 
-  Future<void> wipeLocalData() async {
+  Future<void> wipeLocalData({BikeBleStore? bleStore}) async {
     await _db.clearAllTables();
     freeTierExtraBike = false;
     subscriptionTier = AppConfig.forcePro ? 'pro' : 'free';
     await profileStore?.clear();
+    await (bleStore ?? BikeBleStore()).clearAll();
   }
 
   Future<void> applyRemotePayload(SyncPayload payload) async {

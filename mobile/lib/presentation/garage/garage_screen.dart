@@ -14,6 +14,7 @@ import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ble/ble_link_status.dart';
 import '../../domain/ble/garage_ble_live.dart';
+import '../../domain/ble/manufacturer_live.dart';
 import '../../domain/hud_bike_peek.dart';
 import '../../domain/bike.dart';
 import '../../domain/compatibility/engine.dart';
@@ -634,6 +635,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                         bikeId: bike.id,
                         isEbike: bike.hasElectricAssist,
                         wheelSize: bike.wheelSize,
+                        odometerKm: bike.odometerKm,
                       ),
                       const SizedBox(height: AppSpacing.m),
                       BikeIdentityCard(
@@ -2736,11 +2738,13 @@ class _BleSensorTile extends ConsumerStatefulWidget {
     required this.bikeId,
     this.isEbike = false,
     this.wheelSize,
+    this.odometerKm = 0,
   });
 
   final String bikeId;
   final bool isEbike;
   final WheelSize? wheelSize;
+  final double odometerKm;
 
   @override
   ConsumerState<_BleSensorTile> createState() => _BleSensorTileState();
@@ -2754,6 +2758,7 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
   bool _hasCrank = false;
   StreamSubscription<BoschLiveData>? _liveSub;
   bool _waking = false;
+  bool _importedOdo = false;
 
   @override
   void initState() {
@@ -2769,6 +2774,7 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
           cadenceRpm: d.cadenceRpm,
         );
       });
+      unawaited(_maybeImportOdometer(d));
     });
   }
 
@@ -2798,6 +2804,36 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
     if (wake) unawaited(_wakeSaved());
   }
 
+  Future<void> _maybeImportOdometer(BoschLiveData d) async {
+    if (_importedOdo) return;
+    final ble = ref.read(bleCoreProvider);
+    if (!shouldImportManufacturerOdometer(
+      bikeOdometerKm: widget.odometerKm,
+      liveOdometerKm: d.odometerKm,
+      fromLdi: ble.isLdiLive,
+    )) {
+      return;
+    }
+    _importedOdo = true;
+    try {
+      final garage = ref.read(garageRepositoryProvider);
+      final bike = await garage.getById(widget.bikeId);
+      if (bike == null) {
+        _importedOdo = false;
+        return;
+      }
+      await garage.setOdometerAbsolute(
+        bikeId: widget.bikeId,
+        odometerKm: d.odometerKm,
+        hours: bike.hours,
+      );
+      ref.invalidate(bikesProvider);
+    } catch (e) {
+      _importedOdo = false;
+      debugPrint('garage ldi odometer: $e');
+    }
+  }
+
   bool get _live {
     final ble = ref.read(bleCoreProvider);
     return ble.isBindingLive(
@@ -2819,7 +2855,11 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
         driveId != null &&
         driveId.isNotEmpty &&
         !ble.isRemoteLive(driveId);
-    if (!needWheel && !needLdi) return;
+    final needDrive = plan.attachDrive &&
+        driveId != null &&
+        driveId.isNotEmpty &&
+        !ble.isRemoteLive(driveId);
+    if (!needWheel && !needLdi && !needDrive) return;
     _waking = true;
     ble.wheelCircumferenceM = wheelCircumferenceM(widget.wheelSize);
     try {
@@ -2831,7 +2871,7 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
           kindHint: plan.wheelKind,
         );
       }
-      if (needLdi && mounted && driveId != null) {
+      if ((needLdi || needDrive) && mounted && driveId != null) {
         await ble.attachSavedDrive(
           deviceId: driveId,
           kindHint: bikeBleKindFromStorage(_binding.drive?.kind),
@@ -2891,17 +2931,28 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
       return;
     }
     final store = ref.read(bikeBleStoreProvider);
+    final ble = ref.read(bleCoreProvider);
     if (choice == 'unlinkWheel' || choice == 'unlinkAll') {
       if (choice == 'unlinkAll') {
         await store.removeForBike(widget.bikeId);
+        try {
+          await ble.disconnectBikeKeepWatch();
+        } catch (_) {}
       } else {
         await store.removeWheel(widget.bikeId);
+        try {
+          await ble.disconnectCsc();
+        } catch (_) {}
       }
       try {
-        await ref.read(bleCoreProvider).disconnectCsc();
+        await ble.forgetLastBikeId();
       } catch (_) {}
+      await store.removeLastCscIdFile();
     } else if (choice == 'unlinkDrive') {
       await store.removeDrive(widget.bikeId);
+      try {
+        await ble.disconnectDriveKeepWheel();
+      } catch (_) {}
     }
     await _reload();
     if (mounted) {

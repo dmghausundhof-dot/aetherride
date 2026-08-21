@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Mail, Wrench } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { publicPagesCopy } from "@/lib/i18n/publicPagesCopy";
 
@@ -31,15 +31,15 @@ export function ServiceCheckSection() {
           <p className="mt-4 text-text-secondary">{s.lead}</p>
           <ul className="mt-5 space-y-2 text-sm text-text-secondary">
             <li className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              <ChromeGlyph name="check" size={16} current className="mt-0.5 shrink-0 text-success" />
               {s.free}
             </li>
             <li className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              <ChromeGlyph name="check" size={16} current className="mt-0.5 shrink-0 text-success" />
               {s.sources}
             </li>
             <li className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              <ChromeGlyph name="check" size={16} current className="mt-0.5 shrink-0 text-success" />
               {s.deepLink}
             </li>
           </ul>
@@ -63,7 +63,7 @@ export function ServiceCheckSection() {
           <div className="rounded-2xl border border-warning/40 bg-background p-5 shadow-lg shadow-black/20">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-                <Wrench className="h-5 w-5" />
+                <ChromeGlyph name="care" size={20} current />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
@@ -87,7 +87,7 @@ export function ServiceCheckSection() {
 
           <div className="mt-6 rounded-2xl border border-border bg-background/60 p-5">
             <h3 className="flex items-center gap-2 font-semibold">
-              <Mail className="h-4 w-4 text-accent" />
+              <ChromeGlyph name="mail" size={16} current className="text-accent" />
               {s.shopsTitle}
             </h3>
             <p className="mt-2 text-sm text-text-secondary">

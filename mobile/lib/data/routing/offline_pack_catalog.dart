@@ -1,6 +1,8 @@
 // DACH offline-pack catalog rows (API + local fallback).
 // `downloadable` is false for catalog stubs that have no tarball / graph.
 
+import 'dart:math' as math;
+
 import 'overlay_regions.dart';
 
 /// Bundled `assets/routing/offline_graph.json` is the Freiburg / Feldberg
@@ -703,6 +705,20 @@ OfflinePackRow? _smallestWhere(
   return hits.first;
 }
 
+/// Download-CTA nur wenn die Strecke nicht im Graph liegt und der Katalog
+/// ein Pack nennt, das noch nicht auf der Platte ist.
+bool shouldOfferOfflinePackDownload({
+  required bool covered,
+  String? suggestedPackId,
+  required Set<String> installedIds,
+  required bool hasActivatedPack,
+}) {
+  if (covered) return false;
+  final id = suggestedPackId?.trim() ?? '';
+  if (id.isNotEmpty) return !installedIds.contains(id);
+  return !hasActivatedPack;
+}
+
 OfflinePackRow? suggestedPackForPoint({
   required List<OfflinePackRow> packs,
   required double lng,
@@ -887,6 +903,79 @@ double maxBasemapZoomForBbox(List<double> bbox) {
 }
 
 const kBasemapMinZoom = 8.0;
+
+/// Street HUD OpenFreeMap cache — city packs only, not envelopes / Blatt.
+const kStreetHudRegionPrefix = 'street-';
+const kStreetHudMinZoom = 12.0;
+const kStreetHudBytesPerTile = 18000;
+const kStreetHudMaxTiles = 40000;
+
+String streetHudRegionId(String packId) => '$kStreetHudRegionPrefix$packId';
+
+bool isStreetHudRegionId(String raw) =>
+    raw.trim().startsWith(kStreetHudRegionPrefix);
+
+double maxStreetZoomForBbox(List<double> bbox) {
+  if (bbox.length < 4) return 0;
+  final area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]);
+  if (area > 0.6) return 0;
+  if (area > 0.28) return 14;
+  return 15;
+}
+
+int _mercatorLngToX(double lng, int z) {
+  final n = 1 << z;
+  var x = ((lng + 180.0) / 360.0 * n).floor();
+  if (x < 0) x = 0;
+  if (x >= n) x = n - 1;
+  return x;
+}
+
+int _mercatorLatToY(double lat, int z) {
+  final n = 1 << z;
+  final clamped = lat.clamp(-85.05112878, 85.05112878);
+  final latRad = clamped * math.pi / 180.0;
+  var y = ((1 -
+              math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) /
+          2 *
+          n)
+      .floor();
+  if (y < 0) y = 0;
+  if (y >= n) y = n - 1;
+  return y;
+}
+
+int mercatorTilesInBbox(List<double> bbox, int z) {
+  if (bbox.length < 4 || z < 0 || z > 22) return 0;
+  final x0 = _mercatorLngToX(bbox[0], z);
+  final x1 = _mercatorLngToX(bbox[2], z);
+  final y0 = _mercatorLatToY(bbox[3], z);
+  final y1 = _mercatorLatToY(bbox[1], z);
+  return ((x1 - x0).abs() + 1) * ((y1 - y0).abs() + 1);
+}
+
+int streetHudTileCount(List<double> bbox) {
+  final maxZ = maxStreetZoomForBbox(bbox).toInt();
+  if (maxZ < kStreetHudMinZoom) return 0;
+  var n = 0;
+  for (var z = kStreetHudMinZoom.toInt(); z <= maxZ; z++) {
+    n += mercatorTilesInBbox(bbox, z);
+  }
+  return n;
+}
+
+int estimatedStreetHudBytes(List<double> bbox) =>
+    streetHudTileCount(bbox) * kStreetHudBytesPerTile;
+
+bool packOffersStreetHud({
+  required String packId,
+  List<double>? bbox,
+}) {
+  if (isEnvelopePackId(packId)) return false;
+  if (bbox == null || bbox.length < 4) return false;
+  final n = streetHudTileCount(bbox);
+  return n > 0 && n <= kStreetHudMaxTiles;
+}
 
 /// True when a graph on disk actually belongs to [regionId].
 /// Rejects the bundled Schwarzwald extract copied into a stub folder.

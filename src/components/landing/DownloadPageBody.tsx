@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
-import { Smartphone, Map, WifiOff, Activity } from "lucide-react";
+import { ChromeGlyph, type ChromeMarkName } from "@/components/chrome/ChromeGlyph";
 import { hasStoreLinks } from "@/lib/web/appLinks";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHomepageCopy } from "@/hooks/useHomepageCopy";
@@ -11,7 +11,7 @@ import { productCopy } from "@/lib/i18n/productCopy";
 import { publicPagesCopy } from "@/lib/i18n/publicPagesCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
 
-const REASON_ICONS = [Map, WifiOff, Activity, Smartphone] as const;
+const REASON_MARKS: ChromeMarkName[] = ["karte", "offline", "nav", "phone"];
 
 export function DownloadPageBody() {
   const lang = useChromeLang();
@@ -56,13 +56,13 @@ export function DownloadPageBody() {
 
       <div className="mx-auto mt-16 grid max-w-4xl gap-4 sm:grid-cols-2">
         {d.reasons.map((r, i) => {
-          const Icon = REASON_ICONS[i] ?? Smartphone;
+          const mark = REASON_MARKS[i] ?? "phone";
           return (
             <div
               key={r.title}
               className="rounded-2xl border border-border bg-surface p-6 text-left"
             >
-              <Icon className="h-6 w-6 text-sage" />
+              <ChromeGlyph name={mark} size={24} current className="text-sage" />
               <h2 className="mt-3 font-semibold">{r.title}</h2>
               <p className="mt-1 text-sm text-text-secondary">{r.body}</p>
             </div>

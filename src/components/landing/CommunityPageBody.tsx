@@ -7,7 +7,9 @@ import {
 } from "@/lib/community/seed";
 import { EDITORIAL_PROFILES } from "@/lib/community/editorialProfiles";
 import { getRegion } from "@/lib/catalog/regions";
-import { Users, Calendar, Shield, MessageSquare, Share2 } from "lucide-react";
+import { getPublicTour } from "@/lib/catalog/publicTours";
+import { tourHrefForEvent } from "@/lib/tours/tourFunctions";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { communityCopy } from "@/lib/i18n/communityCopy";
 
@@ -39,17 +41,17 @@ export function CommunityPageBody() {
 
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <Shield className="h-5 w-5 text-sage" />
+            <ChromeGlyph name="shield" size={20} current className="text-sage" />
             <p className="mt-2 font-medium">{c.privacyTitle}</p>
             <p className="mt-1 text-xs text-text-secondary">{c.privacyBody}</p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <MessageSquare className="h-5 w-5 text-sage" />
+            <ChromeGlyph name="stimmen" size={20} current className="text-sage" />
             <p className="mt-2 font-medium">{c.moderationTitle}</p>
             <p className="mt-1 text-xs text-text-secondary">{c.moderationBody}</p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <Share2 className="h-5 w-5 text-success" />
+            <ChromeGlyph name="share" size={20} current className="text-success" />
             <p className="mt-2 font-medium">{c.linkTitle}</p>
             <p className="mt-1 text-xs text-text-secondary">{c.linkBody}</p>
           </div>
@@ -66,13 +68,14 @@ export function CommunityPageBody() {
 
         <section id="events" className="mt-12 scroll-mt-24">
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Calendar className="h-5 w-5 text-sage" />
+            <ChromeGlyph name="calendar" size={20} current className="text-sage" />
             {c.eventsTitle}
           </h2>
           <p className="mt-1 text-sm text-text-secondary">{c.eventsLead}</p>
           <ul className="mt-4 space-y-3">
             {COMMUNITY_EVENTS.map((e) => {
               const region = getRegion(e.regionSlug);
+              const tour = e.catalogTourId ? getPublicTour(e.catalogTourId) : null;
               return (
                 <li
                   key={e.id}
@@ -84,14 +87,22 @@ export function CommunityPageBody() {
                   <h3 className="mt-1 text-lg font-semibold">{e.title}</h3>
                   <p className="mt-1 text-xs text-text-secondary">{e.dateLabel}</p>
                   <p className="mt-2 text-sm text-text-secondary">{e.blurb}</p>
-                  {e.href && (
+                  <div className="mt-3 flex flex-wrap gap-3">
                     <Link
-                      href={e.href}
-                      className="mt-3 inline-block text-xs font-semibold text-chrome hover:underline"
+                      href={tourHrefForEvent(e)}
+                      className="inline-block text-xs font-semibold text-chrome hover:underline"
                     >
-                      {c.regionCta} →
+                      {tour ? tour.name : c.regionCta} →
                     </Link>
-                  )}
+                    {e.href && e.href !== tourHrefForEvent(e) ? (
+                      <Link
+                        href={e.href}
+                        className="inline-block text-xs font-semibold text-chrome hover:underline"
+                      >
+                        {c.regionCta} →
+                      </Link>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
@@ -100,7 +111,7 @@ export function CommunityPageBody() {
 
         <section className="mt-12">
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Users className="h-5 w-5 text-sage" />
+            <ChromeGlyph name="users" size={20} current className="text-sage" />
             {c.clubsTitle}
           </h2>
           <p className="mt-1 text-sm text-text-secondary">{c.clubsLead}</p>

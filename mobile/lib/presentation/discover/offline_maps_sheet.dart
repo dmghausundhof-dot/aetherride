@@ -26,6 +26,7 @@ import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/overlay_regions.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Offline-Routing: gebaute Region-Packs (Graph + optionale Übersicht).
 Future<bool?> openOfflineMapsSheet(
@@ -85,10 +86,12 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   double? _progressValue;
   String? _catalogNote;
   bool _basemapReady = false;
+  bool _streetReady = false;
   Set<String> _installed = {};
   Map<String, String> _localBuiltAt = {};
   List<double>? _packBbox;
   List<List<double>>? _packRing;
+  List<List<double>>? _packDots;
   int _storageBytes = 0;
   bool _prefsChanged = false;
   List<OfflinePackRow> _regions = [
@@ -178,8 +181,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           OfflineMapsPrefs.packBboxFrom(m);
     } catch (_) {}
     List<List<double>>? packRing;
+    List<List<double>>? packDots;
     try {
-      packRing = await OfflinePackDirs.activatedCoverageRing();
+      final ringHit = await OfflinePackDirs.activatedCoverageRingResult();
+      packRing = ringHit?.outline;
+      packDots = ringHit?.dots;
     } catch (_) {}
     if (activated != null && activated.isNotEmpty) {
       final dir = Directory(activated);
@@ -199,6 +205,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         basemapReady = false;
         packBbox = null;
         packRing = null;
+        packDots = null;
         OfflineTilesStore.instance.clearCache();
       }
     }
@@ -206,6 +213,13 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final builtAt = await OfflinePackDirs.builtAtById();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     final storage = await _scanStorage();
+    var streetReady = false;
+    try {
+      final id = OfflineMapsPrefs.packIdFromActivatedPath(activated);
+      if (id != null) {
+        streetReady = await OfflineBasemap.hasStreetHudRegion(id);
+      }
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _urlCtrl.text = override.isNotEmpty
@@ -218,10 +232,12 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _engineHint = engineHint;
       _valhallaStatus = status;
       _basemapReady = basemapReady;
+      _streetReady = streetReady;
       _installed = installed;
       _localBuiltAt = builtAt;
       _packBbox = packBbox;
       _packRing = packRing;
+      _packDots = packDots;
       _storageBytes = storage;
       _loading = false;
     });
@@ -397,6 +413,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       });
     }
     final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
+    var streetReady = false;
+    try {
+      streetReady = await OfflineBasemap.hasStreetHudRegion(region.id);
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _regionPref = region.name;
@@ -406,6 +426,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _basemapReady = mapOk;
       _packBbox = region.bbox;
       _packRing = ring?.outline;
+      _packDots = ring?.dots;
+      _streetReady = streetReady;
     });
   }
 
@@ -802,6 +824,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         setState(() => _progress = l10n.offlineProgressActivating);
       }
       final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
+      var streetReady = false;
+      try {
+        streetReady = await OfflineBasemap.hasStreetHudRegion(region.id);
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _regionPref = (manifest?['name'] as String?) ?? region.name;
@@ -812,7 +838,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         _localBuiltAt = builtAt;
         _packBbox = bbox;
         _packRing = ring?.outline;
+        _packDots = ring?.dots;
         _basemapReady = mapOk;
+        _streetReady = streetReady;
         _storageBytes = storage;
         _progress = null;
         _progressValue = null;
@@ -927,6 +955,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _installed = installed;
       _packBbox = null;
       _packRing = null;
+      _packDots = null;
+      _streetReady = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -940,6 +970,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     setState(() => _busy = true);
     try {
       await OfflineBasemap.deleteRegionId(region.id);
+      await OfflineBasemap.deleteRegionId(streetHudRegionId(region.id));
       await OfflinePackDirs.deleteId(region.id);
       _prefsChanged = true;
       final wasActive = _isActive(region);
@@ -970,7 +1001,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           _engineHint = null;
           _packBbox = null;
           _packRing = null;
+          _packDots = null;
           _basemapReady = false;
+          _streetReady = false;
         }
       });
     } finally {
@@ -1026,6 +1059,93 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         OfflineBasemapResult.skippedPmtiles => loc.offlineBasemapFail,
         OfflineBasemapResult.timedOut => loc.offlineRoutingBg,
         OfflineBasemapResult.failed => loc.offlineTilesMissing,
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _progress = null;
+          _progressValue = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _onStreetTap() async {
+    if (_busy) return;
+    OfflinePackRow? region;
+    for (final r in _regions) {
+      if (_isActive(r)) {
+        region = r;
+        break;
+      }
+    }
+    final bbox = region?.bbox ?? _packBbox;
+    if (bbox == null || bbox.length < 4) return;
+    final packId = region?.id ??
+        OfflineMapsPrefs.packIdFromActivatedPath(_activatedPath) ??
+        '';
+    if (packId.isEmpty) return;
+    region ??= OfflinePackRow(
+      id: packId,
+      name: _regionPref ?? packId,
+      bbox: bbox,
+      downloadable: true,
+      status: 'ready',
+    );
+    final l10n = AppLocalizations.of(context);
+    if (!packOffersStreetHud(packId: packId, bbox: bbox)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.offlineStreetTooBig)),
+      );
+      return;
+    }
+    final size = formatPackBytes(estimatedStreetHudBytes(bbox));
+    final ok = await _confirmSize(
+      title: l10n.offlineConfirmStreetTitle,
+      body: l10n.offlineConfirmStreetBody(_regionLabel(region), size),
+    );
+    if (!ok) return;
+    if (!await OfflineBasemap.onWifiLikely()) {
+      final cellOk = await _confirmSize(
+        title: l10n.offlineConfirmCellularTitle,
+        body: l10n.offlineConfirmCellularBody(size),
+        confirmLabel: l10n.offlineConfirmCellularAnyway,
+      );
+      if (!cellOk) return;
+    }
+    setState(() {
+      _busy = true;
+      _progress = l10n.offlineProgressMapZoom(
+        '${kStreetHudMinZoom.toInt()}',
+        '${maxStreetZoomForBbox(bbox).toInt()}',
+      );
+      _progressValue = 0;
+    });
+    try {
+      final result = await OfflineBasemap.downloadStreetHud(
+        packId: packId,
+        name: region.name,
+        bbox: bbox,
+        mapStyleUrl: AppConfig.mapStyleUrl,
+        onProgress: (p) {
+          if (!mounted) return;
+          setState(() {
+            _progressValue = p;
+            _progress = l10n.offlineProgressMapPercent('${(p * 100).round()}');
+          });
+        },
+      );
+      if (!mounted || _downloadCancelled) return;
+      final ready = result == OfflineBasemapResult.success;
+      setState(() => _streetReady = ready);
+      final msg = switch (result) {
+        OfflineBasemapResult.success => l10n.offlineStreetReady,
+        OfflineBasemapResult.skippedPmtiles => l10n.offlineBasemapFail,
+        OfflineBasemapResult.timedOut => l10n.offlineRoutingBg,
+        OfflineBasemapResult.failed => l10n.offlineTilesMissing,
       };
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
@@ -1179,7 +1299,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         onPressed: _busy
                             ? null
                             : () => _onRegionTap(r, forceDownload: true),
-                        icon: const Icon(Icons.download_outlined, size: 20),
+                        icon: const ChromeGlyph('download', size: 20, color: AppColors.chrome),
                         color: AppColors.chrome,
                       ),
                     if (showDelete && installed)
@@ -1568,7 +1688,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           isDense: true,
-                          prefixIcon: const Icon(Icons.search, size: 20),
+                          prefixIcon: const ChromeGlyph(
+                            'search',
+                            size: 20,
+                            color: AppColors.muted,
+                          ),
                           hintText: l10n.offlineSearchRegion,
                           border: const OutlineInputBorder(),
                         ),

@@ -102,6 +102,29 @@ void main() {
     );
     expect(mappeElevLooksInvented(480, 16, source: 'import'), isTrue);
     expect(mappeElevLooksInvented(480, 16, source: 'recorded'), isFalse);
+    expect(
+        mappeSourceChip('engine',
+            importLabel: 'Import', recordedLabel: 'Aufgezeichnet'),
+        isNull);
+    expect(
+      mappeSourceChip('import',
+          importLabel: 'Import', recordedLabel: 'Aufgezeichnet'),
+      'Import',
+    );
+    expect(
+      mappeSourceChip('recorded',
+          importLabel: 'Import', recordedLabel: 'Aufgezeichnet'),
+      'Aufgezeichnet',
+    );
+    expect(
+      mappeSourceChip(
+        'library',
+        importLabel: 'Import',
+        recordedLabel: 'Aufgezeichnet',
+        ownLabel: 'Eigene',
+      ),
+      'Eigene',
+    );
     expect(mappeElevLooksInvented(120, 16), isFalse);
     expect(savedRouteIsLoop(a), isFalse);
     expect(savedRouteIsLoop(b), isFalse);
@@ -502,7 +525,8 @@ void main() {
     );
     expect(stimmeInboxTitle(untitled: 'Stimme'), 'Stimme');
     expect(
-      stimmeInboxShowsBody(title: 'Nasser Belag am See.', body: 'Nasser Belag am See.\nRest'),
+      stimmeInboxShowsBody(
+          title: 'Nasser Belag am See.', body: 'Nasser Belag am See.\nRest'),
       isFalse,
     );
     expect(

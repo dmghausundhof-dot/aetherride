@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'chrome_glyph.dart';
 
 /// Round locate / follow control used on Browse and Ride HUD.
 class MapLocateFab extends StatelessWidget {
@@ -43,8 +44,8 @@ class MapLocateFab extends StatelessWidget {
                 width: active ? 1.5 : 1,
               ),
             ),
-            child: Icon(
-              Icons.my_location,
+            child: ChromeGlyph(
+              'locate',
               size: 22,
               color: active ? AppColors.accent : AppColors.chipIdleText,
             ),

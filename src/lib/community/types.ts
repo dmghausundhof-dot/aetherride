@@ -88,6 +88,8 @@ export type CommunityEvent = {
   sport: string;
   blurb: string;
   href?: string;
+  /** Öffentliche Katalog-Tour, auf der der Termin hängt. */
+  catalogTourId?: string;
 };
 
 /** Orientierung auf /community — keine Live-Mitgliedschaft. */

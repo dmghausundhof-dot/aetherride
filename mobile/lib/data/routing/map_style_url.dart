@@ -444,9 +444,12 @@ String rideHudStyleUrl({
 
 const kRideHudEmptyStyleFileName = 'hud-empty-style.json';
 
+/// HUD paper one step above chrome `#1F1F1F` so the field reads as a sheet.
+const kRideHudEmptyPaper = '#2A2A2A';
+
 /// Charcoal paper — not the z11 Blatt. Route line still draws.
 const kRideHudEmptyStyleJson =
-    '{"version":8,"name":"AetherRide HUD empty","metadata":{"aetherride:hud-empty":true},"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#1F1F1F"}}]}';
+    '{"version":8,"name":"AetherRide HUD empty","metadata":{"aetherride:hud-empty":true},"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"$kRideHudEmptyPaper"}}]}';
 
 bool isRideHudEmptyStyle(String raw) {
   final u = raw.trim().toLowerCase();

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Bookmark, Map } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { decodeSharePayload, demoCollectionPayload, isShareDemoToken } from "@/lib/community/shareCodec";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import { useAppStore } from "@/store/useAppStore";
@@ -166,7 +166,7 @@ export default function SharedCollectionPage() {
                   {s.open}
                 </Link>
               ) : (
-                <Map className="h-4 w-4 shrink-0 text-text-secondary" />
+                <ChromeGlyph name="karte" size={16} className="shrink-0" />
               )}
             </li>
           );
@@ -178,7 +178,7 @@ export default function SharedCollectionPage() {
         onClick={adopt}
         className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
       >
-        <Bookmark className="h-4 w-4" /> {s.adoptMappe}
+        <ChromeGlyph name="merken" size={16} current /> {s.adoptMappe}
       </button>
       <p className="mt-3 text-center text-[11px] text-text-secondary">
         {s.savesCollection}

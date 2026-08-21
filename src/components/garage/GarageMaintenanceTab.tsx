@@ -10,6 +10,7 @@ import {
   maintIntervalLabel,
   maintRemainingLabel,
   presentWear,
+  presentMaintActivity,
 } from "@/lib/i18n/maintDomainCopy";
 import { slotLabel } from "@/lib/catalog/slots";
 import { useAppStore } from "@/store/useAppStore";
@@ -206,7 +207,9 @@ export function GarageMaintenanceTab({
               key={log.id}
               className="rounded-xl border border-border bg-surface p-3 text-sm"
             >
-              <div className="font-medium">{log.activity}</div>
+              <div className="font-medium">
+                {presentMaintActivity(log.activity, lang)}
+              </div>
               <div className="text-xs text-text-secondary">
                 {log.date} ·{" "}
                 {log.performer === "workshop"

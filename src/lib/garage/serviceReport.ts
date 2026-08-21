@@ -2,14 +2,23 @@ import type { Bike, MaintenanceLogEntry, Ride } from "@/types";
 import { bikeCategoryLabel, slotLabel } from "@/lib/catalog/slots";
 import { getComponentModel, modelDisplayName } from "@/lib/catalog/components";
 import { setupConditionLabel } from "@/lib/setup/conditionLabels";
+import { bikeIdentityCopy } from "@/lib/i18n/bikeIdentityCopy";
+import { chromeDateLocale, type ChromeLang } from "@/lib/i18n/chromeLang";
+import { presentMaintActivity } from "@/lib/i18n/maintDomainCopy";
+import { serviceReportCopy } from "@/lib/i18n/serviceReportCopy";
 
 /** Text-Report für Werkstatt / Verkauf / Versicherung */
 export function buildServiceReport(input: {
   bike: Bike;
   logs: MaintenanceLogEntry[];
   rides: Ride[];
+  lang?: ChromeLang;
 }): string {
   const { bike, logs, rides } = input;
+  const lang = input.lang ?? "de";
+  const loc = chromeDateLocale(lang);
+  const id = bikeIdentityCopy(lang);
+  const report = serviceReportCopy(lang);
   const comps = bike.components.filter((c) => !c.removedAt);
   const bikeRides = rides.filter((r) => r.bikeId === bike.id);
   const costSum = logs
@@ -18,30 +27,30 @@ export function buildServiceReport(input: {
   const current = bike.setups.find((s) => s.isCurrent);
 
   const lines: string[] = [
-    "FlowLine — Service-Report",
-    `Erstellt: ${new Date().toLocaleString("de-DE")}`,
+    report.title,
+    report.created(new Date().toLocaleString(loc)),
     "",
-    `Bike: ${bike.name}`,
-    `Kategorie: ${bikeCategoryLabel(bike.category)}`,
-    bike.year ? `Jahr: ${bike.year}` : "",
-    bike.frameSize ? `Rahmengröße: ${bike.frameSize}` : "",
-    bike.serialNumber ? `Rahmennummer: ${bike.serialNumber}` : "",
-    bike.color ? `Farbe: ${bike.color}` : "",
-    bike.weightKg != null ? `Gewicht: ${bike.weightKg.toFixed(1)} kg` : "",
-    bike.purchasedAt ? `Gekauft am: ${bike.purchasedAt}` : "",
-    bike.purchasedFrom ? `Gekauft bei: ${bike.purchasedFrom}` : "",
+    `${report.bike}: ${bike.name}`,
+    `${report.category}: ${bikeCategoryLabel(bike.category, lang)}`,
+    bike.year ? `${id.year}: ${bike.year}` : "",
+    bike.frameSize ? `${id.frameSize}: ${bike.frameSize}` : "",
+    bike.serialNumber ? `${id.serial}: ${bike.serialNumber}` : "",
+    bike.color ? `${id.color}: ${bike.color}` : "",
+    bike.weightKg != null ? `${id.weight}: ${bike.weightKg.toFixed(1)}` : "",
+    bike.purchasedAt ? `${id.purchasedAt}: ${bike.purchasedAt}` : "",
+    bike.purchasedFrom ? `${id.purchasedFrom}: ${bike.purchasedFrom}` : "",
     bike.purchasePriceEur != null
-      ? `Kaufpreis: ${bike.purchasePriceEur.toFixed(0)} €`
+      ? `${id.price}: ${bike.purchasePriceEur.toFixed(0)} €`
       : "",
-    bike.insuranceName ? `Versicherung: ${bike.insuranceName}` : "",
-    bike.insurancePolicy ? `Police: ${bike.insurancePolicy}` : "",
-    bike.keyNumber ? `Schlüsselnummer: ${bike.keyNumber}` : "",
-    `Kilometerstand: ${bike.totalOdometerKm.toFixed(0)} km`,
-    `Stunden: ${bike.totalHours.toFixed(1)} h`,
-    `Rides erfasst: ${bikeRides.length}`,
-    costSum > 0 ? `Wartungskosten gesamt: ${costSum.toFixed(2)} €` : "",
+    bike.insuranceName ? `${id.insurance}: ${bike.insuranceName}` : "",
+    bike.insurancePolicy ? `${id.policy}: ${bike.insurancePolicy}` : "",
+    bike.keyNumber ? `${id.keyNumber}: ${bike.keyNumber}` : "",
+    report.odometer(bike.totalOdometerKm.toFixed(0)),
+    report.hours(bike.totalHours.toFixed(1)),
+    report.rides(bikeRides.length),
+    costSum > 0 ? report.cost(costSum.toFixed(2)) : "",
     "",
-    "— Aktive Komponenten —",
+    report.parts,
   ];
 
   for (const c of comps) {
@@ -52,15 +61,21 @@ export function buildServiceReport(input: {
       ? modelDisplayName(model)
       : c.freeText || `${c.manufacturer ?? ""} ${c.model ?? ""}`.trim() || "—";
     lines.push(
-      `• ${slotLabel(c.slot)}: ${name} (Einbau ${new Date(c.installedAt).toLocaleDateString("de-DE")})`
+      `• ${slotLabel(c.slot, lang)}: ${name} (${report.installed(
+        new Date(c.installedAt).toLocaleDateString(loc)
+      )})`
     );
   }
 
   if (current) {
     lines.push(
       "",
-      "— Aktuelles Setup —",
-      `„${current.label}“ · ${setupConditionLabel(current.conditions)} · v${current.version}`
+      report.setup,
+      report.setupLine(
+        current.label,
+        setupConditionLabel(current.conditions, lang),
+        current.version
+      )
     );
     for (const v of current.values.slice(0, 12)) {
       lines.push(
@@ -70,22 +85,22 @@ export function buildServiceReport(input: {
   }
 
   const bikeLogs = logs.filter((l) => l.bikeId === bike.id).slice(0, 40);
-  lines.push("", "— Wartungslog —");
+  lines.push("", report.log);
   if (bikeLogs.length === 0) {
-    lines.push("(kein Eintrag)");
+    lines.push(report.logEmpty);
   } else {
     for (const l of bikeLogs) {
+      const who = l.performer === "workshop" ? report.workshop : report.self;
       lines.push(
-        `• ${l.date}: ${l.activity}${l.costEur != null ? ` · ${l.costEur} €` : ""}${l.performer === "workshop" ? " · Werkstatt" : " · Eigen"}`
+        `• ${l.date}: ${presentMaintActivity(l.activity, lang)}${
+          l.costEur != null ? ` · ${l.costEur} €` : ""
+        } · ${who}`
       );
       if (l.notes) lines.push(`  ${l.notes}`);
     }
   }
 
-  lines.push(
-    "",
-    "Hinweis: Report aus lokalen App-Daten. Keine Garantie gegenüber Werkstatt/Versicherung."
-  );
+  lines.push("", report.disclaimer);
 
   return lines.filter((l) => l !== "").join("\n");
 }

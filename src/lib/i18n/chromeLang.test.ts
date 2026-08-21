@@ -1,4 +1,5 @@
-import { chromeLangFrom, chromeLangFromAcceptLanguage, valhallaLanguage } from "./chromeLang";
+import { chromeLangFrom, chromeLangFromAcceptLanguage, chromeLangFromNavigator, chromeLangOverrideFrom, chromeOgLocale, resolveChromeLang, valhallaLanguage } from "./chromeLang";
+import { readFileSync } from "node:fs";
 
 const cases: Array<[string | null, string]> = [
   [null, "de"],
@@ -37,6 +38,56 @@ if (chromeLangFromAcceptLanguage("fr-CH,fr;q=0.9") !== "fr") {
 }
 if (chromeLangFromAcceptLanguage("it;q=0.8,de;q=0.9") !== "de") {
   throw new Error("accept q-order");
+}
+if (chromeLangFromAcceptLanguage("en,de") !== "en") {
+  throw new Error("equal-q keeps order en");
+}
+if (chromeLangFromAcceptLanguage("de,en") !== "de") {
+  throw new Error("equal-q keeps order de");
+}
+
+if (chromeLangFromNavigator({ language: "fr-CH" }) !== "fr") {
+  throw new Error("navigator language");
+}
+if (
+  chromeLangFromNavigator({
+    language: "pl-PL",
+    languages: ["pl-PL", "en-GB"],
+  }) !== "en"
+) {
+  throw new Error("navigator languages skip unknown");
+}
+
+if (chromeLangOverrideFrom("en") !== "en") {
+  throw new Error("override en");
+}
+if (chromeLangOverrideFrom("pl") !== null) {
+  throw new Error("unknown override is not German");
+}
+if (resolveChromeLang({ override: "it", acceptLanguage: "en" }) !== "it") {
+  throw new Error("override wins");
+}
+if (resolveChromeLang({ acceptLanguage: "nl-NL,en;q=0.8" }) !== "nl") {
+  throw new Error("resolve accept");
+}
+if (chromeOgLocale("fr") !== "fr_FR") {
+  throw new Error("og fr");
+}
+
+const layout = readFileSync("src/app/layout.tsx", "utf8");
+if (!layout.includes("accept-language")) {
+  throw new Error("root layout reads Accept-Language");
+}
+if (!layout.includes("ChromeLang") && !layout.includes("initialLang")) {
+  throw new Error("root layout seeds chrome lang");
+}
+const providers = readFileSync("src/components/Providers.tsx", "utf8");
+if (!providers.includes("ChromeLangProvider")) {
+  throw new Error("Providers wraps ChromeLangProvider");
+}
+const profile = readFileSync("src/app/profile/page.tsx", "utf8");
+if (!profile.includes("ChromeLangPicker")) {
+  throw new Error("profile has language picker");
 }
 
 if (valhallaLanguage("en") !== "en-US") {

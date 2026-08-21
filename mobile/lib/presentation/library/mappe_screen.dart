@@ -33,6 +33,7 @@ import '../discover/widgets/tour_akte_sheet.dart';
 import '../ride/widgets/ride_group_extend_sheet.dart';
 import '../shell/hof_threshold_nav.dart';
 import '../shell/shell_tabs.dart';
+import '../shared/chrome_glyph.dart';
 import 'mappe_empty.dart';
 import 'mappe_glyph.dart';
 import 'mappe_shelf.dart';
@@ -222,7 +223,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
       builder: (ctx) {
         return TourAkteSheet(
           route: s,
-          sourceBadge: _sourceBadge(l10n, s.source),
+          sourceBadge: _sourceBadge(l10n, s.source) ?? '',
           onRemoveFromMappe: () {
             Navigator.pop(ctx);
             unawaited(_removeFromMappe(s));
@@ -473,17 +474,13 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
     );
   }
 
-  String _sourceBadge(AppLocalizations l10n, String source) {
-    switch (source) {
-      case 'import':
-        return l10n.myRoutesSourceImport;
-      case 'recorded':
-        return l10n.myRoutesSourceRecorded;
-      case 'library':
-        return l10n.myRoutesSourceOwn;
-      default:
-        return l10n.myRoutesSourceEngine;
-    }
+  String? _sourceBadge(AppLocalizations l10n, String source) {
+    return mappeSourceChip(
+      source,
+      importLabel: l10n.myRoutesSourceImport,
+      recordedLabel: l10n.myRoutesSourceRecorded,
+      ownLabel: l10n.myRoutesSourceOwn,
+    );
   }
 
   @override
@@ -597,66 +594,71 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                           labelText: l10n.mappeSearch,
                           floatingLabelBehavior: FloatingLabelBehavior.never,
                           hintText: l10n.mappeSearch,
-                          prefixIcon: const Icon(Icons.search, size: 18),
+                          prefixIcon: const ChromeGlyph(
+                            'search',
+                            size: 18,
+                            color: AppColors.muted,
+                          ),
                         ),
                       ),
                     ],
                     if (allSaved.isNotEmpty) ...[
                       const SizedBox(height: 14),
                       Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        for (final chip in TourFilters.visibilityChips)
-                          FilterChip(
-                            showCheckmark: false,
-                            visualDensity: chipDensity,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                            ),
-                            label: Text(
-                              l10n.tourVisibilityChip(chip.id),
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            selected: visibility == chip.id,
-                            onSelected: (_) {
-                              ref.read(tourVisibilityProvider.notifier).state =
-                                  chip.id;
-                              unawaited(_reloadMeta());
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        for (final sort in MappeSort.values)
-                          FilterChip(
-                            showCheckmark: false,
-                            visualDensity: chipDensity,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                            ),
-                            label: Text(
-                              switch (sort) {
-                                MappeSort.recent => l10n.mappeSortRecent,
-                                MappeSort.distance => l10n.mappeSortDistance,
-                                MappeSort.name => l10n.mappeSortName,
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          for (final chip in TourFilters.visibilityChips)
+                            FilterChip(
+                              showCheckmark: false,
+                              visualDensity: chipDensity,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              label: Text(
+                                l10n.tourVisibilityChip(chip.id),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              selected: visibility == chip.id,
+                              onSelected: (_) {
+                                ref
+                                    .read(tourVisibilityProvider.notifier)
+                                    .state = chip.id;
+                                unawaited(_reloadMeta());
                               },
-                              style: const TextStyle(fontSize: 12),
                             ),
-                            selected: _sort == sort,
-                            onSelected: (_) => setState(() => _sort = sort),
-                          ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          for (final sort in MappeSort.values)
+                            FilterChip(
+                              showCheckmark: false,
+                              visualDensity: chipDensity,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              label: Text(
+                                switch (sort) {
+                                  MappeSort.recent => l10n.mappeSortRecent,
+                                  MappeSort.distance => l10n.mappeSortDistance,
+                                  MappeSort.name => l10n.mappeSortName,
+                                },
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              selected: _sort == sort,
+                              onSelected: (_) => setState(() => _sort = sort),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -776,7 +778,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                     actions: [
                       FilledButton.icon(
                         onPressed: _openMapToKeep,
-                        icon: const Icon(Icons.map_outlined, size: 18),
+                        icon: const ChromeGlyph('karte', size: 18),
                         label: Text(l10n.mappeKeepOnMap),
                       ),
                       OutlinedButton.icon(

@@ -10,6 +10,8 @@ BoschLiveData _live({
   double? soc,
   double? watts,
   bool charger = false,
+  bool light = false,
+  bool lock = false,
 }) {
   return BoschLiveData(
     speedKmh: speed,
@@ -17,9 +19,9 @@ BoschLiveData _live({
     batterySocPercent: soc,
     riderPowerW: watts,
     odometerKm: 0,
-    lightStatus: false,
+    lightStatus: light,
     ambientBrightness: 0,
-    systemLock: false,
+    systemLock: lock,
     bikeNotDriving: speed < 1,
     chargerConnected: charger,
     timestampMs: 1,
@@ -103,6 +105,17 @@ void main() {
           data: _live(soc: 64.2, charger: true),
         ),
         ['64 %', 'Lader'],
+      );
+    });
+
+    test('LDI light and lock only when the bike sent them', () {
+      expect(
+        garageBleLiveChipsFromData(
+          live: true,
+          hasCrank: false,
+          data: _live(soc: 40, light: true, lock: true),
+        ),
+        ['40 %', 'Licht', 'Schloss'],
       );
     });
 

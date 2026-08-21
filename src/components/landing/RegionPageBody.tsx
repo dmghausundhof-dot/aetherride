@@ -7,6 +7,8 @@ import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { relatedGuidesForRegion } from "@/lib/content/guides";
 import { listEditorialProfilesForRegion } from "@/lib/community/editorialProfiles";
 import { COMMUNITY_EVENTS } from "@/lib/community/seed";
+import { RegionToursMap } from "@/components/tours/RegionToursMap";
+import { tourHrefForEvent } from "@/lib/tours/tourFunctions";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHomepageCopy } from "@/hooks/useHomepageCopy";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
@@ -80,6 +82,11 @@ export function RegionPageBody({ slug }: { slug: string }) {
           {copy.region.toursIn(region.name)}{" "}
           <span className="text-text-secondary">({tours.length})</span>
         </h2>
+        {tours.length > 0 ? (
+          <div className="mt-6">
+            <RegionToursMap tours={tours} center={region.center} />
+          </div>
+        ) : null}
         {tours.length === 0 ? (
           <div className="mt-4">
             <p className="text-sm text-text-secondary">{copy.region.empty}</p>
@@ -168,6 +175,14 @@ export function RegionPageBody({ slug }: { slug: string }) {
                 </p>
                 <h3 className="mt-1 text-lg font-semibold">{e.title}</h3>
                 <p className="mt-2 text-sm text-text-secondary">{e.blurb}</p>
+                {e.catalogTourId ? (
+                  <Link
+                    href={tourHrefForEvent(e)}
+                    className="mt-3 inline-block text-xs font-semibold text-chrome hover:underline"
+                  >
+                    {copy.tour.eventOpen}
+                  </Link>
+                ) : null}
               </li>
             ))}
           </ul>

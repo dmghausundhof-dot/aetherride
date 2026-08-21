@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { listEditorialSets } from "@/lib/catalog/editorialSets";
 import { listPublicTours } from "@/lib/catalog/publicTours";
+import { COMMUNITY_EVENTS } from "@/lib/community/seed";
+import { eventsForTour, tourFunctionStates } from "@/lib/tours/tourFunctions";
 
 /**
  * GET /api/tours/catalog
@@ -35,22 +37,34 @@ export async function GET(req: Request) {
     });
   }
 
-  const items = tours.map((t) => ({
-    id: t.id,
-    name: t.name,
-    summary: t.summary,
-    primaryCategory: t.primaryCategory,
-    categories: t.categories,
-    distanceKm: t.distanceKm,
-    elevationM: t.elevationM,
-    durationMin: t.durationMin,
-    difficulty: t.difficulty,
-    surface: t.surface,
-    loop: t.loop,
-    regionSlug: t.regionSlug,
-    center: t.center, // [lng, lat]
-    tags: t.tags,
-  }));
+  const items = tours.map((t) => {
+    const events = eventsForTour(t.id).map((e) => ({
+      id: e.id,
+      title: e.title,
+      dateLabel: e.dateLabel,
+      sport: e.sport,
+    }));
+    return {
+      id: t.id,
+      name: t.name,
+      summary: t.summary,
+      primaryCategory: t.primaryCategory,
+      categories: t.categories,
+      distanceKm: t.distanceKm,
+      elevationM: t.elevationM,
+      durationMin: t.durationMin,
+      difficulty: t.difficulty,
+      surface: t.surface,
+      loop: t.loop,
+      regionSlug: t.regionSlug,
+      center: t.center, // [lng, lat]
+      tags: t.tags,
+      events,
+      functions: tourFunctionStates(t)
+        .filter((s) => s.available)
+        .map((s) => s.id),
+    };
+  });
 
   return NextResponse.json(
     {
@@ -58,6 +72,14 @@ export async function GET(req: Request) {
       count: items.length,
       tours: items,
       sets: listEditorialSets(3),
+      events: COMMUNITY_EVENTS.map((e) => ({
+        id: e.id,
+        title: e.title,
+        regionSlug: e.regionSlug,
+        dateLabel: e.dateLabel,
+        sport: e.sport,
+        catalogTourId: e.catalogTourId,
+      })),
       honesty: "Redaktionelle Ideen — keine User-Sammlungen.",
     },
     {

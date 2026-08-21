@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { encodeTourShareToken, shareTourPath } from "@/lib/community/shareCodec";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { platzCopy } from "@/lib/i18n/platzCopy";
@@ -43,9 +43,9 @@ export function ShareTourButton({ route }: { route: SavedRoute }) {
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium hover:border-accent/40"
       >
         {copied ? (
-          <Check className="h-3.5 w-3.5 text-success" />
+          <ChromeGlyph name="check" size={14} current className="text-success" />
         ) : (
-          <Link2 className="h-3.5 w-3.5 text-accent" />
+          <ChromeGlyph name="share" size={14} current className="text-accent" />
         )}
         {copied ? p.shareCopied : p.copyLink}
       </button>

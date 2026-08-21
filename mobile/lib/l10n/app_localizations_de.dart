@@ -2326,6 +2326,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Familien-Link / Mitfahrer: unter Profil → Familie am Rad weitere Fahrer mit eigenem Gewicht anlegen.';
 
   @override
+  String get privacyBleTitle => 'Sensoren & Uhr';
+
+  @override
+  String get privacyBleForget => 'Hersteller-Kopplungen löschen';
+
+  @override
+  String get privacyBleForgetBody =>
+      'Entfernt gemerkte Rad-, Antriebs- und Uhr-IDs auf diesem Gerät. Live-Werte der Hersteller werden nicht in die Cloud geschrieben — nur die Kopplung.';
+
+  @override
+  String get privacyBleForgotten => 'BLE-Kopplungen gelöscht';
+
+  @override
   String get privacyExportTitle => 'Export (Art. 20)';
 
   @override

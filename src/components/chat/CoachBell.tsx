@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useCoachInbox } from "@/hooks/useCoachInbox";
 import { useHofCopy } from "@/hooks/useHofCopy";
 
@@ -21,7 +21,7 @@ export function CoachBell({
       aria-label={`${copy.coachBell} · ${copy.coachUnread(unread)}`}
       data-testid={includeTestIds ? "coach-bell" : undefined}
     >
-      <Bell className="h-5 w-5" strokeWidth={1.75} />
+      <ChromeGlyph name="bell" size={20} current />
       {unread > 0 ? (
         <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-0.5 text-[9px] font-bold text-foreground">
           {unread > 9 ? "9+" : unread}

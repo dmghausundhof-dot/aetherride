@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Camera, Star } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import {
   countsFromPayload,
   countsMapFromBatch,
@@ -88,7 +88,7 @@ export function TourCommunityChip({
     >
       {counts.reviewCount > 0 && (
         <>
-          <Star className="h-3 w-3 fill-current" />
+          <ChromeGlyph name="star" size={12} current />
           {counts.averageRating != null
             ? `${counts.averageRating} (${counts.reviewCount})`
             : counts.reviewCount}
@@ -97,7 +97,7 @@ export function TourCommunityChip({
       {counts.photoCount > 0 && (
         <>
           {counts.reviewCount > 0 ? <span className="opacity-60">·</span> : null}
-          <Camera className="h-3 w-3" />
+          <ChromeGlyph name="photo" size={12} current />
           {counts.photoCount}
         </>
       )}

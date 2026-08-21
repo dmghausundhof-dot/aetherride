@@ -19,6 +19,7 @@ import '../onboarding/onboarding_flow.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
 import '../garage/rad_nav_mark.dart';
+import '../shared/chrome_glyph.dart';
 import 'hof_threshold_nav.dart';
 import 'shell_back.dart';
 import 'shell_tabs.dart';
@@ -179,18 +180,27 @@ class _AppShellState extends ConsumerState<AppShell> {
                 },
                 destinations: [
                   HofThresholdDestination(
-                    icon: Icons.home_outlined,
-                    selectedIcon: Icons.home,
+                    mark: (color, _) => ChromeGlyph(
+                      'hof',
+                      size: 22,
+                      color: color,
+                    ),
                     label: l10n.navHome,
                   ),
                   HofThresholdDestination(
-                    icon: Icons.map_outlined,
-                    selectedIcon: Icons.map,
+                    mark: (color, _) => ChromeGlyph(
+                      'karte',
+                      size: 22,
+                      color: color,
+                    ),
                     label: l10n.navKarte,
                   ),
                   HofThresholdDestination(
-                    icon: Icons.menu_book_outlined,
-                    selectedIcon: Icons.menu_book,
+                    mark: (color, _) => ChromeGlyph(
+                      'platz',
+                      size: 22,
+                      color: color,
+                    ),
                     label: l10n.navPlatz,
                     showBadge: platzInbox > 0,
                   ),

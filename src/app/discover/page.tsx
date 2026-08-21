@@ -4,19 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Bookmark,
-  Compass,
-  Crosshair,
-  Locate,
   Loader2,
-  Mountain,
-  Navigation,
-  Play,
-  Redo2,
-  Route,
-  Undo2,
   X,
-  Zap,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCommunityStore } from "@/store/useCommunityStore";
@@ -76,6 +65,7 @@ import {
 import { parseGpx } from "@/lib/import/gpx";
 import { fitTourLine } from "@/lib/tours/tourLine";
 import { getPublicTour } from "@/lib/catalog/publicTours";
+import { suggestionFromPublicTour } from "@/lib/catalog/publicTourSuggestion";
 import {
   DEFAULT_ROUTE_FILTERS,
   filterRouteSuggestions,
@@ -194,6 +184,7 @@ import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import { AddRouteForm } from "@/components/library/AddRouteForm";
 import { MappeEmpty } from "@/components/tours/MappeEmpty";
 import { MappeGlyph } from "@/components/tours/MappeGlyph";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { SavedMappeTile } from "@/components/tours/SavedMappeTile";
 import { mappeSourceChip } from "@/lib/tours/mappeList";
 import {
@@ -242,6 +233,18 @@ import {
   shouldOfferExplorePlaceHits,
 } from "@/lib/discover/discoverExploreChrome";
 import { AroundYouLoopCta } from "@/components/discover/AroundYouLoopCta";
+import {
+  shouldFlyToPlace,
+  shouldOfferPlaceHits,
+} from "@/lib/discover/browsePlaceSearch";
+import {
+  beginNavigateIntent,
+  discoverRundkursActive,
+  placeHitAppliesAsDestination,
+  shouldForceLoopOnlyFromNearMe,
+  type NavigatePlaceHit,
+} from "@/lib/discover/navigateWorkflow";
+import { RideOutChoice } from "@/components/discover/RideOutChoice";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { webChrome } from "@/lib/i18n/webChrome";
@@ -425,6 +428,8 @@ function DiscoverPageInner() {
   const addrInputRef = useRef<HTMLInputElement | null>(null);
   const [addrQuery, setAddrQuery] = useState("");
   const [addrTarget, setAddrTarget] = useState<PlanAddrSlot>("start");
+  const [placeHits, setPlaceHits] = useState<NavigatePlaceHit[]>([]);
+  const [lastPlace, setLastPlace] = useState<NavigatePlaceHit | null>(null);
   const [addrHits, setAddrHits] = useState<
     { label: string; lat: number; lng: number }[]
   >([]);
@@ -639,6 +644,7 @@ function DiscoverPageInner() {
   const planHistoryRef = useRef(emptyPlanHistory());
   const [planCanUndo, setPlanCanUndo] = useState(false);
   const [planCanRedo, setPlanCanRedo] = useState(false);
+  const lastPlaceRef = useRef<NavigatePlaceHit | null>(null);
 
   const activeProfile = discoverNavProfile(manualProfile ?? routingProfile);
   const planCosting = sessionCostingForBike(activeBike?.category, activeProfile);
@@ -758,8 +764,12 @@ function DiscoverPageInner() {
     return resolveAddRouteStart({ gps: userPos, map });
   }, [userPos, mapCenter, mapZoom]);
 
-  /** Rundkurs lens or NearMe Route=Rundkurs → honesty on ALL sources. */
-  const rundkursActive = filters.loopOnly || nearMeRouteMode === "loop";
+  /** Rundkurs-Linse oder NearMe — NearMe nur auf der Quick-Schiene. */
+  const rundkursActive = discoverRundkursActive({
+    loopOnly: filters.loopOnly,
+    nearMeRouteMode,
+    sheetMode,
+  });
   const suppressOutAndBackQuick = rundkursActive;
   const aroundYouEnabled =
     profileAllowsOsmRoundTrip(activeProfile) && garageSession !== "gravity";
@@ -876,6 +886,7 @@ function DiscoverPageInner() {
       }) ??
       routes.find((r) => r.id === detailId) ??
       curatedP0CatalogSuggestions(origin).find((r) => r.id === detailId) ??
+      suggestionFromPublicTour(detailId) ??
       null;
     return fromCatalog;
   }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);
@@ -1046,7 +1057,9 @@ function DiscoverPageInner() {
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
     // Rundkurs: never paint out-and-back Quick / non-closed A→B on the map.
-    const mapDraft = rundkursActive
+    const mapRundkurs =
+      rundkursActive && draft.mode !== "point_to_point";
+    const mapDraft = mapRundkurs
       ? sanitizeDraftForRundkurs(draft)
       : draft;
     const mapQuick = suppressOutAndBackQuick ? [] : quickOptions;
@@ -1056,7 +1069,7 @@ function DiscoverPageInner() {
       activeQuickId: mapQuick.find((q) => q.label === mapDraft.label)?.id,
       trails: trailsForMap,
       showTrails: sheetMode === "tours" && trailsForMap.length > 0,
-      rundkursOnly: rundkursActive,
+      rundkursOnly: mapRundkurs,
       rideProfileId: null,
       staleActive: routingBusy,
     });
@@ -1156,7 +1169,11 @@ function DiscoverPageInner() {
   }, [modeParam]);
 
   useEffect(() => {
-    if (sheetParam === "plan" || panelParam === "plan") setSheetMode("plan");
+    if (sheetParam === "plan" || panelParam === "plan") {
+      setSheetMode("plan");
+      setAddrTarget("end");
+      setPickTarget("end");
+    }
     if (sheetParam === "tours" || panelParam === "tours") setSheetMode("tours");
   }, [sheetParam, panelParam]);
 
@@ -1671,11 +1688,18 @@ function DiscoverPageInner() {
     ]
   );
 
-  // NearMe Route=Rundkurs keeps Discover loop filter on (all list sources).
+  // NearMe Route=Rundkurs hält den Quick-Filter — nicht das Navigieren.
   useEffect(() => {
-    if (nearMeRouteMode !== "loop") return;
+    if (
+      !shouldForceLoopOnlyFromNearMe({
+        nearMeRouteMode,
+        sheetMode,
+      })
+    ) {
+      return;
+    }
     setFilters((f) => (f.loopOnly ? f : { ...f, loopOnly: true }));
-  }, [nearMeRouteMode]);
+  }, [nearMeRouteMode, sheetMode]);
 
   useEffect(() => {
     if (sheetMode !== "quick") return;
@@ -1973,6 +1997,8 @@ function DiscoverPageInner() {
 
   const flyExplorePlace = useCallback(
     (hit: { label: string; lat: number; lng: number }) => {
+      lastPlaceRef.current = hit;
+      setLastPlace(hit);
       const center: [number, number] = [hit.lng, hit.lat];
       setBrowseAnchor(center);
       setBrowseAnchorLabel(hit.label);
@@ -2525,9 +2551,27 @@ function DiscoverPageInner() {
     [d.onMapPlace, reverseLngLat]
   );
 
+  const planProfileKey = `${sheetMode}:${activeProfile}:${planCosting}`;
+  const lastPlanProfileKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (sheetMode !== "plan") {
+      lastPlanProfileKey.current = planProfileKey;
+      return;
+    }
+    if (lastPlanProfileKey.current === planProfileKey) return;
+    lastPlanProfileKey.current = planProfileKey;
+    setDraft((d) => {
+      if (!startOf(d) || !endOf(d)) return { ...d, profile: activeProfile };
+      const next = { ...d, profile: activeProfile };
+      schedulePlanRecompute(next);
+      return next;
+    });
+  }, [planProfileKey, sheetMode, activeProfile, schedulePlanRecompute]);
+
   const applyAddressHit = useCallback(
     (hit: { label: string; lat: number; lng: number }) => {
       const lngLat: [number, number] = [hit.lng, hit.lat];
+      setLastPlace(hit);
       setDraft((prev) => {
         let next: PlanDraft;
         if (addrTarget === "end") next = setEnd(prev, lngLat, hit.label);
@@ -2541,6 +2585,7 @@ function DiscoverPageInner() {
         return next;
       });
       setAddrHits([]);
+      setPlaceHits([]);
       setAddrQuery(hit.label);
       rememberAddrRecent(hit);
       setMapCenter([hit.lng, hit.lat]);
@@ -2554,6 +2599,104 @@ function DiscoverPageInner() {
     },
     [addrTarget, commitPlanEdit, d.addStop, d.end, d.start, rememberAddrRecent]
   );
+
+  const applyPlaceHit = useCallback(
+    (hit: NavigatePlaceHit) => {
+      lastPlaceRef.current = hit;
+      setLastPlace(hit);
+      setExploreQuery(hit.label);
+      setPlaceHits([]);
+      setMapCenter([hit.lng, hit.lat]);
+      if (placeHitAppliesAsDestination(sheetMode)) {
+        setAddrTarget("end");
+        setAddrQuery(hit.label);
+        setDraft((prev) => {
+          const next = setEnd(prev, [hit.lng, hit.lat], hit.label);
+          schedulePlanRecompute(next);
+          return next;
+        });
+        setRoutingMsg(`Ziel: ${hit.label}`);
+        return;
+      }
+      setRoutingMsg(`Ort: ${hit.label}`);
+    },
+    [sheetMode, schedulePlanRecompute]
+  );
+
+  const searchChromePlaces = useCallback(async (q: string) => {
+    if (!shouldOfferPlaceHits(q)) {
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
+      return;
+    }
+    const [lon, lat] = userPos ?? mapCenter;
+    try {
+      const res = await fetch(
+        `/api/geocode?q=${encodeURIComponent(q)}&limit=5&lat=${lat}&lon=${lon}`
+      );
+      const data = (await res.json()) as { hits?: NavigatePlaceHit[] };
+      if (!res.ok) {
+        setPlaceHits((cur) => (cur.length === 0 ? cur : []));
+        return;
+      }
+      setPlaceHits(data.hits ?? []);
+    } catch {
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
+    }
+  }, [userPos, mapCenter]);
+
+  useEffect(() => {
+    if (!shouldOfferPlaceHits(exploreQuery)) {
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
+      return;
+    }
+    const t = window.setTimeout(() => {
+      void searchChromePlaces(exploreQuery);
+    }, 420);
+    return () => window.clearTimeout(t);
+  }, [exploreQuery, searchChromePlaces]);
+
+  const submitChromeSearch = useCallback(() => {
+    const q = exploreQuery.trim();
+    if (q.length < 2) return;
+    const first = placeHits[0];
+    if (first && shouldFlyToPlace({ query: q, visibleTourNames: filtered.map((r) => r.name) })) {
+      applyPlaceHit(first);
+      return;
+    }
+    if (first) applyPlaceHit(first);
+  }, [exploreQuery, placeHits, filtered, applyPlaceHit]);
+
+  const beginNavigate = useCallback(() => {
+    const intent = beginNavigateIntent({
+      hasEnd: Boolean(endOf(draft)),
+      lastPlace: lastPlaceRef.current ?? lastPlace,
+      pendingHits: placeHits,
+    });
+    setSheetMode("plan");
+    setAddrTarget(intent.addrTarget);
+    setPickTarget(intent.pickTarget);
+    let next = { ...draft, mode: "point_to_point" as const };
+    const start = startOf(next);
+    if (userPos && (!start || isPlaceholderMapCenter(start))) {
+      next = setStart(next, userPos, DISCOVER_PIN_DE.myPos);
+    }
+    if (intent.destination) {
+      next = setEnd(
+        next,
+        [intent.destination.lng, intent.destination.lat],
+        intent.destination.label
+      );
+      setAddrQuery(intent.destination.label);
+      setMapCenter([intent.destination.lng, intent.destination.lat]);
+      setLastPlace(intent.destination);
+      schedulePlanRecompute(next);
+    } else {
+      setDraft(next);
+    }
+    requestAnimationFrame(() => {
+      addrInputRef.current?.focus();
+    });
+  }, [draft, lastPlace, placeHits, userPos, schedulePlanRecompute]);
 
   const onOverlayWayClick = useCallback(
     async (hit: OverlayWayHit) => {
@@ -2881,12 +3024,12 @@ function DiscoverPageInner() {
       });
     }
     const tourPois = placeTourPoiStops({
-          stops: selectedTourSuggestion?.poiStops,
-          durationMin: selectedTourSuggestion?.durationMin ?? 0,
-          geometry: selectedTourGeometry,
-          zoom: mapZoom,
-          selectedId: highlightPoiId,
-        });
+      stops: selectedTourSuggestion?.poiStops,
+      durationMin: selectedTourSuggestion?.durationMin ?? 0,
+      geometry: selectedTourGeometry,
+      zoom: mapZoom,
+      selectedId: highlightPoiId,
+    });
     for (const p of tourPois) {
       const key = `${p.lngLat[0].toFixed(4)},${p.lngLat[1].toFixed(4)}`;
       if (pinIds.has(key)) continue;
@@ -3105,7 +3248,7 @@ function DiscoverPageInner() {
                 className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
                 aria-describedby="discover-location-status"
               >
-                <Crosshair className="h-3.5 w-3.5" />
+                <ChromeGlyph name="locate" size={14} current className="text-text-secondary" />
                 {userPos ? d.hereBtn : d.placeEllipsis}
               </button>
             </div>
@@ -3148,20 +3291,28 @@ function DiscoverPageInner() {
             onSearchQuery={(q) => {
               setExploreQuery(q);
               setExploreNameFilter(q);
-              if (q.trim().length >= 2) setSheetMode("tours");
+              if (sheetMode !== "plan" && q.trim().length >= 2) {
+                setSheetMode("tours");
+              }
             }}
-            onSearchSubmit={() => void submitExploreSearch()}
-            placeHits={exploreHits}
+            onSearchSubmit={() => {
+              if (sheetMode === "plan") submitChromeSearch();
+              else void submitExploreSearch();
+            }}
+            placeHits={sheetMode === "plan" ? placeHits : exploreHits}
             recents={addrRecents}
-            onPlaceHit={flyExplorePlace}
+            onPlaceHit={(hit) => {
+              lastPlaceRef.current = hit;
+              setLastPlace(hit);
+              if (placeHitAppliesAsDestination(sheetMode)) applyPlaceHit(hit);
+              else flyExplorePlace(hit);
+            }}
             browsePlace={
               browseAnchor
                 ? { label: browseAnchorLabel ?? d.mapArea }
                 : null
             }
-            onPlanRoute={() => {
-              setSheetMode("plan");
-            }}
+            onPlanRoute={beginNavigate}
             aroundKm={aroundKm}
             filterCount={activeFilterCount}
             profileMenu={navProfileMenu}
@@ -3204,6 +3355,7 @@ function DiscoverPageInner() {
             <button
               key={id}
               type="button"
+              data-testid={`discover-sheet-${id}`}
               onClick={() => {
                 if (asGroup && id !== "plan") {
                   const url = new URL(window.location.href);
@@ -3214,7 +3366,8 @@ function DiscoverPageInner() {
                     `${url.pathname}${url.search}`
                   );
                 }
-                setSheetMode(id);
+                if (id === "plan") beginNavigate();
+                else setSheetMode(id);
               }}
               className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium ${
                 sheetMode === id
@@ -3231,7 +3384,12 @@ function DiscoverPageInner() {
 
         <div className={`${sheetMode === "plan" ? (shapeDragging ? "max-h-0 overflow-hidden" : "max-h-[56vh]") : "max-h-[38vh]"} min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2 transition-[max-height] duration-200 ease-out lg:max-h-none`}>
           {routingMsg && (
-            <p className="mb-2 text-[11px] text-text-secondary">{discoverStatus(routingMsg, lang)}</p>
+            <p
+              data-testid="discover-routing-msg"
+              className="mb-2 text-[11px] text-text-secondary"
+            >
+              {discoverStatus(routingMsg, lang)}
+            </p>
           )}
 
           {detailRoute ? (
@@ -3599,6 +3757,15 @@ function DiscoverPageInner() {
                 canUndo={planCanUndo}
                 canRedo={planCanRedo}
               />
+              <button
+                type="button"
+                data-testid="discover-compute-route"
+                disabled={routingBusy || !startOf(draft) || !endOf(draft)}
+                onClick={() => void runPlanRoute()}
+                className="w-full rounded-xl bg-chrome py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
+              >
+                {routingBusy ? d.computingRoute : d.computeRoute}
+              </button>
               {draft.computed ? (
                 <>
                 <PlanRouteInsight
@@ -3929,7 +4096,7 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-secondary">
-                <Compass className="h-3.5 w-3.5" /> {d.outdooractive(oaTours.length)}
+                <ChromeGlyph name="karte" size={14} /> {d.outdooractive(oaTours.length)}
               </h3>
               {googlePlacesWarning && (
                 <p className="text-[11px] text-text-secondary">
@@ -4005,7 +4172,7 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-secondary">
-                <Mountain className="h-3.5 w-3.5" /> {d.trailforks(tfPins.length)}
+                <ChromeGlyph name="elevation" size={14} /> {d.trailforks(tfPins.length)}
               </h3>
               <p className="text-[11px] text-text-secondary">
                 {tfDisclaimer ?? d.tfFallback}
@@ -4459,8 +4626,10 @@ function DiscoverPageInner() {
           fitRoute={
             !holdMapFit &&
             Boolean(
-              (rundkursActive ? sanitizeDraftForRundkurs(draft) : draft)
-                .computed
+              (rundkursActive && draft.mode !== "point_to_point"
+                ? sanitizeDraftForRundkurs(draft)
+                : draft
+              ).computed
             )
           }
           fitPoints={planFitPoints}
@@ -4577,7 +4746,7 @@ function DiscoverPageInner() {
                   setRoutingMsg(DISCOVER_STATUS_DE.locGpsCentered);
                 }}
               >
-                <Locate className="h-5 w-5" />
+                <ChromeGlyph name="locate" size={20} current />
               </button>
             ) : null}
             {sheetMode === "plan" &&
@@ -4592,7 +4761,7 @@ function DiscoverPageInner() {
                 aria-label={d.planUndo}
                 onClick={() => undoPlanEdit()}
               >
-                <Undo2 className="h-4 w-4" />
+                <ChromeGlyph name="undo" size={16} current />
               </button>
             ) : null}
             {sheetMode === "plan" &&
@@ -4607,7 +4776,7 @@ function DiscoverPageInner() {
                 aria-label={d.planRedo}
                 onClick={() => redoPlanEdit()}
               >
-                <Redo2 className="h-4 w-4" />
+                <ChromeGlyph name="redo" size={16} current />
               </button>
             ) : null}
           </div>
@@ -4806,7 +4975,7 @@ function DiscoverPageInner() {
                 className="rounded-lg bg-white/15 px-2 py-1"
                 aria-label={d.saveAria}
               >
-                <Bookmark className="h-3.5 w-3.5" />
+                <ChromeGlyph name="merken" size={14} current />
               </button>
               {lastSavedId ? (
                 <a
@@ -4827,7 +4996,7 @@ function DiscoverPageInner() {
                 }
                 className="flex items-center gap-1 rounded-xl bg-chrome px-2.5 py-1 font-semibold text-on-accent"
               >
-                <Play className="h-3.5 w-3.5 fill-current" /> {d.startInApp}
+                <ChromeGlyph name="play" size={14} current /> {d.startInApp}
               </button>
             </div>
           </div>

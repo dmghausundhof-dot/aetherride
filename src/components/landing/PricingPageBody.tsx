@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Minus } from "lucide-react";
+import { Minus } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { isCommerceOpen } from "@/lib/config/appStage";
@@ -21,7 +22,9 @@ function Cell({
     return <span className="text-sm font-medium">{value}</span>;
   }
   return value ? (
-    <Check className="mx-auto h-5 w-5 text-success" aria-label={included} />
+    <span aria-label={included}>
+      <ChromeGlyph name="check" size={20} current className="mx-auto text-success" />
+    </span>
   ) : (
     <Minus
       className="mx-auto h-5 w-5 text-text-secondary"

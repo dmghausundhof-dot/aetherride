@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, HardDrive, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { DISCOVER_STATUS_DE, discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
 
@@ -116,7 +117,7 @@ export function OfflinePacksPanel({
       className={`rounded-2xl border border-border bg-surface p-4 ${className}`}
     >
       <h3 className="mb-1 flex items-center gap-2 font-semibold">
-        <HardDrive className="h-4 w-4 text-accent" aria-hidden />
+        <ChromeGlyph name="download" size={16} />
         {d.packsTitle}
       </h3>
       <p className="mb-3 text-xs text-text-secondary">
@@ -168,7 +169,7 @@ export function OfflinePacksPanel({
                   {busyId === p.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : (
-                    <Download className="h-3.5 w-3.5" aria-hidden />
+                    <ChromeGlyph name="download" size={14} current />
                   )}
                   {ready ? d.packsLoad : d.packsStub}
                 </button>

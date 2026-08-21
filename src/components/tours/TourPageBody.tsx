@@ -15,6 +15,7 @@ import { TourLiveMap } from "@/components/tours/TourLiveMap";
 import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import { ShareCatalogTourButton } from "@/components/tours/ShareCatalogTourButton";
+import { TourFunctionKit } from "@/components/tours/TourFunctionKit";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
@@ -113,13 +114,14 @@ export function TourPageBody({ id }: { id: string }) {
               <TourCommunityChip tourId={tour.id} />
             </div>
           </div>
-          <div className="relative min-h-[280px] lg:min-h-[420px]">
+          <div className="relative min-h-[360px] lg:min-h-[560px]">
             <TourLiveMap
               tourId={tour.id}
               center={tour.center}
               name={tour.name}
               profile={profileForBikeCategory(tour.primaryCategory)}
               category={tour.primaryCategory}
+              loop={tour.loop}
             />
           </div>
         </div>
@@ -143,6 +145,7 @@ export function TourPageBody({ id }: { id: string }) {
           </section>
         </div>
         <aside className="space-y-4">
+          <TourFunctionKit tour={tour} />
           <WeatherPanel
             lat={tour.center[1]}
             lng={tour.center[0]}

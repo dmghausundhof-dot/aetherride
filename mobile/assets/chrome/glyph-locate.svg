@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Standort">
+  <title>FlowLine Standort</title>
+  <circle cx="12" cy="12" r="5.2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M12 3.8 V7" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M12 17 V20.2" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M3.8 12 H7" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M17 12 H20.2" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="12" cy="12" r="1.3" fill="#FF6A00"/>
+</svg>

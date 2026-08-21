@@ -97,7 +97,7 @@ export function SavedMappeTile({
           </button>
         ) : null}
       </div>
-      <div className="flex items-start gap-0.5 py-1.5 pl-3 pr-1">
+      <div className="flex items-start gap-0.5 py-1 pl-3 pr-1">
         <button
           type="button"
           className="min-w-0 flex-1 text-left"

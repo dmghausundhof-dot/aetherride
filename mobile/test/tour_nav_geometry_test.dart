@@ -1936,6 +1936,78 @@ void main() {
           tiltDeg: 12,
           lineLngLat: line,
         ),
+        isTrue,
+      );
+      final tilted = planMapScreenToLngLat(
+        localX: 128,
+        localY: 128,
+        width: w,
+        height: h,
+        centerLng: 8.67,
+        centerLat: 49.4,
+        zoom: 14,
+        tiltDeg: 28,
+      );
+      expect(tilted, isNotNull);
+      expect(tilted!.lng, closeTo(8.67, 1e-5));
+      expect(tilted.lat, closeTo(49.4, 1e-5));
+      final south = planMapScreenToLngLat(
+        localX: 128,
+        localY: 192,
+        width: w,
+        height: h,
+        centerLng: 0,
+        centerLat: 0,
+        zoom: 3,
+        tiltDeg: 35,
+      );
+      final north = planMapScreenToLngLat(
+        localX: 128,
+        localY: 64,
+        width: w,
+        height: h,
+        centerLng: 0,
+        centerLat: 0,
+        zoom: 3,
+        tiltDeg: 35,
+      );
+      expect(south, isNotNull);
+      expect(north, isNotNull);
+      expect(south!.lat, lessThan(0));
+      expect(north!.lat, greaterThan(0));
+      expect(
+        north.lat.abs(),
+        greaterThan(south.lat.abs()),
+        reason: 'pitched far side (top) covers more ground than the near side',
+      );
+      final back = planMapLngLatToScreen(
+        lng: south.lng,
+        lat: south.lat,
+        width: w,
+        height: h,
+        centerLng: 0,
+        centerLat: 0,
+        zoom: 3,
+        tiltDeg: 35,
+      );
+      expect(back, isNotNull);
+      expect(back!.x, closeTo(128, 1.5));
+      expect(back.y, closeTo(192, 1.5));
+      expect(
+        planMapPointerHitsRibbon(
+          localX: 128,
+          localY: 128,
+          width: w,
+          height: h,
+          centerLng: 0,
+          centerLat: 0,
+          zoom: 0,
+          tiltDeg: 12,
+          lineLngLat: line,
+          pinLngLat: const [
+            [0.0, 0.0],
+          ],
+        ),
         isFalse,
       );
     });

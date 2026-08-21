@@ -3,7 +3,10 @@ import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   cinemaPlaceQuery,
   dedupeGeocodeHits,
+  dropStationJunkHits,
+  queryLooksLikeStation,
   rankGeocodeHits,
+  stationFallbackQueries,
 } from "@/lib/geocode/photonRank";
 import { photonHitsFromCollection } from "@/lib/geocode/photonFeature";
 
@@ -91,7 +94,8 @@ export async function GET(req: Request) {
     } as const;
 
     const cinemaPlace = cinemaPlaceQuery(q);
-    const [res, placeRes, cinemaRes] = await Promise.all([
+    const stationQ = queryLooksLikeStation(q);
+    const [res, placeRes, cinemaRes, stationRes] = await Promise.all([
       fetch(photonUrl(), {
         headers: photonHeaders,
         next: { revalidate: 3600 },
@@ -111,6 +115,12 @@ export async function GET(req: Request) {
               next: { revalidate: 3600 },
             }
           ).catch(() => null)
+        : Promise.resolve(null),
+      stationQ
+        ? fetch(photonUrl({ osmTag: "railway:station" }), {
+            headers: photonHeaders,
+            next: { revalidate: 3600 },
+          }).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -147,8 +157,54 @@ export async function GET(req: Request) {
       );
     }
 
-    const data = (await res.json()) as { features?: unknown[] };
-    let hits = photonHitsFromCollection(data);
+    type PhotonFeature = {
+      geometry?: { coordinates?: number[] };
+      properties?: Record<string, unknown>;
+    };
+    const parseHits = (data: { features?: PhotonFeature[] }): GeocodeHit[] => {
+      const hits: GeocodeHit[] = [];
+      for (const f of data.features ?? []) {
+        const coords = f.geometry?.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const p = f.properties ?? {};
+        const name = typeof p.name === "string" ? p.name.trim() : "";
+        const parts = [
+          name,
+          p.street,
+          p.housenumber,
+          p.postcode,
+          p.city ?? p.town ?? p.village ?? p.county,
+          p.state,
+          p.country,
+        ]
+          .map((x) => (typeof x === "string" ? x.trim() : ""))
+          .filter(Boolean);
+        const label = [...new Set(parts)].join(", ");
+        if (!label) continue;
+        const osmKey = typeof p.osm_key === "string" ? p.osm_key : "";
+        const osmValue = typeof p.osm_value === "string" ? p.osm_value : "";
+        let kind = typeof p.type === "string" ? p.type : undefined;
+        if (
+          osmKey === "railway" &&
+          (osmValue === "station" || osmValue === "halt" || osmValue === "stop")
+        ) {
+          kind = "station";
+        } else if (osmKey === "building" && osmValue === "train_station") {
+          kind = "station";
+        }
+        hits.push({
+          label,
+          lng: coords[0],
+          lat: coords[1],
+          kind,
+          ...(name ? { name } : {}),
+        });
+      }
+      return hits;
+    };
+
+    const data = (await res.json()) as { features?: PhotonFeature[] };
+    let hits = parseHits(data);
     if (placeRes?.ok) {
       try {
         const placeData = (await placeRes.json()) as {
@@ -162,17 +218,59 @@ export async function GET(req: Request) {
     if (cinemaRes?.ok) {
       try {
         const cinemaData = (await cinemaRes.json()) as {
-          features?: unknown[];
+          features?: PhotonFeature[];
         };
-        hits = [...photonHitsFromCollection(cinemaData), ...hits];
+        hits = [...parseHits(cinemaData), ...hits];
       } catch {
         /* keep default hits */
       }
     }
-    hits = rankGeocodeHits(
+    if (stationRes?.ok) {
+      try {
+        const stationData = (await stationRes.json()) as {
+          features?: PhotonFeature[];
+        };
+        hits = [...parseHits(stationData), ...hits];
+      } catch {
+        /* keep default hits */
+      }
+    }
+    if (stationQ) {
+      const haveRailwayStation = hits.some((h) => h.kind === "station");
+      for (const alt of stationFallbackQueries(q)) {
+        try {
+          const tagged = await fetch(
+            photonUrl({ osmTag: "railway:station", query: alt }),
+            {
+              headers: photonHeaders,
+              next: { revalidate: 3600 },
+            }
+          ).catch(() => null);
+          if (tagged?.ok) {
+            const taggedData = (await tagged.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(taggedData)];
+          }
+          if (!haveRailwayStation) {
+            const altRes = await fetch(photonUrl({ query: alt }), {
+              headers: photonHeaders,
+              next: { revalidate: 3600 },
+            });
+            if (!altRes.ok) continue;
+            const altData = (await altRes.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(altData)];
+          }
+        } catch {
+          /* keep existing hits */
+        }
+      }
+    }
+    hits = dropStationJunkHits(
       q,
-      dedupeGeocodeHits(hits),
-      userBias
+      rankGeocodeHits(q, dedupeGeocodeHits(hits), userBias)
     ).slice(0, limit);
 
     if (hits.length > 0) {

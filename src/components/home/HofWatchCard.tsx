@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Watch } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useHofCopy } from "@/hooks/useHofCopy";
 
 /**
@@ -17,7 +18,7 @@ export function HofWatchCard() {
       data-testid="hof-watch"
       className="mt-3 flex items-center gap-2 py-2 text-text-secondary hover:text-chrome"
     >
-      <Watch className="h-[18px] w-[18px] shrink-0" aria-hidden />
+      <ChromeGlyph name="watch" size={18} current className="shrink-0" />
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-bold">{copy.watchOpenApp}</span>
         <span className="block truncate text-xs">{copy.watchHint}</span>

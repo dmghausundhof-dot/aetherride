@@ -52,6 +52,14 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     regionLabel: "Heidelberg",
     regionSlug: "rhein-neckar",
   },
+  {
+    handle: "mira_gravel",
+    displayName: "Mira",
+    bio: "Neckar, Schotterkante, Feierabend. Editorial-Beispiel zur Referenz-Tour.",
+    sports: ["gravel"],
+    regionLabel: "Heidelberg",
+    regionSlug: "rhein-neckar",
+  },
 ];
 
 export function getEditorialProfile(handle: string): EditorialProfile | null {

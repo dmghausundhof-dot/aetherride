@@ -355,3 +355,54 @@ export function presentWear(
     }),
   };
 }
+
+/** Log titles stored in German; UI maps known keys then interval labels. */
+const LOG_TITLE: Record<ChromeLang, Record<string, string>> = {
+  de: {
+    "Druck gemerkt": "Druck gemerkt",
+    "SAG gemerkt": "SAG gemerkt",
+    "Kette gemessen": "Kette gemessen",
+    "Kilometerstand aktualisiert": "Kilometerstand aktualisiert",
+    "GPX/FIT-Import: Platzhalter-Rad angelegt":
+      "GPX/FIT-Import: Platzhalter-Rad angelegt",
+  },
+  en: {
+    "Druck gemerkt": "Pressure logged",
+    "SAG gemerkt": "Sag logged",
+    "Kette gemessen": "Chain measured",
+    "Kilometerstand aktualisiert": "Odometer updated",
+    "GPX/FIT-Import: Platzhalter-Rad angelegt":
+      "GPX/FIT import: placeholder bike created",
+  },
+  fr: {
+    "Druck gemerkt": "Pression notée",
+    "SAG gemerkt": "SAG noté",
+    "Kette gemessen": "Chaîne mesurée",
+    "Kilometerstand aktualisiert": "Compteur mis à jour",
+    "GPX/FIT-Import: Platzhalter-Rad angelegt":
+      "Import GPX/FIT : vélo provisoire créé",
+  },
+  it: {
+    "Druck gemerkt": "Pressione segnata",
+    "SAG gemerkt": "SAG segnato",
+    "Kette gemessen": "Catena misurata",
+    "Kilometerstand aktualisiert": "Contachilometri aggiornato",
+    "GPX/FIT-Import: Platzhalter-Rad angelegt":
+      "Import GPX/FIT: bici provvisoria creata",
+  },
+  nl: {
+    "Druck gemerkt": "Druk genoteerd",
+    "SAG gemerkt": "SAG genoteerd",
+    "Kette gemessen": "Ketting gemeten",
+    "Kilometerstand aktualisiert": "Kilometerteller bijgewerkt",
+    "GPX/FIT-Import: Platzhalter-Rad angelegt":
+      "GPX/FIT-import: tijdelijke fiets aangemaakt",
+  },
+};
+
+export function presentMaintActivity(
+  de: string,
+  lang: ChromeLang = "de"
+): string {
+  return LOG_TITLE[lang][de] ?? maintIntervalLabel(de, lang);
+}

@@ -25,6 +25,7 @@ import { getMaintenanceSummary } from "@/lib/maintenance/summary";
 import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
 import { useAppStore } from "@/store/useAppStore";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import type { ComponentSlot, SetupCondition } from "@/types";
 
 type Tab = "overview" | "components" | "maintenance" | "setups";
@@ -41,6 +42,7 @@ function parseWizard(raw: string | null): boolean {
 
 function GaragePageInner() {
   const copy = useHofCopy();
+  const lang = useChromeLang();
 
   const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
@@ -142,6 +144,7 @@ function GaragePageInner() {
       bike: selected,
       logs: maintenanceLogs,
       rides,
+      lang,
     });
     const slug = selected.name.replace(/\s+/g, "-").toLowerCase();
     downloadServiceReport(`aetherride-service-${slug}.txt`, text);

@@ -2320,6 +2320,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Gezin / extra rijders: onder Profiel → Gezin aan de fiets rijders toevoegen met eigen gewicht.';
 
   @override
+  String get privacyBleTitle => 'Sensoren en horloge';
+
+  @override
+  String get privacyBleForget => 'Fabrikantkoppelingen wissen';
+
+  @override
+  String get privacyBleForgetBody =>
+      'Verwijdert onthouden wiel-, aandrijf- en horloge-ID\'s op dit apparaat. Live-waarden van fabrikanten gaan niet naar de cloud — alleen de koppeling.';
+
+  @override
+  String get privacyBleForgotten => 'BLE-koppelingen gewist';
+
+  @override
   String get privacyExportTitle => 'Exporteren (art. 20)';
 
   @override

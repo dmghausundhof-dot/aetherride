@@ -1,7 +1,13 @@
-import { Home, Map, BookOpen, Store, type LucideIcon } from "lucide-react";
+import { ChromeGlyph, type ChromeMarkName } from "@/components/chrome/ChromeGlyph";
 import { RadNavMark } from "@/components/garage/RadNavMark";
 
-const MARKS: Array<LucideIcon | "rad"> = [Home, Map, BookOpen, "rad", Store];
+const DOORS: Array<ChromeMarkName | "rad"> = [
+  "hof",
+  "karte",
+  "platz",
+  "rad",
+  "shop",
+];
 
 /** Homepage / Produkt — Rad-Tür trägt die Stand-Marke, nicht den Schraubenschlüssel. */
 export function DoorIcon({
@@ -11,8 +17,7 @@ export function DoorIcon({
   index: number;
   className?: string;
 }) {
-  const mark = MARKS[index] ?? Store;
+  const mark = DOORS[index] ?? "shop";
   if (mark === "rad") return <RadNavMark className={className} />;
-  const Icon = mark;
-  return <Icon className={className} />;
+  return <ChromeGlyph name={mark} size={20} current className={className} />;
 }

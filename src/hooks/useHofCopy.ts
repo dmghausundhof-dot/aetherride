@@ -3,7 +3,7 @@
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { hofCopy } from "@/lib/home/hofCopy";
 
-/** Browser UI language after mount — DE until then. */
+/** Hof chrome in the resolved UI language. */
 export function useHofCopy() {
   return hofCopy(useChromeLang());
 }

@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/community/labeled_via.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/map_pin_image.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// Komoot-style stacked A → vias → B. Start/end and vias are searchable.
 class PlanWaypointStack extends StatefulWidget {
@@ -171,7 +172,7 @@ class _PlanWaypointStackState extends State<PlanWaypointStack> {
                     trailing: IconButton(
                       tooltip: l10n.navigateMyLocation,
                       onPressed: widget.onMyLocation,
-                      icon: const Icon(Icons.my_location, size: 18),
+                      icon: const ChromeGlyph('locate', size: 18),
                     ),
                   ),
                   if (showSwap)

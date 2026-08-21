@@ -22,6 +22,8 @@ function testParity() {
     assert.ok(s.adoptMappe.includes("Mappe"), lang);
     assert.ok(s.toursNoGps(2).includes("2"), lang);
     assert.ok(s.sharedSuffix("Alster").includes("Alster"), lang);
+    assert.ok(s.revoked.length > 0, lang);
+    assert.ok(s.revokedBody.length > 0, lang);
   }
 }
 

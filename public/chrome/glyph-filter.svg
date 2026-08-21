@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Filter">
+  <title>FlowLine Filter</title>
+  <path d="M4.8 7.6 H19.2" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="15.4" cy="7.6" r="1.7" fill="none" stroke="#FF6A00" stroke-width="1.6"/>
+  <path d="M4.8 12 H19.2" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="9" cy="12" r="1.7" fill="none" stroke="#FF6A00" stroke-width="1.6"/>
+  <path d="M4.8 16.4 H19.2" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="13.6" cy="16.4" r="1.7" fill="none" stroke="#FF6A00" stroke-width="1.6"/>
+</svg>

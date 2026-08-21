@@ -3,14 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Bookmark,
-  BookmarkCheck,
-  Map,
-  Navigation,
-  Play,
-  Route,
-} from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
@@ -129,7 +122,7 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           onClick={startInApp}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-on-accent hover:bg-accent-hover sm:flex-none"
         >
-          <Play className="h-4 w-4 fill-current" />
+          <ChromeGlyph name="play" size={16} current />
           {copy.startInApp}
         </button>
         <button
@@ -138,9 +131,9 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium"
         >
           {saved ? (
-            <BookmarkCheck className="h-4 w-4 text-accent" />
+            <ChromeGlyph name="merken" size={16} current className="text-accent" />
           ) : (
-            <Bookmark className="h-4 w-4" />
+            <ChromeGlyph name="merken" size={16} current className="text-text-secondary" />
           )}
           {saved ? copy.saved : copy.save}
         </button>
@@ -157,21 +150,21 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           href={`/discover?panel=plan&tour=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
-          <Route className="h-3.5 w-3.5 text-accent" />
+          <ChromeGlyph name="split" size={14} current className="text-accent" />
           {copy.openPlanner}
         </Link>
         <Link
           href={`/discover?route=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
-          <Map className="h-3.5 w-3.5 text-accent" />
+          <ChromeGlyph name="karte" size={14} current className="text-accent" />
           {copy.inTours}
         </Link>
         <Link
           href="/download"
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
-          <Navigation className="h-3.5 w-3.5 text-accent" />
+          <ChromeGlyph name="phone" size={14} current className="text-accent" />
           {chrome.loadApp}
         </Link>
       </div>

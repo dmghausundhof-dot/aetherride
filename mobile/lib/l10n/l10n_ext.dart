@@ -1094,6 +1094,7 @@ extension AetherL10n on AppLocalizations {
       'ldi_waiting_flow' => bleLdiWaitingFlow,
       'ldi_need_android12' => bleLdiNeedAndroid12,
       'ldi_ios_pending' => bleLdiIosPending,
+      'ldi_plugin_missing' => bleLdiIosPending,
       'ldi_timeout' => bleLdiTimeout,
       'Bluetooth aus' => bleStatusBtOff,
       'Radsensor-Suche fehlgeschlagen' => bleStatusScanFailed,

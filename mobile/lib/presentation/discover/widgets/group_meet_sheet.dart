@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../shared/chrome_glyph.dart';
 import '../../../domain/community/ride_group.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../ride/widgets/ride_group_extend_sheet.dart';
@@ -79,7 +80,7 @@ class GroupMeetSheet extends StatelessWidget {
                 key: const Key('group-meet-join'),
                 onPressed: () =>
                     Navigator.pop(context, GroupMeetSheetAction.join),
-                icon: const Icon(Icons.group_add),
+                icon: const ChromeGlyph('users', size: 20, color: AppColors.onAccent),
                 label: Text(l10n.platzJoin),
               )
             else
@@ -87,7 +88,7 @@ class GroupMeetSheet extends StatelessWidget {
                 key: const Key('group-meet-ride'),
                 onPressed: () =>
                     Navigator.pop(context, GroupMeetSheetAction.ride),
-                icon: const Icon(Icons.play_arrow),
+                icon: const ChromeGlyph('play', size: 20, color: AppColors.onAccent),
                 label: Text(l10n.goRide),
               ),
             const SizedBox(height: 8),

@@ -258,7 +258,8 @@ bool shouldAttemptOfflineGraphFirst({
   bool allowOfflineFirst = true,
 }) {
   if (!allowOfflineFirst) return false;
-  if (!planned || !viasEmpty) return false;
+  if (!planned) return false;
+  // viasEmpty is kept for callers; via legs chain A→B on the same graph.
   return activePackCovers || switchedToCoveringPack;
 }
 
@@ -271,7 +272,7 @@ bool shouldFallbackOfflineAfterOnlineFail({
   bool allowOfflineFallback = true,
 }) {
   if (!allowOfflineFallback) return false;
-  return planned && viasEmpty && packCoversOrSwitched;
+  return planned && packCoversOrSwitched;
 }
 
 const kOnlineRouteTimeout = Duration(seconds: 28);
@@ -286,7 +287,7 @@ Duration onlineRouteTimeout({
   required bool allowOfflineFallback,
   bool packMayCover = false,
 }) {
-  if (planned && viasEmpty && allowOfflineFallback && packMayCover) {
+  if (planned && allowOfflineFallback && packMayCover) {
     return kOnlineRouteTimeoutWithOfflineFallback;
   }
   if (planned && !allowOfflineFallback) {
@@ -476,6 +477,38 @@ List<RouteStep> stepsFromCoordinates(List<GeoPoint> coords) {
   ];
 }
 
+const kOfflineViaChainMax = 8;
+
+/// Stitch A→via→B Dijkstra legs. Native FFI stays A→B.
+RouteResult joinOfflineRouteLegs(List<RouteResult> legs) {
+  if (legs.isEmpty) {
+    throw ArgumentError.value(legs, 'legs');
+  }
+  if (legs.length == 1) return legs.first;
+  final coords = <GeoPoint>[...legs.first.coordinates];
+  var distanceM = legs.first.distanceM;
+  var durationS = legs.first.durationS;
+  for (var i = 1; i < legs.length; i++) {
+    final next = legs[i].coordinates;
+    if (next.isEmpty) continue;
+    final skip = coords.isNotEmpty &&
+            next.first.lat == coords.last.lat &&
+            next.first.lng == coords.last.lng
+        ? 1
+        : 0;
+    coords.addAll(next.skip(skip));
+    distanceM += legs[i].distanceM;
+    durationS += legs[i].durationS;
+  }
+  return RouteResult(
+    coordinates: coords,
+    distanceM: distanceM,
+    durationS: durationS,
+    engine: legs.first.engine,
+    steps: stepsFromCoordinates(coords),
+  );
+}
+
 /// Online `/api/route` + offline `routing_core` FFI (Spec §5.4).
 class RoutingClient {
   RoutingClient({
@@ -506,13 +539,9 @@ class RoutingClient {
     final viaLngLats = [
       for (final v in vias) (lng: v.lng, lat: v.lat),
     ];
-    // Dijkstra is A→B only — vias without net must not look like a pack miss.
-    if (!allowOnline && vias.isNotEmpty) {
-      throw StateError('offline-vias-need-network');
-    }
     var coversActive = false;
     var switched = false;
-    if (allowOfflineFirst && variant == RouteVariant.planned && vias.isEmpty) {
+    if (allowOfflineFirst && variant == RouteVariant.planned) {
       final covering = await _ensureCoveringPack(
         from: from,
         to: to,
@@ -532,7 +561,6 @@ class RoutingClient {
     // A known bbox that does not cover A–B must not reach Dijkstra.
     if (!offlineFirst &&
         !allowOnline &&
-        vias.isEmpty &&
         variant == RouteVariant.planned &&
         preferOffline) {
       final bbox = await OfflinePackDirs.activatedCoverageBbox();
@@ -546,7 +574,9 @@ class RoutingClient {
     }
 
     if (!allowOnline) {
-      throw StateError('offline-no-route');
+      throw StateError(
+        vias.isNotEmpty ? 'offline-vias-need-network' : 'offline-no-route',
+      );
     }
 
     // Live-first still needs coverage for a short ORS timeout and for
@@ -554,8 +584,7 @@ class RoutingClient {
     if (!coversActive &&
         !switched &&
         allowOfflineFallback &&
-        variant == RouteVariant.planned &&
-        vias.isEmpty) {
+        variant == RouteVariant.planned) {
       final covering = await _ensureCoveringPack(
         from: from,
         to: to,
@@ -582,10 +611,10 @@ class RoutingClient {
         ),
       );
     } catch (_) {
-      if (variant != RouteVariant.planned || vias.isNotEmpty) rethrow;
+      if (variant != RouteVariant.planned) rethrow;
       if (!shouldFallbackOfflineAfterOnlineFail(
         planned: true,
-        viasEmpty: true,
+        viasEmpty: vias.isEmpty,
         packCoversOrSwitched: coversActive || switched,
         allowOfflineFallback: allowOfflineFallback,
       )) {
@@ -627,7 +656,9 @@ class RoutingClient {
     RoutingProfile profile,
     List<GeoPoint> vias,
   ) async {
-    final offline = await _tryOffline(from, to, profile);
+    final offline = vias.isEmpty
+        ? await _tryOffline(from, to, profile)
+        : await _tryOfflineViaChain(from, to, profile, vias);
     if (offline == null) return null;
     if (isImplausibleAbDetour(
       distanceM: offline.distanceM,
@@ -642,6 +673,24 @@ class RoutingClient {
       return null;
     }
     return offline;
+  }
+
+  Future<RouteResult?> _tryOfflineViaChain(
+    GeoPoint from,
+    GeoPoint to,
+    RoutingProfile profile,
+    List<GeoPoint> vias,
+  ) async {
+    if (vias.isEmpty) return _tryOffline(from, to, profile);
+    if (vias.length > kOfflineViaChainMax) return null;
+    final pts = <GeoPoint>[from, ...vias, to];
+    final legs = <RouteResult>[];
+    for (var i = 0; i < pts.length - 1; i++) {
+      final leg = await _tryOffline(pts[i], pts[i + 1], profile);
+      if (leg == null) return null;
+      legs.add(leg);
+    }
+    return joinOfflineRouteLegs(legs);
   }
 
   Future<RouteResult?> _tryOffline(

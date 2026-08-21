@@ -619,8 +619,58 @@ void main() {
         readyName: 'Karlsruhe / Hardt',
       );
       expect(hint?.ready, isTrue);
+      expect(hint?.outside, isFalse);
       expect(hint?.regionId, 'karlsruhe');
       expect(hint?.regionName, 'Karlsruhe / Hardt');
+    });
+
+    test('installed pack in the catalog box is outside, not a download', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: 'karlsruhe',
+        suggestedName: 'Karlsruhe / Hardt',
+        packReady: false,
+        readyId: 'karlsruhe',
+        readyName: 'Karlsruhe / Hardt',
+        installedIds: {'karlsruhe'},
+      );
+      expect(hint?.outside, isTrue);
+      expect(hint?.ready, isFalse);
+      expect(hint?.regionId, 'karlsruhe');
+    });
+
+    test('another catalog pack still offers a download', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: 'muenchen',
+        suggestedName: 'München & Umland',
+        packReady: false,
+        readyId: 'karlsruhe',
+        readyName: 'Karlsruhe / Hardt',
+        installedIds: {'karlsruhe'},
+      );
+      expect(hint?.outside, isFalse);
+      expect(hint?.ready, isFalse);
+      expect(hint?.regionId, 'muenchen');
+    });
+
+    test('no catalog hit with an activated pack is outside', () {
+      final hint = hofHintForLocation(
+        overlayId: null,
+        overlayName: null,
+        overlayIsEnvelope: false,
+        suggestedId: null,
+        suggestedName: null,
+        packReady: false,
+        readyId: 'karlsruhe',
+        readyName: 'Karlsruhe / Hardt',
+      );
+      expect(hint?.outside, isTrue);
+      expect(hint?.regionId, 'karlsruhe');
     });
   });
 

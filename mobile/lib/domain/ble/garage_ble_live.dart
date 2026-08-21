@@ -79,6 +79,8 @@ List<String> garageBleLiveChips({
   double? batterySocPercent,
   double? riderPowerW,
   bool chargerConnected = false,
+  bool lightOn = false,
+  bool systemLock = false,
 }) {
   if (!live) return const [];
   return [
@@ -89,6 +91,8 @@ List<String> garageBleLiveChips({
       '${riderPowerW.round()} W',
     if (batterySocPercent != null) '${batterySocPercent.round()} %',
     if (chargerConnected) 'Lader',
+    if (lightOn) 'Licht',
+    if (systemLock) 'Schloss',
   ];
 }
 
@@ -105,6 +109,8 @@ List<String> garageBleLiveChipsFromData({
     batterySocPercent: data.batterySocPercent,
     riderPowerW: data.riderPowerW,
     chargerConnected: data.chargerConnected,
+    lightOn: data.lightStatus,
+    systemLock: data.systemLock,
   );
 }
 

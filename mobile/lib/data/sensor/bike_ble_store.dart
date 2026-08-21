@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ble/ble_link_status.dart';
+import '../../domain/ble/manufacturer_ble.dart';
 
 /// Gekoppelter BLE-Sensor je Bike (Komoot-Klasse-UX: Rad auswählen ⇒ Sensor
 /// verbindet automatisch). JSON-Datei statt Drift-Migration — das Mapping ist
@@ -104,20 +105,73 @@ bool bikeBleDeviceIsDrive(BikeBleDevice device) {
   );
 }
 
-/// Werkstatt: gespeicherten CSC wecken, Bosch-LDI zusätzlich anbieten.
+class RideBleConnectPlan {
+  const RideBleConnectPlan({
+    this.wheelId,
+    this.wheelKind,
+    this.driveId,
+    this.driveKind,
+    this.startLdi = false,
+    this.attachDrive = false,
+    this.awaitDriveForSpeed = false,
+  });
+
+  final String? wheelId;
+  final BikeBleKind? wheelKind;
+  final String? driveId;
+  final BikeBleKind? driveKind;
+  final bool startLdi;
+  final bool attachDrive;
+  final bool awaitDriveForSpeed;
+}
+
+/// Ride: CSC first, then Bosch LDI or one-shot drive GATT.
+RideBleConnectPlan rideBleConnectPlan(BikeBleBinding binding) {
+  final wheel = binding.wheel;
+  final drive = binding.drive;
+  final wheelId =
+      (wheel != null && wheel.deviceId.isNotEmpty) ? wheel.deviceId : null;
+  final driveId =
+      (drive != null && drive.deviceId.isNotEmpty) ? drive.deviceId : null;
+  final driveKind =
+      drive == null ? null : bikeBleKindFromStorage(drive.kind);
+  final startLdi =
+      driveId != null && bleDriveIsBoschLdi(deviceId: driveId, kind: drive?.kind);
+  return RideBleConnectPlan(
+    wheelId: wheelId,
+    wheelKind: wheel == null ? null : bikeBleKindFromStorage(wheel.kind),
+    driveId: driveId,
+    driveKind: driveKind,
+    startLdi: startLdi,
+    attachDrive: driveId != null,
+    awaitDriveForSpeed: startLdi && wheelId == null,
+  );
+}
+
+/// Werkstatt: gespeicherten CSC wecken, Antrieb (LDI oder GATT) zusätzlich.
 /// Kein Scan — sonst klaut die Suche die Kopplungs-Sheet-Session.
-({String? wheelId, BikeBleKind? wheelKind, bool startLdi}) garageBleWakePlan(
+({
+  String? wheelId,
+  BikeBleKind? wheelKind,
+  bool startLdi,
+  bool attachDrive,
+}) garageBleWakePlan(
   BikeBleBinding binding,
 ) {
   final wheel = binding.wheel;
   final drive = binding.drive;
   final wheelId =
       (wheel != null && wheel.deviceId.isNotEmpty) ? wheel.deviceId : null;
+  final startLdi = drive != null &&
+      bleDriveIsBoschLdi(deviceId: drive.deviceId, kind: drive.kind);
+  final attachDrive = drive != null &&
+      drive.deviceId.isNotEmpty &&
+      !startLdi;
   return (
     wheelId: wheelId,
     wheelKind: wheel == null ? null : bikeBleKindFromStorage(wheel.kind),
-    startLdi: drive != null &&
-        bleDriveIsBoschLdi(deviceId: drive.deviceId, kind: drive.kind),
+    startLdi: startLdi,
+    attachDrive: attachDrive,
   );
 }
 
@@ -130,7 +184,7 @@ class BikeBleStore {
 
   Future<File> _file() async {
     final dir = await _dirProvider();
-    return File(p.join(dir.path, 'bike_ble_devices.json'));
+    return File(p.join(dir.path, kBikeBleDevicesFile));
   }
 
   Future<Map<String, BikeBleBinding>> _load() async {
@@ -232,7 +286,7 @@ class BikeBleStore {
   /// so pairing a watch never overwrites the CSC mapping or the bike record.
   Future<File> _watchFile() async {
     final dir = await _dirProvider();
-    return File(p.join(dir.path, 'watch_ble_device.json'));
+    return File(p.join(dir.path, kWatchBleDeviceFile));
   }
 
   Future<BikeBleDevice?> savedWatch() async {
@@ -255,6 +309,30 @@ class BikeBleStore {
   Future<void> removeWatch() async {
     try {
       final f = await _watchFile();
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+  }
+
+  Future<void> removeLastCscIdFile() async {
+    await _deleteNamed(kBleLastCscIdFile);
+  }
+
+  Future<void> removeLastWatchIdFile() async {
+    await _deleteNamed(kBleLastWatchIdFile);
+  }
+
+  /// All manufacturer pairing on this device: bike slots, watch, last ids.
+  Future<void> clearAll() async {
+    _cache = {};
+    for (final name in kManufacturerBleLocalFiles) {
+      await _deleteNamed(name);
+    }
+  }
+
+  Future<void> _deleteNamed(String name) async {
+    try {
+      final dir = await _dirProvider();
+      final f = File(p.join(dir.path, name));
       if (await f.exists()) await f.delete();
     } catch (_) {}
   }

@@ -1,5 +1,6 @@
 import 'package:aetherride_mobile/presentation/discover/offline_coverage_sketch.dart';
 import 'package:aetherride_mobile/presentation/discover/widgets/coverage_edge_pill.dart';
+import 'package:aetherride_mobile/presentation/shared/chrome_glyph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,7 +16,7 @@ void main() {
     expect(
         find.byKey(const Key('discover-coverage-edge-pill')), findsOneWidget);
     expect(find.text('Rhein-Neckar · Routing'), findsOneWidget);
-    expect(find.byIcon(Icons.map_outlined), findsOneWidget);
+    expect(find.byType(ChromeGlyph), findsOneWidget);
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -28,7 +29,6 @@ void main() {
       ),
     );
     expect(find.text('Außerhalb Rhein-Neckar'), findsOneWidget);
-    expect(find.byIcon(Icons.wifi_off), findsOneWidget);
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -40,7 +40,7 @@ void main() {
         ),
       ),
     );
-    expect(find.byIcon(Icons.layers_outlined), findsOneWidget);
+    expect(find.byType(ChromeGlyph), findsOneWidget);
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -53,7 +53,7 @@ void main() {
       ),
     );
     expect(find.text('Rhein-Neckar · Karte: Netz'), findsOneWidget);
-    expect(find.byIcon(Icons.wifi_off), findsOneWidget);
+    expect(find.byType(ChromeGlyph), findsOneWidget);
   });
 
   testWidgets('coverage sketch tap reports the pack box', (tester) async {

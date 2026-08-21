@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 import 'watch_pair_sheet.dart';
 
 /// Rider-level watch / HR strap. Lives on Der Hof — never on a bike record.
@@ -155,9 +156,12 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
   }
 
   Future<void> _unlink() async {
-    await ref.read(bikeBleStoreProvider).removeWatch();
+    final store = ref.read(bikeBleStoreProvider);
+    await store.removeWatch();
+    await store.removeLastWatchIdFile();
     try {
       await ref.read(bleCoreProvider).disconnectWatch();
+      await ref.read(bleCoreProvider).forgetLastWatchId();
     } catch (_) {}
     await _reload();
     if (mounted) {
@@ -184,7 +188,7 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
                   height: 14,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.watch_outlined, size: 18),
+              : const ChromeGlyph('watch', size: 18),
           label: Text(l10n.hofWatchConnect),
         ),
       );
@@ -225,8 +229,8 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Icon(
-                  Icons.watch_outlined,
+                ChromeGlyph(
+                  'watch',
                   size: 18,
                   color: liveColor,
                 ),
@@ -268,8 +272,8 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
           child: Row(
             children: [
-              Icon(
-                Icons.watch_outlined,
+              ChromeGlyph(
+                'watch',
                 size: 18,
                 color: liveColor,
               ),

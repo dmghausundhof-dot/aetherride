@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { MappeGlyph } from "@/components/tours/MappeGlyph";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
+import { eventsForTour } from "@/lib/tours/tourFunctions";
 import {
   formatDistanceElevation,
   sanitizeElevationM,
@@ -68,6 +70,14 @@ export function RouteCard({
         )}
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
           <TourCommunityChip tourId={route.id} />
+          {eventsForTour(route.id).slice(0, 1).map((event) => (
+            <span
+              key={event.id}
+              className="inline-flex items-center rounded-md bg-surface-elevated px-2 py-0.5 text-text-secondary"
+            >
+              {event.dateLabel}
+            </span>
+          ))}
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <MappeGlyph name={route.loop ? "loop" : "distance"} size={12} />
             {route.loop ? d.loopRound : d.pointAb}
@@ -96,9 +106,9 @@ export function RouteCard({
           aria-label={saved ? d.unsaveAria : d.saveAria}
         >
           {saved ? (
-            <BookmarkCheck className="h-4 w-4 text-accent" />
+            <ChromeGlyph name="merken" size={16} current className="text-accent" />
           ) : (
-            <Bookmark className="h-4 w-4" />
+            <ChromeGlyph name="merken" size={16} current className="text-text-secondary" />
           )}
         </button>
         <Link

@@ -60,6 +60,7 @@ void main() {
     expect(find.text('120 hm'), findsOneWidget);
     expect(find.text('40 min'), findsOneWidget);
     expect(find.text('Kein Track'), findsNothing);
+    expect(find.text('Geplant'), findsNothing);
     expect(find.byType(TourLineThumb), findsOneWidget);
     expect(find.byKey(const Key('platz-tour-ride-saved-1')), findsOneWidget);
   });

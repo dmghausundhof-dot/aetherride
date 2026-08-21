@@ -58,6 +58,7 @@ import '../garage/rad_stand_frame.dart';
 import '../shared/bike_hero_banner.dart';
 import '../shared/weather_glyph.dart';
 import '../shell/shell_tabs.dart';
+import '../shared/chrome_glyph.dart';
 import 'hof_coach_banner.dart';
 import 'hof_watch_card.dart';
 import 'hof_watch_bar_button.dart';
@@ -333,9 +334,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final bikes = ref.read(bikesProvider).valueOrNull ?? [];
       final active = hofResidentBike(bikes);
-      final profile = active != null
-          ? routingProfileForBike(active.category).apiId
-          : null;
+      final profile =
+          active != null ? routingProfileForBike(active.category).apiId : null;
       final w = await ref.read(weatherClientProvider).fetch(
             lat: lat,
             lon: lng,
@@ -479,7 +479,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (showSyncWarning)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.cloud_off_outlined),
+                    leading: const ChromeGlyph('offline', size: 22),
                     title: Text(
                       syncStatus == SyncAuthStatus.unauthorized
                           ? loc.hofSyncSessionExpired
@@ -598,30 +598,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     final l10n = AppLocalizations.of(context);
     final region = overlayRegionForPoint(lng, lat);
-    final ready = await OfflinePackDirs.legitimateCoversPoint(lng, lat);
+    final covering = await OfflinePackDirs.coveringPackForPoint(lng, lat);
     if (!mounted) return;
     String? suggestedId;
     String? suggestedName;
     String? readyId;
     String? readyName;
+    var installedIds = <String>{};
     final overlayIsEnvelope = region != null && isEnvelopePackId(region.id);
-    if (ready) {
-      try {
-        final m = await OfflineMapsPrefs.read();
-        readyId = OfflineMapsPrefs.packIdFromActivatedPath(
-          m['activatedPackPath'] as String?,
-        );
-        final raw = (m['regionPack'] as String?)?.trim();
-        if (readyId != null && readyId.isNotEmpty) {
-          readyName = l10n.overlayRegionNameFor(readyId, raw);
-        } else if (raw != null && raw.isNotEmpty) {
-          readyId = raw;
-          readyName = raw;
-        }
-      } catch (_) {}
-      if (!mounted) return;
+    try {
+      final m = await OfflineMapsPrefs.read();
+      readyId = OfflineMapsPrefs.packIdFromActivatedPath(
+        m['activatedPackPath'] as String?,
+      );
+      final raw = (m['regionPack'] as String?)?.trim();
+      if (readyId != null && readyId.isNotEmpty) {
+        readyName = l10n.overlayRegionNameFor(readyId, raw);
+      } else if (raw != null && raw.isNotEmpty) {
+        readyId = raw;
+        readyName = raw;
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    if (covering != null) {
+      readyId = covering.id;
+      readyName = l10n.overlayRegionNameFor(covering.id, covering.name);
     } else {
       try {
+        installedIds = await OfflinePackDirs.legitimateIds();
         final packs = await loadOfflinePackCatalog();
         final sug = suggestedPackForPoint(packs: packs, lng: lng, lat: lat);
         suggestedId = sug?.id;
@@ -638,12 +642,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       overlayIsEnvelope: overlayIsEnvelope,
       suggestedId: suggestedId,
       suggestedName: suggestedName,
-      packReady: ready,
+      packReady: covering != null,
       readyId: readyId,
       readyName: readyName,
+      installedIds: installedIds,
     );
     if (hint?.regionId == _packHint?.regionId &&
-        hint?.ready == _packHint?.ready) {
+        hint?.ready == _packHint?.ready &&
+        hint?.outside == _packHint?.outside) {
       return;
     }
     setState(() => _packHint = hint);
@@ -1051,57 +1057,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           )
         : null;
     final packHint = _packHint;
+    Widget packStatusLine({
+      required Key key,
+      required IconData icon,
+      required Color iconColor,
+      required String text,
+    }) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: InkWell(
+          key: key,
+          onTap: () => unawaited(_openOfflineMaps()),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: iconColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final packLine = packHint == null
         ? null
         : packHint.ready
-            ? Align(
-                alignment: Alignment.centerLeft,
-                child: InkWell(
-                  key: const Key('hof-offline-ready'),
-                  onTap: () => unawaited(_openOfflineMaps()),
-                  borderRadius: BorderRadius.circular(AppRadius.chip),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle_outline,
-                          size: 18,
-                          color: AppColors.sageOnDark,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            l10n.hofPackReadyRideMap(
-                              coverageGlanceName(packHint.regionName),
-                            ),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              height: 1.3,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            ? packStatusLine(
+                key: const Key('hof-offline-ready'),
+                icon: Icons.check_circle_outline,
+                iconColor: AppColors.sageOnDark,
+                text: l10n.hofPackReadyRideMap(
+                  coverageGlanceName(packHint.regionName),
                 ),
               )
-            : Align(
-                alignment: Alignment.centerLeft,
-                child: ActionChip(
-                  key: const Key('hof-load-offline-map'),
-                  avatar: const Icon(Icons.download_outlined, size: 18),
-                  label: Text(
-                    l10n.hofLoadOfflineMap(
+            : packHint.outside
+                ? packStatusLine(
+                    key: const Key('hof-offline-outside'),
+                    icon: Icons.wifi_off,
+                    iconColor: AppColors.sage,
+                    text: l10n.offlineCoverageOutside(
                       coverageGlanceName(packHint.regionName),
                     ),
-                  ),
-                  backgroundColor: AppColors.sage.withValues(alpha: 0.22),
-                  side: const BorderSide(color: AppColors.sageOnDark),
-                  onPressed: () => unawaited(_openOfflineMaps()),
-                ),
-              );
+                  )
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: ActionChip(
+                      key: const Key('hof-load-offline-map'),
+                      avatar: const ChromeGlyph(
+                        'download',
+                        size: 18,
+                        color: AppColors.muted,
+                      ),
+                      label: Text(
+                        l10n.hofLoadOfflineMap(
+                          coverageGlanceName(packHint.regionName),
+                        ),
+                      ),
+                      backgroundColor: AppColors.sage.withValues(alpha: 0.22),
+                      side: const BorderSide(color: AppColors.sageOnDark),
+                      onPressed: () => unawaited(_openOfflineMaps()),
+                    ),
+                  );
 
     final ctaHeight = shortLandscape ? 44.0 : 52.0;
     final emptyStand = active == null;

@@ -43,6 +43,14 @@ function testDachPins() {
       Math.abs(baden!.center[1] - 48.761) < 0.02,
     `Baden-Baden pin must not fall back to Freiburg default, got ${baden!.center}`,
   );
+  const reference = getPublicTour("r-heidelberg-neckar-voll");
+  assert.ok(reference, "missing r-heidelberg-neckar-voll");
+  assert.equal(reference!.regionSlug, "rhein-neckar");
+  assert.ok(
+    Math.abs(reference!.center[0] - 8.693) < 0.02 &&
+      Math.abs(reference!.center[1] - 49.412) < 0.02,
+    `Neckar-Vollrunde pin must stay in Heidelberg, got ${reference!.center}`,
+  );
 }
 
 function testNeighborsExist() {

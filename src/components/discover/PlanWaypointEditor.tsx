@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type DragEvent, type ReactNode } from "react";
-import { ArrowUpDown, GripVertical, LocateFixed, MapPin, Redo2, Undo2 } from "lucide-react";
+import { GripVertical } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import {
   closeLoop,
   endOf,
@@ -128,7 +129,7 @@ export function PlanWaypointEditor({
                 aria-label={copy.startMyPos}
                 title={copy.startMyPos}
               >
-                <LocateFixed className="h-4 w-4" />
+                <ChromeGlyph name="locate" size={16} current />
               </button>
             ) : null
           }
@@ -142,7 +143,7 @@ export function PlanWaypointEditor({
               aria-label={copy.swapStartEnd}
               title={copy.swapStartEnd}
             >
-              <ArrowUpDown className="h-4 w-4" />
+              <ChromeGlyph name="swap" size={16} current />
             </button>
           </div>
         ) : null}
@@ -256,7 +257,7 @@ export function PlanWaypointEditor({
               onClick={() => onUndo?.()}
               className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[12px]"
             >
-              <Undo2 className="h-3.5 w-3.5" aria-hidden />
+              <ChromeGlyph name="undo" size={14} current className="text-text-secondary" />
               {copy.planUndo}
             </button>
           ) : null}
@@ -266,7 +267,7 @@ export function PlanWaypointEditor({
               onClick={() => onRedo?.()}
               className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[12px]"
             >
-              <Redo2 className="h-3.5 w-3.5" aria-hidden />
+              <ChromeGlyph name="redo" size={14} current className="text-text-secondary" />
               {copy.planRedo}
             </button>
           ) : null}
@@ -298,7 +299,7 @@ function HitList({
             className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-[12px] hover:bg-surface-elevated"
             onClick={() => onApplyHit(h)}
           >
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-text-secondary" />
+            <ChromeGlyph name="karte" size={14} />
             {h.label}
           </button>
         </li>

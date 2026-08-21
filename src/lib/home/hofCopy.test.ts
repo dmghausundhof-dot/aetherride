@@ -88,7 +88,9 @@ function testChromeLangs() {
   assert.equal(hofCopy("fr").rideOut, "Sortir");
   assert.equal(hofCopy("it").rideOut, "Esci");
   assert.equal(hofCopy("nl").rideOut, "Eruit");
-  assert.equal(hofCopy("en").libraryMappe, "Die Mappe");
+  assert.equal(hofCopy("en").profileLanguage, "Language");
+  assert.equal(hofCopy("de").profileLanguageAuto, "Gerät");
+  assert.equal(hofCopy("nl").profileLanguage, "Taal");
   assert.equal(hofCopy("fr").workshopTabBox, "Die Box");
   assert.equal(hofCopy("it").akteStimmen, "Stimmen");
   assert.equal(hofCopy("nl").akteStimmen, "Stimmen");

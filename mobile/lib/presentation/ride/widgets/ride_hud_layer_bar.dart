@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
 import '../../../domain/active_route.dart';
+import '../../shared/chrome_glyph.dart';
 import 'ride_hud_island.dart';
 
 /// Karte / Daten / Fahrwerk — charcoal HUD island, orange only for the active tab.
@@ -38,14 +39,14 @@ class RideHudLayerBar extends StatelessWidget {
           context,
           value: RideLiveLayer.map,
           label: mapLabel,
-          icon: Icons.map_outlined,
+          mark: 'karte',
           keyName: 'ride-hud-layer-map',
         ),
         _seg(
           context,
           value: RideLiveLayer.data,
           label: dataLabel,
-          icon: Icons.insights_outlined,
+          mark: 'heat',
           keyName: 'ride-hud-layer-data',
         ),
         if (chassisLabel != null)
@@ -53,7 +54,7 @@ class RideHudLayerBar extends StatelessWidget {
             context,
             value: RideLiveLayer.suspension,
             label: chassisLabel!,
-            icon: Icons.tune,
+            mark: 'filter',
             keyName: 'ride-hud-layer-suspension',
           ),
         if (onClose != null) _close(context),
@@ -130,7 +131,7 @@ class RideHudLayerBar extends StatelessWidget {
     BuildContext context, {
     required RideLiveLayer value,
     required String label,
-    required IconData icon,
+    required String mark,
     required String keyName,
   }) {
     final sunlight = AppColors.isSunlight(context);
@@ -160,8 +161,8 @@ class RideHudLayerBar extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
+                ChromeGlyph(
+                  mark,
                   size: NavHudTokens.layerIconDp,
                   color: on ? accent : AppColors.meta(context),
                 ),

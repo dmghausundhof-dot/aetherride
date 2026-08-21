@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// Pack name on the map chrome — readable against hillshade, unlike map text.
 class CoverageEdgePill extends StatelessWidget {
@@ -23,11 +24,11 @@ class CoverageEdgePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final fill = outside ? const Color(0xE61F1F1F) : const Color(0xF2F4F1EC);
     final ink = outside ? const Color(0xFFFFB080) : const Color(0xFF3D2914);
-    final icon = outside || needsNet
-        ? Icons.wifi_off
+    final mark = outside || needsNet
+        ? 'offline'
         : overview
-            ? Icons.layers_outlined
-            : Icons.map_outlined;
+            ? 'layers'
+            : 'karte';
     final iconColor = outside
         ? const Color(0xFFFF6A00)
         : needsNet
@@ -48,8 +49,8 @@ class CoverageEdgePill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
+              ChromeGlyph(
+                mark,
                 size: 14,
                 color: iconColor,
               ),

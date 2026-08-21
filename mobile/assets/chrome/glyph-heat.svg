@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Heat">
+  <title>FlowLine Heat</title>
+  <path d="M6.4 17.2 V12.4" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M12 17.2 V7.2" fill="none" stroke="#FF6A00" stroke-width="1.9" stroke-linecap="round"/>
+  <path d="M17.6 17.2 V10.4" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M4.6 18 H19.4" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

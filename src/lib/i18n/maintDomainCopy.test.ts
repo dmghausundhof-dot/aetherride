@@ -6,6 +6,7 @@ import {
   maintIntervalLabel,
   maintRemainingLabel,
   presentWear,
+  presentMaintActivity,
   wearSlotLabel,
 } from "./maintDomainCopy";
 import { forecastWear } from "@/lib/maintenance/wearPrediction";
@@ -24,6 +25,11 @@ assert.equal(maintRemainingLabel("180 km · 12 Tage", "it"), "180 km · 12 giorn
 assert.equal(maintRemainingLabel("fällig", "en"), "due");
 assert.equal(maintRemainingLabel("fällig · Bosch", "en"), "due · Bosch");
 assert.equal(wearSlotLabel("chain", "en"), "Chain");
+assert.equal(presentMaintActivity("Druck gemerkt", "en"), "Pressure logged");
+assert.equal(
+  presentMaintActivity("Kettenverschleiß prüfen", "en"),
+  "Check chain wear"
+);
 
 const bike: Bike = {
   id: "b1",

@@ -1,4 +1,6 @@
 /// Browse-Karte: Radnetz zuerst, Relief nur als leise Tiefe.
+/// Layer-Level (Pfad unter Schotter unter Radweg, unter Labels):
+/// siehe `browse_map_stack.dart`.
 ///
 /// Drei ehrliche Farben — unbewertete Pfade sind grün, nicht grau.
 /// Gravel/City liegen leise über dem Basemap, nicht als zweite Straße.

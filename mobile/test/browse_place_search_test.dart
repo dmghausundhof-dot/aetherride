@@ -106,4 +106,114 @@ void main() {
     );
     expect(ranked.first.name, contains('Luxor'));
   });
+
+  test('Hauptbahnhof query ranks the station over the city', () {
+    final frankfurt = rankGeocodeHits('Hauptbahnhof Frankfurt', const [
+      GeocodeHit(
+        label: 'Frankfurt, Hessen, Deutschland',
+        lat: 50.11,
+        lng: 8.68,
+        kind: 'city',
+        name: 'Frankfurt',
+      ),
+      GeocodeHit(
+        label: 'Frankfurt Hauptbahnhof, Frankfurt, Deutschland',
+        lat: 50.107,
+        lng: 8.664,
+        kind: 'station',
+        name: 'Frankfurt Hauptbahnhof',
+      ),
+    ]);
+    expect(frankfurt.first.kind, 'station');
+
+    final wiesloch = rankGeocodeHits('Hauptbahnhof Wiesloch', const [
+      GeocodeHit(
+        label: 'Wiesloch, Baden-Württemberg, Deutschland',
+        lat: 49.295,
+        lng: 8.698,
+        kind: 'city',
+        name: 'Wiesloch',
+      ),
+      GeocodeHit(
+        label: 'Wiesloch-Walldorf Bahnhof, Wiesloch, Deutschland',
+        lat: 49.291,
+        lng: 8.664,
+        kind: 'station',
+        name: 'Wiesloch-Walldorf Bahnhof',
+      ),
+    ]);
+    expect(wiesloch.first.kind, 'station');
+
+    final photonHouse = rankGeocodeHits('Hauptbahnhof Frankfurt', const [
+      GeocodeHit(
+        label: 'Hauptbahnhof Frankfurt (Oder), Frankfurt (Oder), Deutschland',
+        lat: 52.336,
+        lng: 14.546,
+        kind: 'house',
+        name: 'Hauptbahnhof Frankfurt (Oder)',
+      ),
+      GeocodeHit(
+        label: 'Frankfurt (Main) Hauptbahnhof, Frankfurt am Main, Deutschland',
+        lat: 50.107,
+        lng: 8.664,
+        kind: 'house',
+        name: 'Frankfurt (Main) Hauptbahnhof',
+      ),
+    ]);
+    expect(photonHouse.first.label, contains('Main'));
+
+    final city = rankGeocodeHits('Frankfurt', const [
+      GeocodeHit(
+        label: 'Frankfurt Hauptbahnhof, Frankfurt, Deutschland',
+        lat: 50.107,
+        lng: 8.664,
+        kind: 'station',
+        name: 'Frankfurt Hauptbahnhof',
+      ),
+      GeocodeHit(
+        label: 'Frankfurt, Hessen, Deutschland',
+        lat: 50.11,
+        lng: 8.68,
+        kind: 'city',
+        name: 'Frankfurt',
+      ),
+    ]);
+    expect(city.first.kind, 'city');
+  });
+
+  test('Wiesloch-Hbf-Fallback und kein Steig/RadService', () {
+    expect(stationFallbackQueries('Hauptbahnhof Wiesloch'), [
+      'Bahnhof Wiesloch',
+      'Wiesloch',
+    ]);
+    expect(stationFallbackQueries('Wiesloch'), isEmpty);
+    expect(shouldSkipPlaceOnlyGeocode('Hauptbahnhof Frankfurt'), isTrue);
+    expect(shouldSkipPlaceOnlyGeocode('Wiesloch'), isFalse);
+
+    final cleaned = dropStationJunkHits('Hauptbahnhof Wiesloch', const [
+      GeocodeHit(
+        label: 'RadService-Punkt Bahnhof Wiesloch-Walldorf, Wiesloch',
+        lat: 49.291,
+        lng: 8.664,
+        kind: 'house',
+        name: 'RadService-Punkt Bahnhof Wiesloch-Walldorf',
+      ),
+      GeocodeHit(
+        label: 'Wiesloch-Walldorf, Wiesloch, Deutschland',
+        lat: 49.2914,
+        lng: 8.6641,
+        kind: 'station',
+        name: 'Wiesloch-Walldorf',
+      ),
+      GeocodeHit(
+        label: 'Wiesloch-Walldorf Bahnhof Steig A, Wiesloch',
+        lat: 49.2912,
+        lng: 8.6638,
+        kind: 'house',
+        name: 'Wiesloch-Walldorf Bahnhof Steig A',
+      ),
+    ]);
+    expect(cleaned, hasLength(1));
+    expect(cleaned.first.kind, 'station');
+  });
 }

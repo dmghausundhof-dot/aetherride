@@ -7,6 +7,8 @@
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
+import { formatDistanceElevation, sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import { suggestionFromPublicTour } from "@/lib/catalog/publicTourSuggestion";
 
 /** Seed `poi_stops` — minutes along the loop, not a global catalog. */
 export type RoutePoiStop = {
@@ -627,8 +629,11 @@ function scoreSeed(
     score += 12;
     reasons.push(`Flow-Charakter (${s.surface}) matched dein Profil`);
   } else if (input.profile.preferences.preferSteep && s.steep) {
-    score += 10;
-    reasons.push(`Steile Abschnitte (~${s.elevationM} hm)`);
+    const elev = sanitizeElevationM(s.elevationM, s.distanceKm);
+    if (elev != null) {
+      score += 10;
+      reasons.push(`Steile Abschnitte (~${elev} hm)`);
+    }
   } else if (terrain && s.mtbScale.includes("S3") && terrain.s3plus >= 30) {
     score += 10;
     reasons.push(`S3+-Anteil ${terrain.s3plus}% in deinem Terrainprofil`);
@@ -667,8 +672,8 @@ function scoreSeed(
   while (reasons.length < 3) {
     reasons.push(
       s.loop
-        ? `Rundkurs · ${s.distanceKm} km · ${s.elevationM} hm`
-        : `Point-to-point · ${s.distanceKm} km · ${s.elevationM} hm`
+        ? `Rundkurs · ${formatDistanceElevation(s.distanceKm, s.elevationM)}`
+        : `Point-to-point · ${formatDistanceElevation(s.distanceKm, s.elevationM)}`,
     );
   }
 
@@ -755,7 +760,7 @@ export function getSuggestionById(
   if (fromList) return fromList;
 
   const seed = SEEDS.find((s) => s.id === id);
-  if (!seed) return null;
+  if (!seed) return suggestionFromPublicTour(id);
   const category =
     input.bike?.category ?? input.categoryHint ?? seed.categories[0];
 
@@ -775,7 +780,9 @@ export function getSuggestionById(
       input.bike
         ? `Passt grob zu ${input.bike.name}`
         : `Passend für ${category.replace(/_/g, " ")}`,
-      `${seed.distanceKm} km · ${seed.elevationM} hm · ${seed.mtbScale}`,
+      `${formatDistanceElevation(seed.distanceKm, seed.elevationM)}${
+        seed.mtbScale ? ` · ${seed.mtbScale}` : ""
+      }`,
       seed.loop ? "Rundkurs" : "Point-to-point",
     ],
   };

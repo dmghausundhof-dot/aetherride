@@ -61,18 +61,9 @@ void main() {
       greaterThan(DiscoverMapLineStyle.pendingAbOpacity),
     );
     expect(
-      DiscoverMapLineStyle.planGrabHaloWidth,
-      greaterThan(DiscoverMapLineStyle.activeWidth * 4),
-    );
-    expect(
       DiscoverMapLineStyle.planGrabHaloOpacity,
-      greaterThan(0),
-      reason: 'MapLibre skips fully transparent line hits',
-    );
-    expect(
-      DiscoverMapLineStyle.planGrabHaloOpacity,
-      lessThan(0.04),
-      reason: 'native first-frame translate must stay invisible',
+      0,
+      reason: 'native halo is gone; PlanLineGrabLayer owns ribbon hits',
     );
   });
 

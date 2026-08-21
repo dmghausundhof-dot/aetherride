@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../shared/chrome_glyph.dart';
 
 enum OrtSheetAction { addVia, routeHere, openMaps }
 
@@ -77,7 +78,7 @@ class OrtSheet extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () =>
                     Navigator.pop(context, OrtSheetAction.addVia),
-                icon: const Icon(Icons.add_location_alt_outlined),
+                icon: const ChromeGlyph('karte', size: 20),
                 label: Text(
                   onLiveRoute
                       ? l10n.discoverPlaceOnRoute
@@ -88,7 +89,7 @@ class OrtSheet extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () =>
                   Navigator.pop(context, OrtSheetAction.routeHere),
-              icon: const Icon(Icons.flag_outlined),
+              icon: const ChromeGlyph('flag', size: 20),
               label: Text(l10n.ortSheetHere),
             ),
             if (maps != null) ...[

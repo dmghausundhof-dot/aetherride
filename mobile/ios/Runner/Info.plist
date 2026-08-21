@@ -85,6 +85,11 @@
 	<string>FlowLine nimmt Ton nur auf, wenn du nach der Fahrt ein Video mit der Kamera aufzeichnest.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>FlowLine liest Fotos und Videos aus der Mediathek für Profil, Stimmen, Garage und Fahrten.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

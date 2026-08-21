@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../garage/rad_glyph.dart';
 import '../../library/mappe_glyph.dart';
+import '../../shared/chrome_glyph.dart';
 import '../../shell/hof_threshold_nav.dart';
 
 /// Werkzeuge im Karteninhalt — keine Layer-Toggles.
@@ -230,16 +231,7 @@ class DiscoverMapContentsSheet extends StatelessWidget {
                     key: const Key('discover-layer-heat'),
                     mark: heatLocked
                         ? const RadGlyph('lock', size: 22)
-                        : SvgPicture.asset(
-                            'assets/brand/boot/orange.svg',
-                            width: 22,
-                            height: 10,
-                            excludeFromSemantics: true,
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.warning,
-                              BlendMode.srcIn,
-                            ),
-                          ),
+                        : const ChromeGlyph('heat', size: 22),
                     label: l10n.discoverLayerHeat,
                     subtitle: heatLocked ? l10n.discoverLayerHeatLocked : null,
                     on: heatOn && !heatLocked,

@@ -376,6 +376,55 @@ void main() {
     expect(hit?.id, 'rhein-neckar');
   });
 
+  test('download CTA stays off when the suggested pack is already installed',
+      () {
+    expect(
+      shouldOfferOfflinePackDownload(
+        covered: true,
+        suggestedPackId: 'karlsruhe',
+        installedIds: {'karlsruhe'},
+        hasActivatedPack: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldOfferOfflinePackDownload(
+        covered: false,
+        suggestedPackId: 'karlsruhe',
+        installedIds: {'karlsruhe'},
+        hasActivatedPack: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldOfferOfflinePackDownload(
+        covered: false,
+        suggestedPackId: 'muenchen',
+        installedIds: {'karlsruhe'},
+        hasActivatedPack: true,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldOfferOfflinePackDownload(
+        covered: false,
+        suggestedPackId: null,
+        installedIds: {'karlsruhe'},
+        hasActivatedPack: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldOfferOfflinePackDownload(
+        covered: false,
+        suggestedPackId: null,
+        installedIds: {},
+        hasActivatedPack: false,
+      ),
+      isTrue,
+    );
+  });
+
   test('suggested pack for route prefers bbox covering both ends', () {
     final rn = OfflinePackRow(
       id: 'rhein-neckar',

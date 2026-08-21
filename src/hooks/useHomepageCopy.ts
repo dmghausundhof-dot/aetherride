@@ -3,7 +3,7 @@
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { homepageCopy } from "@/lib/i18n/homepageCopy";
 
-/** Browser UI language after mount — DE until then. */
+/** Homepage chrome in the resolved UI language. */
 export function useHomepageCopy() {
   return homepageCopy(useChromeLang());
 }

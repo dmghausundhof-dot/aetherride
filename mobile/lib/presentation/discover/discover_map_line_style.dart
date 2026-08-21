@@ -51,14 +51,13 @@ class DiscoverMapLineStyle {
 
   /// Komoot pull while dragging a pin or reshape disc — solid, not a GPS ghost.
   static const String planRubber = '#FF6A00';
-  static const double planRubberWidth = 4.4;
-  static const double planRubberOpacity = 0.78;
+  static const double planRubberWidth = 5.6;
+  static const double planRubberOpacity = 0.92;
 
-  /// Fat hit line so the ribbon is grabable (MapLibre core is ~6 px).
-  /// Near-zero: native first-frame `translate` stays invisible, hits still work.
+  /// Unused native fat-hit line. Pointers go through [PlanLineGrabLayer].
   static const String planGrabHalo = '#FF8A3D';
   static const double planGrabHaloWidth = 36;
-  static const double planGrabHaloOpacity = 0.02;
+  static const double planGrabHaloOpacity = 0;
 
   /// Steep climb/descent overlay on the live plan ribbon (Komoot Höhenfarbe).
   static const String planSteep = '#C2410C';

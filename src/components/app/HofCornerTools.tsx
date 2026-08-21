@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { CoachBell } from "@/components/chat/CoachBell";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export function HofCornerTools({
         className="flex h-8 w-8 items-center justify-center rounded-full bg-background/50 text-xs font-bold text-chrome hover:bg-background/70"
       >
         {initials || (
-          <User className="h-4 w-4 text-text-secondary" strokeWidth={1.75} />
+          <ChromeGlyph name="user" size={16} current className="text-text-secondary" />
         )}
       </Link>
     </div>

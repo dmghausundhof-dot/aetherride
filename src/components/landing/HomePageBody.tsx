@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
-import { Smartphone } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { DoorIcon } from "@/components/landing/DoorIcon";
 import { HOME_FAQ_IDS } from "@/lib/content/homepage";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
@@ -173,7 +173,7 @@ export function HomePageBody({
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-8">
-              <Smartphone className="h-8 w-8 text-sage" />
+              <ChromeGlyph name="phone" size={32} current className="text-sage" />
               <h3 className="mt-4 text-xl font-bold">{h.ui.inApp}</h3>
               <p className="mt-3 text-sm leading-relaxed text-text-secondary">
                 {h.split.appLead}

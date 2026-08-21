@@ -138,4 +138,23 @@ const cleared = sanitizeDraftForRundkurs({
 });
 assert(cleared.computed == null && cleared.label === "", "sanitize Norden draft");
 
+const plannedAb = sanitizeDraftForRundkurs({
+  mode: "point_to_point",
+  label: "Frankfurt Hauptbahnhof",
+  computed: {
+    geometry: {
+      coordinates: [
+        [8.67, 49.29],
+        [8.68, 49.4],
+        [8.66, 50.1],
+        [8.66, 50.11],
+      ],
+    },
+  },
+});
+assert(
+  plannedAb.computed != null && plannedAb.label === "Frankfurt Hauptbahnhof",
+  "Navigieren A→B survives Rundkurs"
+);
+
 console.log("loopHonesty.test.ts OK");

@@ -9,6 +9,7 @@ import '../../core/config.dart';
 import '../../core/errors/friendly_error.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../data/sensor/manufacturer_ble_wipe.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
@@ -250,7 +251,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           await Supabase.instance.client.auth.signOut();
         } catch (_) {}
       }
-      await ref.read(garageRepositoryProvider).wipeLocalData();
+      await wipeManufacturerBleData(
+        store: ref.read(bikeBleStoreProvider),
+        ble: ref.read(bleCoreProvider),
+      );
+      await ref.read(garageRepositoryProvider).wipeLocalData(
+            bleStore: ref.read(bikeBleStoreProvider),
+          );
       ref.read(onboardingDoneProvider.notifier).state = false;
       ref.read(subscriptionTierProvider.notifier).state =
           AppConfig.forcePro ? 'pro' : 'free';

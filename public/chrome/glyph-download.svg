@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Pack holen">
+  <title>FlowLine Pack holen</title>
+  <path d="M12 4.4 V14.8" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M8.2 11.2 L12 15.4 L15.8 11.2" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.6 18.8 H18.4" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

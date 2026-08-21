@@ -22,12 +22,14 @@ import '../../../domain/tours/tour_community_ux.dart';
 import '../../../domain/tours/tour_line.dart';
 import '../../../domain/tours/tour_listing.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../shared/chrome_glyph.dart';
 import '../../../providers/app_providers.dart';
 import '../../library/tour_line_thumb.dart';
 import '../../shell/hof_threshold_nav.dart';
 import '../add_to_collection_sheet.dart';
 import '../saved_route_notes_section.dart';
 import 'tour_community_section.dart';
+import 'tour_function_kit.dart';
 
 enum _AkteShelf { mein, stimmen }
 
@@ -278,6 +280,14 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
               onGoRide: widget.onGoRide,
               onShowOnMap: widget.onShowOnMap,
             ),
+            if (catalogId != null) ...[
+              const SizedBox(height: 12),
+              TourFunctionKit(
+                tourId: catalogId,
+                compact: true,
+                onOpenGroup: widget.onCreateGroup,
+              ),
+            ],
             const SizedBox(height: 12),
             _AkteChromePair(
               left: l10n.akteMein,
@@ -564,7 +574,7 @@ class _AkteRideBar extends StatelessWidget {
                 height: 32,
               )
             else
-              const Icon(Icons.map_outlined, color: AppColors.muted),
+              const ChromeGlyph('karte', size: 20, color: AppColors.muted),
             const SizedBox(width: 10),
             Expanded(
               child: InkWell(

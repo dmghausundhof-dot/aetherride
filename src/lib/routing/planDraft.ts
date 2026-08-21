@@ -853,16 +853,16 @@ export function planShapeKmChip(alongM: number): string {
   return `${planDragAlongLabelKm(alongM)} km`;
 }
 
-/** Live-ribbon opacity while the rubber-band is up. */
+/** Live-ribbon opacity while the rubber-band is up. Whisper-faint. */
 export function planRibbonDimOpacity(base: number, dimmed: boolean): number {
   if (!dimmed) return Math.min(1, Math.max(0, base));
-  return Math.min(0.14, Math.max(0.05, base * 0.1));
+  return Math.min(0.07, Math.max(0.028, base * 0.045));
 }
 
 /** Grab discs recede with the ribbon but stay visible as hit targets. */
 export function planGrabHandleOpacity(base: number, dimmed: boolean): number {
   if (!dimmed) return Math.min(1, Math.max(0, base));
-  return Math.min(0.55, Math.max(0.22, base * 0.45));
+  return Math.min(0.36, Math.max(0.14, base * 0.28));
 }
 
 /** Compact legend keys from OSM bands + optional steep flag.
@@ -913,6 +913,15 @@ export function planMapShowsRoutingWait(opts: {
   return (
     opts.editorActive && opts.routingBusy && opts.hasStart && opts.hasEnd
   );
+}
+
+/** Finger-chip while the engine reshapes an existing line (not the first A–B). */
+export function planMapAdaptingHintOnMap(opts: {
+  routingBusy: boolean;
+  hasLiveLine: boolean;
+  hasFinger: boolean;
+}): boolean {
+  return opts.routingBusy && opts.hasLiveLine && opts.hasFinger;
 }
 
 /** Spacing between grab discs — denser when zoomed in (Komoot beads). */

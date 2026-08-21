@@ -1,16 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Bookmark,
-  BookmarkCheck,
-  Camera,
-  Flame,
-  Mountain,
-  AreaChart,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import {
   formatDistanceElevation,
@@ -38,6 +31,8 @@ import { ElevationChart } from "@/components/discover/ElevationChart";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
+import { TourFunctionKit } from "@/components/tours/TourFunctionKit";
+import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { RangeEstimate } from "@/lib/ebike/range";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
@@ -113,6 +108,7 @@ export function RouteDetail({
 }) {
   const lang = useChromeLang();
   const d = discoverUi(lang);
+  const catalogTour = getPublicTour(route.id);
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
@@ -293,12 +289,12 @@ export function RouteDetail({
       <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-[10px]">
         {(
           [
-            ["overview", d.overview, Mountain],
-            ["heat", d.popular, Flame],
-            ["trail", d.photos, Camera],
-            ["elevation", d.elevation, AreaChart],
+            ["overview", d.overview, "karte"],
+            ["heat", d.popular, "heat"],
+            ["trail", d.photos, "photo"],
+            ["elevation", d.elevation, "elevation"],
           ] as const
-        ).map(([id, label, Icon]) => (
+        ).map(([id, label, mark]) => (
           <button
             key={id}
             type="button"
@@ -307,7 +303,7 @@ export function RouteDetail({
               layer === id ? "bg-accent text-on-accent" : "text-text-secondary"
             }`}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <ChromeGlyph name={mark} size={14} current />
             {label}
           </button>
         ))}
@@ -566,9 +562,9 @@ export function RouteDetail({
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-3 text-sm"
           >
             {saved ? (
-              <BookmarkCheck className="h-4 w-4 text-accent" />
+              <ChromeGlyph name="merken" size={16} current className="text-accent" />
             ) : (
-              <Bookmark className="h-4 w-4" />
+              <ChromeGlyph name="merken" size={16} current className="text-text-secondary" />
             )}
             {saved ? d.saved : d.save}
           </button>
@@ -595,6 +591,7 @@ export function RouteDetail({
           </Link>
         </div>
       </div>
+      {catalogTour ? <TourFunctionKit tour={catalogTour} /> : null}
       <TourReviews tourId={route.id} />
     </div>
   );

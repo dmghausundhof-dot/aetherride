@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { hofTitleFromNavigator } from "@/lib/home/hofTitle";
+import { hofTitleFor } from "@/lib/home/hofTitle";
+import { useChromeLang } from "@/hooks/useChromeLang";
 
-/** Country title after mount — avoids CH/DE hydration mismatch. */
+/** Job word for Home — follows chrome language, not a separate navigator read. */
 export function useHofTitle(): string {
-  const [title, setTitle] = useState("Start");
-  useEffect(() => {
-    setTitle(hofTitleFromNavigator());
-  }, []);
-  return title;
+  return hofTitleFor(null, useChromeLang());
 }

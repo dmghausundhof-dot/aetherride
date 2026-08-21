@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Download, History, Locate, Search, SlidersHorizontal } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { RadNavMark } from "@/components/garage/RadNavMark";
 import {
   DistanceMaxChips,
@@ -117,7 +117,12 @@ export function DiscoverExploreChrome({
       <div className="rounded-xl border border-border bg-surface-elevated/80 p-2">
         <div className="flex items-center gap-2">
           <label className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
+            <ChromeGlyph
+              name="search"
+              size={16}
+              current
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary"
+            />
             <input
               data-testid="discover-explore-search"
               type="search"
@@ -145,7 +150,10 @@ export function DiscoverExploreChrome({
           </button>
         </div>
         {chipHits.length > 0 ? (
-          <div className="mt-2 space-y-1">
+          <div
+            data-testid="discover-place-hits"
+            className="mt-2 space-y-1"
+          >
             {showRecents ? (
               <p className="px-0.5 text-[11px] font-semibold text-text-secondary">
                 {ui.recently}
@@ -154,16 +162,16 @@ export function DiscoverExploreChrome({
             <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {chipHits.map((hit) => (
               <button
-                key={`${hit.label}-${hit.lat}`}
+                key={`${hit.label}-${hit.lat}-${hit.lng}`}
                 type="button"
                 data-testid="discover-explore-place-chip"
                 onClick={() => onPlaceHit?.(hit)}
                 className="inline-flex max-w-[14rem] shrink-0 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12px] font-semibold"
               >
                 {showRecents ? (
-                  <History className="h-3 w-3 shrink-0 text-text-secondary" />
+                  <ChromeGlyph name="recent" size={12} current className="shrink-0 text-text-secondary" />
                 ) : (
-                  <Search className="h-3 w-3 shrink-0 text-text-secondary" />
+                  <ChromeGlyph name="search" size={12} current className="shrink-0 text-text-secondary" />
                 )}
                 <span className="truncate">{hit.label}</span>
               </button>
@@ -213,7 +221,7 @@ export function DiscoverExploreChrome({
                 : "border-border bg-background text-text-secondary"
             }`}
           >
-            <Locate className="h-3.5 w-3.5" />
+            <ChromeGlyph name="locate" size={14} current />
             {d.aroundKm(aroundKm)}
           </button>
           <button
@@ -227,7 +235,7 @@ export function DiscoverExploreChrome({
                 : "border-border bg-background text-text-secondary"
             }`}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <ChromeGlyph name="filter" size={14} current />
             {filterActive ? `${d.filter} ${filterCount}` : d.filter}
           </button>
           {onOfflineMaps ? (
@@ -237,7 +245,7 @@ export function DiscoverExploreChrome({
               onClick={onOfflineMaps}
               className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px] font-semibold text-text-secondary"
             >
-              <Download className="h-3.5 w-3.5" />
+              <ChromeGlyph name="download" size={14} current />
               {ui.offlineMapsChip}
             </button>
           ) : null}

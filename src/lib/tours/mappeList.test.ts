@@ -133,7 +133,7 @@ assert.equal(
     planned: "Geplant",
     recorded: "Aufgezeichnet",
   }),
-  "Geplant",
+  null,
 );
 assert.equal(
   mappeSourceChip("recorded", {

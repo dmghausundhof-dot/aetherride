@@ -38,7 +38,8 @@ abstract final class OfflinePackDirs {
       final dir = Directory(path);
       if (!await directoryIsLegitimate(dir)) return null;
       final disk = await bboxFromDir(dir);
-      final prefs = OfflineMapsPrefs.packBboxFrom(await OfflineMapsPrefs.read());
+      final prefs =
+          OfflineMapsPrefs.packBboxFrom(await OfflineMapsPrefs.read());
       return preferDiskPackBbox(fromDisk: disk, fromPrefs: prefs);
     } catch (_) {
       return null;
@@ -106,6 +107,7 @@ abstract final class OfflinePackDirs {
           ring: hit.ring,
           graphBytes: bytes,
           solid: hit.solid,
+          dots: hit.dots,
         ),
       );
     } catch (_) {}
@@ -127,6 +129,57 @@ abstract final class OfflinePackDirs {
       bbox: bbox,
       ring: ring,
     );
+  }
+
+  /// Smallest installed pack whose occupancy covers this GPS point.
+  /// Activated pack uses the computed ring; other packs use the cache.
+  static Future<({String id, String name})?> coveringPackForPoint(
+    double lng,
+    double lat,
+  ) async {
+    try {
+      final activatedPath = await OfflineMapsPrefs.activatedPackPath();
+      if (activatedPath != null &&
+          activatedPath.isNotEmpty &&
+          await legitimateCoversPoint(lng, lat)) {
+        final dir = Directory(activatedPath);
+        final id = OfflineMapsPrefs.packIdFromActivatedPath(activatedPath) ??
+            p.basename(dir.path);
+        final name = await nameFromDir(dir);
+        return (id: id, name: (name == null || name.isEmpty) ? id : name);
+      }
+      final rootDir = await root();
+      if (!await rootDir.exists()) return null;
+      Directory? hit;
+      var hitArea = double.infinity;
+      await for (final e in rootDir.list()) {
+        if (e is! Directory) continue;
+        if (activatedPath != null && e.path == activatedPath) continue;
+        if (!await directoryIsLegitimate(e)) continue;
+        final bbox = await bboxFromDir(e);
+        if (bbox == null || bbox.length < 4) continue;
+        final cached = await coverageRingCacheOnly(e);
+        if (!coveragePointInCoverage(
+          lng: lng,
+          lat: lat,
+          bbox: bbox,
+          ring: cached?.outline,
+        )) {
+          continue;
+        }
+        final area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]);
+        if (area < hitArea) {
+          hit = e;
+          hitArea = area;
+        }
+      }
+      if (hit == null) return null;
+      final id = p.basename(hit.path);
+      final name = await nameFromDir(hit);
+      return (id: id, name: (name == null || name.isEmpty) ? id : name);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Graph on disk and that pack's occupancy cover this A→B (and optional vias).

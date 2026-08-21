@@ -52,5 +52,9 @@ describe("bike identity", () => {
     const text = buildServiceReport({ bike, logs: [], rides: [] });
     assert.match(text, /Rahmennummer: WS-1847/);
     assert.match(text, /Versicherung: ADAC/);
+    const en = buildServiceReport({ bike, logs: [], rides: [], lang: "en" });
+    assert.match(en, /Frame number: WS-1847/);
+    assert.match(en, /Insurance: ADAC/);
+    assert.doesNotMatch(en, /Rahmennummer/);
   });
 });

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Kalender">
+  <title>FlowLine Kalender</title>
+  <rect x="4.4" y="6.2" width="15.2" height="13.4" rx="2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M4.4 10.2 H19.6" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M8.2 4.4 V7.4" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M15.8 4.4 V7.4" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+</svg>
