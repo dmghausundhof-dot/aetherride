@@ -245,8 +245,8 @@ const DE: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} Fotos` : ""}`,
     write: "Stimme schreiben",
     starsAria: (n) => `${n} Sterne`,
-    namePlaceholder: "Leer bleibt Du",
-    nameAria: "Anzeigename — leer bleibt Du",
+    namePlaceholder: "Name",
+    nameAria: "Anzeigename",
     bodyPlaceholder:
       "Wie war die Tour? Belag, Verkehr, Tipps… (keine privaten Orte)",
     photo: "Foto",
@@ -267,8 +267,8 @@ const DE: CatalogCopy = {
     tagLabel: (wire) =>
       ({
         nass: "nass",
-        zu: "zu",
-        viel_los: "viel los",
+        zu: "gesperrt",
+        viel_los: "voll",
         top: "top",
         baustelle: "Baustelle",
       }[wire] ?? wire),
@@ -395,8 +395,8 @@ const EN: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} photos` : ""}`,
     write: "Write a Stimme",
     starsAria: (n) => `${n} stars`,
-    namePlaceholder: "Empty stays You",
-    nameAria: "Display name — empty stays You",
+    namePlaceholder: "Name",
+    nameAria: "Display name",
     bodyPlaceholder:
       "How was the tour? Surface, traffic, tips… (no private places)",
     photo: "Photo",
@@ -543,8 +543,8 @@ const FR: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} photos` : ""}`,
     write: "Écrire une Stimme",
     starsAria: (n) => `${n} étoiles`,
-    namePlaceholder: "Vide reste Toi",
-    nameAria: "Nom affiché — vide reste Toi",
+    namePlaceholder: "Nom",
+    nameAria: "Nom affiché",
     bodyPlaceholder:
       "Comment était la sortie ? Revêtement, trafic, conseils… (pas de lieux privés)",
     photo: "Photo",
@@ -693,8 +693,8 @@ const IT: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} foto` : ""}`,
     write: "Scrivi una Stimme",
     starsAria: (n) => `${n} stelle`,
-    namePlaceholder: "Vuoto resta Tu",
-    nameAria: "Nome visibile — vuoto resta Tu",
+    namePlaceholder: "Nome",
+    nameAria: "Nome visibile",
     bodyPlaceholder:
       "Com’era l’uscita? Fondo, traffico, consigli… (niente luoghi privati)",
     photo: "Foto",
@@ -843,8 +843,8 @@ const NL: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} foto's` : ""}`,
     write: "Stimme schrijven",
     starsAria: (n) => `${n} sterren`,
-    namePlaceholder: "Leeg blijft Jij",
-    nameAria: "Weergavenaam — leeg blijft Jij",
+    namePlaceholder: "Naam",
+    nameAria: "Weergavenaam",
     bodyPlaceholder:
       "Hoe was de tocht? Ondergrond, verkeer, tips… (geen privéplekken)",
     photo: "Foto",
