@@ -36,7 +36,31 @@ type BerlinSeed = {
   closed?: boolean;
   duration_band?: string;
   poi_stops?: unknown;
+  notes?: string;
+  geometry?: unknown;
 };
+
+export type P0SeedPage = {
+  suggestion: RouteSuggestion;
+  /** Stored seed line [lng, lat]. Null = pin only, never a live-routed fill. */
+  geometry: [number, number][] | null;
+  notes?: string;
+};
+
+/** Keep stored seed tracks only — no interpolated or engine-filled line. */
+export function parseSeedGeometry(raw: unknown): [number, number][] | null {
+  if (!Array.isArray(raw) || raw.length < 2) return null;
+  const out: [number, number][] = [];
+  for (const pt of raw) {
+    if (!Array.isArray(pt) || pt.length < 2) continue;
+    const lng = Number(pt[0]);
+    const lat = Number(pt[1]);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+    out.push([lng, lat]);
+  }
+  return out.length >= 2 ? out : null;
+}
 
 const sportToCategory = (tags: string[] | undefined): BikeCategory => {
   const t = new Set(tags ?? []);
@@ -119,6 +143,8 @@ function mergedRouteSeeds(): BerlinSeed[] {
   return [...byId.values()];
 }
 
+const SEEDS_BY_ID = new Map(mergedRouteSeeds().map((s) => [s.id, s]));
+
 export const BERLIN_DEFAULT_CENTER: [number, number] = [
   berlinBundle.default_center.lng,
   berlinBundle.default_center.lat,
@@ -166,6 +192,18 @@ function seedToSuggestion(
 /** All Nähe route seeds (Berlin + DACH + Lücken + RN), including linear — for catalog fallback. */
 export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[] {
   return mergedRouteSeeds().map((s) => seedToSuggestion(s, near));
+}
+
+/** Single P0 seed for public `/tours/[id]` and geometry — not added to SEO lists. */
+export function getP0SeedById(id: string): P0SeedPage | null {
+  const raw = SEEDS_BY_ID.get(id.trim());
+  if (!raw) return null;
+  const notes = typeof raw.notes === "string" ? raw.notes.trim() : "";
+  return {
+    suggestion: seedToSuggestion(raw),
+    geometry: parseSeedGeometry(raw.geometry),
+    ...(notes ? { notes } : {}),
+  };
 }
 
 /**

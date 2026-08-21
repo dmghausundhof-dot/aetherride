@@ -7,6 +7,8 @@ import {
   berlinLoopSuggestions,
   berlinSixtyMinLoopSuggestions,
   DEMO_CITY_CHIPS,
+  getP0SeedById,
+  parseSeedGeometry,
   parseSeedPoiStops,
 } from "./berlinLoops";
 import { rheinNeckarLoopSuggestions } from "./rheinNeckarLoops";
@@ -130,5 +132,17 @@ assert(
   (munich!.poiStops?.some((p) => (p.whyGood?.length ?? 0) > 0) ?? false),
   "Munich Nähe seed keeps why_good"
 );
+
+const titisee = getP0SeedById("seed-loop-titisee-feldberg-mtb-60");
+assert(titisee != null, "Titisee seed resolves for public tour page");
+assert(
+  (titisee!.geometry?.length ?? 0) >= 2,
+  "Titisee keeps stored geometry for the public page"
+);
+assert(
+  parseSeedGeometry([[8.16, 47.91]]) == null,
+  "single point is not a track"
+);
+assert(getP0SeedById("no-such-seed") == null, "unknown seed is null");
 
 console.log("berlinLoops.test.ts OK");
