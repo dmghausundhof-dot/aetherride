@@ -6,9 +6,9 @@
 export const HOME_INTRO = {
   kicker: "Was FlowLine ist",
   title: "Outdoor Cycling, ohne Timeline.",
-  lead: "FlowLine ist die Anwendung für den Alltag zwischen Feierabendrunde und Wochenend-Etappe. Im Browser planst du, pflegst das Rad und teilst eine Mappe. In der App fährst du: HUD, GPS, Offline, Sensoren.",
+  lead: "FlowLine ist die Anwendung für den Alltag zwischen Feierabendrunde und Wochenend-Etappe. Im Browser planst du, pflegst das Rad und teilst eine Mappe. In der App fährst du: HUD, GPS, Offline-Routing, Sensoren.",
   paragraphs: [
-    "Der Hof ist der Stand — nicht ein Feed. Vier Türen: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad, nicht als fünfter Tab. Ride ist der orange Knopf, nicht der fünfte Reiter. Was fehlt, bleibt leer: keine Dummy-Kilometer, kein Leaderboard, keine zweite Kasse im Browser.",
+    "Der Hof ist der Stand — nicht ein Feed. Vier Türen: Hof, Karte, Touren, Rad. Teile sitzen am Rad, nicht als fünfter Tab. Ride ist der orange Knopf, nicht der fünfte Reiter. Was fehlt, bleibt leer: keine Dummy-Kilometer, kein Leaderboard, keine zweite Kasse im Browser.",
     "Öffentliche Tour-Seiten sind redaktionelle Ideen mit Pin. Die Linie entsteht, wenn du planst — in Hamburg die Alster, nicht pauschal die Alpen. Community hängt an der Tour: Stimmen, Mappe-Links, Einladungslinks. Public Profiles nur mit Opt-in, ohne GPS-Spuren.",
   ],
 } as const;
@@ -83,7 +83,7 @@ export const HOME_SPLIT = {
   webLead:
     "Inspiration, Planen, Pflege und Teilen gehören an den Schreibtisch. Der Browser darf leer bleiben, wo GPS und Sensoren hingehören.",
   appLead:
-    "Unterwegs zählt ein gesperrtes Display, Stadt-Packs ohne Netz und eine Uhr am Fahrer. Dafür gibt es keine Web-Attrappe und keine Länderkarte.",
+    "Unterwegs zählt ein gesperrtes Display, Offline-Routing ohne Netz und eine Uhr am Fahrer. Dafür gibt es keine Web-Attrappe und keine Länderkarte.",
 } as const;
 
 export const HOME_MAPS = {
@@ -101,7 +101,7 @@ export const HOME_TOURS = {
 export const HOME_JOURNEY = {
   kicker: "Ablauf",
   title: "So kommst du raus — und wieder.",
-  lead: "Ankommen, Rad am Stand, Stunde vor dem Tor, Rausfahren, zurück am Hof. Kein Onboarding-Theater, kein Demo-Bike, das Kilometer vorspielt.",
+  lead: "Ankommen, Rad am Stand, Stunde vor dem Tor, Rausfahren, zurück am Hof. Kein Onboarding-Theater, kein Demo-Rad, das Kilometer vorspielt.",
 } as const;
 
 export const HOME_VOICES = {
@@ -129,8 +129,8 @@ export const HOME_FAQ_IDS = ["was", "fuer-wen", "web-app", "karten", "preise"] a
 export const HOME_PRICING = {
   kicker: "Preise",
   title: "Free plant. Pro vertieft.",
-  lead: "Karte, Planen, ein Rad, App-Navigation: frei. Multi-Bike, Bracketing, Reichweiten-Spannen und höhere Chat-Limits: Pro. Checkout im Profil, nicht mitten in der Tour. Store-Listings der App folgen, sobald sie live sind.",
-  free: "0 € — Hof, Karte, Platz, ein Rad, Navigation in der App.",
+  lead: "Karte, Planen, ein Rad, App-Navigation: frei. Mehrere Räder, Bracketing, Reichweiten-Spannen und höhere Chat-Limits: Pro. Checkout im Profil, nicht mitten in der Tour. Store-Listings der App folgen, sobald sie live sind.",
+  free: "0 € — Hof, Karte, Touren, ein Rad, Navigation in der App.",
   pro: "6,99 €/Monat oder 59,99 €/Jahr. Kündigung im Portal bzw. über Play.",
 } as const;
 
@@ -139,7 +139,7 @@ export const HOME_HONESTY = {
   title: "Vollwertig, wo es steht — leer, wo es fehlt.",
   lead: "Eine Homepage darf nicht so tun, als wäre der Marktplatz offen oder der Store schon gelistet. Deshalb der ehrliche Stand:",
   live: [
-    "Hof, Karte, Planen, Platz, Werkstatt im Browser",
+    "Hof, Karte, Planen, Touren, Rad im Browser",
     "Online-Karte in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen, Südengland",
     "Redaktionelle Tour-Ideen vor allem in DACH — die Kartenblätter reichen weiter",
     "Stimmen, Mappe-Links, Editorial-Profile",

@@ -16,12 +16,15 @@ export interface ActiveRoute {
   geometry: GeoJSON.LineString | null;
   /** F-NAV-003 Engine- oder Demo-Steps */
   steps?: NavStep[];
-  source: "suggestion" | "engine" | "import";
+  source: "suggestion" | "engine" | "import" | "recorded";
   setAt: string;
 }
 
 /** Sichtbarkeit einer gespeicherten Tour. Default: privat. */
 export type RouteVisibility = "private" | "shared";
+
+/** Freigabe-Gate: Link ja, Explore-Pin erst nach Stimmen. */
+export type TourListingState = "none" | "candidate" | "listed" | "reverted";
 
 /** Vom Nutzer gespeicherte Tour (Discover Library) */
 export interface SavedRoute {
@@ -36,7 +39,7 @@ export interface SavedRoute {
   reasons?: [string, string, string];
   matchScore?: number;
   savedAt: string;
-  source: "suggestion" | "engine" | "import";
+  source: "suggestion" | "engine" | "import" | "recorded";
   /**
    * Privat (Default) oder freigegeben.
    * Freigeben erzeugt einen Link — Geometrie nur wenn explizit im Link.
@@ -45,9 +48,15 @@ export interface SavedRoute {
   visibility?: RouteVisibility;
   /** Steigt bei „zurück auf privat“ — lokale Token-Invalidierung. */
   shareEpoch?: number;
+  /** none/candidate/listed/reverted — Explore nur bei listed. */
+  listing?: TourListingState;
+  /** ISO — Start des Bestätigungsfensters. */
+  candidateSince?: string;
+  /** ISO — wann das Gate gekippt hat. */
+  listedAt?: string;
   /** Katalog-ID für Stimmen — fehlt bei privater GPX. */
   catalogTourId?: string;
-  /** Optionales Rad für diese Runde (Werkstatt-Join). */
+  /** Optionales Rad für diese Runde (Rad-Join). */
   preferredBikeId?: string;
   /** Private Notiz — nie als Stimme publizieren. */
   personalNote?: string;

@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { chromeLangFromAcceptLanguage } from "@/lib/i18n/chromeLang";
+import { hofCopy } from "@/lib/home/hofCopy";
 
-export const metadata: Metadata = {
-  title: "Aktivitäten",
-  description:
-    "Fahrten analysieren: Stats, Track und Setup-Hinweise. Aufzeichnung in der FlowLine App.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = chromeLangFromAcceptLanguage(
+    (await headers()).get("accept-language")
+  );
+  const copy = hofCopy(lang);
+  return {
+    title: copy.activitiesTitle,
+    description: copy.activitiesHint,
+  };
+}
 
 export default function ActivitiesLayout({
   children,

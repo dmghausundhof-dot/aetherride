@@ -81,6 +81,7 @@ export function FilterChips({
   showTime = true,
   showReset = true,
   showDistance = true,
+  showVisibility = true,
 }: {
   minutes: number;
   onMinutes: (m: number) => void;
@@ -91,8 +92,10 @@ export function FilterChips({
   showTime?: boolean;
   /** Native-Sheet hat eigenen Reset-Fuß — dann hier aus. */
   showReset?: boolean;
-  /** Distanz sitzt am Umkreis-Chip, im Filter-Sheet aus. */
+  /** Tourlänge (≤ km). Umkreis sitzt am eigenen Chip. */
   showDistance?: boolean;
+  /** Mappe-Sichtbarkeit — nicht auf der öffentlichen Karte. */
+  showVisibility?: boolean;
 }) {
   const lang = useChromeLang();
   const d = discoverCopy(lang);
@@ -191,6 +194,7 @@ export function FilterChips({
         ))}
       </div>
 
+      {showVisibility ? (
       <div className="flex flex-wrap gap-1.5">
         <span className="w-full text-[10px] font-medium tracking-wide text-text-secondary">
           {d.mappe}
@@ -209,6 +213,7 @@ export function FilterChips({
           </Chip>
         ))}
       </div>
+      ) : null}
 
       {showReset && (
         <div className="flex flex-wrap gap-1.5">

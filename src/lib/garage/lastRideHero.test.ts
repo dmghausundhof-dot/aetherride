@@ -2,7 +2,7 @@
  * npx tsx src/lib/garage/lastRideHero.test.ts
  */
 import { lastRideHeroLine, lastRideHeroLineForBike } from "./lastRideHero";
-import { categoryPickGroups } from "./bikeAssist";
+import { addCategories, categoryPickGroups } from "./bikeAssist";
 import type { Ride } from "@/types";
 
 function assert(cond: boolean, msg: string) {
@@ -23,6 +23,11 @@ const withKm = {
 } as Ride;
 assert(lastRideHeroLine(withKm) === "Zuletzt 12.4 km", "km line");
 assert(
+  lastRideHeroLine({ ...withKm, elevationGainM: 140 }) ===
+    "Zuletzt 12.4 km · 140 hm",
+  "climb when stored"
+);
+assert(
   lastRideHeroLine({ ...withKm, distanceM: 0 }) ===
     "Zuletzt unterwegs — ohne GPS-Strecke",
   "no fake km"
@@ -41,6 +46,10 @@ assert(
   "skip live session"
 );
 assert(lastRideHeroLineForBike([live], "b1") === null, "live only");
+
+assert(addCategories("muscle").includes("mtb_am"), "add has mtb");
+assert(!addCategories("muscle").includes("mtb_enduro"), "add hides enduro");
+assert(addCategories("ebike")[1] === "etrekking", "e-trekking in add");
 
 const muscle = categoryPickGroups("muscle");
 assert(muscle[0].id === "everyday", "alltag first");

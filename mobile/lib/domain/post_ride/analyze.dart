@@ -1,6 +1,7 @@
 /// Deterministische Post-Ride-Analyse — Spiegel src/lib/ai/postRideAnalysis.ts
 
 import '../ride.dart';
+import '../ride/ride_telemetry.dart';
 
 class PostRideObservation {
   const PostRideObservation({
@@ -72,8 +73,13 @@ PostRideAnalysis analyzePostRide({
       (peakG >= 3.5 ? (km * 2).round() : 0);
   final lean = (m['leanAngleMax'] as num?)?.toDouble() ?? 0;
 
+  final tel = buildRideTelemetry(ride.track);
+  final climbShow = tel.hasElev ? tel.climbM : ride.elevationM.round();
+  final mins = (hours * 60).toStringAsFixed(0);
   final facts = <String>[
-    '${km.toStringAsFixed(1)} km · ${ride.elevationM.round()} hm · ${(hours * 60).toStringAsFixed(0)} min',
+    tel.hasElev
+        ? '${km.toStringAsFixed(1)} km · $climbShow hm ↑ · ${tel.descentM} hm ↓ · $mins min'
+        : '${km.toStringAsFixed(1)} km · $climbShow hm · $mins min',
     'Flow ${flow.toStringAsFixed(0)} · Peak ${peakG.toStringAsFixed(1)} g · $impacts Impacts'
         '${lean > 0 ? ' · Lean ${lean.toStringAsFixed(0)}°' : ''}',
   ];
@@ -134,6 +140,36 @@ PostRideAnalysis analyzePostRide({
         text:
             'Peak ${peakG.toStringAsFixed(1)} g — harte Einschläge; Setup und Reifendruck prüfen.',
         params: {'g': peakG.toStringAsFixed(1)},
+      ),
+    );
+  }
+
+  if (tel.gapKm >= 0.4) {
+    observations.add(
+      PostRideObservation(
+        id: 'elev-gap',
+        text:
+            'Höhenlücken auf ${tel.gapKm.toStringAsFixed(1)} km — Neigung dort nicht belastbar.',
+        params: {'gap': tel.gapKm.toStringAsFixed(1)},
+      ),
+    );
+  }
+  if (tel.maxGradePct != null && tel.maxGradePct! >= 12) {
+    observations.add(
+      PostRideObservation(
+        id: 'steep',
+        text:
+            'Steile Passagen — max +${tel.maxGradePct!.toStringAsFixed(1)} %.',
+        params: {'grade': tel.maxGradePct!.toStringAsFixed(1)},
+      ),
+    );
+  } else if (tel.minGradePct != null && tel.minGradePct! <= -12) {
+    observations.add(
+      PostRideObservation(
+        id: 'steep-down',
+        text:
+            'Steile Abfahrten — max ${tel.minGradePct!.toStringAsFixed(1)} %.',
+        params: {'grade': tel.minGradePct!.toStringAsFixed(1)},
       ),
     );
   }

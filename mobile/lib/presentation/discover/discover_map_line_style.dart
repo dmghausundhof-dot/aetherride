@@ -27,16 +27,57 @@ class DiscoverMapLineStyle {
 
   static const String activeCasing = '#0A1A12';
   static const String mutedCasing = '#1B3A2F';
+  /// Soft halo under the selected ribbon — reads as “live”, not a second route.
+  static const String selectedGlow = '#FF8A3D';
+  static const double selectedGlowWidth = 18.4;
+  static const double selectedGlowOpacity = 0.22;
 
   /// Anfahrt zur Tour — cyan, nicht dasselbe Grün wie die Runde (HUD-Parität).
   static const String approachCore = '#29B6F6';
   static const String approachCasing = '#0A1A2A';
 
-  static const double activeWidth = 6.8;
-  static const double inactiveWidth = 4.4;
+  /// Live plan outside the loaded pack bbox — sage, like out-of-graph pins.
+  static const String packOutside = '#7A8B73';
+  static const String packOutsideCasing = '#5E6F58';
+  static const double packOutsideWidth = 5.2;
+  static const List<double> packOutsideDash = [2.4, 1.8];
+
+  /// GPS→Pin ghost while live streets are still computing.
+  static const String pendingAb = '#FF8A3D';
+  static const double pendingAbWidth = 3.6;
+  static const double pendingAbOpacity = 0.68;
+  static const double pendingAbBlur = 0.85;
+  static const List<double> pendingAbDash = [2.2, 1.6];
+
+  /// Komoot pull while dragging a pin or reshape disc — solid, not a GPS ghost.
+  static const String planRubber = '#FF6A00';
+  static const double planRubberWidth = 4.4;
+  static const double planRubberOpacity = 0.78;
+
+  /// Fat hit line so the ribbon is grabable (MapLibre core is ~6 px).
+  /// Near-zero: native first-frame `translate` stays invisible, hits still work.
+  static const String planGrabHalo = '#FF8A3D';
+  static const double planGrabHaloWidth = 36;
+  static const double planGrabHaloOpacity = 0.02;
+
+  /// Steep climb/descent overlay on the live plan ribbon (Komoot Höhenfarbe).
+  static const String planSteep = '#C2410C';
+  static const double planSteepWidth = 6.4;
+  /// Surface core on the live ribbon (AllTrails tint; orange casing stays).
+  static const String planPaved = '#5C8FBF';
+  static const String planGravel = '#E0B04A';
+  static const String planTrail = '#C47B3A';
+  static const double planSurfaceWidth = 5.2;
+  static const String planUnpaved = planTrail;
+  static const double planUnpavedWidth = planSurfaceWidth;
+  static const double planUnpavedOpacity = 0.94;
+  static const List<double> planUnpavedDash = [1.8, 1.2];
+
+  static const double activeWidth = 5.9;
+  static const double inactiveWidth = 4.2;
   static const double activeOpacity = 1.0;
   static const double inactiveOpacity = 0.86;
-  static const double activeCasingWidth = 14;
+  static const double activeCasingWidth = 11.6;
   static const double mutedCasingWidth = 8.4;
   static const double activeCasingOpacity = 0.95;
   static const double mutedCasingOpacity = 0.42;

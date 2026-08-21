@@ -18,6 +18,7 @@ import {
   type NavStepType,
 } from "@/lib/routing/navSteps";
 import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import { roundTripWaypointCount } from "@/lib/routing/osmRoundTrip";
 
 export const ORS_DEFAULT_URL = "https://api.openrouteservice.org";
 
@@ -390,21 +391,23 @@ export type OrsRouteOk = {
   orsProfile: OrsProfile;
 };
 
-export async function fetchOrsRoute(opts: {
+async function postOrsDirections(opts: {
   profile: RoutingProfile;
-  points: [number, number][];
+  coordinates: [number, number][];
+  options?: Record<string, unknown>;
   signal?: AbortSignal;
   language?: ChromeLang;
 }): Promise<OrsRouteOk> {
   const key = orsApiKey();
   if (!key) throw new Error("OPENROUTESERVICE_API_KEY missing");
-  if (opts.points.length < 2) throw new Error("OpenRouteService: need ≥2 points");
+  if (opts.coordinates.length < 1) {
+    throw new Error("OpenRouteService: need coordinates");
+  }
 
   const orsProfile = orsProfileFor(opts.profile);
   const url = `${orsBaseUrl()}/v2/directions/${orsProfile}/geojson`;
-  const options = orsDirectionsOptions(opts.profile);
   const body: Record<string, unknown> = {
-    coordinates: opts.points,
+    coordinates: opts.coordinates,
     language: opts.language ?? "de",
     instructions: true,
     elevation: true,
@@ -414,7 +417,7 @@ export async function fetchOrsRoute(opts: {
         : ["surface", "steepness", "traildifficulty", "waytype"],
     units: "m",
   };
-  if (options) body.options = options;
+  if (opts.options) body.options = opts.options;
 
   const res = await fetch(url, {
     method: "POST",
@@ -464,7 +467,7 @@ export async function fetchOrsRoute(opts: {
   );
   const steps = stepsFromOrs(rawSteps, coordinates);
   const warnings = extrasWarnings(extras, opts.profile);
-  if (!pointPairInDach(opts.points)) {
+  if (!pointPairInDach(opts.coordinates)) {
     warnings.push(
       "Start/Ziel außerhalb DACH — OpenRouteService bleibt global, weniger kuratierte Seeds"
     );
@@ -479,4 +482,75 @@ export async function fetchOrsRoute(opts: {
     warnings,
     orsProfile,
   };
+}
+
+export async function fetchOrsRoute(opts: {
+  profile: RoutingProfile;
+  points: [number, number][];
+  signal?: AbortSignal;
+  language?: ChromeLang;
+}): Promise<OrsRouteOk> {
+  if (opts.points.length < 2) throw new Error("OpenRouteService: need ≥2 points");
+  return postOrsDirections({
+    profile: opts.profile,
+    coordinates: opts.points,
+    options: orsDirectionsOptions(opts.profile),
+    signal: opts.signal,
+    language: opts.language,
+  });
+}
+
+/** POST body for ORS `options.round_trip` (one start coordinate). */
+export function orsRoundTripRequestBody(opts: {
+  profile: RoutingProfile;
+  start: [number, number];
+  lengthM: number;
+  seed?: number;
+  points?: number;
+  language?: ChromeLang;
+}): Record<string, unknown> {
+  const lengthM = Math.min(120_000, Math.max(5_000, Math.round(opts.lengthM)));
+  const points = opts.points ?? roundTripWaypointCount(lengthM);
+  const seed =
+    typeof opts.seed === "number" && Number.isFinite(opts.seed) && opts.seed >= 1
+      ? Math.floor(opts.seed)
+      : 1;
+  const base = orsDirectionsOptions(opts.profile);
+  const options: Record<string, unknown> = {
+    ...(base ?? {}),
+    round_trip: { length: lengthM, points, seed },
+  };
+  const orsProfile = orsProfileFor(opts.profile);
+  return {
+    coordinates: [opts.start],
+    language: opts.language ?? "de",
+    instructions: true,
+    elevation: true,
+    extra_info:
+      orsProfile === "driving-car"
+        ? ["waytype"]
+        : ["surface", "steepness", "traildifficulty", "waytype"],
+    units: "m",
+    options,
+  };
+}
+
+/** One-point ORS round-trip. Caller must check closure (`trackIsClosedLoop`). */
+export async function fetchOrsRoundTrip(opts: {
+  profile: RoutingProfile;
+  start: [number, number];
+  lengthM: number;
+  seed?: number;
+  points?: number;
+  signal?: AbortSignal;
+  language?: ChromeLang;
+}): Promise<OrsRouteOk> {
+  const body = orsRoundTripRequestBody(opts);
+  return postOrsDirections({
+    profile: opts.profile,
+    coordinates: [opts.start],
+    options: body.options as Record<string, unknown>,
+    signal: opts.signal,
+    language: opts.language,
+  });
 }

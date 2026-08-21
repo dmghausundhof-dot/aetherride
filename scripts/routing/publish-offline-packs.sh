@@ -3,6 +3,8 @@
 #
 #   bash scripts/routing/publish-offline-packs.sh
 #   ONLY=zuerich bash scripts/routing/publish-offline-packs.sh
+#   CATALOG_ONLY=1 bash scripts/routing/publish-offline-packs.sh
+#     rebuild catalog.json from git manifests whose tar.gz still exists on CDN
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DIST="$ROOT/data/routing/dist"
@@ -12,14 +14,16 @@ CDN_ROOT="${ROUTING_CDN_BASE:-https://krmgatsugplouzrhhozn.supabase.co/storage/v
 CDN_ROOT="${CDN_ROOT%/}"
 ONLY="${ONLY:-}"
 FORCE="${FORCE:-0}"
+CATALOG_ONLY="${CATALOG_ONLY:-0}"
 
 cd "$ROOT"
-if [[ ! -f supabase/.temp/project-ref ]]; then
+if [[ "$CATALOG_ONLY" != "1" && ! -f supabase/.temp/project-ref ]]; then
   supabase link --project-ref krmgatsugplouzrhhozn --yes
 fi
 
-python3 - <<'PY' "$DIST" "$MANIFESTS" "$CDN_ROOT" "$ONLY" "$ROOT" "$FORCE"
+python3 - <<'PY' "$DIST" "$MANIFESTS" "$CDN_ROOT" "$ONLY" "$ROOT" "$FORCE" "$CATALOG_ONLY"
 import http.client, json, sys, urllib.parse, urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 dist = Path(sys.argv[1])
@@ -28,6 +32,7 @@ cdn_root = sys.argv[3].rstrip("/")
 only = sys.argv[4]
 root = Path(sys.argv[5])
 force = sys.argv[6] == "1"
+catalog_only = sys.argv[7] == "1"
 bucket = "offline-packs"
 
 def load_env(path: Path) -> dict[str, str]:
@@ -69,14 +74,44 @@ def load_remote_catalog() -> dict[str, int]:
     except Exception:
         return {}
 
+def _content_length(headers) -> int:
+    cl = headers.get("Content-Length")
+    if cl:
+        try:
+            return int(cl)
+        except ValueError:
+            pass
+    cr = headers.get("Content-Range") or ""
+    if "/" in cr:
+        try:
+            return int(cr.rsplit("/", 1)[-1])
+        except ValueError:
+            return 0
+    return 0
+
+
 def remote_object_size(object_path: str) -> int:
     url = f"{cdn_root}/{object_path}"
-    req = urllib.request.Request(url, method="HEAD")
-    try:
-        with urllib.request.urlopen(req, timeout=20) as res:
-            return int(res.headers.get("Content-Length") or 0)
-    except Exception:
-        return 0
+    for _ in range(2):
+        req = urllib.request.Request(url, method="HEAD")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as res:
+                n = _content_length(res.headers)
+                if n > 0:
+                    return n
+        except Exception:
+            pass
+        req = urllib.request.Request(
+            url, method="GET", headers={"Range": "bytes=0-0"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as res:
+                n = _content_length(res.headers)
+                if n > 0:
+                    return n
+        except Exception:
+            pass
+    return 0
 
 def storage_put_http11(method: str, object_path: str, body: bytes, content_type: str, cache_control: str) -> int:
     parsed = urllib.parse.urlparse(supabase_url)
@@ -118,6 +153,8 @@ if only:
 remote = {} if force else load_remote_catalog()
 uploaded = []
 skipped = 0
+if catalog_only:
+    ids = []
 for rid in ids:
     tar = ready(rid)
     if not tar:
@@ -149,18 +186,39 @@ for rid in ids:
     storage_put(f"{rid}/manifest.json", man_out, "application/json", "max-age=300")
     uploaded.append(rid)
 
-# Full catalog from every local ready pack (not only this run).
-catalog = {"packs": [], "attribution": "FlowLine Offline Region Packs"}
-for rid in sorted(p.stem for p in (root / "data/routing/regions").glob("*.json")):
-    tar = ready(rid)
-    man_path = man_dir / f"{rid}.json"
-    if not tar or not man_path.is_file():
-        continue
-    m = json.loads(man_path.read_text(encoding="utf-8"))
+def manifest_has_file_entries(m: dict) -> bool:
     files = m.get("files") or {}
-    gz = next((k for k in files if str(k).endswith(".tar.gz") or str(k).endswith(".tgz")), None)
-    bytes_ = files.get(gz, {}).get("bytes") if gz else tar.stat().st_size
-    catalog["packs"].append({
+    for name, meta in files.items():
+        if not isinstance(meta, dict) or str(name).endswith("/"):
+            continue
+        sha = meta.get("sha256")
+        if isinstance(sha, str) and len(sha) >= 16:
+            return True
+        n = meta.get("bytes")
+        if isinstance(n, int) and n > 1024:
+            return True
+    return False
+
+
+def catalog_row(rid: str, m: dict, bytes_: int | None = None) -> dict:
+    files = m.get("files") or {}
+    gz = next(
+        (k for k in files if str(k).endswith(".tar.gz") or str(k).endswith(".tgz")),
+        None,
+    )
+    if bytes_ is None:
+        bytes_ = files.get(gz, {}).get("bytes") if gz else None
+    graph_bytes = (files.get("offline_graph.json") or {}).get("bytes")
+    cdn = dict(m.get("cdn") or {})
+    pack_gz = cdn.get("packGz") or f"{rid}.tar.gz"
+    base = (cdn.get("baseUrl") or "").strip()
+    if not base or "/api/offline/packs" in base:
+        base = f"{cdn_root}/{rid}"
+    cdn["baseUrl"] = base
+    cdn["packGz"] = pack_gz
+    if not cdn.get("pack"):
+        cdn["pack"] = pack_gz
+    return {
         "id": rid,
         "name": m.get("name") or rid,
         "bbox": m.get("bbox"),
@@ -170,21 +228,116 @@ for rid in sorted(p.stem for p in (root / "data/routing/regions").glob("*.json")
         "downloadable": True,
         "status": "ready",
         "bytes": bytes_,
-        "cdn": m.get("cdn") or {
-            "baseUrl": f"{cdn_root}/{rid}",
-            "packGz": f"{rid}.tar.gz",
-        },
-    })
-catalog["packs"].sort(key=lambda p: p["name"])
+        "graphBytes": graph_bytes,
+        "cdn": cdn,
+    }
+
+
+def is_ready_row(p: dict) -> bool:
+    return p.get("downloadable") is True or p.get("status") == "ready"
+
+
+def union_packs(*lists: list) -> list[dict]:
+    by_id: dict[str, dict] = {}
+    for packs in lists:
+        for p in packs:
+            rid = p.get("id")
+            if not rid:
+                continue
+            existing = by_id.get(rid)
+            if not existing:
+                by_id[rid] = p
+                continue
+            if is_ready_row(p) and not is_ready_row(existing):
+                by_id[rid] = p
+            elif is_ready_row(p) and is_ready_row(existing):
+                if (p.get("bytes") or 0) > (existing.get("bytes") or 0):
+                    by_id[rid] = p
+    return sorted(by_id.values(), key=lambda p: (p.get("name") or p["id"]))
+
+
+def pack_gz_name(rid: str, m: dict) -> str:
+    return (m.get("cdn") or {}).get("packGz") or f"{rid}.tar.gz"
+
+
+local_packs = []
+for rid in sorted(p.stem for p in (root / "data/routing/regions").glob("*.json")):
+    tar = ready(rid)
+    man_path = man_dir / f"{rid}.json"
+    if not tar or not man_path.is_file():
+        continue
+    m = json.loads(man_path.read_text(encoding="utf-8"))
+    files = m.get("files") or {}
+    gz = next((k for k in files if str(k).endswith(".tar.gz") or str(k).endswith(".tgz")), None)
+    bytes_ = files.get(gz, {}).get("bytes") if gz else tar.stat().st_size
+    local_packs.append(catalog_row(rid, m, bytes_))
+
+candidates = []
+for man_path in sorted(man_dir.glob("*.json")):
+    rid = man_path.stem
+    m = json.loads(man_path.read_text(encoding="utf-8"))
+    if not manifest_has_file_entries(m):
+        continue
+    candidates.append((rid, m))
+
+cdn_packs = []
+missing = []
+
+
+def check_cdn(item: tuple[str, dict]) -> tuple[str, dict, int]:
+    rid, m = item
+    size = remote_object_size(f"{rid}/{pack_gz_name(rid, m)}")
+    return rid, m, size
+
+
+print(f"cdn scan {len(candidates)} hashed manifests…", flush=True)
+with ThreadPoolExecutor(max_workers=12) as pool:
+    futs = [pool.submit(check_cdn, c) for c in candidates]
+    for fut in as_completed(futs):
+        rid, m, size = fut.result()
+        if size > 1024:
+            cdn_packs.append(catalog_row(rid, m, size))
+        else:
+            missing.append(rid)
+cdn_packs.sort(key=lambda p: p["id"])
+missing.sort()
+print(
+    f"cdn scan {len(cdn_packs)} objects present, {len(missing)} missing",
+    flush=True,
+)
+if missing:
+    print("cdn missing:", ",".join(missing), flush=True)
+
+remote_full = []
+try:
+    url = f"{cdn_root}/catalog.json"
+    with urllib.request.urlopen(url, timeout=20) as res:
+        remote_full = json.loads(res.read().decode("utf-8")).get("packs") or []
+except Exception:
+    pass
+
+catalog = {
+    "packs": union_packs(remote_full, local_packs, cdn_packs),
+    "attribution": "FlowLine Offline Region Packs",
+}
 cat_path = dist / "_catalog.json"
 cat_path.write_text(json.dumps(catalog, indent=2) + "\n", encoding="utf-8")
+ready_n = sum(1 for p in catalog["packs"] if is_ready_row(p))
 print(
-    f"catalog {len(catalog['packs'])} packs (uploaded {len(uploaded)}, skipped {skipped})",
+    f"catalog {len(catalog['packs'])} packs "
+    f"({ready_n} ready, uploaded {len(uploaded)}, skipped {skipped})",
+    flush=True,
+)
+want = ("berlin", "muenchen", "rhein-neckar")
+have = {p["id"] for p in catalog["packs"]}
+print(
+    "spot-check:",
+    ", ".join(f"{i}={'yes' if i in have else 'NO'}" for i in want),
     flush=True,
 )
 remote_ids = set(remote)
 local_ids = {p["id"] for p in catalog["packs"]}
-if uploaded or force or local_ids != remote_ids:
+if catalog_only or uploaded or force or local_ids != remote_ids:
     storage_put("catalog.json", cat_path, "application/json", "max-age=60")
 print("PUBLISHED", ",".join(uploaded) if uploaded else "(none new)", flush=True)
 PY

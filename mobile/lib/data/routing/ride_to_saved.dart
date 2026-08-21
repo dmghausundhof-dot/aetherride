@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
+import '../../domain/ride_media.dart';
 import '../../domain/saved_route.dart';
+import '../../domain/saved_route_note.dart';
 import 'route_repository.dart';
 import 'saved_route_meta_store.dart';
 
@@ -22,7 +25,7 @@ SavedRouteEntry rideRecordToSavedEntry(
     id: id ?? 'recorded-${const Uuid().v4()}',
     name: (label != null && label.isNotEmpty) ? label : _defaultName(ride),
     distanceKm: ride.distanceKm > 0 ? ride.distanceKm : _pathKm(coords),
-    elevationM: ride.elevationM,
+    elevationM: honestClimbM(ride.track, ride.elevationM).toDouble(),
     durationMin: durationMin,
     savedAt: DateTime.now().toUtc(),
     source: 'recorded',
@@ -38,18 +41,26 @@ List<List<double>> trackToLngLat(List<Map<String, dynamic>> track) {
     final lng = (p['lng'] as num?)?.toDouble();
     if (lat == null || lng == null) continue;
     if (lat.abs() > 90 || lng.abs() > 180) continue;
-    out.add([lng, lat]);
+    final elevRaw = p['elev'] ?? p['ele'] ?? p['altitude'];
+    final elev = elevRaw is num ? elevRaw.toDouble() : null;
+    if (elev != null && elev.isFinite && elev >= -50 && elev <= 8900) {
+      out.add([lng, lat, elev]);
+    } else {
+      out.add([lng, lat]);
+    }
   }
   return out;
 }
 
-/// Speichert Ride als SavedRoute und hängt optionale Post-Ride-Fotos an.
+/// Speichert Ride als SavedRoute und hängt optionale Post-Ride-Fotos/Notizen an.
 Future<SavedRouteEntry> saveRideAsTour({
   required RouteRepository routes,
   required RideRecord ride,
   String? name,
   String? id,
   List<String> photoPaths = const [],
+  List<RideMedia> media = const [],
+  List<SavedRouteNote> notes = const [],
   String? description,
 }) async {
   final entry = rideRecordToSavedEntry(ride, name: name, id: id);
@@ -58,14 +69,27 @@ Future<SavedRouteEntry> saveRideAsTour({
     for (final path in photoPaths)
       if (path.trim().isNotEmpty) path.trim(),
   ];
+  final tagged = [
+    for (final m in media)
+      if (m.path.trim().isNotEmpty) m,
+  ];
   final desc = description?.trim() ?? '';
-  if (photos.isNotEmpty || desc.isNotEmpty || ride.id.isNotEmpty) {
+  if (photos.isNotEmpty ||
+      tagged.isNotEmpty ||
+      notes.isNotEmpty ||
+      desc.isNotEmpty ||
+      ride.id.isNotEmpty) {
     final cur = await SavedRouteMetaStore.get(entry.id);
+    final nextPhotos = photos.isNotEmpty
+        ? photos
+        : [for (final m in tagged) if (m.isPhoto) m.path];
     await SavedRouteMetaStore.put(
       entry.id,
       cur.copyWith(
         description: desc.isNotEmpty ? desc : null,
-        photoPaths: photos.isNotEmpty ? photos : null,
+        photoPaths: nextPhotos.isNotEmpty ? nextPhotos : null,
+        media: tagged.isNotEmpty ? tagged : null,
+        notes: notes.isNotEmpty ? [...cur.notes, ...notes] : null,
         rideId: ride.id,
       ),
     );

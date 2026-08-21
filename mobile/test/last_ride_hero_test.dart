@@ -29,6 +29,19 @@ void main() {
       ),
       'Zuletzt unterwegs — ohne GPS-Strecke',
     );
+    expect(
+      lastRideHeroLine(
+        RideRecord(
+          id: 'r3',
+          bikeId: 'b1',
+          startedAt: DateTime(2026, 8, 1),
+          endedAt: DateTime(2026, 8, 1, 1),
+          distanceKm: 12.4,
+          elevationM: 140,
+        ),
+      ),
+      'Zuletzt 12.4 km · 140 hm',
+    );
   });
 
   test('Aktive Session zählt nicht als letzte Fahrt', () {

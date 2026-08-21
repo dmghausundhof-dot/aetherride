@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 
 /// Strava-ähnlicher Activity-Payload (Export-Stub, kein OAuth).
 Map<String, dynamic> rideToStravaActivityStub(RideRecord ride) {
@@ -12,7 +13,7 @@ Map<String, dynamic> rideToStravaActivityStub(RideRecord ride) {
     'start_date_local': ride.startedAt.toIso8601String(),
     'elapsed_time': ride.movingTimeSec,
     'distance': ride.distanceKm * 1000,
-    'total_elevation_gain': ride.elevationM,
+    'total_elevation_gain': honestClimbM(ride.track, ride.elevationM),
     'description':
         'Exportiert aus FlowLine — Strava API OAuth in Produktion (Spec 8.6 P1).',
     '_note':

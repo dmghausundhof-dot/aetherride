@@ -6,8 +6,19 @@ import { useChromeLang } from "@/hooks/useChromeLang";
 import Link from "next/link";
 import {
   canJoinByTypedCode,
-  parseRideGroupWindow,
+  listedPublicJoinGroups,
 } from "@/lib/community/rideGroup";
+import {
+  createStartMax,
+  defaultCustomStart,
+  formatCreateCustomStartChip,
+  resolveCreateStart,
+  resolveCreateWindow,
+  startFromPreset,
+  startOfLocalDay,
+  toDateTimeLocalValue,
+  type CreateStartPreset,
+} from "@/lib/community/rideGroupCreateTime";
 import {
   catalogTourAsSaved,
   listMineForGroupCreate,
@@ -54,24 +65,10 @@ import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import { webChrome } from "@/lib/i18n/webChrome";
 import { MappeSectionLabel } from "@/components/tours/MappeSectionLabel";
 
-function toDateTimeLocalValue(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function startFromPreset(preset: "now" | "1h" | "18" | "10"): Date {
-  const n = new Date();
-  if (preset === "1h") return new Date(n.getTime() + 60 * 60 * 1000);
-  if (preset === "18") {
-    const today18 = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 18);
-    return today18.getTime() > n.getTime()
-      ? today18
-      : new Date(today18.getTime() + 24 * 60 * 60 * 1000);
-  }
-  if (preset === "10") {
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 10);
-  }
-  return n;
+function chipClass(on: boolean): string {
+  return `rounded-lg border px-2 py-1.5 text-xs ${
+    on ? "border-accent text-accent" : "border-border text-foreground"
+  }`;
 }
 
 function inviteUrl(group: RideGroup, savedRoutes: SavedRoute[]): string {
@@ -189,6 +186,7 @@ export function RideGroupsPanel({
   const cloudUserId = useRideGroupStore((s) => s.cloudUserId);
   const lastNote = useRideGroupStore((s) => s.lastNote);
   const joinFromInviteAsync = useRideGroupStore((s) => s.joinFromInviteAsync);
+  const joinListedLocal = useRideGroupStore((s) => s.joinListedLocal);
   const createGroupAsync = useRideGroupStore((s) => s.createGroupAsync);
   const setLiveOptIn = useRideGroupStore((s) => s.setLiveOptIn);
   const setVisibilityAsync = useRideGroupStore((s) => s.setVisibilityAsync);
@@ -204,15 +202,19 @@ export function RideGroupsPanel({
   const [msg, setMsg] = useState<string | null>(null);
   const [picked, setPicked] = useState(initialRouteId ?? "");
   const [listing, setListing] = useState<"private" | "public">("private");
+  const [startPreset, setStartPreset] = useState<CreateStartPreset>("now");
   const [startsLocal, setStartsLocal] = useState("");
   const [durationH, setDurationH] = useState(3);
-  const [durationCustom, setDurationCustom] = useState("");
+  const [durationIsCustom, setDurationIsCustom] = useState(false);
+  const [durationCustomRaw, setDurationCustomRaw] = useState("");
   const [extendFor, setExtendFor] = useState<string | null>(null);
   const [extendEndLocal, setExtendEndLocal] = useState("");
   const [meeting, setMeeting] = useState("");
   const [joinPaste, setJoinPaste] = useState("");
+  const [timeOpen, setTimeOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(true);
   const [publicGroups, setPublicGroups] = useState<RideGroup[]>([]);
+  const [foldOpen, setFoldOpen] = useState<boolean | null>(null);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const resolvedOrigin = resolveGroupPickerOrigin({
     gps: originKind === "map" ? null : origin,
@@ -227,9 +229,30 @@ export function RideGroupsPanel({
   const nearbyRoutes = nearbyCatalog.map(catalogTourAsSaved);
   const attachable = [...mine, ...nearbyRoutes];
   const open = listedRideGroups(groups);
+  const expanded = foldOpen ?? Boolean(initialRouteId?.trim());
   const mineIds = new Set(open.map((group) => group.id));
-  const listedPublic = publicGroups.filter((group) => !mineIds.has(group.id));
+  const listedPublic = listedPublicJoinGroups(publicGroups, mineIds);
   const shownNote = lastNote ? platzNote(lastNote, lang) : "";
+  const preview = resolveCreateWindow({
+    startPreset,
+    customStartLocal: startsLocal,
+    durationIsCustom,
+    durationH,
+    durationCustomRaw,
+  });
+  const previewStart =
+    !("error" in preview)
+      ? preview.start
+      : resolveCreateStart({ startPreset, customStartLocal: startsLocal });
+  const previewEnd =
+    !("error" in preview)
+      ? preview.end
+      : new Date(previewStart.getTime() + durationH * 3_600_000);
+  const previewWhen = formatPlatzGroupWhen(
+    previewStart.toISOString(),
+    previewEnd.toISOString(),
+    lang,
+  );
 
   useEffect(() => {
     void pullCloud();
@@ -237,7 +260,10 @@ export function RideGroupsPanel({
   }, [pullCloud]);
   useEffect(() => {
     const id = initialRouteId?.trim();
-    if (id) setPicked(id);
+    if (id) {
+      setPicked(id);
+      setFoldOpen(true);
+    }
   }, [initialRouteId]);
   useEffect(() => {
     void fetchPublicRideGroups().then((out) => {
@@ -246,8 +272,20 @@ export function RideGroupsPanel({
   }, []);
 
   return (
-    <section id="group-create" className="mt-10">
-      <MappeSectionLabel glyph="meet">{hof.togetherOut}</MappeSectionLabel>
+    <section
+      id="group-create"
+      className="mt-10 rounded-2xl border border-border bg-surface px-3 py-3"
+    >
+      <MappeSectionLabel
+        glyph="meet"
+        count={open.length > 0 ? open.length : undefined}
+        expanded={expanded}
+        onToggle={() => setFoldOpen(!expanded)}
+      >
+        {hof.togetherOut}
+      </MappeSectionLabel>
+      {expanded ? (
+      <>
       <p className="mb-3 text-xs text-text-secondary">{g.inviteHint}</p>
       {initialRouteId ? (
         <p
@@ -263,12 +301,13 @@ export function RideGroupsPanel({
         </p>
       ) : null}
       <div
-        className={`mb-3 flex flex-wrap items-center gap-2 ${
+        className={`mb-3 space-y-2 ${
           initialRouteId ? "rounded-xl ring-2 ring-accent/50 p-2" : ""
         }`}
       >
+        <div className="flex flex-wrap items-center gap-2">
         <select
-          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-text-secondary"
           value={picked}
           onChange={(e) => setPicked(e.target.value)}
         >
@@ -294,12 +333,12 @@ export function RideGroupsPanel({
         </select>
         <Link
           href="/discover?panel=plan&asGroup=1"
-          className="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
+          className="text-[11px] font-medium text-text-secondary"
         >
           {g.planAsGroup}
         </Link>
         <select
-          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-text-secondary"
           value={listing}
           onChange={(e) =>
             setListing(e.target.value === "public" ? "public" : "private")
@@ -308,78 +347,123 @@ export function RideGroupsPanel({
           <option value="private">{g.visPrivate}</option>
           <option value="public">{g.visPublic}</option>
         </select>
-        <span className="text-[11px] text-text-secondary">{g.startLabel}</span>
-        {(
-          [
-            ["now", g.startNow],
-            ["1h", g.startIn1h],
-            ["18", g.startToday18],
-            ["10", g.startTomorrow10],
-          ] as const
-        ).map(([preset, label]) => (
-          <button
-            key={preset}
-            type="button"
-            className="rounded-lg border border-border px-2 py-1.5 text-xs text-foreground"
-            onClick={() =>
-              setStartsLocal(toDateTimeLocalValue(startFromPreset(preset)))
-            }
+        </div>
+        <button
+          type="button"
+          data-testid="platz-create-time"
+          className="w-full py-1 text-left"
+          onClick={() => setTimeOpen((o) => !o)}
+        >
+          <p className="truncate text-sm font-semibold">{previewWhen}</p>
+          <p className="text-[11px] text-text-secondary">{g.timeTapHint}</p>
+        </button>
+        {timeOpen ? (
+          <div
+            data-testid="platz-create-time-editor"
+            className="w-full space-y-2 rounded-lg border border-border px-2.5 py-2"
           >
-            {label}
-          </button>
-        ))}
-        <input
-          type="datetime-local"
-          aria-label={g.startCustom}
-          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
-          value={startsLocal}
-          onChange={(e) => setStartsLocal(e.target.value)}
-        />
-        <span className="text-[11px] text-text-secondary">{g.durationLabel}</span>
-        {([2, 3, 4] as const).map((h) => (
-          <button
-            key={h}
-            type="button"
-            className={`rounded-lg border px-2 py-1.5 text-xs ${
-              durationCustom === "" && durationH === h
-                ? "border-accent text-accent"
-                : "border-border text-foreground"
-            }`}
-            onClick={() => {
-              setDurationH(h);
-              setDurationCustom("");
-            }}
-          >
-            {h} h
-          </button>
-        ))}
-        <input
-          type="number"
-          min={0.25}
-          max={12}
-          step={0.25}
-          inputMode="decimal"
-          aria-label={g.durationCustom}
-          placeholder={g.durationHoursHint}
-          className="w-28 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
-          value={durationCustom}
-          onChange={(e) => {
-            setDurationCustom(e.target.value);
-            const n = Number(e.target.value.replace(",", "."));
-            if (Number.isFinite(n)) setDurationH(n);
-          }}
-        />
+            <p className="text-[11px] text-text-secondary">{g.startLabel}</p>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["now", g.startNow],
+                  ["1h", g.startIn1h],
+                  ["18", g.startToday18],
+                  ["10", g.startTomorrow10],
+                ] as const
+              ).map(([preset, label]) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={chipClass(startPreset === preset)}
+                  onClick={() => {
+                    setStartPreset(preset);
+                    setStartsLocal(toDateTimeLocalValue(startFromPreset(preset)));
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+              <button
+                type="button"
+                data-testid="platz-start-custom"
+                className={chipClass(startPreset === "custom")}
+                onClick={() => {
+                  setStartPreset("custom");
+                  if (!startsLocal) {
+                    setStartsLocal(toDateTimeLocalValue(defaultCustomStart()));
+                  }
+                }}
+              >
+                {startPreset === "custom" && startsLocal
+                  ? formatCreateCustomStartChip(new Date(startsLocal))
+                  : g.startCustom}
+              </button>
+            </div>
+            {startPreset === "custom" ? (
+              <input
+                type="datetime-local"
+                data-testid="platz-start-custom-input"
+                aria-label={g.startCustom}
+                min={toDateTimeLocalValue(startOfLocalDay())}
+                max={toDateTimeLocalValue(createStartMax())}
+                className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                value={startsLocal}
+                onChange={(e) => setStartsLocal(e.target.value)}
+              />
+            ) : null}
+            <p className="text-[11px] text-text-secondary">{g.durationLabel}</p>
+            <div className="flex flex-wrap gap-2">
+              {([2, 3, 4] as const).map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  className={chipClass(!durationIsCustom && durationH === h)}
+                  onClick={() => {
+                    setDurationH(h);
+                    setDurationIsCustom(false);
+                  }}
+                >
+                  {h} h
+                </button>
+              ))}
+              <button
+                type="button"
+                data-testid="platz-duration-custom"
+                className={chipClass(durationIsCustom)}
+                onClick={() => setDurationIsCustom(true)}
+              >
+                {g.durationCustom}
+              </button>
+            </div>
+            {durationIsCustom ? (
+              <input
+                type="number"
+                min={0.25}
+                max={12}
+                step={0.25}
+                inputMode="decimal"
+                data-testid="platz-duration-hours"
+                aria-label={g.durationCustom}
+                placeholder={g.durationHoursHint}
+                className="w-28 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                value={durationCustomRaw}
+                onChange={(e) => setDurationCustomRaw(e.target.value)}
+              />
+            ) : null}
+          </div>
+        ) : null}
         <input
           type="text"
           maxLength={80}
           placeholder={g.meetingPlaceholder}
-          className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+          className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
           value={meeting}
           onChange={(e) => setMeeting(e.target.value)}
         />
         <button
           type="button"
-          className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+          className="w-full rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-on-accent"
           onClick={() => {
             if (!signedIn) {
               setMsg(g.needSignIn);
@@ -390,15 +474,12 @@ export function RideGroupsPanel({
               setMsg(g.needSharedTour);
               return;
             }
-            const startsAt = startsLocal
-              ? new Date(startsLocal).toISOString()
-              : new Date().toISOString();
-            const hours = durationCustom.trim()
-              ? Number(durationCustom.replace(",", "."))
-              : durationH;
-            const window = parseRideGroupWindow({
-              startsAt,
-              durationHours: hours,
+            const window = resolveCreateWindow({
+              startPreset,
+              customStartLocal: startsLocal,
+              durationIsCustom,
+              durationH,
+              durationCustomRaw,
             });
             if ("error" in window) {
               setMsg(g.extendInvalid);
@@ -408,8 +489,8 @@ export function RideGroupsPanel({
               route,
               displayLabel: selfLabel,
               visibility: listing,
-              startsAt,
-              durationHours: hours,
+              startsAt: window.start.toISOString(),
+              durationHours: window.durationHours,
               meetingPoint: meeting.trim() || undefined,
             }).then((out) => {
               const note = useRideGroupStore.getState().lastNote;
@@ -445,17 +526,13 @@ export function RideGroupsPanel({
           value={joinPaste}
           onChange={(e) => setJoinPaste(e.target.value)}
           placeholder={g.joinField}
-          className="min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+          className="min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
         />
         <button
           type="button"
           data-testid="platz-join-submit"
-          className="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
+          className="rounded-xl border border-border px-3 py-2 text-sm font-semibold text-foreground"
           onClick={() => {
-            if (!signedIn) {
-              setMsg(g.joinSignInFirst);
-              return;
-            }
             const parsed = parsePastedGroupJoin(joinPaste.trim());
             if (!joinPaste.trim()) {
               setMsg(g.joinEmpty);
@@ -523,11 +600,11 @@ export function RideGroupsPanel({
             return (
               <li
                 key={group.id}
-                className="rounded-xl border border-border px-3 py-2.5"
+                className="rounded-xl border border-border bg-surface px-4 py-3"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-sm font-semibold">{group.title}</p>
-                  <p className="shrink-0 text-[11px] font-semibold text-text-secondary">
+                  <p className="truncate text-base font-bold">{group.title}</p>
+                  <p className="shrink-0 text-[11px] font-medium text-text-secondary">
                     {group.visibility === "public" ? g.visPublic : g.visPrivate}
                   </p>
                 </div>
@@ -535,18 +612,21 @@ export function RideGroupsPanel({
                   <button
                     type="button"
                     data-testid={`platz-group-time-${group.id}`}
-                    className="mt-1.5 w-full rounded-lg bg-surface px-2.5 py-2 text-left"
+                    className="mt-1.5 w-full text-left"
                     onClick={() => {
                       if (extendFor === group.id) {
                         setExtendFor(null);
                         return;
                       }
                       setExtendFor(group.id);
-                      setExtendEndLocal(
-                        toDateTimeLocalValue(
-                          new Date(Date.now() + 60 * 60 * 1000),
-                        ),
-                      );
+                      const now = new Date();
+                      const end = new Date(group.startWindowEnd);
+                      const cap = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+                      const seed =
+                        end.getTime() > now.getTime() && end.getTime() <= cap.getTime()
+                          ? end
+                          : new Date(now.getTime() + 60 * 60 * 1000);
+                      setExtendEndLocal(toDateTimeLocalValue(seed));
                     }}
                   >
                     <p className="text-sm font-semibold">{when}</p>
@@ -620,6 +700,10 @@ export function RideGroupsPanel({
                     <input
                       type="datetime-local"
                       aria-label={g.extendCustomEnd}
+                      min={toDateTimeLocalValue(new Date())}
+                      max={toDateTimeLocalValue(
+                        new Date(Date.now() + 12 * 60 * 60 * 1000),
+                      )}
                       className="rounded-lg border border-border bg-background px-2 py-1 text-xs"
                       value={extendEndLocal}
                       onChange={(e) => setExtendEndLocal(e.target.value)}
@@ -653,17 +737,17 @@ export function RideGroupsPanel({
                 {host ? (
                   <button
                     type="button"
-                    className="mt-2 w-full rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                    className="mt-3 w-full rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-on-accent"
                     onClick={() => void shareInvite(group, setMsg, g, lang, savedRoutes)}
                   >
                     {g.invite}
                   </button>
                 ) : null}
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                   {showCode ? (
                     <span
                       data-testid={`platz-host-code-${group.id}`}
-                      className="font-mono text-xs font-semibold tracking-wide"
+                      className="font-mono text-[11px] font-semibold tracking-wide text-text-secondary"
                     >
                       {group.joinCode}
                     </span>
@@ -671,7 +755,7 @@ export function RideGroupsPanel({
                   {host || group.onServer ? (
                     <button
                       type="button"
-                      className="text-xs font-medium text-text-secondary"
+                      className="text-[11px] font-medium text-text-secondary"
                       onClick={() => void copyInvite(group, setMsg, g, savedRoutes)}
                     >
                       {showCode ? g.copyLink : g.shareLink}
@@ -680,7 +764,7 @@ export function RideGroupsPanel({
                   {showCode ? (
                     <button
                       type="button"
-                      className="text-xs font-medium text-text-secondary"
+                      className="text-[11px] font-medium text-text-secondary"
                       onClick={() => void copyJoinCode(group, setMsg, g)}
                     >
                       {g.copyCode}
@@ -688,7 +772,7 @@ export function RideGroupsPanel({
                   ) : null}
                   <button
                     type="button"
-                    className="text-xs font-medium text-text-secondary"
+                    className="text-[11px] font-medium text-text-secondary"
                     onClick={() => void leaveGroupAsync(group.id)}
                   >
                     {host ? g.dissolve : g.leave}
@@ -696,7 +780,7 @@ export function RideGroupsPanel({
                   {host ? (
                     <button
                       type="button"
-                      className="text-xs font-medium text-text-secondary"
+                      className="text-[11px] font-medium text-text-secondary"
                       onClick={() =>
                         void setVisibilityAsync(
                           group.id,
@@ -711,8 +795,8 @@ export function RideGroupsPanel({
                   ) : null}
                 </div>
                 {group.onServer ? (
-                  <label className="mt-2 flex items-center justify-between gap-2 text-xs">
-                    <span>{g.pinsHud}</span>
+                  <label className="mt-2 flex items-center justify-between gap-2 text-[12px] text-text-secondary">
+                    <span>{g.shareInRide}</span>
                     <input
                       type="checkbox"
                       checked={Boolean(me?.liveOptIn)}
@@ -730,18 +814,30 @@ export function RideGroupsPanel({
           {listedPublic.map((group) => (
             <li
               key={`pub-${group.id}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{group.title}</p>
-                <p className="text-xs text-text-secondary">{g.visPublic}</p>
+                <p className="truncate text-base font-bold">{group.title}</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {formatPlatzGroupWhen(
+                    group.startWindowStart,
+                    group.startWindowEnd,
+                    lang,
+                  )}
+                </p>
+                <p className="text-[11px] text-text-secondary">{g.visPublic}</p>
               </div>
               <button
                 type="button"
-                className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                className="shrink-0 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
                 onClick={() => {
                   if (!signedIn) {
-                    setMsg(g.joinSignInFirst);
+                    const out = joinListedLocal(group);
+                    setMsg(
+                      "error" in out
+                        ? platzNote(out.error, lang)
+                        : g.joinNotOnServer(g.joinSignInFirst),
+                    );
                     return;
                   }
                   void joinFromInviteAsync(group.id).then((out) => {
@@ -765,6 +861,8 @@ export function RideGroupsPanel({
           ))}
         </ul>
       )}
+        </>
+      ) : null}
     </section>
   );
 }

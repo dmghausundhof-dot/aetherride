@@ -18,6 +18,7 @@ export type DiscoverCopy = {
   planRouteCta: string;
   filter: string;
   distance: string;
+  around: string;
   aroundKm: (km: number) => string;
   showTours: (n: number) => string;
   catalogTours: (n: number) => string;
@@ -45,14 +46,15 @@ export type DiscoverCopy = {
 const DE: DiscoverCopy = {
   timeWindow: "Zeitfenster · ",
   minutes: (n) => `${n} min`,
-  sportPref: "Disziplin (Präferenz)",
+  sportPref: "Disziplin",
   loop: "Rundkurs",
   mappe: "Mappe",
   reset: "Zurücksetzen",
   searchHint: "Ort oder Tour",
-  planRouteCta: "Navigieren",
+  planRouteCta: "Planen",
   filter: "Filter",
   distance: "Distanz",
+  around: "Umkreis",
   aroundKm: (km) => `in ${km} km`,
   showTours: (n) => (n === 1 ? "1 Tour zeigen" : `${n} Touren zeigen`),
   catalogTours: (n) => (n === 1 ? "Katalog 1 Tour" : `Katalog ${n} Touren`),
@@ -95,14 +97,15 @@ const DE: DiscoverCopy = {
 const EN: DiscoverCopy = {
   timeWindow: "Time window · ",
   minutes: (n) => `${n} min`,
-  sportPref: "Discipline (preference)",
+  sportPref: "Discipline",
   loop: "Loop",
   mappe: "Die Mappe",
   reset: "Reset",
   searchHint: "Place or tour",
-  planRouteCta: "Navigate",
+  planRouteCta: "Plan",
   filter: "Filter",
   distance: "Distance",
+  around: "Around",
   aroundKm: (km) => `within ${km} km`,
   showTours: (n) => (n === 1 ? "Show 1 tour" : `Show ${n} tours`),
   catalogTours: (n) => (n === 1 ? "Catalog 1 tour" : `Catalog ${n} tours`),
@@ -144,14 +147,15 @@ const EN: DiscoverCopy = {
 const FR: DiscoverCopy = {
   timeWindow: "Fenêtre · ",
   minutes: (n) => `${n} min`,
-  sportPref: "Discipline (préférence)",
+  sportPref: "Discipline",
   loop: "Boucle",
   mappe: "Die Mappe",
   reset: "Réinitialiser",
   searchHint: "Lieu ou tour",
-  planRouteCta: "Naviguer",
+  planRouteCta: "Planifier",
   filter: "Filtres",
   distance: "Distance",
+  around: "Autour",
   aroundKm: (km) => `dans ${km} km`,
   showTours: (n) => (n === 1 ? "Afficher 1 tour" : `Afficher ${n} tours`),
   catalogTours: (n) =>
@@ -198,14 +202,15 @@ const FR: DiscoverCopy = {
 const IT: DiscoverCopy = {
   timeWindow: "Finestra · ",
   minutes: (n) => `${n} min`,
-  sportPref: "Disciplina (preferenza)",
+  sportPref: "Disciplina",
   loop: "Anello",
   mappe: "Die Mappe",
   reset: "Azzera",
   searchHint: "Luogo o tour",
-  planRouteCta: "Naviga",
+  planRouteCta: "Pianifica",
   filter: "Filtri",
   distance: "Distanza",
+  around: "Dintorni",
   aroundKm: (km) => `entro ${km} km`,
   showTours: (n) => (n === 1 ? "Mostra 1 tour" : `Mostra ${n} tour`),
   catalogTours: (n) => (n === 1 ? "Catalogo 1 tour" : `Catalogo ${n} tour`),
@@ -248,14 +253,15 @@ const IT: DiscoverCopy = {
 const NL: DiscoverCopy = {
   timeWindow: "Tijdvenster · ",
   minutes: (n) => `${n} min`,
-  sportPref: "Discipline (voorkeur)",
+  sportPref: "Discipline",
   loop: "Lus",
   mappe: "Die Mappe",
   reset: "Resetten",
   searchHint: "Plaats of tocht",
-  planRouteCta: "Navigeren",
+  planRouteCta: "Plannen",
   filter: "Filter",
   distance: "Afstand",
+  around: "Omgeving",
   aroundKm: (km) => `binnen ${km} km`,
   showTours: (n) => (n === 1 ? "1 tocht tonen" : `${n} tochten tonen`),
   catalogTours: (n) => (n === 1 ? "Catalogus 1 tocht" : `Catalogus ${n} tochten`),

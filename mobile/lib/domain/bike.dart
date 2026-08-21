@@ -1,5 +1,7 @@
 // Domain-Spiegel von src/types/garage.ts (Spec F-GAR / DM-02…DM-07).
 
+import 'bike_owner.dart';
+
 enum BikeCategory {
   mtbTrail,
   mtbAm,
@@ -75,6 +77,7 @@ class Bike {
     this.hours = 0,
     this.isActive = false,
     this.isEbike = false,
+    this.owner = BikeOwner.empty,
   });
 
   final String id;
@@ -94,6 +97,9 @@ class Bike {
 
   /// Explizites Assist-Flag (Web-Parität). Legacy: auch über Kategorie.
   final bool isEbike;
+
+  /// Rahmennummer, Kauf, Versicherung — lokal, nicht öffentlich.
+  final BikeOwner owner;
 
   /// true bei Flag oder kanonischer E-Kategorie (`emtb` / `etrekking`).
   bool get hasElectricAssist =>
@@ -154,6 +160,7 @@ class Bike {
     double? hours,
     bool? isActive,
     bool? isEbike,
+    BikeOwner? owner,
   }) {
     return Bike(
       id: id,
@@ -171,6 +178,7 @@ class Bike {
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
       isEbike: isEbike ?? this.isEbike,
+      owner: owner ?? this.owner,
     );
   }
 }

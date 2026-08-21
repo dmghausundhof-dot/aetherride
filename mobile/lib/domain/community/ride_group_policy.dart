@@ -110,19 +110,42 @@ abstract final class RideGroupPolicy {
   }
 
   static const _weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  static const _weekdaysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _weekdaysFr = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+  static const _weekdaysIt = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'];
+  static const _weekdaysNl = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
 
-  /// Host allein (keine anderen im Roster) → Einladen, sonst Losfahren.
+  /// Locale-feste Wochentage — kein DateFormat, keine falsche EN-Locale.
+  static String weekdayShortForLocale(DateTime local, String localeName) {
+    final lang = localeName.split(RegExp('[_-]')).first.toLowerCase();
+    final days = switch (lang) {
+      'de' => _weekdays,
+      'fr' => _weekdaysFr,
+      'it' => _weekdaysIt,
+      'nl' => _weekdaysNl,
+      _ => _weekdaysEn,
+    };
+    return days[local.toLocal().weekday - 1];
+  }
+
+  /// Host allein und Fenster noch zu → Einladen.
+  /// Jemand dabei oder Fenster offen → Losfahren.
   static bool platzPrimaryIsInvite({
     required bool selfIsHost,
     required int otherMemberCount,
+    bool windowOpen = false,
   }) =>
-      selfIsHost && otherMemberCount <= 0;
+      selfIsHost && otherMemberCount <= 0 && !windowOpen;
 
   static String formatDurationHours(num hours, {String decimalSep = '.'}) {
     final h = hours.toDouble();
     if (!h.isFinite || h <= 0) return '0 h';
-    if (h >= 1 && (h - h.round()).abs() < 0.05) return '${h.round()} h';
-    return '${h.toStringAsFixed(1).replaceAll('.', decimalSep)} h';
+    final mins = (h * 60).round();
+    if (mins < 60) return '$mins Min';
+    if (mins % 60 == 0) return '${mins ~/ 60} h';
+    final value = mins / 60.0;
+    final places = mins % 60 == 30 ? 1 : 2;
+    return '${value.toStringAsFixed(places).replaceAll('.', decimalSep)} h';
   }
 
   static String formatClock(DateTime local) {

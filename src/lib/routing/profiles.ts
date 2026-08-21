@@ -695,6 +695,8 @@ export type ClientRouteResult = {
   steps?: import("@/lib/routing/navSteps").NavStep[];
   variant?: string;
   variantApplied?: boolean;
+  /** Closed OSM round-trip from /api/route/loop. */
+  loop?: boolean;
 };
 
 export type RequestRouteFailure = {
@@ -957,8 +959,8 @@ export type GraphhopperCustomModel = {
 };
 
 /**
- * GraphHopper flexible custom_model — only sent when
- * GRAPHHOPPER_ALLOW_CUSTOM_MODEL=1 (paid plans). Free packages reject it.
+ * GraphHopper flexible custom_model — sent by default, fail-open on free
+ * packages (GRAPHHOPPER_ALLOW_CUSTOM_MODEL=0 disables the try).
  */
 export function graphhopperCustomModel(
   profile: RoutingProfile
@@ -972,6 +974,10 @@ export function graphhopperCustomModel(
   ) {
     return {
       priority: [
+        {
+          if: "road_class == TRACK && (surface == GRASS || surface == DIRT || surface == GROUND || surface == EARTH)",
+          multiply_by: 0.12,
+        },
         { if: "road_class == PATH || road_class == TRACK", multiply_by: 2.0 },
         { if: "road_class == CYCLEWAY", multiply_by: 1.15 },
         {
@@ -984,6 +990,10 @@ export function graphhopperCustomModel(
   if (profile === "gravel") {
     return {
       priority: [
+        {
+          if: "road_class == TRACK && (surface == GRASS || surface == DIRT || surface == GROUND || surface == EARTH)",
+          multiply_by: 0.12,
+        },
         { if: "road_class == TRACK", multiply_by: 1.8 },
         { if: "road_class == PATH", multiply_by: 1.25 },
         { if: "road_class == CYCLEWAY", multiply_by: 1.2 },
@@ -1010,12 +1020,42 @@ export function graphhopperCustomModel(
       ],
     };
   }
-  // urban / ebike / default: cycleway + bike network first
+  // urban / ebike / default: streets + cycleways, not farm tracks
   return {
     priority: [
       { if: "road_class == CYCLEWAY", multiply_by: 2.0 },
       { if: "bike_network != MISSING", multiply_by: 1.35 },
+      {
+        if: "road_class == TRACK && (surface == GRASS || surface == DIRT || surface == GROUND || surface == EARTH)",
+        multiply_by: 0.08,
+      },
+      {
+        if: "road_class == PATH && (surface == GRASS || surface == DIRT || surface == GROUND || surface == EARTH)",
+        multiply_by: 0.1,
+      },
+      { if: "road_class == TRACK", multiply_by: 0.12 },
       { if: "road_class == PRIMARY || road_class == TRUNK", multiply_by: 0.5 },
     ],
   };
+}
+
+/** Default: try custom_model. Free GH rejects once; env 0/false skips. */
+export function graphhopperCustomModelShouldSend(opts: {
+  env?: string | null;
+  rejectedThisProcess?: boolean;
+}): boolean {
+  const v = (opts.env ?? "").trim().toLowerCase();
+  if (v === "0" || v === "false" || v === "off" || v === "no") return false;
+  if (opts.rejectedThisProcess) return false;
+  return true;
+}
+
+export function isGraphhopperCustomModelRejected(
+  message?: string | null,
+): boolean {
+  const m = (message ?? "").toLowerCase();
+  if (!m) return false;
+  return /custom[_\s-]?model|not allowed for your subscription|flexible routing/.test(
+    m,
+  );
 }

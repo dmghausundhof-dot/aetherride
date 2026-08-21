@@ -142,7 +142,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.textContaining('Stell ein Rad'), findsOneWidget);
+    expect(find.textContaining('Lege ein Rad'), findsOneWidget);
     expect(find.byKey(const Key('shop-merch')), findsNothing);
     expect(find.text('Rad anlegen'), findsOneWidget);
   });

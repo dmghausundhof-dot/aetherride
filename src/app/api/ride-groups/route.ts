@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  canJoinRideGroup,
   isRideGroupExtendBody,
   parseGroupListing,
   parseMeetingPoint,
@@ -111,9 +112,10 @@ export async function GET(req: Request) {
           { status: 501 }
         );
       }
-      const mapped = (rows ?? []).map((g) =>
-        rowToRideGroup(g as RideGroupSqlRow)
-      );
+      const nowIso = new Date().toISOString();
+      const mapped = (rows ?? [])
+        .map((g) => rowToRideGroup(g as RideGroupSqlRow))
+        .filter((g) => canJoinRideGroup(nowIso, g.startWindowEnd, g.status));
       const ids = mapped.map((g) => g.id);
       const counts: Record<string, number> = {};
       if (ids.length > 0) {

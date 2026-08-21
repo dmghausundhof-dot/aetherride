@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Kein Track">
+  <title>FlowLine  noch kein Track</title>
+  <desc>Gestrichelte unvollst�ndige Linie. Kein erfundener Track.</desc>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#121215"/>
+  <path d="M12 44 C18 38 22 28 30 26 C38 24 42 32 46 30 C50 28 52 22 56 18"
+        fill="none" stroke="#484854" stroke-width="2.4" stroke-linecap="round"
+        stroke-dasharray="3.2 4.2"/>
+  <circle cx="12" cy="44" r="2.4" fill="#484854"/>
+  <circle cx="56" cy="18" r="2.2" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-dasharray="1.4 1.6"/>
+</svg>

@@ -10,6 +10,7 @@ import {
   catalogStatus,
   manifestHasFileEntries,
   mergeCatalogPreferReady,
+  mergeCatalogUnion,
   parsePublishedCatalog,
   pickPreferredManifest,
   publicOfflinePackObjectUrl,
@@ -130,6 +131,7 @@ const rows: OfflineCatalogPack[] = [
     downloadable: false,
     status: "stub",
     bytes: null,
+    graphBytes: null,
     cdn: null,
   },
   {
@@ -142,6 +144,7 @@ const rows: OfflineCatalogPack[] = [
     downloadable: true,
     status: "ready",
     bytes: 10_518_381,
+    graphBytes: null,
     cdn: null,
   },
 ];
@@ -178,6 +181,7 @@ const merged = mergeCatalogPreferReady(
       downloadable: false,
       status: "stub",
       bytes: null,
+      graphBytes: null,
       cdn: null,
     },
   ],
@@ -185,6 +189,44 @@ const merged = mergeCatalogPreferReady(
 );
 assert.equal(merged[0]!.downloadable, true);
 assert.equal(merged[0]!.bytes, 2595914);
+
+{
+  const unioned = mergeCatalogUnion(
+    [
+      {
+        id: "berlin",
+        name: "Berlin",
+        bbox: null,
+        builtAt: null,
+        engines: null,
+        hasManifest: true,
+        downloadable: true,
+        status: "ready",
+        bytes: 2_666_289,
+        graphBytes: 19_765_590,
+        cdn: null,
+      },
+    ],
+    [
+      {
+        id: "de-saarland",
+        name: "Saarland",
+        bbox: null,
+        builtAt: null,
+        engines: null,
+        hasManifest: true,
+        downloadable: true,
+        status: "ready",
+        bytes: 54_209_122,
+        graphBytes: null,
+        cdn: null,
+      },
+    ]
+  );
+  assert.equal(unioned.length, 2);
+  assert.ok(unioned.some((p) => p.id === "berlin" && p.downloadable));
+  assert.ok(unioned.some((p) => p.id === "de-saarland"));
+}
 assert.ok(
   applyPackCdn("aachen", stub).cdn?.baseUrl?.includes(
     "/storage/v1/object/public/offline-packs/aachen"
@@ -212,6 +254,7 @@ assert.equal(catalogStatus(stub, false), "stub");
       downloadable: true,
       status: "ready",
       bytes: 100,
+      graphBytes: null,
       cdn: null,
     },
     {
@@ -224,6 +267,7 @@ assert.equal(catalogStatus(stub, false), "stub");
       downloadable: false,
       status: "stub",
       bytes: null,
+      graphBytes: null,
       cdn: null,
     },
   ]);

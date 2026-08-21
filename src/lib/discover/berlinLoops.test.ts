@@ -7,7 +7,9 @@ import {
   berlinLoopSuggestions,
   berlinSixtyMinLoopSuggestions,
   DEMO_CITY_CHIPS,
+  parseSeedPoiStops,
 } from "./berlinLoops";
+import { rheinNeckarLoopSuggestions } from "./rheinNeckarLoops";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -83,6 +85,50 @@ assert(
     DEMO_CITY_CHIPS.some((c) => c.name === "Heidelberg") &&
     DEMO_CITY_CHIPS.some((c) => c.name === "Mannheim"),
   "Demo-Stadt chips include Berlin/HD/MA"
+);
+
+const tempel = all.find((r) => r.id === "seed-loop-tempelhofer-60");
+assert(tempel != null, "Tempelhofer in full seed list");
+assert(
+  (tempel!.poiStops?.length ?? 0) >= 2,
+  "Tempelhofer poi_stops survive seed mapping"
+);
+assert(
+  tempel!.poiStops!.every((p) => p.atMin > 0 && p.title.length > 0 && p.kind.length > 0),
+  "poi_stops have atMin/title/kind"
+);
+assert(
+  tempel!.poiStops!.some((p) => p.kind === "viewpoint" || p.kind === "cafe"),
+  "Tempelhofer keeps seed kinds"
+);
+const parsed = parseSeedPoiStops([
+  { at_min: 12, title: "See", kind: "see", why_good: "Water stop." },
+  { offset_min: 0, title: "Start", type: "trailhead" },
+]);
+assert(parsed.length === 2, "parseSeedPoiStops accepts at_min and offset_min");
+assert(parsed[0].atMin === 12 && parsed[1].atMin === 0, "offset aliases");
+assert(parsed[0].whyGood === "Water stop.", "why_good survives mapping");
+assert(
+  tempel!.poiStops!.some((p) => (p.whyGood?.length ?? 0) > 0),
+  "Tempelhofer keeps why_good"
+);
+
+const rnLoops = rheinNeckarLoopSuggestions([8.694, 49.409]);
+assert(rnLoops.length === 3, "RN loops catalog has three seeds");
+assert(
+  rnLoops.every((r) => (r.poiStops?.length ?? 0) >= 4),
+  "RN loops JSON keeps poi_stops"
+);
+assert(
+  rnLoops.every((r) => r.poiStops!.some((p) => (p.whyGood?.length ?? 0) > 0)),
+  "RN loops keep why_good"
+);
+
+const munich = all.find((r) => r.id === "seed-loop-munich-froettmaning-60");
+assert(Boolean(munich), "DACH Munich seed in catalog");
+assert(
+  (munich!.poiStops?.some((p) => (p.whyGood?.length ?? 0) > 0) ?? false),
+  "Munich Nähe seed keeps why_good"
 );
 
 console.log("berlinLoops.test.ts OK");

@@ -118,6 +118,24 @@ void main() {
       );
       expect(button.onPressed, isNull);
     });
+
+    testWidgets('street-net hint sits with chrome, not over the puck',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          RidePreStartChrome(
+            routeName: 'Spree',
+            onStart: () {},
+            netHint: const Text(
+              'Straßenkarte braucht Netz',
+              key: Key('ride-street-net-hint'),
+            ),
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('ride-street-net-hint')), findsOneWidget);
+      expect(find.byKey(const Key('ride-primary-start')), findsOneWidget);
+    });
   });
 
   group('RideNextTurnBanner (N-HUD-01)', () {

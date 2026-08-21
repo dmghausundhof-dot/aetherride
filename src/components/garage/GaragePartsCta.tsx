@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { RadGlyph } from "@/components/garage/RadGlyph";
 import { shopPartsHref } from "@/lib/shop/partsCatalog";
 import { isShopEnabled } from "@/lib/shop/shopEnabled";
 import { useAppStore } from "@/store/useAppStore";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { cn } from "@/lib/utils";
 
-/** Werkstatt → Laden. Ruhige Zeile, kein Banner, kein Grid, kein Preis. */
+/** Rad → Laden. Ruhige Zeile, kein Banner, kein Grid, kein Preis. */
 export function GaragePartsCta({
   bikeId,
   bikeName,
@@ -43,6 +43,7 @@ export function GaragePartsCta({
       )}
       data-testid={lookupOnly ? "garage-parts-lookup" : "garage-parts-cta"}
     >
+      <RadGlyph name="parts" size={16} className="shrink-0" />
       <span className="min-w-0 flex-1">
         <span className="font-semibold text-chrome">{title}</span>
         {!lookupOnly && bikeName ? (
@@ -52,10 +53,7 @@ export function GaragePartsCta({
           </span>
         ) : null}
       </span>
-      <ArrowUpRight
-        className="h-4 w-4 shrink-0 text-text-secondary"
-        aria-hidden
-      />
+      <RadGlyph name="stand" size={16} className="shrink-0 opacity-70" />
     </Link>
   );
 }

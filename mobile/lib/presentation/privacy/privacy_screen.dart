@@ -22,7 +22,6 @@ import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/privacy_zone_map.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
-import '../profile/hud_media_connection_tile.dart';
 import 'privacy_zone_map_screen.dart';
 
 ({String title, String body}) _consentCopy(
@@ -164,7 +163,8 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         setState(() => _message = l10n.privacyNoRideUpload);
         return;
       }
-      final r = await uploadRideToStrava(rides.first);
+      final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final r = await uploadRideToStrava(rides.first, zones: zones);
       if (mounted) setState(() => _message = r.message);
     } catch (e) {
       if (mounted) setState(() => _message = '$e');
@@ -260,6 +260,37 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     if (!mounted || zone == null) return;
     await ref.read(garageRepositoryProvider).upsertPrivacyZone(zone);
     await _load();
+  }
+
+  Future<void> _confirmDeleteZone(PrivacyZone zone) async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.privacyZoneDelete),
+          content: Text(loc.privacyZoneDeleteConfirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(loc.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(loc.delete),
+            ),
+          ],
+        );
+      },
+    );
+    if (ok != true || !mounted) return;
+    await ref.read(garageRepositoryProvider).removePrivacyZone(zone.id);
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.privacyZoneDeleted)),
+    );
   }
 
   Future<void> _sharePath(String path, {String? mime}) async {
@@ -365,7 +396,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         setState(() => _message = l10n.privacyNoRideExporting);
         return;
       }
-      final json = rideToStravaActivityJson(rides.first);
+      final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final json = rideToStravaActivityJson(
+        rideWithTrimmedTrack(rides.first, zones),
+      );
       final path = await _writeExport(
         'aetherride-strava-${rides.first.id.substring(0, 8)}.json',
         json,
@@ -424,6 +458,71 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.privacyHomePlacesTitle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _busy ? null : () => _openZoneEditor(),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(l10n.privacyZoneAdd),
+              ),
+            ],
+          ),
+          Text(
+            l10n.privacyZonesLead,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          if (_zones.isEmpty)
+            Text(
+              l10n.privacyNoZones,
+              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                l10n.privacyZonePhotoHint,
+                style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              ),
+            ),
+          for (final z in _zones)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(z.label),
+              subtitle: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: l10n.privacyZoneRadius(
+                        privacyZoneRadiusLabel(z.radiusM),
+                      ),
+                    ),
+                    const TextSpan(text: '\n'),
+                    TextSpan(
+                      text: privacyZoneCoordHint(z.lat, z.lng),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+              isThreeLine: true,
+              onTap: _busy ? null : () => _openZoneEditor(existing: z),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: l10n.privacyZoneDelete,
+                onPressed: _busy ? null : () => _confirmDeleteZone(z),
+              ),
+            ),
+          const SizedBox(height: 20),
           Text(
             l10n.privacyConsents,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -456,78 +555,6 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               onPressed: _busy ? null : _uploadChunks,
               child: Text(l10n.privacyUploadNow),
             ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.privacyHud,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const HudMediaConnectionTile(
-            copy: HudMediaConnectionCopy.privacy,
-            contentPadding: EdgeInsets.zero,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                l10n.privacyZones,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: _busy ? null : () => _openZoneEditor(),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(l10n.privacyZoneAdd),
-              ),
-            ],
-          ),
-          if (_zones.isEmpty)
-            Text(
-              l10n.privacyNoZones,
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
-            ),
-          for (final z in _zones)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(z.label),
-              subtitle: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: l10n.privacyZoneRadius(
-                        privacyZoneRadiusLabel(z.radiusM),
-                      ),
-                    ),
-                    const TextSpan(text: '\n'),
-                    TextSpan(
-                      text: privacyZoneCoordHint(z.lat, z.lng),
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                  ],
-                ),
-                style: const TextStyle(fontSize: 13, color: AppColors.muted),
-              ),
-              isThreeLine: true,
-              onTap: _busy ? null : () => _openZoneEditor(existing: z),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: l10n.privacyZoneDelete,
-                onPressed: () async {
-                  await ref
-                      .read(garageRepositoryProvider)
-                      .removePrivacyZone(z.id);
-                  await _load();
-                },
-              ),
-            ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.privacyFamilyHint,
-            style: const TextStyle(color: AppColors.muted, fontSize: 13),
-          ),
           const SizedBox(height: 20),
           Text(
             l10n.privacyExportTitle,
@@ -599,4 +626,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       ),
     );
   }
+}
+
+Future<void> openPrivacyScreen(BuildContext context) {
+  return Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => const PrivacyScreen()),
+  );
 }

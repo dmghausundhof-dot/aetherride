@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Trocken">
+  <title>FlowLine Himmel trocken</title>
+  <g fill="none" stroke="#7A8B73" stroke-width="1.7" stroke-linecap="round">
+    <path d="M12 3.2 V5.2"/>
+    <path d="M12 18.8 V20.8"/>
+    <path d="M3.2 12 H5.2"/>
+    <path d="M18.8 12 H20.8"/>
+    <path d="M5.8 5.8 L7.2 7.2"/>
+    <path d="M16.8 16.8 L18.2 18.2"/>
+    <path d="M18.2 5.8 L16.8 7.2"/>
+    <path d="M7.2 16.8 L5.8 18.2"/>
+  </g>
+  <circle cx="12" cy="12" r="3.6" fill="#FF6A00"/>
+</svg>

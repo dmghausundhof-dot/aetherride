@@ -141,12 +141,14 @@
         {
           "at_min": 15,
           "title": "Aussicht Rollfeld Nord",
-          "kind": "viewpoint"
+          "kind": "viewpoint",
+          "why_good": "North runway lookout on the Tempelhofer Feld."
         },
         {
           "at_min": 35,
           "title": "Café am Feld",
-          "kind": "cafe"
+          "kind": "cafe",
+          "why_good": "Coffee stop on the Feld loop."
         }
       ],
       "center": {

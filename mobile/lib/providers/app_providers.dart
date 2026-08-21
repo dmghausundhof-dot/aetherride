@@ -27,6 +27,7 @@ import '../domain/rider_profile.dart';
 import '../domain/saved_route.dart';
 import '../domain/setup.dart';
 import '../domain/tours/route_visibility.dart';
+import '../domain/tours/tour_listing.dart';
 import '../native/ble_core_channel.dart';
 import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
@@ -120,7 +121,15 @@ final platzInboxBadgeProvider = FutureProvider<int>((ref) async {
   }
   final inbox = [for (final r in all) if (ids.contains(r.tourId)) r];
   final seen = await RideGroupStore().inboxSeen();
-  final n = inbox.length - seen;
+  var extra = 0;
+  for (final s in saved) {
+    final listing = parseListingState(metas[s.id]?.listing);
+    if (listing == TourListingState.candidate ||
+        listing == TourListingState.reverted) {
+      extra++;
+    }
+  }
+  final n = inbox.length + extra - seen;
   return n < 0 ? 0 : n;
 });
 
@@ -131,7 +140,11 @@ final fleetDueCountProvider = FutureProvider<int>((ref) async {
   var n = 0;
   for (final bike in bikes) {
     final comps = await repo.listInstalled(bike.id);
-    n += listDueMaintenance(bike: bike, components: comps).length;
+    n += listDueMaintenance(
+      bike: bike,
+      components: comps,
+      logs: ref.read(userProfileStoreProvider).maintenanceLogs,
+    ).length;
   }
   return n;
 });
@@ -168,6 +181,13 @@ final setupRepositoryProvider = Provider<SetupRepository>((ref) {
 final currentSetupProvider =
     FutureProvider.family<BikeSetup?, String>((ref, bikeId) {
   return ref.watch(setupRepositoryProvider).getCurrent(bikeId);
+});
+
+/// Alle Versionen — Hof und Rad-Tab brauchen dieselbe Druck/SAG-Wahrheit.
+final setupsForBikeProvider =
+    FutureProvider.family<List<BikeSetup>, String>((ref, bikeId) async {
+  ref.watch(currentSetupProvider(bikeId));
+  return ref.watch(setupRepositoryProvider).listForBike(bikeId);
 });
 
 /// 'free' | 'pro' — from sync payload when present.

@@ -7,7 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../shell/hof_threshold_nav.dart';
 import 'ride_hud_island.dart';
 
-/// Eine Zeile während der Fahrt: wer teilt, Restzeit, Opt-out.
+/// Eine Statusleiste während der Fahrt: wer teilt, Restzeit, Opt-out.
 class RideGroupLiveBar extends StatelessWidget {
   const RideGroupLiveBar({
     super.key,
@@ -64,16 +64,21 @@ class RideGroupLiveBar extends StatelessWidget {
         );
       },
     );
+    const sep = ' · ';
+    final cut = line.lastIndexOf(sep);
+    final head = cut < 0 ? line : line.substring(0, cut);
+    final tail = cut < 0 ? left : line.substring(cut + sep.length);
     final sunlight = AppColors.isSunlight(context);
     final ink = sunlight ? AppColors.sunText : AppColors.chipIdleText;
+    final meta = AppColors.meta(context);
     return RideHudIsland(
       key: const Key('ride-group-live-bar'),
       onTap: () => _openRoster(context),
       padding: const EdgeInsets.fromLTRB(
         NavHudTokens.islandPadH,
-        NavHudTokens.islandPadV,
-        8,
-        NavHudTokens.islandPadV,
+        NavHudTokens.islandCompactPadV,
+        6,
+        NavHudTokens.islandCompactPadV,
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: NavHudTokens.islandHitDp),
@@ -81,27 +86,61 @@ class RideGroupLiveBar extends StatelessWidget {
           children: [
             Icon(
               Icons.pedal_bike_outlined,
-              size: 18,
-              color: snap.optIn ? AppColors.accent : AppColors.muted,
+              size: 16,
+              color: snap.optIn ? AppColors.chromeFill(context) : meta,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s),
             Expanded(
-              child: Text(
-                line,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: NavHudTokens.layerLabelDp,
-                  fontWeight: NavHudTokens.layerLabelWeight,
-                  height: 1.1,
-                  color: ink,
-                ),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      head,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: NavHudTokens.layerLabelDp,
+                        fontWeight: NavHudTokens.layerLabelWeight,
+                        height: 1.1,
+                        color: ink,
+                      ),
+                    ),
+                  ),
+                  if (tail.isNotEmpty) ...[
+                    Text(
+                      sep,
+                      style: TextStyle(
+                        fontSize: NavHudTokens.layerLabelDp,
+                        fontWeight: FontWeight.w500,
+                        color: meta,
+                      ),
+                    ),
+                    Flexible(
+                      child: Text(
+                        tail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: NavHudTokens.layerLabelDp,
+                          fontWeight: FontWeight.w500,
+                          height: 1.1,
+                          color: meta,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            Switch.adaptive(
-              key: const Key('ride-group-live-opt'),
-              value: snap.optIn,
-              onChanged: onToggleOptIn,
+            Transform.scale(
+              scale: 0.78,
+              alignment: Alignment.centerRight,
+              child: Switch.adaptive(
+                key: const Key('ride-group-live-opt'),
+                value: snap.optIn,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: onToggleOptIn,
+              ),
             ),
           ],
         ),
@@ -149,12 +188,18 @@ class RideGroupRosterSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final meta = AppColors.meta(context);
+    final quiet = TextButton.styleFrom(
+      alignment: Alignment.centerLeft,
+      foregroundColor: meta,
+      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+    );
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          20,
+          AppSpacing.xl,
           0,
-          20,
+          AppSpacing.xl,
           HofThresholdNav.sheetBottomInset(context),
         ),
         child: SingleChildScrollView(
@@ -162,129 +207,141 @@ class RideGroupRosterSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            Text(
-              snap.title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.rideGroupRosterTitle,
-              style: const TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-            const SizedBox(height: 10),
-            for (final m in snap.mates)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: InkWell(
-                  key: Key('ride-group-roster-${m.userId}'),
-                  onTap: m.self || onFriend == null
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          onFriend!(m);
-                        },
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: m.sharing
-                            ? AppColors.accent
-                            : AppColors.overlay,
-                        foregroundColor:
-                            m.sharing ? AppColors.onAccent : AppColors.muted,
-                        child: Text(
-                          friendPinInitials(m.label),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          m.label,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Text(
-                        _mateStatus(m, l10n),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                snap.title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.sheetInk(context),
                 ),
               ),
-            if (snap.isSession) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                snap.atCap
-                    ? l10n.rideTogetherFull
-                    : l10n.rideTogetherClosedHint,
-                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                l10n.rideGroupRosterTitle,
+                style: TextStyle(fontSize: 13, color: meta),
               ),
-              if (snap.joinCode != null && snap.joinCode!.isNotEmpty)
+              const SizedBox(height: AppSpacing.m),
+              for (final m in snap.mates)
                 Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    snap.joinCode!,
-                    key: const Key('ride-together-roster-code'),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2,
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                  child: InkWell(
+                    key: Key('ride-group-roster-${m.userId}'),
+                    onTap: m.self || onFriend == null
+                        ? null
+                        : () {
+                            Navigator.of(context).pop();
+                            onFriend!(m);
+                          },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: m.sharing
+                              ? AppColors.chromeFill(context)
+                              : AppColors.overlay,
+                          foregroundColor: m.sharing
+                              ? AppColors.inkOnChrome(context)
+                              : meta,
+                          child: Text(
+                            friendPinInitials(m.label),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.m),
+                        Expanded(
+                          child: Text(
+                            m.label,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.sheetInk(context),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _mateStatus(m, l10n),
+                          style: TextStyle(fontSize: 12, color: meta),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              if (onInvite != null && !snap.atCap)
-                OutlinedButton(
-                  key: const Key('ride-together-invite'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onInvite!();
-                  },
-                  child: Text(l10n.rideTogetherInvite),
+              if (snap.isSession) ...[
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  snap.atCap
+                      ? l10n.rideTogetherFull
+                      : l10n.rideTogetherClosedHint,
+                  style: TextStyle(fontSize: 13, color: meta),
                 ),
-            ],
-            if (onFrameAll != null || onExtend != null || onLeave != null) ...[
-              const SizedBox(height: 8),
-              if (onFrameAll != null)
-                OutlinedButton(
-                  key: const Key('ride-group-frame-all'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onFrameAll!();
-                  },
-                  child: Text(l10n.rideGroupFrameAll),
-                ),
-              if (onExtend != null && snap.selfIsHost)
-                OutlinedButton(
-                  key: const Key('ride-group-extend'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onExtend!();
-                  },
-                  child: Text(l10n.rideGroupExtend),
-                ),
-              if (onLeave != null)
-                TextButton(
-                  key: const Key('ride-group-leave'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onLeave!();
-                  },
-                  child: Text(
-                    snap.isSession
-                        ? l10n.platzLeave
-                        : (snap.selfIsHost ? l10n.platzDissolve : l10n.platzLeave),
+                if (snap.joinCode != null && snap.joinCode!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.s),
+                    child: Text(
+                      snap.joinCode!,
+                      key: const Key('ride-together-roster-code'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.6,
+                        color: AppColors.sheetInk(context),
+                      ),
+                    ),
                   ),
-                ),
+                if (onInvite != null && !snap.atCap)
+                  TextButton(
+                    key: const Key('ride-together-invite'),
+                    style: quiet,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onInvite!();
+                    },
+                    child: Text(l10n.rideTogetherInvite),
+                  ),
+              ],
+              if (onFrameAll != null || onExtend != null || onLeave != null) ...[
+                const SizedBox(height: AppSpacing.s),
+                if (onFrameAll != null)
+                  TextButton(
+                    key: const Key('ride-group-frame-all'),
+                    style: quiet,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onFrameAll!();
+                    },
+                    child: Text(l10n.rideGroupFrameAll),
+                  ),
+                if (onExtend != null && snap.selfIsHost)
+                  TextButton(
+                    key: const Key('ride-group-extend'),
+                    style: quiet,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onExtend!();
+                    },
+                    child: Text(l10n.rideGroupExtend),
+                  ),
+                if (onLeave != null)
+                  TextButton(
+                    key: const Key('ride-group-leave'),
+                    style: quiet,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onLeave!();
+                    },
+                    child: Text(
+                      snap.isSession
+                          ? l10n.platzLeave
+                          : (snap.selfIsHost
+                              ? l10n.platzDissolve
+                              : l10n.platzLeave),
+                    ),
+                  ),
+              ],
             ],
-          ],
-        ),
+          ),
         ),
       ),
     );

@@ -5,24 +5,36 @@ import '../../../l10n/app_localizations.dart';
 
 /// Drei Farbpunkte unter den Layer-Chips: Asphalt · Schotter · Pfad.
 class BrowseMapLegend extends StatelessWidget {
-  const BrowseMapLegend({super.key, this.visible = true});
+  const BrowseMapLegend({
+    super.key,
+    this.visible = true,
+    this.trailsOn = true,
+    this.waysOn = true,
+  });
 
   final bool visible;
+  final bool trailsOn;
+  final bool waysOn;
 
   @override
   Widget build(BuildContext context) {
     if (!visible) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
+    final swatches = <Widget>[
+      if (waysOn) _swatch(BrowseMapPaint.wayHex, l10n.browseMapLegendPaved),
+      if (trailsOn) _swatch(BrowseMapPaint.gravelHex, l10n.browseMapLegendGravel),
+      if (trailsOn) _swatch(BrowseMapPaint.trailHex, l10n.browseMapLegendTrail),
+    ];
+    if (swatches.isEmpty) return const SizedBox.shrink();
     return Padding(
       key: const Key('browse-map-legend'),
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
       child: Row(
         children: [
-          _swatch(BrowseMapPaint.wayHex, l10n.browseMapLegendPaved),
-          const SizedBox(width: 12),
-          _swatch(BrowseMapPaint.gravelHex, l10n.browseMapLegendGravel),
-          const SizedBox(width: 12),
-          _swatch(BrowseMapPaint.trailHex, l10n.browseMapLegendTrail),
+          for (var i = 0; i < swatches.length; i++) ...[
+            if (i > 0) const SizedBox(width: 12),
+            swatches[i],
+          ],
         ],
       ),
     );

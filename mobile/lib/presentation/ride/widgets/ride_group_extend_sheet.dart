@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/community/ride_group_policy.dart';
@@ -35,7 +34,7 @@ String formatRideGroupWhenLine({
     end: end,
     now: now,
     weekdayShort: (local) =>
-        DateFormat.E(l10n.localeName).format(local).replaceAll('.', ''),
+        RideGroupPolicy.weekdayShortForLocale(local, l10n.localeName),
     today: l10n.rideGroupWhenToday,
     tomorrow: l10n.rideGroupWhenTomorrow,
     other: l10n.rideGroupWhenWeekday,

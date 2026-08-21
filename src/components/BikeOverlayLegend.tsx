@@ -8,6 +8,7 @@ import {
   overlayLegendLabel,
 } from "@/lib/i18n/overlayCopy";
 import {
+  BIKE_OVERLAY_COLORS,
   BIKE_OVERLAY_SURFACE_LEGEND,
   overlayClassesForFamily,
   overlayLegendColor,
@@ -45,6 +46,8 @@ export function BikeOverlayLegend({
   overlayKind = "ways",
   onToggleVisible,
   onToggleClass,
+  farmTracksOn = true,
+  onToggleFarmTracks,
 }: {
   family: BikeOverlayFamily;
   visible: boolean;
@@ -54,6 +57,8 @@ export function BikeOverlayLegend({
   overlayKind?: "ways" | "mesh";
   onToggleVisible: () => void;
   onToggleClass: (cls: BikeOverlayClass) => void;
+  farmTracksOn?: boolean;
+  onToggleFarmTracks?: () => void;
 }) {
   const lang = useChromeLang();
   const o = overlayCopy(lang);
@@ -98,6 +103,27 @@ export function BikeOverlayLegend({
           {visible ? o.on : o.off}
         </button>
       </div>
+      {!mesh && onToggleFarmTracks ? (
+        <button
+          type="button"
+          data-testid="bike-overlay-farm-tracks"
+          className={`mt-1 flex w-full items-center justify-between gap-1.5 text-left ${
+            visible && farmTracksOn ? "opacity-100" : "opacity-40"
+          }`}
+          onClick={onToggleFarmTracks}
+        >
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-0.5 w-3.5 rounded-full"
+              style={{ background: BIKE_OVERLAY_COLORS.dirt }}
+            />
+            <span>{o.farmTracks}</span>
+          </span>
+          <span className="shrink-0 font-normal text-white/70">
+            {visible && farmTracksOn ? o.on : o.off}
+          </span>
+        </button>
+      ) : null}
       {ride && !mesh && expanded ? (
         <p className="mt-1 text-[9px] font-medium text-white/80">
           {ride.shortLabel}

@@ -4,6 +4,7 @@
  */
 
 import { categoryToBikeType } from "@/lib/catalog/slots";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 import type { Bike, Ride, SensorMetrics } from "@/types";
 
 function num(v: unknown, fallback = 0): number {
@@ -76,7 +77,7 @@ export function normalizeRide(raw: Ride | undefined | null): Ride | undefined {
     ...raw,
     startTime: start,
     distanceM: rideDistanceM(raw),
-    elevationGainM: rideElevationM(raw),
+    elevationGainM: honestClimbM(raw.track, rideElevationM(raw)),
     durationSec: rideDurationSec(raw),
     sportType: raw.sportType || "enduro",
     summaryMetrics: {

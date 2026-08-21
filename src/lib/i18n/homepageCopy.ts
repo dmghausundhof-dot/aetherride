@@ -109,7 +109,7 @@ const DE: HomepageCopy = {
     productMap: "Produktkarte",
     bikesTitle: "Für welche Räder",
     bikesLead:
-      "Eine Anwendung, vier Türen — nicht vier Apps. Sport-Filter auf der Karte, Setup in der Werkstatt.",
+      "Eine Anwendung, vier Türen — nicht vier Apps. Sport-Filter auf der Karte, Setup am Rad.",
     doorsTitle: "Vier Türen am Hof",
     doorsLead:
       "Der Hof ist der Stand. Alles andere ist eine Tür — nicht ein Stapel Karten. Ride ist kein Tab.",
@@ -145,7 +145,7 @@ const DE: HomepageCopy = {
       "Keine Store-Versprechen, keine erfundenen Adressen, kein Feed auf dem Hof.",
     faqPageMoreBefore: "Mehr Screens und Abläufe stehen unter",
     guidesIndexLead:
-      "Ratgeber für Rennrad, Gravel, MTB und E-Bike: Touren planen, Reichweite als Spanne, Setup nach Gewicht, der Hof mit vier Türen, Teilen per Link, Teile aus der Werkstatt. Kein Affiliate-Clickbait — was im Produkt fehlt, steht hier nicht als Versprechen.",
+      "Ratgeber für Rennrad, Gravel, MTB und E-Bike: Touren planen, Reichweite als Spanne, Setup nach Gewicht, der Hof mit vier Türen, Teilen per Link, Teile am Rad. Kein Affiliate-Clickbait — was im Produkt fehlt, steht hier nicht als Versprechen.",
     related: "Weiter",
   },
 };
@@ -154,9 +154,9 @@ const EN: HomepageCopy = {
   intro: {
     kicker: "What FlowLine is",
     title: "Outdoor cycling, without a timeline.",
-    lead: "FlowLine is the everyday app between a weeknight loop and a weekend stage. In the browser you plan, look after the bike, and share a Mappe. In the app you ride: HUD, GPS, offline, sensors.",
+    lead: "FlowLine is the everyday app between a weeknight loop and a weekend stage. In the browser you plan, look after the bike, and share a Mappe. In the app you ride: HUD, GPS, offline routing, sensors.",
     paragraphs: [
-      "Home is the stand — not a feed. Four doors: Home, Map, Platz, Workshop. Parts sit on the bike, not as a fifth tab. Ride is the orange button, not a fifth tab. What is missing stays empty: no dummy kilometres, no leaderboard, no second till in the browser.",
+      "Home is the stand — not a feed. Four doors: Home, Map, Tours, Bike. Parts sit on the bike, not as a fifth tab. Ride is the orange button, not a fifth tab. What is missing stays empty: no dummy kilometres, no leaderboard, no second till in the browser.",
       "Public tour pages are editorial ideas with a pin. The line appears when you plan — the Alster in Hamburg, not the Alps by default. Community sits on the tour: Stimmen, Mappe links, invite links. Public profiles only with opt-in, without GPS traces.",
     ],
   },
@@ -210,7 +210,7 @@ const EN: HomepageCopy = {
       href: "/garage",
       title: "Bike",
       kicker: "This bike",
-      body: "Park, setup, service intervals with a source. Bracketing and range spans are Pro. The shop is paused — the workshop stays without a till.",
+      body: "Add a bike, setup, service intervals with a source. Bracketing and range spans are Pro. The shop is paused — no second till.",
     },
   ],
   split: {
@@ -219,7 +219,7 @@ const EN: HomepageCopy = {
     webLead:
       "Inspiration, planning, care and sharing belong at the desk. The browser may stay empty where GPS and sensors belong.",
     appLead:
-      "On the road, a locked display, offline packs and a watch on the rider matter. There is no web dummy for that.",
+      "On the road, a locked display, offline routing and a watch on the rider matter. There is no web dummy for that.",
   },
   tours: {
     kicker: "At the gate",
@@ -246,7 +246,7 @@ const EN: HomepageCopy = {
     kicker: "Prices",
     title: "Free plans. Pro goes deeper.",
     lead: "Map, planning, one bike, app navigation: free. Multi-bike, bracketing, range spans and higher chat limits: Pro. Checkout in the profile, not in the middle of a ride. App store listings follow once they are live.",
-    free: "0 € — Home, Map, Platz, one bike, navigation in the app.",
+    free: "0 € — Home, Map, Tours, one bike, navigation in the app.",
     pro: "6.99 €/month or 59.99 €/year. Cancel in the portal or via Play.",
   },
   honesty: {
@@ -254,7 +254,7 @@ const EN: HomepageCopy = {
     title: "Complete where it stands — empty where it is missing.",
     lead: "A homepage must not pretend the shop is open or the store is already listed. Hence the honest status:",
     live: [
-      "Home, Map, planning, Platz, workshop in the browser",
+      "Home, Map, planning, Tours, Bike in the browser",
       "Editorial tours and regions in DACH",
       "Stimmen, Mappe links, editorial profiles",
       "Free and Pro described, checkout in the profile (Stripe)",
@@ -290,7 +290,7 @@ const EN: HomepageCopy = {
     },
     {
       title: "Offline",
-      body: "Map and routing packs without a network. Not useful in the browser.",
+      body: "Routing graph of the pack without a network. No country map, no Komoot Europe.",
     },
     {
       title: "Sensors & watch",
@@ -310,7 +310,7 @@ const EN: HomepageCopy = {
     {
       n: "2",
       title: "Bike at the stand",
-      body: "Park it in the workshop — or ride without a bike.",
+      body: "Add it at the stand — or ride without a bike.",
     },
     {
       n: "3",
@@ -332,7 +332,7 @@ const EN: HomepageCopy = {
     productMap: "Product map",
     bikesTitle: "Which bikes",
     bikesLead:
-      "One app, four doors — not four apps. Sport filters on the map, setup in the workshop.",
+      "One app, four doors — not four apps. Sport filters on the map, setup on the bike.",
     doorsTitle: "Four doors at Home",
     doorsLead:
       "Home is the stand. Everything else is a door — not a stack of cards. Ride is not a tab.",
@@ -368,7 +368,7 @@ const EN: HomepageCopy = {
       "No store promises, no invented addresses, no feed at Home.",
     faqPageMoreBefore: "More screens and flows are under",
     guidesIndexLead:
-      "Guides for road, gravel, MTB and e-bike: planning tours, range as a span, setup by weight, Home with four doors, sharing by link, parts from the workshop. No affiliate clickbait — what the product lacks is not promised here.",
+      "Guides for road, gravel, MTB and e-bike: planning tours, range as a span, setup by weight, Home with four doors, sharing by link, parts on the bike. No affiliate clickbait — what the product lacks is not promised here.",
     related: "Next",
   },
 };
@@ -377,9 +377,9 @@ const FR: HomepageCopy = {
   intro: {
     kicker: "Ce qu’est FlowLine",
     title: "Le vélo dehors, sans fil d’actualité.",
-    lead: "FlowLine est l’appli du quotidien, entre la boucle en semaine et l’étape du week-end. Dans le navigateur tu planifies, tu soignes le vélo et tu partages une Mappe. Dans l’appli tu roules : HUD, GPS, hors ligne, capteurs.",
+    lead: "FlowLine est l’appli du quotidien, entre la boucle en semaine et l’étape du week-end. Dans le navigateur tu planifies, tu soignes le vélo et tu partages une Mappe. Dans l’appli tu roules : HUD, GPS, routage hors ligne, capteurs.",
     paragraphs: [
-      "Home est le stand — pas un fil. Quatre portes : Home, Carte, Platz, Atelier. Les pièces tiennent au vélo, pas comme cinquième onglet. Ride est le bouton orange, pas un cinquième onglet. Ce qui manque reste vide : pas de kilomètres fictifs, pas de classement, pas de deuxième caisse dans le navigateur.",
+      "Home est le stand — pas un fil. Quatre portes : Home, Carte, Parcours, Vélo. Les pièces tiennent au vélo, pas comme cinquième onglet. Ride est le bouton orange, pas un cinquième onglet. Ce qui manque reste vide : pas de kilomètres fictifs, pas de classement, pas de deuxième caisse dans le navigateur.",
       "Les pages de sorties publiques sont des idées éditoriales avec une épingle. La ligne apparaît quand tu planifies — l’Alster à Hamburg, pas les Alpes par défaut. La communauté tient à la sortie : Stimmen, liens Mappe, liens d’invitation. Profils publics seulement avec opt-in, sans traces GPS.",
     ],
   },
@@ -433,7 +433,7 @@ const FR: HomepageCopy = {
       href: "/garage",
       title: "Vélo",
       kicker: "Ce vélo",
-      body: "Garer, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Le magasin est en pause — l’atelier reste sans caisse.",
+      body: "Ajouter, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Le magasin est en pause — pas de deuxième caisse.",
     },
   ],
   split: {
@@ -442,7 +442,7 @@ const FR: HomepageCopy = {
     webLead:
       "Inspiration, planification, entretien et partage appartiennent au bureau. Le navigateur peut rester vide là où GPS et capteurs ont leur place.",
     appLead:
-      "En route, un écran verrouillé, des packs hors ligne et une montre sur le cycliste comptent. Il n’y a pas de simulacre web pour ça.",
+      "En route, un écran verrouillé, le routage hors ligne et une montre sur le cycliste comptent. Il n’y a pas de simulacre web pour ça.",
   },
   tours: {
     kicker: "Devant la porte",
@@ -469,7 +469,7 @@ const FR: HomepageCopy = {
     kicker: "Prix",
     title: "Free planifie. Pro approfondit.",
     lead: "Carte, planification, un vélo, navigation dans l’appli : gratuit. Multi-vélo, bracketing, fourchettes d’autonomie et limites de chat plus hautes : Pro. Checkout dans le profil, pas au milieu de la sortie. Les listings store suivent dès qu’ils sont en ligne.",
-    free: "0 € — Home, Carte, Platz, un vélo, navigation dans l’appli.",
+    free: "0 € — Home, Carte, Parcours, un vélo, navigation dans l’appli.",
     pro: "6,99 €/mois ou 59,99 €/an. Résiliation dans le portail ou via Play.",
   },
   honesty: {
@@ -477,7 +477,7 @@ const FR: HomepageCopy = {
     title: "Complet là où c’est écrit — vide là où ça manque.",
     lead: "Une page d’accueil ne doit pas faire comme si le magasin était ouvert ou le store déjà listé. D’où l’état honnête :",
     live: [
-      "Home, Carte, planification, Platz, atelier dans le navigateur",
+      "Home, Carte, planification, Parcours, Vélo dans le navigateur",
       "Sorties et régions éditoriales en DACH",
       "Stimmen, liens Mappe, profils éditoriaux",
       "Free et Pro décrits, checkout dans le profil (Stripe)",
@@ -513,7 +513,7 @@ const FR: HomepageCopy = {
     },
     {
       title: "Hors ligne",
-      body: "Packs carte et routing sans réseau. Pas utile dans le navigateur.",
+      body: "Graphe de routage du pack sans réseau. Pas de carte pays, pas de Komoot Europe.",
     },
     {
       title: "Capteurs et montre",
@@ -533,7 +533,7 @@ const FR: HomepageCopy = {
     {
       n: "2",
       title: "Vélo au stand",
-      body: "Le garer à l’atelier — ou rouler sans vélo.",
+      body: "L’ajouter au stand — ou rouler sans vélo.",
     },
     {
       n: "3",
@@ -555,7 +555,7 @@ const FR: HomepageCopy = {
     productMap: "Carte produit",
     bikesTitle: "Pour quels vélos",
     bikesLead:
-      "Une appli, quatre portes — pas quatre applis. Filtres sport sur la carte, setup à l’atelier.",
+      "Une appli, quatre portes — pas quatre applis. Filtres sport sur la carte, setup sur le vélo.",
     doorsTitle: "Quatre portes à Home",
     doorsLead:
       "Home est le stand. Tout le reste est une porte — pas une pile de cartes. Ride n’est pas un onglet.",
@@ -591,7 +591,7 @@ const FR: HomepageCopy = {
       "Pas de promesses store, pas d’adresses inventées, pas de fil à Home.",
     faqPageMoreBefore: "Plus d’écrans et de parcours sous",
     guidesIndexLead:
-      "Guides pour la route, le gravel, le MTB et l’e-bike : planifier des sorties, autonomie en fourchette, setup selon le poids, Home avec quatre portes, partage par lien, pièces depuis l’atelier. Pas de clickbait affilié — ce qui manque au produit n’est pas promis ici.",
+      "Guides pour la route, le gravel, le MTB et l’e-bike : planifier des sorties, autonomie en fourchette, setup selon le poids, Home avec quatre portes, partage par lien, pièces sur le vélo. Pas de clickbait affilié — ce qui manque au produit n’est pas promis ici.",
     related: "Suite",
   },
 };
@@ -600,9 +600,9 @@ const IT: HomepageCopy = {
   intro: {
     kicker: "Cos’è FlowLine",
     title: "Ciclismo outdoor, senza timeline.",
-    lead: "FlowLine è l’app del quotidiano, tra il giro serale e la tappa del weekend. Nel browser pianifichi, curi la bici e condividi una Mappe. Nell’app pedali: HUD, GPS, offline, sensori.",
+    lead: "FlowLine è l’app del quotidiano, tra il giro serale e la tappa del weekend. Nel browser pianifichi, curi la bici e condividi una Mappe. Nell’app pedali: HUD, GPS, routing offline, sensori.",
     paragraphs: [
-      "Home è lo stand — non un feed. Quattro porte: Home, Mappa, Platz, Officina. I pezzi stanno sulla bici, non come quinta scheda. Ride è il pulsante arancione, non la quinta scheda. Ciò che manca resta vuoto: niente chilometri finti, niente classifica, niente seconda cassa nel browser.",
+      "Home è lo stand — non un feed. Quattro porte: Home, Mappa, Percorsi, Bici. I pezzi stanno sulla bici, non come quinta scheda. Ride è il pulsante arancione, non la quinta scheda. Ciò che manca resta vuoto: niente chilometri finti, niente classifica, niente seconda cassa nel browser.",
       "Le pagine pubbliche delle uscite sono idee editoriali con un pin. La linea nasce quando pianifichi — l’Alster ad Hamburg, non le Alpi di default. La community sta sull’uscita: Stimmen, link Mappe, link di invito. Profili pubblici solo con opt-in, senza tracce GPS.",
     ],
   },
@@ -656,7 +656,7 @@ const IT: HomepageCopy = {
       href: "/garage",
       title: "Bici",
       kicker: "Questa bici",
-      body: "Parcheggiare, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. Il negozio è in pausa — l’officina resta senza cassa.",
+      body: "Aggiungere, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. Il negozio è in pausa — niente seconda cassa.",
     },
   ],
   split: {
@@ -665,7 +665,7 @@ const IT: HomepageCopy = {
     webLead:
       "Ispirazione, pianificazione, cura e condivisione stanno alla scrivania. Il browser può restare vuoto dove GPS e sensori appartengono.",
     appLead:
-      "In strada contano un display bloccato, pack offline e un orologio sul ciclista. Non c’è un finto web per questo.",
+      "In strada contano un display bloccato, il routing offline e un orologio sul ciclista. Non c’è un finto web per questo.",
   },
   tours: {
     kicker: "Davanti al cancello",
@@ -692,7 +692,7 @@ const IT: HomepageCopy = {
     kicker: "Prezzi",
     title: "Free pianifica. Pro approfondisce.",
     lead: "Mappa, pianificazione, una bici, navigazione nell’app: gratis. Multi-bici, bracketing, fasce di autonomia e limiti chat più alti: Pro. Checkout nel profilo, non in mezzo all’uscita. I listing store arrivano quando sono live.",
-    free: "0 € — Home, Mappa, Platz, una bici, navigazione nell’app.",
+    free: "0 € — Home, Mappa, Percorsi, una bici, navigazione nell’app.",
     pro: "6,99 €/mese oppure 59,99 €/anno. Disdetta nel portale o via Play.",
   },
   honesty: {
@@ -700,7 +700,7 @@ const IT: HomepageCopy = {
     title: "Completo dove sta scritto — vuoto dove manca.",
     lead: "Una homepage non deve far finta che il negozio sia aperto o lo store già in elenco. Per questo lo stato onesto:",
     live: [
-      "Home, Mappa, pianificazione, Platz, officina nel browser",
+      "Home, Mappa, pianificazione, Percorsi, Bici nel browser",
       "Uscite e regioni editoriali in DACH",
       "Stimmen, link Mappe, profili editoriali",
       "Free e Pro descritti, checkout nel profilo (Stripe)",
@@ -736,7 +736,7 @@ const IT: HomepageCopy = {
     },
     {
       title: "Offline",
-      body: "Pack di mappe e routing senza rete. Nel browser non ha senso.",
+      body: "Grafo di routing del pack senza rete. Nessuna carta nazionale, niente Komoot Europa.",
     },
     {
       title: "Sensori e orologio",
@@ -756,7 +756,7 @@ const IT: HomepageCopy = {
     {
       n: "2",
       title: "Bici allo stand",
-      body: "Parcheggiarla in officina — o pedalare senza bici.",
+      body: "Aggiungerla allo stand — o pedalare senza bici.",
     },
     {
       n: "3",
@@ -778,7 +778,7 @@ const IT: HomepageCopy = {
     productMap: "Mappa prodotto",
     bikesTitle: "Per quali bici",
     bikesLead:
-      "Un’app, quattro porte — non quattro app. Filtri sport sulla mappa, setup in officina.",
+      "Un’app, quattro porte — non quattro app. Filtri sport sulla mappa, setup sulla bici.",
     doorsTitle: "Quattro porte a Home",
     doorsLead:
       "Home è lo stand. Tutto il resto è una porta — non una pila di schede. Ride non è una scheda.",
@@ -814,7 +814,7 @@ const IT: HomepageCopy = {
       "Niente promesse store, niente indirizzi inventati, niente feed a Home.",
     faqPageMoreBefore: "Altre schermate e flussi sotto",
     guidesIndexLead:
-      "Guide per strada, gravel, MTB ed e-bike: pianificare uscite, autonomia come fascia, setup in base al peso, Home con quattro porte, condivisione per link, pezzi dall’officina. Niente clickbait affiliato — ciò che manca al prodotto non è promesso qui.",
+      "Guide per strada, gravel, MTB ed e-bike: pianificare uscite, autonomia come fascia, setup in base al peso, Home con quattro porte, condivisione per link, pezzi sulla bici. Niente clickbait affiliato — ciò che manca al prodotto non è promesso qui.",
     related: "Avanti",
   },
 };
@@ -823,9 +823,9 @@ const NL: HomepageCopy = {
   intro: {
     kicker: "Wat FlowLine is",
     title: "Outdoor cycling, zonder tijdlijn.",
-    lead: "FlowLine is de dagelijkse app tussen de doordeweekse ronde en de weekendetappe. In de browser plan je, verzorg je de fiets en deel je een Mappe. In de app rijd je: HUD, GPS, offline, sensoren.",
+    lead: "FlowLine is de dagelijkse app tussen de doordeweekse ronde en de weekendetappe. In de browser plan je, verzorg je de fiets en deel je een Mappe. In de app rijd je: HUD, GPS, offline-routing, sensoren.",
     paragraphs: [
-      "Home is de stand — geen feed. Vier deuren: Home, Kaart, Platz, Werkplaats. Onderdelen zitten aan de fiets, niet als vijfde tab. Ride is de oranje knop, niet de vijfde tab. Wat ontbreekt blijft leeg: geen dummy-kilometers, geen klassement, geen tweede kassa in de browser.",
+      "Home is de stand — geen feed. Vier deuren: Home, Kaart, Tochten, Fiets. Onderdelen zitten aan de fiets, niet als vijfde tab. Ride is de oranje knop, niet de vijfde tab. Wat ontbreekt blijft leeg: geen dummy-kilometers, geen klassement, geen tweede kassa in de browser.",
       "Openbare tochtpagina’s zijn redactionele ideeën met een pin. De lijn ontstaat als je plant — de Alster in Hamburg, niet standaard de Alpen. Community hangt aan de tocht: Stimmen, Mappe-links, uitnodigingslinks. Publieke profielen alleen met opt-in, zonder GPS-sporen.",
     ],
   },
@@ -879,7 +879,7 @@ const NL: HomepageCopy = {
       href: "/garage",
       title: "Fiets",
       kicker: "Deze fiets",
-      body: "Stallen, setup, onderhoudsintervallen met bron. Bracketing en actieradius als interval zijn Pro. De winkel staat stil — de werkplaats blijft zonder kassa.",
+      body: "Toevoegen, setup, onderhoudsintervallen met bron. Bracketing en actieradius als interval zijn Pro. De winkel staat stil — geen tweede kassa.",
     },
   ],
   split: {
@@ -888,7 +888,7 @@ const NL: HomepageCopy = {
     webLead:
       "Inspiratie, plannen, onderhoud en delen horen aan het bureau. De browser mag leeg blijven waar GPS en sensoren thuishoren.",
     appLead:
-      "Onderweg tellen een vergrendeld scherm, offline-packs en een horloge op de renner. Daar is geen web-namaak voor.",
+      "Onderweg tellen een vergrendeld scherm, offline-routing en een horloge op de renner. Daar is geen web-namaak voor.",
   },
   tours: {
     kicker: "Bij de poort",
@@ -915,7 +915,7 @@ const NL: HomepageCopy = {
     kicker: "Prijzen",
     title: "Free plant. Pro gaat dieper.",
     lead: "Kaart, plannen, één fiets, app-navigatie: gratis. Multi-fiets, bracketing, actieradius als interval en hogere chatlimieten: Pro. Checkout in het profiel, niet midden in een tocht. Store-listings volgen zodra ze live zijn.",
-    free: "0 € — Home, Kaart, Platz, één fiets, navigatie in de app.",
+    free: "0 € — Home, Kaart, Tochten, één fiets, navigatie in de app.",
     pro: "6,99 €/maand of 59,99 €/jaar. Opzeggen in het portaal of via Play.",
   },
   honesty: {
@@ -923,7 +923,7 @@ const NL: HomepageCopy = {
     title: "Compleet waar het staat — leeg waar het ontbreekt.",
     lead: "Een homepage mag niet doen alsof de winkel open is of de store al gelist. Daarom de eerlijke stand:",
     live: [
-      "Home, Kaart, plannen, Platz, werkplaats in de browser",
+      "Home, Kaart, plannen, Tochten, Fiets in de browser",
       "Redactionele tochten en regio’s in DACH",
       "Stimmen, Mappe-links, redactionele profielen",
       "Free en Pro beschreven, checkout in het profiel (Stripe)",
@@ -959,7 +959,7 @@ const NL: HomepageCopy = {
     },
     {
       title: "Offline",
-      body: "Kaart- en routingpacks zonder netwerk. In de browser niet zinvol.",
+      body: "Routinggraaf van het pack zonder netwerk. Geen landkaart, geen Komoot-Europa.",
     },
     {
       title: "Sensoren & horloge",
@@ -979,7 +979,7 @@ const NL: HomepageCopy = {
     {
       n: "2",
       title: "Fiets aan de stand",
-      body: "Stallen in de werkplaats — of rijden zonder fiets.",
+      body: "Toevoegen aan de stand — of rijden zonder fiets.",
     },
     {
       n: "3",
@@ -1001,7 +1001,7 @@ const NL: HomepageCopy = {
     productMap: "Productkaart",
     bikesTitle: "Voor welke fietsen",
     bikesLead:
-      "Eén app, vier deuren — geen vier apps. Sportfilters op de kaart, setup in de werkplaats.",
+      "Eén app, vier deuren — geen vier apps. Sportfilters op de kaart, setup aan de fiets.",
     doorsTitle: "Vier deuren bij Home",
     doorsLead:
       "Home is de stand. Al het andere is een deur — geen stapel kaarten. Ride is geen tab.",
@@ -1037,7 +1037,7 @@ const NL: HomepageCopy = {
       "Geen store-beloftes, geen verzonnen adressen, geen feed bij Home.",
     faqPageMoreBefore: "Meer schermen en flows staan onder",
     guidesIndexLead:
-      "Guides voor race, gravel, MTB en e-bike: tochten plannen, actieradius als interval, setup naar gewicht, Home met vier deuren, delen via link, onderdelen uit de werkplaats. Geen affiliate-clickbait — wat het product mist, beloven we hier niet.",
+      "Guides voor race, gravel, MTB en e-bike: tochten plannen, actieradius als interval, setup naar gewicht, Home met vier deuren, delen via link, onderdelen aan de fiets. Geen affiliate-clickbait — wat het product mist, beloven we hier niet.",
     related: "Verder",
   },
 };

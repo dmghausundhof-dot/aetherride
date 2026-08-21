@@ -1,8 +1,13 @@
 "use client";
 
-import { Wrench, Package, ArrowRightLeft, Plus } from "lucide-react";
+import { RadGlyph } from "@/components/garage/RadGlyph";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { SLOT_GROUPS } from "@/types";
 import { slotLabel } from "@/lib/catalog/slots";
+import { slotGroupLabel } from "@/lib/i18n/slotCopy";
+import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
 import { getComponentModel, modelDisplayName } from "@/lib/catalog/components";
 import { addableSlotsFor, planDieBox, werkstattKindFor } from "@/lib/garage/dieBox";
 import type { Bike, ComponentSlot, BikeComponent, Ride } from "@/types";
@@ -45,6 +50,10 @@ export function GarageComponentsTab({
   reinstallComponent,
   moveComponent,
 }: Props) {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+  const tab = garageTabCopy(lang);
+  const dateLoc = chromeDateLocale(lang);
   const listed = planDieBox({ bike: selected }).onBike;
   const groups = SLOT_GROUPS.filter((g) =>
     g.slots.some((slot) => listed.some((c) => c.slot === slot))
@@ -59,19 +68,18 @@ export function GarageComponentsTab({
                 }
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm font-medium text-chrome hover:border-chrome/40"
               >
-                <Plus className="h-4 w-4" /> Teil selbst anlegen
+                <RadGlyph name="add" size={16} /> {copy.workshopAddPart}
               </button>
               {listed.length === 0 && (
                 <p className="text-sm text-text-secondary">
-                  Noch keine Teile. Katalog ist Suche — nichts muss vollständig
-                  sein.
+                  {copy.workshopPartsEmpty}
                 </p>
               )}
               {groups.map((group) => (
                   <section key={group.id}>
                     <h3 className="mb-2 flex items-center gap-2 font-semibold">
-                      <Wrench className="h-4 w-4 text-accent" />
-                      {group.label}
+                      <RadGlyph name="parts" size={16} />
+                      {slotGroupLabel(group.id, lang)}
                     </h3>
                     <div className="flex flex-col gap-2">
                       {group.slots.map((slot) => {
@@ -97,7 +105,7 @@ export function GarageComponentsTab({
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <div className="text-xs tracking-wide text-text-secondary">
-                                  {slotLabel(slot)}
+                                  {slotLabel(slot, lang)}
                                 </div>
                                 <div className="font-medium">
                                   {model
@@ -106,13 +114,13 @@ export function GarageComponentsTab({
                                       `${comp.manufacturer ?? ""} ${comp.model ?? ""}`}
                                 </div>
                                 <div className="mt-1 text-xs text-text-secondary">
-                                  Einbau{" "}
-                                  {new Date(comp.installedAt).toLocaleDateString(
-                                    "de-DE"
-                                  )}{" "}
-                                  · ≈ {usageKm.toFixed(0)} km Laufleistung
-                                  {!comp.componentModelId &&
-                                    " · selbst angelegt"}
+                                  {tab.installedOn(
+                                    new Date(comp.installedAt).toLocaleDateString(
+                                      dateLoc
+                                    ),
+                                    usageKm.toFixed(0)
+                                  )}
+                                  {!comp.componentModelId && tab.selfLogged}
                                 </div>
                               </div>
                             </div>
@@ -136,7 +144,7 @@ export function GarageComponentsTab({
                                 onClick={() => setInstallSlot(slot)}
                                 className="rounded-lg bg-muted px-2 py-1 text-xs"
                               >
-                                Ersetzen
+                                {tab.replace}
                               </button>
                               <button
                                 type="button"
@@ -145,7 +153,7 @@ export function GarageComponentsTab({
                                 }
                                 className="rounded-lg bg-muted px-2 py-1 text-xs"
                               >
-                                Ausbauen
+                                {tab.uninstall}
                               </button>
                               {bikes.length > 1 && (
                                 <div className="inline-flex items-center gap-1">
@@ -156,7 +164,7 @@ export function GarageComponentsTab({
                                       setMoveTargetId(e.target.value)
                                     }
                                   >
-                                    <option value="">Ziel-Bike…</option>
+                                    <option value="">{tab.moveTo}</option>
                                     {bikes
                                       .filter((b) => b.id !== selected.id)
                                       .map((b) => (
@@ -179,8 +187,8 @@ export function GarageComponentsTab({
                                     }}
                                     className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs disabled:opacity-40"
                                   >
-                                    <ArrowRightLeft className="h-3.5 w-3.5" />
-                                    Verschieben
+                                    <RadGlyph name="setup" size={14} />
+                                    {tab.move}
                                   </button>
                                 </div>
                               )}
@@ -194,12 +202,11 @@ export function GarageComponentsTab({
 
               <section>
                 <h3 className="mb-2 flex items-center gap-2 font-semibold">
-                  <Package className="h-4 w-4 text-accent" />
-                  Ersatzteil-Regal
+                  <RadGlyph name="box" size={16} />
+                  {tab.spareShelf}
                 </h3>
                 <p className="mb-2 text-xs text-text-secondary">
-                  Ausgebaute Teile bleiben hier — z. B. zweites Laufrad oder
-                  Trainingskette. Wiedereinbau ersetzt den aktiven Slot.
+                  {tab.spareHint}
                 </p>
                 <div className="flex flex-col gap-2">
                   {spareParts.map((comp) => {
@@ -212,7 +219,7 @@ export function GarageComponentsTab({
                         className="rounded-xl border border-dashed border-border bg-surface p-3"
                       >
                         <div className="text-xs tracking-wide text-text-secondary">
-                          {slotLabel(comp.slot)}
+                          {slotLabel(comp.slot, lang)}
                         </div>
                         <div className="font-medium">
                           {model
@@ -221,12 +228,13 @@ export function GarageComponentsTab({
                               `${comp.manufacturer ?? ""} ${comp.model ?? ""}`}
                         </div>
                         <div className="mt-1 text-xs text-text-secondary">
-                          Ausgebaut{" "}
-                          {comp.removedAt
-                            ? new Date(comp.removedAt).toLocaleDateString(
-                                "de-DE"
-                              )
-                            : ""}
+                          {tab.removedOn(
+                            comp.removedAt
+                              ? new Date(comp.removedAt).toLocaleDateString(
+                                  dateLoc
+                                )
+                              : ""
+                          )}
                         </div>
                         <button
                           type="button"
@@ -235,14 +243,14 @@ export function GarageComponentsTab({
                           }
                           className="mt-2 rounded-xl bg-accent px-2 py-1 text-xs font-semibold text-on-accent"
                         >
-                          Wieder einbauen
+                          {tab.reinstall}
                         </button>
                       </div>
                     );
                   })}
                   {spareParts.length === 0 && (
                     <p className="text-sm text-text-secondary">
-                      Regal leer — Teile ausbauen, um sie hier zu lagern.
+                      {tab.spareEmpty}
                     </p>
                   )}
                 </div>

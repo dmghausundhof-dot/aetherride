@@ -1,4 +1,3 @@
-// Früheres Komponenten-Hotspot-Schema (G-SCH-05) entfernt zugunsten von
-// [BikeOverviewCard]. Anchors/Mapper unter domain/garage/ bleiben für einen
-// optionalen späteren Schrauber-/Experten-Modus erhalten.
+// Früheres Listen-Schema und BikeOverviewCard entfernt zugunsten Die Box.
+// Tech-Klappe bleibt; Anchors/Mapper unter domain/garage/ für das Schema.
 export 'bike_overview.dart';

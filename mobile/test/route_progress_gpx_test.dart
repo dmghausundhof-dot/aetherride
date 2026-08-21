@@ -46,6 +46,8 @@ void main() {
     expect(t, isNotNull);
     expect(t!.name, 'Testtrail');
     expect(t.points.length, 2);
+    expect(t.points.first.length, 3);
+    expect(t.points.first[2], 800);
     expect(t.distanceKm, greaterThan(0));
   });
 

@@ -32,27 +32,32 @@
         {
           "offset_min": 8,
           "title": "St. Emmeram Bridge",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Iconic wooden Isar crossing that drops you straight onto the floodplain gravel paths."
         },
         {
           "offset_min": 20,
           "title": "Südliche Fröttmaninger Heide",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Wide heath reserve with rare flora and open sightlines toward the Allianz Arena."
         },
         {
           "offset_min": 32,
           "title": "Fröttmaninger Berg",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Former landfill hill with wind turbine and clear-day Alps panorama over Munich."
         },
         {
           "offset_min": 45,
           "title": "Allianz Arena",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Herzog & de Meuron’s glowing stadium is the landmark you circle on the gravel fringe."
         },
         {
           "offset_min": 57,
           "title": "Heilig-Kreuz-Kirche Fröttmaning",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Munich’s oldest surviving church building, last remnant of the abandoned village."
         }
       ],
       "center": {
@@ -504,27 +509,32 @@
         {
           "offset_min": 7,
           "title": "Prater Hauptallee",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Multi-kilometre car-free axis through the Green Prater, opened to the public by Joseph II."
         },
         {
           "offset_min": 19,
           "title": "Schweizerhaus",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Classic Prater beer garden famous for Stelzen and Erdäpfelpuffer under the chestnut trees."
         },
         {
           "offset_min": 30,
           "title": "Lusthaus",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Former imperial hunting pavilion at the end of Hauptallee, now a café-restaurant landmark."
         },
         {
           "offset_min": 41,
           "title": "Wallfahrtskirche Maria Grün",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Yellow pilgrimage chapel tucked in the Prater woods, a quiet detour off Aspernallee."
         },
         {
           "offset_min": 53,
           "title": "Donauinsel Südspitze",
-          "type": "water"
+          "type": "water",
+          "why_good": "Southern tip of Danube Island with Neue Donau swim spots and big-sky river views."
         }
       ],
       "center": {
@@ -1036,27 +1046,32 @@
         {
           "offset_min": 8,
           "title": "Hungerburgbahn / Hungerburg",
-          "type": "transit"
+          "type": "transit",
+          "why_good": "Funicular top station and natural MTB staging area above Innsbruck."
         },
         {
           "offset_min": 22,
           "title": "Arzler Alm",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Hut at ~1,067 m with terrace views over the Inn Valley and legendary dumpling stops."
         },
         {
           "offset_min": 35,
           "title": "Arzler Alm Trail entrance",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Marked legal singletrack start ~300 m east of the Alm toward Mühlauer Quelle."
         },
         {
           "offset_min": 48,
           "title": "Hungerburg Trail",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Short flow downhill near Hungerburg with optional doubles and Inn Valley vistas."
         },
         {
           "offset_min": 62,
           "title": "Nordkettenbahn Hungerburg",
-          "type": "transit"
+          "type": "transit",
+          "why_good": "Cable-car hub linking city riders to higher Nordkette options after the loop."
         }
       ],
       "center": {
@@ -1528,32 +1543,38 @@
         {
           "offset_min": 8,
           "title": "Kölner Dom",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Gothic cathedral start/finish and the city’s unmistakable skyline anchor."
         },
         {
           "offset_min": 19,
           "title": "Rheinboulevard (Deutz)",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Stepped riverside plaza with the classic Dom + Hohenzollernbrücke postcard view."
         },
         {
           "offset_min": 30,
           "title": "Rheinpark",
-          "type": "water"
+          "type": "water",
+          "why_good": "Broad parkland on the right bank with café stops and event lawns between Mülheim and Deutz."
         },
         {
           "offset_min": 40,
           "title": "Poller Wiesen",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Riverside meadows facing the Rheinauhafen Kranhäuser — prime picnic and sunset spot."
         },
         {
           "offset_min": 51,
           "title": "Rheinauhafen Kranhäuser",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Crane-house trio marking Cologne’s modern harbour skyline on the return bank."
         },
         {
           "offset_min": 62,
           "title": "Schokoladenmuseum",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Family-friendly museum stop at the north end of Rheinauhafen before the Dom finish."
         }
       ],
       "center": {
@@ -2061,27 +2082,32 @@
         {
           "offset_min": 7,
           "title": "Bürkliplatz",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Central lake plaza and bike-lane junction where Limmat meets Zürichsee."
         },
         {
           "offset_min": 17,
           "title": "Opernhaus Zürich / Sechseläutenplatz",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Landmark square on the east-shore start of the Utoquai ride."
         },
         {
           "offset_min": 28,
           "title": "Zürichhorn",
-          "type": "water"
+          "type": "water",
+          "why_good": "Park peninsula with open lake lawns and clear views toward the Alps and Uetliberg."
         },
         {
           "offset_min": 38,
           "title": "Chinagarten Zürich",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Gift garden from Kunming beside Zürichhorn; seasonal opening, tram stop Chinagarten."
         },
         {
           "offset_min": 48,
           "title": "Pavillon Le Corbusier",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Compact modernist pavilion next to the Chinese Garden on the Seefeld shore."
         }
       ],
       "center": {
@@ -7733,27 +7759,32 @@
         {
           "offset_min": 8,
           "title": "Fähre Konstanz–Meersburg (Staad)",
-          "type": "transit"
+          "type": "transit",
+          "why_good": "Year-round car ferry (~15 min crossing); bikes ride free on weekends and holidays."
         },
         {
           "offset_min": 18,
           "title": "Insel Mainau (gate / causeway)",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Famous Blumeninsel; bikes park at the entrance — walk-on visit optional."
         },
         {
           "offset_min": 25,
           "title": "Ruppaner Brauerei",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Lakeside Konstanz brewery on the Bodensee-Radweg between Staad and Egg."
         },
         {
           "offset_min": 32,
           "title": "Hörnle / Strandbad area",
-          "type": "water"
+          "type": "water",
+          "why_good": "Popular Konstanz swim and lakeshore hangout near the ferry approaches."
         },
         {
           "offset_min": 42,
           "title": "Alte Rheinbrücke Konstanz",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Historic Rhine bridge linking Altstadt to the Mainaustraße bike corridor."
         }
       ],
       "center": {

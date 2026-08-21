@@ -126,6 +126,31 @@ if (/Erwartet:|Grenzen:|Konfidenz:/.test(mapped.content + mapped.reasoning)) {
   throw new Error("structured fields must not be string-encoded");
 }
 
+const withTrack = analyzePostRide({
+  ride: {
+    ...ride,
+    track: [
+      { lat: 48.0, lng: 8.0, elev: 200, time: 0 },
+      { lat: 48.0 + 1000 / 111320, lng: 8.0, elev: 300, time: 240 },
+    ],
+  },
+  bike,
+  setup,
+});
+if (!withTrack.facts.some((f) => f.includes("hm ↑"))) {
+  throw new Error(`expected climb/descent fact, got ${withTrack.facts.join(" | ")}`);
+}
+const header = withTrack.facts[0];
+if (/\b800 hm\b/.test(header)) {
+  throw new Error(`header still uses naive elevationGainM: ${header}`);
+}
+if (!/\b1(00|01|02|03) hm\b/.test(header) && !/\b9\d hm\b/.test(header)) {
+  throw new Error(`header should use telemetry climb ~100, got ${header}`);
+}
+if (withTrack.facts.filter((f) => f.includes("hm ↑")).length !== 1) {
+  throw new Error(`climb belongs in the header only, got ${withTrack.facts.join(" | ")}`);
+}
+
 console.log("postRideAnalysis.test.ts OK", {
   suggestion: analysis.setupSuggestion.title,
   observations: analysis.observations.length,

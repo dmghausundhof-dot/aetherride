@@ -126,7 +126,8 @@ void main() {
       expect(
         hofGateEmptyTitle(
           honesty: pick.honesty,
-          wetClosed: 'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe',
+          wetClosed:
+              'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe',
           noLoop: 'Kein ehrlicher Trail-Rundkurs',
         ),
         'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe',
@@ -513,6 +514,111 @@ void main() {
         regionName: 'Karlsruhe / Hardt',
         packReady: false,
       );
+      expect(hint?.regionId, 'karlsruhe');
+      expect(hint?.regionName, 'Karlsruhe / Hardt');
+    });
+
+    test('envelope stubs stay quiet', () {
+      expect(
+        hofMissingPack(
+          regionId: 'de-bayern',
+          regionName: 'Bayern',
+          packReady: false,
+          isEnvelope: true,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('hofHintForLocation', () {
+    test('overlay city wins over a larger catalog pack', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: 'karlsruhe',
+        suggestedName: 'Karlsruhe / Hardt',
+        packReady: false,
+      );
+      expect(hint?.regionId, 'karlsruhe');
+    });
+
+    test('ready catalog pack wins over an overlay stub', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: 'rhein-neckar',
+        suggestedName: 'Rhein-Neckar / Heidelberg',
+        packReady: false,
+      );
+      expect(hint?.regionId, 'rhein-neckar');
+    });
+
+    test('overlay city is used when catalog has no suggestion', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: null,
+        suggestedName: null,
+        packReady: false,
+      );
+      expect(hint?.regionId, 'karlsruhe');
+    });
+
+    test('rural GPS uses the smallest ready catalog pack', () {
+      final hint = hofHintForLocation(
+        overlayId: null,
+        overlayName: null,
+        overlayIsEnvelope: false,
+        suggestedId: 'de-saarland',
+        suggestedName: 'Saarland',
+        packReady: false,
+      );
+      expect(hint?.regionId, 'de-saarland');
+      expect(hint?.regionName, 'Saarland');
+    });
+
+    test('envelope overlay falls through to a ready catalog pack', () {
+      final hint = hofHintForLocation(
+        overlayId: 'de-bayern',
+        overlayName: 'Bayern',
+        overlayIsEnvelope: true,
+        suggestedId: 'muenchen',
+        suggestedName: 'München & Umland',
+        packReady: false,
+      );
+      expect(hint?.regionId, 'muenchen');
+    });
+
+    test('ready pack stays quiet without a name', () {
+      expect(
+        hofHintForLocation(
+          overlayId: 'karlsruhe',
+          overlayName: 'Karlsruhe / Hardt',
+          overlayIsEnvelope: false,
+          suggestedId: 'de-saarland',
+          suggestedName: 'Saarland',
+          packReady: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('ready pack with a name is status, not a download', () {
+      final hint = hofHintForLocation(
+        overlayId: 'karlsruhe',
+        overlayName: 'Karlsruhe / Hardt',
+        overlayIsEnvelope: false,
+        suggestedId: 'de-saarland',
+        suggestedName: 'Saarland',
+        packReady: true,
+        readyId: 'karlsruhe',
+        readyName: 'Karlsruhe / Hardt',
+      );
+      expect(hint?.ready, isTrue);
       expect(hint?.regionId, 'karlsruhe');
       expect(hint?.regionName, 'Karlsruhe / Hardt');
     });

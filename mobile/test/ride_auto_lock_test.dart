@@ -39,6 +39,27 @@ void main() {
       );
     });
 
+    test('Lenker keep-screen-on does not cover the HUD while standing', () {
+      expect(
+        RideAutoLockPolicy.shouldArm(
+          riding: true,
+          paused: false,
+          speedKmh: 0,
+          keepScreenOn: true,
+        ),
+        isFalse,
+      );
+      expect(
+        RideAutoLockPolicy.shouldArm(
+          riding: true,
+          paused: true,
+          speedKmh: 0,
+          keepScreenOn: true,
+        ),
+        isTrue,
+      );
+    });
+
     test('does not arm while moving — nav HUD must stay visible', () {
       expect(
         RideAutoLockPolicy.shouldArm(
@@ -180,6 +201,30 @@ void main() {
 
       expect(find.text('Heidelberg — Neckarwiese'), findsOneWidget);
       expect(find.text(RideAutoLockOverlay.title), findsOneWidget);
+    });
+
+    testWidgets('long destination does not overflow the wake chip',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 800));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                RideAutoLockOverlay(
+                  backgroundColor: Colors.black,
+                  routeName:
+                      'Ahornweg, 12, 69168, Wiesloch, Baden-Württemberg, Deutschland',
+                  onUnlock: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text(RideAutoLockOverlay.action), findsOneWidget);
+      await tester.binding.setSurfaceSize(null);
     });
   });
 }

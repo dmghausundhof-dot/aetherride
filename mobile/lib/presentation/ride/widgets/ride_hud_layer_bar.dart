@@ -16,6 +16,7 @@ class RideHudLayerBar extends StatelessWidget {
     this.chassisLabel,
     this.onClose,
     this.closeLabel,
+    this.body,
   });
 
   final RideLiveLayer selected;
@@ -26,38 +27,57 @@ class RideHudLayerBar extends StatelessWidget {
   final VoidCallback? onClose;
   final String? closeLabel;
 
+  /// Daten / Fahrwerk — same island as the tabs, not a second overlay.
+  final Widget? body;
+
   @override
   Widget build(BuildContext context) {
+    final tabs = Row(
+      children: [
+        _seg(
+          context,
+          value: RideLiveLayer.map,
+          label: mapLabel,
+          icon: Icons.map_outlined,
+          keyName: 'ride-hud-layer-map',
+        ),
+        _seg(
+          context,
+          value: RideLiveLayer.data,
+          label: dataLabel,
+          icon: Icons.insights_outlined,
+          keyName: 'ride-hud-layer-data',
+        ),
+        if (chassisLabel != null)
+          _seg(
+            context,
+            value: RideLiveLayer.suspension,
+            label: chassisLabel!,
+            icon: Icons.tune,
+            keyName: 'ride-hud-layer-suspension',
+          ),
+        if (onClose != null) _close(context),
+      ],
+    );
     return RideHudIsland(
       key: const Key('ride-hud-layer-bar'),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          _seg(
-            context,
-            value: RideLiveLayer.map,
-            label: mapLabel,
-            icon: Icons.map_outlined,
-            keyName: 'ride-hud-layer-map',
-          ),
-          _seg(
-            context,
-            value: RideLiveLayer.data,
-            label: dataLabel,
-            icon: Icons.insights_outlined,
-            keyName: 'ride-hud-layer-data',
-          ),
-          if (chassisLabel != null)
-            _seg(
-              context,
-              value: RideLiveLayer.suspension,
-              label: chassisLabel!,
-              icon: Icons.tune,
-              keyName: 'ride-hud-layer-suspension',
+      padding: body == null
+          ? const EdgeInsets.all(4)
+          : const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      child: body == null
+          ? tabs
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                tabs,
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: body,
+                ),
+              ],
             ),
-          if (onClose != null) _close(context),
-        ],
-      ),
     );
   }
 

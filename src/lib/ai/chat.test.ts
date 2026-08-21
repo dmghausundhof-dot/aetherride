@@ -2,7 +2,12 @@
  * Regression: Numeric-Guard + Produktempfehlungen + Heatmap k.
  * npx tsx src/lib/ai/chat.test.ts
  */
-import { numericGuard, type RecommendationSet, buildChatRecommendation } from "./chat";
+import {
+  numericGuard,
+  type RecommendationSet,
+  buildChatRecommendation,
+  detectTool,
+} from "./chat";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { buildEstimatedAssistLog } from "@/lib/ebike/assistLog";
@@ -136,6 +141,68 @@ assert(
   !/iterable|typeerror/i.test(shop.rawAnswer),
   "product_search ohne setups kein Dump"
 );
+
+assert(detectTool("What’s due?") === "watch", "en watch");
+assert(detectTool("Qu'est-ce qui est dû ?") === "watch", "fr watch");
+assert(detectTool("Résumé de mes dernières sorties") === "ride_stats", "fr rides");
+assert(detectTool("Riassunto delle mie ultime uscite") === "ride_stats", "it rides");
+assert(detectTool("Samenvatting van mijn laatste ritten") === "ride_stats", "nl rides");
+assert(detectTool("Quelle autonomie avec la batterie actuelle ?") === "range", "fr range");
+assert(detectTool("Wann ist es heute trockener?") === "ride_window", "de window");
+assert(detectTool("When is it drier today?") === "ride_window", "en window");
+
+const windowSet: RecommendationSet = {
+  toolName: "ride_window",
+  facts: ["heute 16–18 Uhr trockener"],
+  numbers: [
+    { value: 16, unit: "", source: "weather.window.start" },
+    { value: 18, unit: "", source: "weather.window.end" },
+  ],
+  rawAnswer: "heute 16–18 Uhr trockener",
+};
+const windowOk = numericGuard("heute 16–18 Uhr trockener", windowSet);
+assert(windowOk.ok && !windowOk.usedFallback, "window hours allowed");
+const windowMm = numericGuard("heute 12 mm nass", windowSet);
+assert(!windowMm.ok && windowMm.usedFallback, "invented mm rejected");
+
+const noGpsWindow = buildChatRecommendation("ride_window", "Fenster", {
+  bike,
+  bikes: [bike],
+  rides,
+  profile,
+});
+assert(!/\d/.test(noGpsWindow.rawAnswer) || noGpsWindow.numbers.length === 0, noGpsWindow.rawAnswer);
+assert(noGpsWindow.numbers.length === 0, "no GPS → no hours");
+
+const roadGpsWindow = buildChatRecommendation("ride_window", "Fenster", {
+  bike: { ...bike, category: "road", type: "road" },
+  bikes: [{ ...bike, category: "road", type: "road" }],
+  rides,
+  profile,
+  lat: 49.3,
+  lon: 8.6,
+  routingProfile: "road",
+});
+assert(roadGpsWindow.numbers.length === 0, "road → no hours");
+assert(/gravel|mtb/i.test(roadGpsWindow.rawAnswer), roadGpsWindow.rawAnswer);
+
+const statsEn = buildChatRecommendation("ride_stats", "rides", {
+  bike,
+  bikes: [bike],
+  rides,
+  profile,
+  lang: "en",
+});
+assert(statsEn.rawAnswer.includes("stored rides"), statsEn.rawAnswer);
+
+const noBikeEn = buildChatRecommendation("range", "range", {
+  bikes: [bike],
+  rides,
+  profile,
+  lang: "en",
+});
+assert(noBikeEn.rawAnswer.includes("e-bike") || noBikeEn.rawAnswer.includes("Range"), noBikeEn.rawAnswer);
+assert(statsEn.rawAnswer.includes("20.0") || statsEn.rawAnswer.includes("900"), statsEn.rawAnswer);
 
 console.log("chat.test.ts OK", {
   guardReject: bad.rejectedNumbers,

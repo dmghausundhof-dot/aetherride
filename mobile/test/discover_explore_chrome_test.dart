@@ -5,6 +5,73 @@ import 'package:aetherride_mobile/presentation/discover/discover_explore_chrome.
 
 void main() {
   group('DiscoverExploreChromeLogic', () {
+    test('around origin ignores DACH overview and low zoom', () {
+      expect(
+        DiscoverExploreChromeLogic.aroundOriginIsUsable(
+          hasGpsOrStart: true,
+          browseLat: 47.2,
+          browseLng: 6.5,
+          mapZoom: 5.5,
+        ),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.aroundOriginIsUsable(
+          hasGpsOrStart: false,
+          browseLat: 47.2,
+          browseLng: 6.5,
+          mapZoom: 12,
+        ),
+        isFalse,
+      );
+      expect(
+        DiscoverExploreChromeLogic.aroundOriginIsUsable(
+          hasGpsOrStart: false,
+          browseLat: 49.4,
+          browseLng: 8.67,
+          mapZoom: 5.5,
+        ),
+        isFalse,
+      );
+      expect(
+        DiscoverExploreChromeLogic.aroundOriginIsUsable(
+          hasGpsOrStart: false,
+          browseLat: 49.4,
+          browseLng: 8.67,
+          mapZoom: 12,
+        ),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.aroundOriginIsUsable(
+          hasGpsOrStart: false,
+          browseLat: null,
+          browseLng: null,
+          mapZoom: 12,
+        ),
+        isFalse,
+      );
+    });
+
+    test('legend swatches follow layer toggles', () {
+      expect(
+        DiscoverExploreChromeLogic.legendShowsPaved(waysOn: false),
+        isFalse,
+      );
+      expect(
+        DiscoverExploreChromeLogic.legendShowsTrailFamily(trailsOn: false),
+        isFalse,
+      );
+      expect(
+        DiscoverExploreChromeLogic.legendShowsPaved(waysOn: true),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.legendShowsTrailFamily(trailsOn: true),
+        isTrue,
+      );
+    });
+
     test('around chip shows 35 km until a max is set', () {
       expect(DiscoverExploreChromeLogic.defaultAroundKm, 35);
       expect(DiscoverExploreChromeLogic.aroundDisplayKm(null), 35);
@@ -56,6 +123,35 @@ void main() {
       );
     });
 
+    test('narrow Explore stacks search on its own row', () {
+      expect(DiscoverExploreChromeLogic.stackSearchOnOwnRow(359), isTrue);
+      expect(DiscoverExploreChromeLogic.stackSearchOnOwnRow(360), isFalse);
+      expect(DiscoverExploreChromeLogic.stackSearchOnOwnRow(390), isFalse);
+      expect(DiscoverExploreChromeLogic.exploreChromeBodyHeightFor(359), 160);
+      expect(DiscoverExploreChromeLogic.exploreChromeBodyHeightFor(360), 112);
+      expect(
+        DiscoverExploreChromeLogic.resolvedChromeHeight(
+          measured: 112,
+          width: 320,
+        ),
+        160,
+      );
+      expect(
+        DiscoverExploreChromeLogic.resolvedChromeHeight(
+          measured: 161,
+          width: 320,
+        ),
+        161,
+      );
+      expect(
+        DiscoverExploreChromeLogic.resolvedChromeHeight(
+          measured: 112,
+          width: 400,
+        ),
+        112,
+      );
+    });
+
     test('filter chip keeps the word Filter', () {
       expect(
         DiscoverExploreChromeLogic.filterChipIconOnly(
@@ -66,19 +162,58 @@ void main() {
       );
     });
 
-    test('ornaments sit below the layer row', () {
+    test('ornaments sit below the chrome and legend', () {
       expect(
         DiscoverExploreChromeLogic.ornamentExtraBelowSafe(112),
         greaterThan(112),
       );
       expect(
         DiscoverExploreChromeLogic.ornamentExtraBelowSafe(112),
-        greaterThan(
+        greaterThanOrEqualTo(
           DiscoverExploreChromeLogic.exploreChromeTopPad +
               112 +
               DiscoverExploreChromeLogic.exploreChromeToLayersGap +
-              DiscoverExploreChromeLogic.exploreLayerRowHeight,
+              DiscoverExploreChromeLogic.exploreLegendHeight,
         ),
+      );
+    });
+
+    test('Karteninhalt is customized only when a default layer is off', () {
+      expect(
+        DiscoverExploreChromeLogic.mapContentsCustomized(
+          toursOn: true,
+          trailsOn: true,
+          waysOn: true,
+          hillshadeOn: true,
+          placesOn: true,
+          heatOn: false,
+          heatConsent: false,
+        ),
+        isFalse,
+      );
+      expect(
+        DiscoverExploreChromeLogic.mapContentsCustomized(
+          toursOn: true,
+          trailsOn: false,
+          waysOn: true,
+          hillshadeOn: true,
+          placesOn: true,
+          heatOn: true,
+          heatConsent: true,
+        ),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.mapContentsCustomized(
+          toursOn: true,
+          trailsOn: true,
+          waysOn: true,
+          hillshadeOn: true,
+          placesOn: true,
+          heatOn: false,
+          heatConsent: true,
+        ),
+        isTrue,
       );
     });
 

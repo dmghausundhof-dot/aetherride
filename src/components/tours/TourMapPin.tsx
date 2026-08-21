@@ -14,7 +14,7 @@ export function TourMapPin({
       id: "tour-pin",
       lngLat: center,
       color: "#FF6A00",
-      label: "T",
+      kind: "tour",
     },
   ];
 

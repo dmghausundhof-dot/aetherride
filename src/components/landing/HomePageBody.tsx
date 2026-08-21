@@ -3,7 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
-import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
+import { Smartphone } from "lucide-react";
+import { DoorIcon } from "@/components/landing/DoorIcon";
 import { HOME_FAQ_IDS } from "@/lib/content/homepage";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
 import { getPublicTour, featuredPublicTours } from "@/lib/catalog/publicTours";
@@ -13,8 +14,7 @@ import { useHomepageCopy } from "@/hooks/useHomepageCopy";
 import { faqItems } from "@/lib/i18n/faqCopy";
 import { guideFor } from "@/lib/i18n/guidesCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
-
-const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
+import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
 
 const REGION_CHIPS = [
   { slug: "norddeutschland", name: "Norddeutschland" },
@@ -101,14 +101,13 @@ export function HomePageBody({
           </p>
           <div className="mt-10 grid gap-4 lg:grid-cols-2">
             {h.doors.slice(0, 2).map((door, i) => {
-              const Icon = DOOR_ICONS[i];
               return (
                 <Link
                   key={door.href}
                   href={door.href}
                   className="rounded-2xl border border-border bg-background/60 p-6 transition hover:border-chrome/50"
                 >
-                  <Icon className="h-5 w-5 text-sage" />
+                  <DoorIcon index={i} />
                   <p className="mt-4 text-[11px] font-bold tracking-wide text-text-secondary">
                     {door.kicker}
                   </p>
@@ -122,14 +121,13 @@ export function HomePageBody({
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {h.doors.slice(2).map((door, i) => {
-              const Icon = DOOR_ICONS[i + 2];
               return (
                 <Link
                   key={door.href}
                   href={door.href}
                   className="rounded-2xl border border-border bg-background/60 p-5 transition hover:border-chrome/50"
                 >
-                  <Icon className="h-5 w-5 text-sage" />
+                  <DoorIcon index={i + 2} />
                   <p className="mt-3 text-[11px] font-bold tracking-wide text-text-secondary">
                     {door.kicker}
                   </p>
@@ -236,7 +234,7 @@ export function HomePageBody({
                   {t.summary}
                 </p>
                 <p className="mt-3 text-xs tabular-nums text-text-secondary">
-                  {t.distanceKm} km · {t.elevationM} hm
+                  {formatDistanceElevation(t.distanceKm, t.elevationM)}
                 </p>
               </Link>
             ))}

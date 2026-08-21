@@ -4,10 +4,16 @@
  */
 
 import { computeRoute, type RouteResult } from "@/lib/routing/engine";
+import { isOrsConfigured } from "@/lib/routing/openRouteService";
+import { profileAllowsOsmRoundTrip } from "@/lib/routing/osmRoundTrip";
+import { computeOsmRoundTrip } from "@/lib/routing/osmRoundTripCompute";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { getPublicTour, type PublicTour } from "@/lib/catalog/publicTours";
 import { getTourGeometryOverride } from "@/lib/catalog/tourGeometryOverrides";
+import { berlinLoopSuggestions } from "@/lib/discover/berlinLoops";
+import { rheinNeckarLoopSuggestions } from "@/lib/discover/rheinNeckarLoops";
+import type { RouteSuggestion } from "@/lib/routing/suggestions";
 
 export type TourGeometryResult = RouteResult & {
   tourId: string;
@@ -76,13 +82,42 @@ export function routingProfileForTour(tour: PublicTour): RoutingProfile {
   return profileForBikeCategory(tour.primaryCategory);
 }
 
+function p0SeedSuggestion(tourId: string): RouteSuggestion | undefined {
+  return (
+    berlinLoopSuggestions().find((s) => s.id === tourId) ??
+    rheinNeckarLoopSuggestions().find((s) => s.id === tourId)
+  );
+}
+
+/** Catalog pin vs P0 Nähe-Seed — Seeds have no PublicTour row. */
+export function tourGeometrySource(
+  tourId: string
+): "catalog" | "p0-seed" | null {
+  if (getPublicTour(tourId)) return "catalog";
+  if (p0SeedSuggestion(tourId)?.center) return "p0-seed";
+  return null;
+}
+
 export async function computeTourGeometry(
   tourId: string,
   profileOverride?: RoutingProfile,
   opts?: { forceLive?: boolean }
 ): Promise<TourGeometryResult | null> {
   const tour = getPublicTour(tourId);
-  if (!tour) return null;
+  if (!tour) {
+    const seed = p0SeedSuggestion(tourId);
+    if (!seed?.center) return null;
+    const profile =
+      profileOverride ?? profileForBikeCategory(seed.category);
+    const near = await computeNearGeometry({
+      center: seed.center,
+      profile,
+      mode: seed.loop ? "loop" : "point_to_point",
+      distanceKm: seed.distanceKm,
+      label: seed.name,
+    });
+    return { ...near, tourId };
+  }
 
   const profile = profileOverride ?? routingProfileForTour(tour);
   const key = cacheKey(`${tourId}${opts?.forceLive ? ":live" : ""}`, profile);
@@ -104,7 +139,7 @@ export async function computeTourGeometry(
           type: "LineString",
           coordinates: override.coordinates,
         },
-        engine: override.source?.includes("osrm") ? "osrm-prebake" : "editorial",
+        engine: override.source?.includes("osrm") ? "osrm" : "editorial",
         profile,
         origin: tour.center,
         label: tour.name,
@@ -165,6 +200,34 @@ export async function computeNearGeometry(input: {
   let to: [number, number];
   let vias: [number, number][];
   let shape: TourGeometryResult["shape"];
+
+  if (
+    mode === "loop" &&
+    !input.end &&
+    profileAllowsOsmRoundTrip(profile) &&
+    isOrsConfigured()
+  ) {
+    const routed = await computeOsmRoundTrip({
+      profile,
+      start: input.center,
+      lengthKm: distanceKm,
+      seed: 1,
+    });
+    const result: TourGeometryResult = {
+      ...routed,
+      tourId: `near-${input.center[0].toFixed(3)}-${input.center[1].toFixed(3)}`,
+      cached: false,
+      shape: "loop",
+      origin: input.center,
+      label: input.label ?? "Runde ab hier",
+      warnings: [
+        ...(routed.warnings ?? []),
+        "Route ab Standort/Suche — OSM-Wege, kein Community-Track.",
+      ],
+    };
+    cache.set(key, { at: Date.now(), result });
+    return result;
+  }
 
   if (input.end) {
     from = input.center;

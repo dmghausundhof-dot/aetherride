@@ -97,6 +97,21 @@ class FamilyRider {
     this.notes,
   });
 
+  FamilyRider copyWith({
+    String? displayName,
+    double? weightKg,
+    List<String>? setupIds,
+    String? notes,
+  }) {
+    return FamilyRider(
+      id: id,
+      displayName: displayName ?? this.displayName,
+      weightKg: weightKg ?? this.weightKg,
+      setupIds: setupIds ?? this.setupIds,
+      notes: notes ?? this.notes,
+    );
+  }
+
   final String id;
   final String displayName;
   final double weightKg;

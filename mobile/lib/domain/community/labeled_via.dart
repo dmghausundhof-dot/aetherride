@@ -30,13 +30,21 @@ class LabeledVia {
 
 /// Index ±1, sonst unverändert. Keine Wrap-around-Magie.
 List<LabeledVia> moveLabeledVia(List<LabeledVia> list, int index, int delta) {
+  return moveLabeledViaTo(list, index, index + delta);
+}
+
+/// Drag in the stacked list. Out-of-range is a no-op.
+List<LabeledVia> moveLabeledViaTo(List<LabeledVia> list, int from, int to) {
   if (list.isEmpty) return list;
-  final j = index + delta;
-  if (index < 0 || index >= list.length || j < 0 || j >= list.length) {
+  if (from < 0 ||
+      to < 0 ||
+      from >= list.length ||
+      to >= list.length ||
+      from == to) {
     return list;
   }
   final next = List<LabeledVia>.from(list);
-  final item = next.removeAt(index);
-  next.insert(j, item);
+  final item = next.removeAt(from);
+  next.insert(to, item);
   return next;
 }

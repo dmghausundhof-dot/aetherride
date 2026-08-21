@@ -85,6 +85,35 @@ void main() {
     expect(drv.first.verdict, CompatVerdict.compatible);
   });
 
+  test('compat placeholder attrs are insufficient, not a silent fit', () {
+    final comps = [
+      BikeComponent(
+        id: '1',
+        bikeId: 'b',
+        slot: ComponentSlot.cassette,
+        attributes: const {
+          'freehub_standard': 'microspline',
+          '_compat_placeholder': true,
+        },
+      ),
+      BikeComponent(
+        id: '2',
+        bikeId: 'b',
+        slot: ComponentSlot.rearHub,
+        attributes: const {
+          'freehub_standard': 'microspline',
+          'rear_spacing': '148x12',
+          'rotor_mount': '6bolt',
+        },
+      ),
+    ];
+    final r = evaluateRule(
+      comps,
+      compatibilityRules.firstWhere((x) => x.code == 'RL-DRV-011'),
+    );
+    expect(r?.verdict, CompatVerdict.insufficientData);
+  });
+
   test('post-ride suggests slower rebound on harsh feedback', () {
     final ride = RideRecord(
       id: 'r1',

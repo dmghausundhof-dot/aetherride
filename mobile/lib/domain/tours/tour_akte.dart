@@ -1,11 +1,12 @@
 import '../bike.dart';
 import '../component.dart';
+import '../ride.dart';
 import '../saved_route.dart';
 import '../saved_route_note.dart';
 
 /// Join SavedRoute ↔ Katalog-Stimmen. Kein Fake-Rating.
-String? catalogTourIdOf(String routeId, [SavedRouteMeta meta = SavedRouteMeta.empty]) {
-  final explicit = meta.catalogTourId?.trim();
+String? catalogTourIdOf(String routeId, [SavedRouteMeta? meta]) {
+  final explicit = (meta ?? SavedRouteMeta.empty).catalogTourId?.trim();
   if (explicit != null && explicit.isNotEmpty) return explicit;
   const privatePrefixes = [
     'saved-',
@@ -31,6 +32,40 @@ String? catalogTourIdOf(String routeId, [SavedRouteMeta meta = SavedRouteMeta.em
     hours: (bike.hours - component.hoursAtInstallResolved)
         .clamp(0, double.infinity),
   );
+}
+
+/// Letzte abgeschlossene Fahrt an dieser Mappe-Tour — nie eine laufende.
+RideRecord? lastRideForSavedRoute({
+  required String savedRouteId,
+  String? catalogTourId,
+  required List<RideRecord> rides,
+}) {
+  final catalog = catalogTourId?.trim();
+  RideRecord? best;
+  for (final r in rides) {
+    if (r.endedAt == null) continue;
+    final id = r.routeId?.trim();
+    if (id == null || id.isEmpty) continue;
+    final hit = id == savedRouteId ||
+        (catalog != null && catalog.isNotEmpty && id == catalog);
+    if (!hit) continue;
+    if (best == null || r.startedAt.isAfter(best.startedAt)) best = r;
+  }
+  return best;
+}
+
+String formatMappeDay(DateTime at) {
+  final d = at.toLocal();
+  return '${d.day}.${d.month}.';
+}
+
+String? joinMappeCaption(Iterable<String?> parts) {
+  final out = [
+    for (final p in parts)
+      if (p != null && p.trim().isNotEmpty) p.trim(),
+  ];
+  if (out.isEmpty) return null;
+  return out.join(' · ');
 }
 
 /// Private Host-GPX braucht eine Mitglieds-Kopie — Katalog nicht.

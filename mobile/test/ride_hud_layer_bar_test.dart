@@ -64,6 +64,32 @@ void main() {
     expect(closed, isTrue);
   });
 
+  testWidgets('Daten/Fahrwerk sitzen in derselben Insel unter den Reitern',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: Scaffold(
+          body: RideHudLayerBar(
+            selected: RideLiveLayer.suspension,
+            mapLabel: 'Karte',
+            dataLabel: 'Daten',
+            chassisLabel: 'Fahrwerk',
+            onSelected: (_) {},
+            body: const Text('Neigung 0°'),
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('ride-hud-layer-bar')), findsOneWidget);
+    expect(find.text('Fahrwerk'), findsOneWidget);
+    expect(find.text('Neigung 0°'), findsOneWidget);
+    final bar = tester.getRect(find.byKey(const Key('ride-hud-layer-bar')));
+    final body = tester.getRect(find.text('Neigung 0°'));
+    expect(body.top, greaterThan(bar.top));
+    expect(body.bottom, lessThanOrEqualTo(bar.bottom + 0.5));
+  });
+
   testWidgets('ohne Fahrwerk nur zwei Reiter', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

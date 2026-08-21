@@ -13,7 +13,7 @@ export const KARTEN_PAGE = {
     "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf jedem Blatt liegt das passende Radnetz — OSM-Radrouten (EuroVelo, national, regional), nicht das DACH-Netz über Paris. Ab Zoom 12 liegen OSM-Wege (Pfad, Radweg, Track) im ganzen DACH-Ausschnitt.",
   pathsNote:
     "Der Überblick endet bei Zoom 11: in den Kacheln gibt es keine Pfade. Signierte Radrouten liegen auf dem Blatt unter der Kamera. OSM-Wege streamen ab Zoom 12 überall im DACH-Blatt — Berlin, Wien, Zürich, Vaduz, nicht nur Heidelberg. Stadt-Packs bleiben dichter, wo sie existieren. Asphalt, Schotter und Naturwege sind getrennt gefärbt, wenn OSM surface in der Overlay-Kachel liegt.",
-  offlineTitle: "Offline: Städte, keine Länder",
+  offlineTitle: "Offline-Routing: Regionen, keine Länder",
   offlineLead:
     "In der App liegen Routing-Packs für Städte und Hausberge. Das ist Offline-Routing, kein Atlas-Download und keine Länderhülle. Es gibt keine 33 Länder-Downloads.",
   holesTitle: "Löcher, ehrlich",

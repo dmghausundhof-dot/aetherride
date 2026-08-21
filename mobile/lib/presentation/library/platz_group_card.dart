@@ -8,7 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../ride/widgets/ride_group_extend_sheet.dart';
 import '../shell/hof_threshold_nav.dart';
 
-/// Eine Primary, Zeit als Zeile, Rest hinter Mehr.
+/// Eine Primary, Zeit als Meta-Zeile, Rest hinter Mehr.
 class PlatzGroupCard extends StatelessWidget {
   const PlatzGroupCard({
     super.key,
@@ -26,6 +26,8 @@ class PlatzGroupCard extends StatelessWidget {
     required this.onEditTime,
     required this.onOptIn,
     this.onSignIn,
+    this.now,
+    this.embedded = false,
   });
 
   final RideGroup group;
@@ -42,6 +44,8 @@ class PlatzGroupCard extends StatelessWidget {
   final VoidCallback onEditTime;
   final ValueChanged<bool> onOptIn;
   final VoidCallback? onSignIn;
+  final DateTime? now;
+  final bool embedded;
 
   bool get _host => selfIds.contains(group.hostUserId);
 
@@ -51,6 +55,12 @@ class PlatzGroupCard extends StatelessWidget {
   bool get _invitePrimary => RideGroupPolicy.platzPrimaryIsInvite(
         selfIsHost: _host,
         otherMemberCount: _otherCount,
+        windowOpen: RideGroupPolicy.isEventWindowOpen(
+          now: now ?? DateTime.now(),
+          start: group.startWindowStart,
+          end: group.startWindowEnd,
+          status: group.status,
+        ),
       );
 
   bool get _showCode =>
@@ -59,10 +69,13 @@ class PlatzGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final clock = now ?? DateTime.now();
+    final meta = AppColors.meta(context);
     final when = formatRideGroupWhenLine(
       start: group.startWindowStart,
       end: group.startWindowEnd,
       l10n: l10n,
+      now: clock,
     );
     final numbers = friendUnnamedNumbers(members: members, selfIds: selfIds);
     final roster = [
@@ -79,11 +92,25 @@ class PlatzGroupCard extends StatelessWidget {
           friendLabel: l10n.rideGroupFriendN,
         ),
     ].join('  ·  ');
+    final quietBtn = TextButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      foregroundColor: meta,
+      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+    );
     return Card(
       key: Key('platz-group-${group.id}'),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      margin: embedded
+          ? const EdgeInsets.only(bottom: AppSpacing.s)
+          : const EdgeInsets.fromLTRB(AppSpacing.l, 0, AppSpacing.l, AppSpacing.s),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.l,
+          AppSpacing.m,
+          AppSpacing.l,
+          AppSpacing.m,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -95,75 +122,78 @@ class PlatzGroupCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
                     ),
                   ),
                 ),
+                const SizedBox(width: AppSpacing.s),
                 Text(
                   group.visibility == RideGroupVisibility.public
                       ? l10n.platzListedPublic
                       : l10n.discoverPrivate,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.muted,
+                    fontWeight: FontWeight.w600,
+                    color: meta,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Material(
-              color: AppColors.overlay,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                key: Key('platz-group-time-${group.id}'),
-                borderRadius: BorderRadius.circular(8),
-                onTap: _host ? onEditTime : null,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        when,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (_host)
+            const SizedBox(height: AppSpacing.s),
+            InkWell(
+              key: Key('platz-group-time-${group.id}'),
+              onTap: _host ? onEditTime : null,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          l10n.platzTimeTapHint,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
+                          when,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                            color: AppColors.sheetInk(context),
                           ),
                         ),
-                    ],
+                        if (_host)
+                          Text(
+                            l10n.platzTimeTapHint,
+                            style: TextStyle(fontSize: 11, color: meta),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
+                  if (_host)
+                    Icon(Icons.chevron_right, size: 18, color: meta),
+                ],
               ),
             ),
             if (group.meetingPoint != null &&
                 group.meetingPoint!.trim().isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 group.meetingPoint!.trim(),
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: meta),
               ),
             ],
             if (roster.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 roster,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: meta),
               ),
             ],
-            if (!group.onServer) ...[
-              const SizedBox(height: 6),
+            if (!group.onServer && !_host) ...[
+              const SizedBox(height: AppSpacing.s),
               Text(
                 l10n.platzHostCannotSee,
                 style: const TextStyle(
@@ -183,7 +213,7 @@ class PlatzGroupCard extends StatelessWidget {
                   ),
                 ),
             ],
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.l),
             SizedBox(
               width: double.infinity,
               child: _invitePrimary
@@ -198,78 +228,62 @@ class PlatzGroupCard extends StatelessWidget {
                       child: Text(l10n.goRide),
                     ),
             ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 0,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            const SizedBox(height: AppSpacing.xs),
+            Row(
               children: [
-                if (_showCode)
+                TextButton(
+                  key: Key('platz-group-leave-${group.id}'),
+                  onPressed: onLeave,
+                  style: quietBtn,
+                  child: Text(_host ? l10n.platzDissolve : l10n.platzLeave),
+                ),
+                if (_showCode) ...[
+                  const SizedBox(width: AppSpacing.s),
                   Text(
                     key: Key('platz-group-code-${group.id}'),
                     group.joinCode,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: meta,
                     ),
                   ),
-                if (_host || group.onServer)
-                  TextButton(
-                    onPressed: onCopyLink,
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: Text(
-                      _showCode ? l10n.platzCopyLink : l10n.platzShareLink,
-                    ),
-                  ),
-                if (_showCode)
-                  TextButton(
-                    key: Key('platz-group-copy-code-${group.id}'),
-                    onPressed: onCopyCode,
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: Text(l10n.platzCopyCode),
-                  ),
-                TextButton(
-                  onPressed: onLeave,
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: Text(_host ? l10n.platzDissolve : l10n.platzLeave),
-                ),
+                ],
+                const Spacer(),
                 TextButton(
                   key: Key('platz-group-more-${group.id}'),
                   onPressed: () => _openMore(context),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  style: quietBtn,
                   child: Text(l10n.platzMore),
                 ),
               ],
             ),
             if (_host || group.onServer) ...[
-              const SizedBox(height: 4),
+              Divider(height: AppSpacing.l, color: AppColors.border.withValues(alpha: 0.7)),
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       l10n.platzShareInRide,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 12, color: meta),
                     ),
                   ),
-                  Switch.adaptive(
-                    key: Key('platz-group-pins-${group.id}'),
-                    value: optIn,
-                    onChanged: onOptIn,
+                  Transform.scale(
+                    scale: 0.82,
+                    alignment: Alignment.centerRight,
+                    child: Switch.adaptive(
+                      key: Key('platz-group-pins-${group.id}'),
+                      value: optIn,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: onOptIn,
+                    ),
                   ),
                 ],
               ),
               Text(
                 l10n.platzPinsHint,
-                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                style: TextStyle(fontSize: 11, color: meta),
               ),
             ],
           ],
@@ -286,9 +300,9 @@ class PlatzGroupCard extends StatelessWidget {
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
+            AppSpacing.l,
+            AppSpacing.s,
+            AppSpacing.l,
             HofThresholdNav.sheetBottomInset(ctx),
           ),
           child: Column(
@@ -332,6 +346,15 @@ class PlatzGroupCard extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(ctx);
                     onCopyLink();
+                  },
+                ),
+              if (_showCode)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.platzCopyCode),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onCopyCode();
                   },
                 ),
               if (_host)

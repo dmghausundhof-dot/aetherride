@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @navGarage.
   ///
   /// In de, this message translates to:
-  /// **'Garage'**
+  /// **'Rad'**
   String get navGarage;
 
   /// No description provided for @navRide.
@@ -263,7 +263,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopForYourBikeEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Stell ein Rad am Stand ab — dann öffnen wir die passenden Teile im Shop.'**
+  /// **'Lege ein Rad am Stand an — dann öffnen wir die passenden Teile im Shop.'**
   String get shopForYourBikeEmpty;
 
   /// No description provided for @shopMerchHint.
@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @werkstattSetupSuspension.
   ///
   /// In de, this message translates to:
-  /// **'Fahrwerk — SAG und Luft nach Federweg'**
+  /// **'Fahrwerk — Einfederung und Luft nach Federweg'**
   String get werkstattSetupSuspension;
 
   /// No description provided for @werkstattSetupSuspensionUnknown.
@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @werkstattWatchEbike.
   ///
   /// In de, this message translates to:
-  /// **'Smartwatch — Puls neben CSC. Kein erfundener SoC.'**
+  /// **'Smartwatch — Puls neben dem Tacho. Kein erfundener Akkustand.'**
   String get werkstattWatchEbike;
 
   /// No description provided for @werkstattWatchAnalog.
@@ -752,6 +752,12 @@ abstract class AppLocalizations {
   /// **'Losfahren'**
   String get hofRideOut;
 
+  /// No description provided for @hofRideGroupHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Gruppe startet an der Karte auf Touren, nicht hier.'**
+  String get hofRideGroupHint;
+
   /// No description provided for @hofOpenBike.
   ///
   /// In de, this message translates to:
@@ -793,6 +799,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Himmel unbekannt'**
   String get hofSkyUnknown;
+
+  /// No description provided for @hofSkyNeedNet.
+  ///
+  /// In de, this message translates to:
+  /// **'Himmel braucht Netz.'**
+  String get hofSkyNeedNet;
 
   /// No description provided for @hofNoHonestLoop.
   ///
@@ -847,6 +859,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Offline-Routing für {name} laden'**
   String hofLoadOfflineMap(String name);
+
+  /// No description provided for @hofPackReadyRideMap.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Routing offline. Ride-Karte: Netz.'**
+  String hofPackReadyRideMap(String name);
 
   /// No description provided for @hofLastRideNoGps.
   ///
@@ -1154,6 +1172,18 @@ abstract class AppLocalizations {
   /// **'Distanz'**
   String get filterDistance;
 
+  /// No description provided for @filterTourLength.
+  ///
+  /// In de, this message translates to:
+  /// **'Tourenlänge'**
+  String get filterTourLength;
+
+  /// No description provided for @filterSportDh.
+  ///
+  /// In de, this message translates to:
+  /// **'DH-Rad'**
+  String get filterSportDh;
+
   /// No description provided for @filterElevation.
   ///
   /// In de, this message translates to:
@@ -1199,7 +1229,7 @@ abstract class AppLocalizations {
   /// No description provided for @filterBikeType.
   ///
   /// In de, this message translates to:
-  /// **'Fahrradtyp'**
+  /// **'Radtyp'**
   String get filterBikeType;
 
   /// No description provided for @filterBikeTypeHonesty.
@@ -1319,19 +1349,19 @@ abstract class AppLocalizations {
   /// No description provided for @adaptTourHint.
   ///
   /// In de, this message translates to:
-  /// **'Start, Ziel oder Stopp ändern — dann Route berechnen.'**
+  /// **'Start, Ziel oder Stopp ändern — die Route passt sich an.'**
   String get adaptTourHint;
 
   /// No description provided for @planRouteTitle.
   ///
   /// In de, this message translates to:
-  /// **'Route planen'**
+  /// **'Planen'**
   String get planRouteTitle;
 
   /// No description provided for @planRouteCta.
   ///
   /// In de, this message translates to:
-  /// **'Navigieren'**
+  /// **'Planen'**
   String get planRouteCta;
 
   /// No description provided for @discoverSearchHint.
@@ -1339,6 +1369,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Ort oder Tour'**
   String get discoverSearchHint;
+
+  /// No description provided for @discoverPlaceHoldForDest.
+  ///
+  /// In de, this message translates to:
+  /// **'Halten: als Ziel'**
+  String get discoverPlaceHoldForDest;
 
   /// No description provided for @filterAroundKm.
   ///
@@ -1409,7 +1445,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverModeNavigate.
   ///
   /// In de, this message translates to:
-  /// **'Navigieren'**
+  /// **'Planen'**
   String get discoverModeNavigate;
 
   /// No description provided for @discoverModeMine.
@@ -1427,8 +1463,14 @@ abstract class AppLocalizations {
   /// No description provided for @navigateSubtitle.
   ///
   /// In de, this message translates to:
-  /// **'Ziel tippen oder Adresse — dann berechnen'**
+  /// **'Ziel tippen oder Adresse eingeben'**
   String get navigateSubtitle;
+
+  /// No description provided for @navigateSubtitleShape.
+  ///
+  /// In de, this message translates to:
+  /// **'Linie tippen oder ziehen: Zwischenstopp. Tipp daneben zieht durch. Langer Druck: neues Ziel.'**
+  String get navigateSubtitleShape;
 
   /// No description provided for @navigateStartLabel.
   ///
@@ -1453,6 +1495,72 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Wohin willst du?'**
   String get navigateEndHint;
+
+  /// No description provided for @discoverOnMapPlace.
+  ///
+  /// In de, this message translates to:
+  /// **'Punkt auf der Karte'**
+  String get discoverOnMapPlace;
+
+  /// No description provided for @discoverTapStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Start tippen'**
+  String get discoverTapStart;
+
+  /// No description provided for @discoverSetEndCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel setzen'**
+  String get discoverSetEndCta;
+
+  /// No description provided for @discoverReplaceDest.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel ersetzen'**
+  String get discoverReplaceDest;
+
+  /// No description provided for @discoverReplaceStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Start ersetzen'**
+  String get discoverReplaceStart;
+
+  /// No description provided for @discoverRecently.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt'**
+  String get discoverRecently;
+
+  /// No description provided for @discoverBackToGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurück zu GPS'**
+  String get discoverBackToGps;
+
+  /// No description provided for @discoverMapArea.
+  ///
+  /// In de, this message translates to:
+  /// **'Kartenausschnitt'**
+  String get discoverMapArea;
+
+  /// No description provided for @discoverRoutingAdapts.
+  ///
+  /// In de, this message translates to:
+  /// **'Route passt sich an…'**
+  String get discoverRoutingAdapts;
+
+  /// No description provided for @discoverWeatherAlong.
+  ///
+  /// In de, this message translates to:
+  /// **'Wetter'**
+  String get discoverWeatherAlong;
+
+  /// No description provided for @discoverPhotosAlong.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos entlang der Strecke'**
+  String get discoverPhotosAlong;
 
   /// No description provided for @navigateMyLocation.
   ///
@@ -1484,6 +1592,102 @@ abstract class AppLocalizations {
   /// **'Zwischenstopp'**
   String get navigateAddVia;
 
+  /// No description provided for @navigateViaHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Linie, Karte oder Höhenprofil tippen: Zwischenstopp. Langer Druck setzt sonst das Ziel.'**
+  String get navigateViaHint;
+
+  /// No description provided for @planEditLineHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Tipp = Stopp. Halten = Ziel. Scheiben ziehen biegt.'**
+  String get planEditLineHint;
+
+  /// No description provided for @planAlongKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km auf der Strecke'**
+  String planAlongKm(String km);
+
+  /// No description provided for @planTickKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km'**
+  String planTickKm(String km);
+
+  /// No description provided for @planUndo.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückgängig'**
+  String get planUndo;
+
+  /// No description provided for @planRedo.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederholen'**
+  String get planRedo;
+
+  /// No description provided for @planLineCoach.
+  ///
+  /// In de, this message translates to:
+  /// **'Linie oder die Scheiben ziehen — Zwischenstopp. Halten: neues Ziel.'**
+  String get planLineCoach;
+
+  /// No description provided for @planLineCoachOk.
+  ///
+  /// In de, this message translates to:
+  /// **'Verstanden'**
+  String get planLineCoachOk;
+
+  /// No description provided for @planMapSteep.
+  ///
+  /// In de, this message translates to:
+  /// **'Steil'**
+  String get planMapSteep;
+
+  /// No description provided for @planMapUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbekannt'**
+  String get planMapUnknown;
+
+  /// No description provided for @planStopSetHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Stopp gesetzt. Punkt ziehen: Strecke biegen.'**
+  String get planStopSetHint;
+
+  /// No description provided for @planElevSteepHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Rot steil · Orange flach · Blau ab · Braun Weg'**
+  String get planElevSteepHint;
+
+  /// No description provided for @discoverPlaceOnRoute.
+  ///
+  /// In de, this message translates to:
+  /// **'In die Route'**
+  String get discoverPlaceOnRoute;
+
+  /// No description provided for @navigateSubtitleVia.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwischenstopp auf die Karte tippen'**
+  String get navigateSubtitleVia;
+
+  /// No description provided for @navigateCloseLoop.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurück zum Start'**
+  String get navigateCloseLoop;
+
+  /// No description provided for @navigateCloseLoopHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Runde: Ziel wird der Start.'**
+  String get navigateCloseLoopHint;
+
   /// No description provided for @navigateNeedStartEnd.
   ///
   /// In de, this message translates to:
@@ -1493,7 +1697,7 @@ abstract class AppLocalizations {
   /// No description provided for @navigateComputeNeedBoth.
   ///
   /// In de, this message translates to:
-  /// **'Route berechnen (Start & Ziel nötig)'**
+  /// **'Start und Ziel setzen'**
   String get navigateComputeNeedBoth;
 
   /// No description provided for @navigateBackToExplore.
@@ -1535,7 +1739,7 @@ abstract class AppLocalizations {
   /// No description provided for @sheetDragHandleNavigate.
   ///
   /// In de, this message translates to:
-  /// **'Navigations-Leiste ziehen'**
+  /// **'Planungs-Leiste ziehen'**
   String get sheetDragHandleNavigate;
 
   /// No description provided for @browseMap.
@@ -1853,7 +2057,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageTitle.
   ///
   /// In de, this message translates to:
-  /// **'Garage'**
+  /// **'Rad'**
   String get garageTitle;
 
   /// No description provided for @garageFabBike.
@@ -1865,7 +2069,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageEmptyTitle.
   ///
   /// In de, this message translates to:
-  /// **'Noch kein Rad hier'**
+  /// **'Noch kein Rad am Stand'**
   String get garageEmptyTitle;
 
   /// No description provided for @garageEmptyMessage.
@@ -1877,7 +2081,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageAddBike.
   ///
   /// In de, this message translates to:
-  /// **'Fahrrad hinzufügen'**
+  /// **'Rad anlegen'**
   String get garageAddBike;
 
   /// No description provided for @garageAddAnother.
@@ -1937,7 +2141,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageActiveBike.
   ///
   /// In de, this message translates to:
-  /// **'Aktives Bike · {name}'**
+  /// **'Aktives Rad · {name}'**
   String garageActiveBike(String name);
 
   /// No description provided for @garageEbikeBadge.
@@ -1988,17 +2192,131 @@ abstract class AppLocalizations {
   /// **'Setup'**
   String get garageSetup;
 
+  /// No description provided for @garageTabOverview.
+  ///
+  /// In de, this message translates to:
+  /// **'Übersicht'**
+  String get garageTabOverview;
+
+  /// No description provided for @garageSchemaHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Tippe auf einen Punkt — eintragen oder ändern.'**
+  String get garageSchemaHint;
+
+  /// No description provided for @garageSchemaLegendOk.
+  ///
+  /// In de, this message translates to:
+  /// **'da'**
+  String get garageSchemaLegendOk;
+
+  /// No description provided for @garageSchemaLegendOpen.
+  ///
+  /// In de, this message translates to:
+  /// **'offen'**
+  String get garageSchemaLegendOpen;
+
+  /// No description provided for @garageSchemaLegendDue.
+  ///
+  /// In de, this message translates to:
+  /// **'fällig'**
+  String get garageSchemaLegendDue;
+
+  /// No description provided for @garageFamilyYou.
+  ///
+  /// In de, this message translates to:
+  /// **'Ich'**
+  String get garageFamilyYou;
+
+  /// No description provided for @garageFamilyHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Gewicht und Setup für diesen Fahrer.'**
+  String get garageFamilyHint;
+
+  /// No description provided for @garageFamilyHintEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Gewicht für Kind oder Partner — hier anlegen.'**
+  String get garageFamilyHintEmpty;
+
+  /// No description provided for @garageFamilyAdd.
+  ///
+  /// In de, this message translates to:
+  /// **'Fahrer anlegen'**
+  String get garageFamilyAdd;
+
+  /// No description provided for @garageSchemaMoreOnDots.
+  ///
+  /// In de, this message translates to:
+  /// **'Weitere Lücken am Punkt.'**
+  String get garageSchemaMoreOnDots;
+
+  /// No description provided for @garageCreatedAtStand.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} wohnt hier.'**
+  String garageCreatedAtStand(String name);
+
+  /// No description provided for @garageLastServiceTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Letzter Besuch'**
+  String get garageLastServiceTitle;
+
+  /// No description provided for @garageLastServiceEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keinen Besuch merken.'**
+  String get garageLastServiceEmpty;
+
+  /// No description provided for @garageLastServiceDate.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum'**
+  String get garageLastServiceDate;
+
+  /// No description provided for @garageLastServiceWork.
+  ///
+  /// In de, this message translates to:
+  /// **'Was gemacht wurde'**
+  String get garageLastServiceWork;
+
+  /// No description provided for @garageLastServiceAmount.
+  ///
+  /// In de, this message translates to:
+  /// **'Betrag (€)'**
+  String get garageLastServiceAmount;
+
+  /// No description provided for @garageLastServiceNote.
+  ///
+  /// In de, this message translates to:
+  /// **'Notiz'**
+  String get garageLastServiceNote;
+
+  /// No description provided for @garageInvoicePhoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Rechnung'**
+  String get garageInvoicePhoto;
+
+  /// No description provided for @garageInvoiceAdd.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto der Rechnung'**
+  String get garageInvoiceAdd;
+
+  /// No description provided for @garageInvoiceRemove.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto entfernen'**
+  String get garageInvoiceRemove;
+
   /// No description provided for @garageInstall.
   ///
   /// In de, this message translates to:
   /// **'Teil hinzufügen'**
   String get garageInstall;
-
-  /// No description provided for @garageOtherBikes.
-  ///
-  /// In de, this message translates to:
-  /// **'Weitere Räder'**
-  String get garageOtherBikes;
 
   /// No description provided for @garageTechDetails.
   ///
@@ -2243,7 +2561,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageActiveBadge.
   ///
   /// In de, this message translates to:
-  /// **'Aktives Bike'**
+  /// **'Aktives Rad'**
   String get garageActiveBadge;
 
   /// No description provided for @garageStatKm.
@@ -2365,6 +2683,126 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Ausgangspunkt — keine persönliche Empfehlung.'**
   String get setupTemplatesHint;
+
+  /// No description provided for @setupTplFoxOem.
+  ///
+  /// In de, this message translates to:
+  /// **'Fox OEM Basis (Gewichtstabelle)'**
+  String get setupTplFoxOem;
+
+  /// No description provided for @setupTplFoxOemHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgangspunkt laut Fox Starting-Points-Tabelle — keine persönliche Empfehlung. SAG danach messen und Kammern ausgleichen.'**
+  String get setupTplFoxOemHint;
+
+  /// No description provided for @setupTplFoxX2.
+  ///
+  /// In de, this message translates to:
+  /// **'Fox Float X2 OEM (lbs→psi + Klicks)'**
+  String get setupTplFoxX2;
+
+  /// No description provided for @setupTplFoxX2Hint.
+  ///
+  /// In de, this message translates to:
+  /// **'Fox X2: Start-Druck ≈ Gewicht in lbs, SAG ~30 %, dann Dämpfer-Tabelle. Rahmenhebelverhältnis nicht enthalten — Ausgangspunkt.'**
+  String get setupTplFoxX2Hint;
+
+  /// No description provided for @setupTplRockShox.
+  ///
+  /// In de, this message translates to:
+  /// **'RockShox SAG-Start (TrailHead-Näherung)'**
+  String get setupTplRockShox;
+
+  /// No description provided for @setupTplRockShoxHint.
+  ///
+  /// In de, this message translates to:
+  /// **'RockShox: Dämpfer-Start ≈ Körpergewicht in lbs; Gabel nach Bein-Chart/TrailHead. Dann auf 25–30 % SAG trimmen. Kein Ersatz für die TrailHead-App mit Seriennummer.'**
+  String get setupTplRockShoxHint;
+
+  /// No description provided for @setupTplWetRoots.
+  ///
+  /// In de, this message translates to:
+  /// **'Editorial: Nasse Roots'**
+  String get setupTplWetRoots;
+
+  /// No description provided for @setupTplWetRootsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Redaktions-Preset als Ausgangspunkt — kein Ersatz für Bracketing auf deinem Trail.'**
+  String get setupTplWetRootsHint;
+
+  /// No description provided for @setupTplBikepark.
+  ///
+  /// In de, this message translates to:
+  /// **'Editorial: Bikepark'**
+  String get setupTplBikepark;
+
+  /// No description provided for @setupTplBikeparkHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgangspunkt für Park — mehr Support, weniger SAG-Spiel.'**
+  String get setupTplBikeparkHint;
+
+  /// No description provided for @setupTplMarathon.
+  ///
+  /// In de, this message translates to:
+  /// **'Editorial: Marathon / lange Tour'**
+  String get setupTplMarathon;
+
+  /// No description provided for @setupTplMarathonHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Effizienz-lastiger Ausgangspunkt für lange Touren — weniger SAG, mehr Pedal-Plattform.'**
+  String get setupTplMarathonHint;
+
+  /// No description provided for @setupTplRace.
+  ///
+  /// In de, this message translates to:
+  /// **'Editorial: Enduro-Rennen'**
+  String get setupTplRace;
+
+  /// No description provided for @setupTplRaceHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Race-Ausgangspunkt — aggressiver Support. Nur Startpunkt vor Track-Walk-Bracketing.'**
+  String get setupTplRaceHint;
+
+  /// No description provided for @setupTplGravel.
+  ///
+  /// In de, this message translates to:
+  /// **'Gravel Basisdruck'**
+  String get setupTplGravel;
+
+  /// No description provided for @setupTplGravelHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Grobe Startdrücke für 40–45 mm Gravelreifen — Tubeless beachten.'**
+  String get setupTplGravelHint;
+
+  /// No description provided for @setupTplRoad.
+  ///
+  /// In de, this message translates to:
+  /// **'Rennrad Basisdruck'**
+  String get setupTplRoad;
+
+  /// No description provided for @setupTplRoadHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Grober Startdruck für 700c — Reifenbreite und Schlauchlos beachten.'**
+  String get setupTplRoadHint;
+
+  /// No description provided for @setupTplUrban.
+  ///
+  /// In de, this message translates to:
+  /// **'City / Trekking Basisdruck'**
+  String get setupTplUrban;
+
+  /// No description provided for @setupTplUrbanHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Grober Startdruck — am Reifen nachmessen, kein OEM-Wert.'**
+  String get setupTplUrbanHint;
 
   /// No description provided for @setupApplyTemplate.
   ///
@@ -2903,7 +3341,7 @@ abstract class AppLocalizations {
   /// No description provided for @myRouteNotesHint.
   ///
   /// In de, this message translates to:
-  /// **'Nur für dich. Tipps nach Freigabe unter Tipps.'**
+  /// **'Nur für dich. Nach Freigabe unter Stimmen.'**
   String get myRouteNotesHint;
 
   /// No description provided for @myRouteNotesEmpty.
@@ -3245,7 +3683,7 @@ abstract class AppLocalizations {
   /// No description provided for @billingMoreBikes.
   ///
   /// In de, this message translates to:
-  /// **'Mehr Bikes, Sync-Vorteile und Offline-Regionen.'**
+  /// **'Mehr Räder und Sync-Vorteile. Offline-Routing bleibt in Free und Pro.'**
   String get billingMoreBikes;
 
   /// No description provided for @billingAlreadyPro.
@@ -3515,13 +3953,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatPromptGarage.
   ///
   /// In de, this message translates to:
-  /// **'Garage'**
+  /// **'Rad-Überblick'**
   String get chatPromptGarage;
 
   /// No description provided for @chatPromptGarageQuery.
   ///
   /// In de, this message translates to:
-  /// **'Was steckt in meiner Garage?'**
+  /// **'Was steht an meinem Rad?'**
   String get chatPromptGarageQuery;
 
   /// No description provided for @chatPromptRange.
@@ -3571,6 +4009,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Welche Routen passen zu mir?'**
   String get chatPromptRoutesQuery;
+
+  /// No description provided for @chatPromptWindow.
+  ///
+  /// In de, this message translates to:
+  /// **'Trockener Fenster'**
+  String get chatPromptWindow;
+
+  /// No description provided for @chatPromptWindowQuery.
+  ///
+  /// In de, this message translates to:
+  /// **'Wann ist es heute trockener?'**
+  String get chatPromptWindowQuery;
 
   /// No description provided for @chatPromptShop.
   ///
@@ -3761,7 +4211,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyFamilyHint.
   ///
   /// In de, this message translates to:
-  /// **'Familien-Link / Mitfahrer: unter Profil → Familien-Garage weitere Fahrer mit eigenem Gewicht anlegen.'**
+  /// **'Familien-Link / Mitfahrer: unter Profil → Familie am Rad weitere Fahrer mit eigenem Gewicht anlegen.'**
   String get privacyFamilyHint;
 
   /// No description provided for @privacyExportTitle.
@@ -4271,7 +4721,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileBikeBleNeedBike.
   ///
   /// In de, this message translates to:
-  /// **'Zuerst ein Rad am Stand abstellen.'**
+  /// **'Zuerst ein Rad am Stand anlegen.'**
   String get profileBikeBleNeedBike;
 
   /// No description provided for @profileCloudBilling.
@@ -4289,7 +4739,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileFamilyGarage.
   ///
   /// In de, this message translates to:
-  /// **'Familien-Garage'**
+  /// **'Familie am Rad'**
   String get profileFamilyGarage;
 
   /// No description provided for @profileFamilyHint.
@@ -4361,25 +4811,25 @@ abstract class AppLocalizations {
   /// No description provided for @profileBikeOne.
   ///
   /// In de, this message translates to:
-  /// **'Bike'**
+  /// **'Rad'**
   String get profileBikeOne;
 
   /// No description provided for @profileBikes.
   ///
   /// In de, this message translates to:
-  /// **'Bikes'**
+  /// **'Räder'**
   String get profileBikes;
 
   /// No description provided for @profileRideOne.
   ///
   /// In de, this message translates to:
-  /// **'Ride'**
+  /// **'Fahrt'**
   String get profileRideOne;
 
   /// No description provided for @profileRides.
   ///
   /// In de, this message translates to:
-  /// **'Rides'**
+  /// **'Fahrten'**
   String get profileRides;
 
   /// No description provided for @profileKmTotal.
@@ -4409,7 +4859,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileProPerks.
   ///
   /// In de, this message translates to:
-  /// **'Unbegrenzte Bikes, Fahrwerksanalyse & Bracketing.'**
+  /// **'Unbegrenzte Räder, Fahrwerksanalyse & Bracketing.'**
   String get profileProPerks;
 
   /// No description provided for @profileUpgradePro.
@@ -4469,7 +4919,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSubGarage.
   ///
   /// In de, this message translates to:
-  /// **'Garage'**
+  /// **'Rad'**
   String get profileSubGarage;
 
   /// No description provided for @profileSubWeight.
@@ -4643,7 +5093,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardGpsHint.
   ///
   /// In de, this message translates to:
-  /// **'Echter GPS-Track — ohne Demo. Bike optional. MTB, Gravel, Rennrad oder City: gleich gut.'**
+  /// **'Echter GPS-Track — ohne Demo. Rad optional. MTB, Gravel, Rennrad oder City: gleich gut.'**
   String get onboardGpsHint;
 
   /// No description provided for @onboardGpsStatus.
@@ -4685,7 +5135,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardSensorsHint.
   ///
   /// In de, this message translates to:
-  /// **'Standort für den GPS-Track. Bluetooth-Sensoren später unter Rad — gilt für alle Bike-Typen.'**
+  /// **'Standort für den GPS-Track. Bluetooth-Sensoren später unter Rad — gilt für alle Radtypen.'**
   String get onboardSensorsHint;
 
   /// No description provided for @onboardNextRide.
@@ -4697,7 +5147,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardParkBikeFirst.
   ///
   /// In de, this message translates to:
-  /// **'Zuerst Rad abstellen'**
+  /// **'Zuerst Rad anlegen'**
   String get onboardParkBikeFirst;
 
   /// No description provided for @onboardLater.
@@ -4754,17 +5204,83 @@ abstract class AppLocalizations {
   /// **'{name} · {size} — Routing in dieser Box'**
   String navigateOfflineHintPackSized(String name, String size);
 
+  /// No description provided for @navigateOfflineHintPackEnvelope.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} — Routing auf der Landesfläche'**
+  String navigateOfflineHintPackEnvelope(String name);
+
+  /// No description provided for @navigateOfflineHintPackEnvelopeSized.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · {size} — Routing auf der Landesfläche'**
+  String navigateOfflineHintPackEnvelopeSized(String name, String size);
+
   /// No description provided for @offlineCoverageLabel.
   ///
   /// In de, this message translates to:
   /// **'{name} · Routing'**
   String offlineCoverageLabel(String name);
 
+  /// No description provided for @offlineCoverageLabelEnvelope.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Routing · Landesfläche'**
+  String offlineCoverageLabelEnvelope(String name);
+
   /// No description provided for @offlineCoverageSuggested.
   ///
   /// In de, this message translates to:
   /// **'Laden · {name}'**
   String offlineCoverageSuggested(String name);
+
+  /// No description provided for @offlineCoverageOutside.
+  ///
+  /// In de, this message translates to:
+  /// **'Außerhalb {name}'**
+  String offlineCoverageOutside(String name);
+
+  /// No description provided for @offlineCoverageShowOnMap.
+  ///
+  /// In de, this message translates to:
+  /// **'Region auf der Karte zeigen'**
+  String get offlineCoverageShowOnMap;
+
+  /// No description provided for @offlineCoverageOverview.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Übersicht'**
+  String offlineCoverageOverview(String name);
+
+  /// No description provided for @offlineCoverageMapNeedsNet.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Karte: Netz'**
+  String offlineCoverageMapNeedsNet(String name);
+
+  /// No description provided for @offlineGraphReadySnack.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing in der orangen Box. Ride-Karte braucht Netz.'**
+  String get offlineGraphReadySnack;
+
+  /// No description provided for @offlineBrowseOverviewSnack.
+  ///
+  /// In de, this message translates to:
+  /// **'Übersicht auf der Karte (Zoom 0–11). Straßenzoom braucht Netz.'**
+  String get offlineBrowseOverviewSnack;
+
+  /// No description provided for @offlineSketchRouting.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing'**
+  String get offlineSketchRouting;
+
+  /// No description provided for @offlineSketchOverview.
+  ///
+  /// In de, this message translates to:
+  /// **'Übersicht'**
+  String get offlineSketchOverview;
 
   /// No description provided for @offlineMapsTitle.
   ///
@@ -4775,7 +5291,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineMapsHint.
   ///
   /// In de, this message translates to:
-  /// **'Lädt den Routing-Graphen eines Packs. Die Übersichtskarte (Zoom 0–11) ist ein extra, großer Download. Navigation im Ride braucht Street-Tiles — oft Netz.'**
+  /// **'Lädt den Routing-Graphen eines Packs. Die Übersichtskarte (Zoom 0–11) ist ein extra, großer Download. Navigation im Ride braucht eine Straßenkarte — oft Netz.'**
   String get offlineMapsHint;
 
   /// No description provided for @offlineRegionActive.
@@ -4841,7 +5357,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineOverviewExplain.
   ///
   /// In de, this message translates to:
-  /// **'Übersicht bis Zoom 11. Navigation im Ride bleibt auf Street-Tiles und braucht oft Netz.'**
+  /// **'Übersicht bis Zoom 11. Im Ride braucht die Straßenkarte oft Netz.'**
   String get offlineOverviewExplain;
 
   /// No description provided for @offlineStorageLine.
@@ -4883,7 +5399,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineEnvelopesHint.
   ///
   /// In de, this message translates to:
-  /// **'Große Bounding Box, dünner Graph — kein komplettes Landesnetz.'**
+  /// **'Große Landesfläche, dünner Graph — kein komplettes Landesnetz.'**
   String get offlineEnvelopesHint;
 
   /// No description provided for @offlineCountryDE.
@@ -4949,7 +5465,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineCountryPacks.
   ///
   /// In de, this message translates to:
-  /// **'{count} Regionen'**
+  /// **'{count} Packs'**
   String offlineCountryPacks(int count);
 
   /// No description provided for @offlineCountryEnvelopes.
@@ -4961,7 +5477,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineCountryPacksAndEnvelopes.
   ///
   /// In de, this message translates to:
-  /// **'{packs} Regionen · {envelopes} Landesflächen'**
+  /// **'{packs} Packs · {envelopes} Landesflächen'**
   String offlineCountryPacksAndEnvelopes(int packs, int envelopes);
 
   /// No description provided for @offlineConfirmLargeTitle.
@@ -4985,7 +5501,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineConfirmOverviewBody.
   ///
   /// In de, this message translates to:
-  /// **'{id} ist {size} und nur Zoom 0–11. Navigation im Ride braucht weiter Street-Tiles und oft Netz.'**
+  /// **'{id} ist {size} und nur Zoom 0–11. Im Ride braucht die Straßenkarte weiter oft Netz.'**
   String offlineConfirmOverviewBody(String id, String size);
 
   /// No description provided for @offlineConfirmLoad.
@@ -5063,13 +5579,13 @@ abstract class AppLocalizations {
   /// No description provided for @offlineNoneFound.
   ///
   /// In de, this message translates to:
-  /// **'Keine Region gefunden'**
+  /// **'Kein Pack gefunden'**
   String get offlineNoneFound;
 
   /// No description provided for @offlineNoPacks.
   ///
   /// In de, this message translates to:
-  /// **'Gerade keine Packs zum Laden. Unten stehen Regionen, die noch nicht fertig sind.'**
+  /// **'Gerade keine Packs zum Laden. Unten stehen Packs, die noch nicht fertig sind.'**
   String get offlineNoPacks;
 
   /// No description provided for @offlineNotBuilt.
@@ -5159,7 +5675,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineDachCatalog.
   ///
   /// In de, this message translates to:
-  /// **'Offline — DACH-Regionen aus App-Katalog'**
+  /// **'Offline — DACH-Packs aus App-Katalog'**
   String get offlineDachCatalog;
 
   /// No description provided for @offlineReadyMapRouting.
@@ -5219,13 +5735,13 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherHint.
   ///
   /// In de, this message translates to:
-  /// **'Einladen teilt den Link. Deine Gruppen bleiben. Offene Gruppen: Link oder Code — auf dem Platz und als Treffen-Pin, kein Feed.'**
+  /// **'Einladen teilt den Link. Deine Gruppen bleiben — kein Feed.'**
   String get platzTogetherHint;
 
   /// No description provided for @platzTogetherListHint.
   ///
   /// In de, this message translates to:
-  /// **'Gruppe. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.'**
+  /// **'Gruppe. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Gastgeber sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.'**
   String get platzTogetherListHint;
 
   /// No description provided for @platzCreateGroup.
@@ -5423,7 +5939,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzJoinSignInFirst.
   ///
   /// In de, this message translates to:
-  /// **'Anmelden — sonst sieht der Host dich nicht'**
+  /// **'Anmelden — sonst sieht der Gastgeber dich nicht'**
   String get platzJoinSignInFirst;
 
   /// No description provided for @platzShareInRide.
@@ -5455,6 +5971,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Kein gültiger Link oder Code.'**
   String get platzJoinInvalid;
+
+  /// No description provided for @platzJoinExpired.
+  ///
+  /// In de, this message translates to:
+  /// **'Fenster zu — der Link gilt nicht mehr.'**
+  String get platzJoinExpired;
+
+  /// No description provided for @platzJoinClosed.
+  ///
+  /// In de, this message translates to:
+  /// **'Gruppe ist aufgelöst.'**
+  String get platzJoinClosed;
+
+  /// No description provided for @platzJoinUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst den Einladungslink einfügen.'**
+  String get platzJoinUnknown;
+
+  /// No description provided for @platzJoinPrivateCode.
+  ///
+  /// In de, this message translates to:
+  /// **'Privat — nur mit Einladungslink. Kein Code zum Abtippen.'**
+  String get platzJoinPrivateCode;
 
   /// No description provided for @platzJoin.
   ///
@@ -6035,13 +6575,13 @@ abstract class AppLocalizations {
   /// No description provided for @platzHostCannotSee.
   ///
   /// In de, this message translates to:
-  /// **'Nur auf diesem Gerät. Der Host sieht dich nicht — anmelden.'**
+  /// **'Nur auf diesem Gerät. Der Gastgeber sieht dich nicht — anmelden.'**
   String get platzHostCannotSee;
 
   /// No description provided for @platzJoinLocal.
   ///
   /// In de, this message translates to:
-  /// **'Nur auf diesem Gerät: {title}. Der Host sieht dich nicht — anmelden.'**
+  /// **'Nur auf diesem Gerät: {title}. Der Gastgeber sieht dich nicht — anmelden.'**
   String platzJoinLocal(String title);
 
   /// No description provided for @platzJoinLocalCta.
@@ -6053,7 +6593,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzJoinUnsignedHint.
   ///
   /// In de, this message translates to:
-  /// **'Ohne Anmeldung sieht der Host dich nicht.'**
+  /// **'Ohne Anmeldung sieht der Gastgeber dich nicht.'**
   String get platzJoinUnsignedHint;
 
   /// No description provided for @platzNoSharedTours.
@@ -6127,6 +6667,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Ruhig bleiben — du entscheidest.'**
   String get rerouteHint;
+
+  /// No description provided for @rerouteHintOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu planen braucht Netz. Zurück auf die geladene Route geht ohne.'**
+  String get rerouteHintOffline;
 
   /// No description provided for @rerouteRejoin.
   ///
@@ -6326,6 +6872,30 @@ abstract class AppLocalizations {
   /// **'Bereit — nichts liegt an.'**
   String get dieBoxNothingDue;
 
+  /// No description provided for @dieBoxServiceOverdue.
+  ///
+  /// In de, this message translates to:
+  /// **'Wartungstermin überfällig'**
+  String get dieBoxServiceOverdue;
+
+  /// No description provided for @dieBoxServiceToday.
+  ///
+  /// In de, this message translates to:
+  /// **'Wartungstermin heute'**
+  String get dieBoxServiceToday;
+
+  /// No description provided for @dieBoxServiceOnDate.
+  ///
+  /// In de, this message translates to:
+  /// **'Termin am {date}'**
+  String dieBoxServiceOnDate(String date);
+
+  /// No description provided for @dieBoxServiceCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Öffnen'**
+  String get dieBoxServiceCta;
+
   /// No description provided for @dieBoxCscHint.
   ///
   /// In de, this message translates to:
@@ -6419,19 +6989,19 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxSagFork.
   ///
   /// In de, this message translates to:
-  /// **'Gabel SAG %'**
+  /// **'Gabel %'**
   String get dieBoxSagFork;
 
   /// No description provided for @dieBoxSagShock.
   ///
   /// In de, this message translates to:
-  /// **'Dämpfer SAG %'**
+  /// **'Dämpfer %'**
   String get dieBoxSagShock;
 
   /// No description provided for @dieBoxSagLogged.
   ///
   /// In de, this message translates to:
-  /// **'SAG gemerkt'**
+  /// **'Federung gemerkt'**
   String get dieBoxSagLogged;
 
   /// No description provided for @dieBoxTravelTitle.
@@ -6755,7 +7325,7 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxChipCsc.
   ///
   /// In de, this message translates to:
-  /// **'CSC'**
+  /// **'Tacho'**
   String get dieBoxChipCsc;
 
   /// No description provided for @dieBoxChipBatteryHonest.
@@ -6767,7 +7337,7 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxChipSag.
   ///
   /// In de, this message translates to:
-  /// **'SAG'**
+  /// **'Federung'**
   String get dieBoxChipSag;
 
   /// No description provided for @dieBoxChipChain.
@@ -6893,13 +7463,13 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxSagLoggedShort.
   ///
   /// In de, this message translates to:
-  /// **'SAG gemerkt'**
+  /// **'Federung gemerkt'**
   String get dieBoxSagLoggedShort;
 
   /// No description provided for @dieBoxSagMissingShort.
   ///
   /// In de, this message translates to:
-  /// **'SAG nicht gemessen'**
+  /// **'Federung nicht gemessen'**
   String get dieBoxSagMissingShort;
 
   /// No description provided for @dieBoxSentenceNoTravel.
@@ -6971,7 +7541,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageDeleteBikeBody.
   ///
   /// In de, this message translates to:
-  /// **'Komponenten und Setups dieses Bikes entfallen lokal.'**
+  /// **'Komponenten und Setups dieses Rads entfallen lokal.'**
   String get garageDeleteBikeBody;
 
   /// No description provided for @garageRemovePartTitle.
@@ -6983,7 +7553,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageRemovePartBody.
   ///
   /// In de, this message translates to:
-  /// **'{slot}: {name} wird aus der Garage entfernt.'**
+  /// **'{slot}: {name} wird vom Rad genommen.'**
   String garageRemovePartBody(String slot, String name);
 
   /// No description provided for @garageNotLogged.
@@ -7391,7 +7961,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageCatalogOffline.
   ///
   /// In de, this message translates to:
-  /// **'Katalog offline — du kannst dein Bike unter „Mein Rad“ oder „GPX“ anlegen.'**
+  /// **'Katalog offline — du kannst dein Rad unter „Mein Rad“ oder „GPX“ anlegen.'**
   String get garageCatalogOffline;
 
   /// No description provided for @garageNoHit.
@@ -7445,7 +8015,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageImportBike.
   ///
   /// In de, this message translates to:
-  /// **'Import-Bike'**
+  /// **'Import-Rad'**
   String get garageImportBike;
 
   /// No description provided for @garageImportNoGpx.
@@ -7463,7 +8033,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageFreeExtraLocal.
   ///
   /// In de, this message translates to:
-  /// **'Free: weiteres Bike lokal angelegt (Multi-Bike ist Pro).'**
+  /// **'Free: weiteres Rad lokal angelegt (mehrere Räder sind Pro).'**
   String get garageFreeExtraLocal;
 
   /// No description provided for @garageOemTakeover.
@@ -7607,7 +8177,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageCreateBike.
   ///
   /// In de, this message translates to:
-  /// **'Fahrrad hinzufügen'**
+  /// **'Rad anlegen'**
   String get garageCreateBike;
 
   /// No description provided for @garageGpxImported.
@@ -7751,13 +8321,13 @@ abstract class AppLocalizations {
   /// No description provided for @garageSagGuideHint.
   ///
   /// In de, this message translates to:
-  /// **'Richtwert zum Einstieg — am Bike messen, dann feinjustieren.'**
+  /// **'Richtwert zum Einstieg — am Rad messen, dann feinjustieren.'**
   String get garageSagGuideHint;
 
   /// No description provided for @garageMeasureSag.
   ///
   /// In de, this message translates to:
-  /// **'SAG messen'**
+  /// **'Federung merken'**
   String get garageMeasureSag;
 
   /// No description provided for @garageShowMeasureSteps.
@@ -8018,6 +8588,96 @@ abstract class AppLocalizations {
   /// **'Keine Runde in 90 km — nächste Regionen'**
   String get discoverNoLoop90;
 
+  /// No description provided for @discoverAroundYouCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier rundherum'**
+  String get discoverAroundYouCta;
+
+  /// No description provided for @discoverAroundYouAnother.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere Runde'**
+  String get discoverAroundYouAnother;
+
+  /// No description provided for @discoverAroundYouLoop.
+  ///
+  /// In de, this message translates to:
+  /// **'Rundkurs um dich · OSM-Wege'**
+  String get discoverAroundYouLoop;
+
+  /// No description provided for @discoverAroundYouHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Rundkurs auf OSM-Wegen — kein Trailforks-Trail'**
+  String get discoverAroundYouHint;
+
+  /// No description provided for @discoverAroundYouBusy.
+  ///
+  /// In de, this message translates to:
+  /// **'Runde wird gelegt…'**
+  String get discoverAroundYouBusy;
+
+  /// No description provided for @discoverAroundYouFail.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine geschlossene Runde hier — Ort oder Dauer ändern.'**
+  String get discoverAroundYouFail;
+
+  /// No description provided for @discoverAroundYouSport.
+  ///
+  /// In de, this message translates to:
+  /// **'Rundkurs-Generator für Gravel, Rennrad, City und E-Trekking.'**
+  String get discoverAroundYouSport;
+
+  /// No description provided for @discoverAroundYouNeedGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Standort setzen — dann Runde um dich.'**
+  String get discoverAroundYouNeedGps;
+
+  /// No description provided for @discoverAroundYouOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Rundkurs-Generator braucht Netz.'**
+  String get discoverAroundYouOffline;
+
+  /// No description provided for @discoverAroundYouUncertain.
+  ///
+  /// In de, this message translates to:
+  /// **'Länge ungefähr — etwa ±12 %'**
+  String get discoverAroundYouUncertain;
+
+  /// No description provided for @discoverAroundYouStats.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km · {min} min'**
+  String discoverAroundYouStats(String km, int min);
+
+  /// No description provided for @discoverAroundYouUncertainShort.
+  ///
+  /// In de, this message translates to:
+  /// **'±12 %'**
+  String get discoverAroundYouUncertainShort;
+
+  /// No description provided for @discoverLoopReasonDuration.
+  ///
+  /// In de, this message translates to:
+  /// **'Dauer {got} min · Ziel {want} min'**
+  String discoverLoopReasonDuration(String got, String want);
+
+  /// No description provided for @discoverLoopReasonSurface.
+  ///
+  /// In de, this message translates to:
+  /// **'Überwiegend {surface}'**
+  String discoverLoopReasonSurface(String surface);
+
+  /// No description provided for @discoverLoopReasonOsmTags.
+  ///
+  /// In de, this message translates to:
+  /// **'Oberfläche nach OSM-Tags'**
+  String get discoverLoopReasonOsmTags;
+
   /// No description provided for @discoverRecommendedNoGps.
   ///
   /// In de, this message translates to:
@@ -8081,7 +8741,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverTrailOffline.
   ///
   /// In de, this message translates to:
-  /// **'Trailnetz offline'**
+  /// **'Trailnetz braucht Netz.'**
   String get discoverTrailOffline;
 
   /// No description provided for @discoverOsmLivePath.
@@ -8147,7 +8807,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverTrailUnsuitableForBike.
   ///
   /// In de, this message translates to:
-  /// **'Mit {bike} nicht auf diesen Trail. Garage wechseln — nicht heimlich als MTB routen.'**
+  /// **'Mit {bike} nicht auf diesen Trail. Rad am Stand wechseln — nicht heimlich als MTB routen.'**
   String discoverTrailUnsuitableForBike(String bike);
 
   /// No description provided for @discoverTrailOrientedDownhill.
@@ -8243,7 +8903,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverSetStartEnd.
   ///
   /// In de, this message translates to:
-  /// **'Start & Ziel setzen — dann Route berechnen'**
+  /// **'Start & Ziel setzen — die Route folgt von allein'**
   String get discoverSetStartEnd;
 
   /// No description provided for @discoverAdjustStops.
@@ -8264,6 +8924,24 @@ abstract class AppLocalizations {
   /// **'Adresssuche fehlgeschlagen'**
   String get discoverGeocodeFailed;
 
+  /// No description provided for @discoverSearchNeedNet.
+  ///
+  /// In de, this message translates to:
+  /// **'Suche braucht Netz.'**
+  String get discoverSearchNeedNet;
+
+  /// No description provided for @discoverViasNeedNet.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwischenziele brauchen Netz.'**
+  String get discoverViasNeedNet;
+
+  /// No description provided for @discoverViasDropAndGo.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Zwischenziele weiter'**
+  String get discoverViasDropAndGo;
+
   /// No description provided for @discoverStartEndHit.
   ///
   /// In de, this message translates to:
@@ -8273,7 +8951,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverIdeaStartSet.
   ///
   /// In de, this message translates to:
-  /// **'Tour-Idee: Start = Ortspunkt, Ziel-Vorschlag gesetzt — Route berechnen.'**
+  /// **'Tour-Idee: Start = Ortspunkt, Ziel-Vorschlag gesetzt — Strecke folgt von allein.'**
   String get discoverIdeaStartSet;
 
   /// No description provided for @discoverSuggestEnd.
@@ -8297,7 +8975,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverOaOffline.
   ///
   /// In de, this message translates to:
-  /// **'Touren gerade nicht erreichbar'**
+  /// **'Live-Touren brauchen Netz.'**
   String get discoverOaOffline;
 
   /// No description provided for @discoverOaNoLive.
@@ -8479,6 +9157,24 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Ziel gesetzt — Route wird berechnet'**
   String get discoverEndSetComputing;
+
+  /// No description provided for @discoverDestSetWaitingGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel gesetzt — Start ist dein Standort'**
+  String get discoverDestSetWaitingGps;
+
+  /// No description provided for @discoverBrowseNeedsNetwork.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Verbindung — die Route braucht Netz.'**
+  String get discoverBrowseNeedsNetwork;
+
+  /// No description provided for @discoverLoadMapPack.
+  ///
+  /// In de, this message translates to:
+  /// **'Karten-Pack laden'**
+  String get discoverLoadMapPack;
 
   /// No description provided for @discoverFromHere.
   ///
@@ -8675,7 +9371,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverNoTrackYet.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Strecke — „Route berechnen“ baut sie live.'**
+  /// **'Noch keine Strecke — Start und Ziel setzen, dann folgt die Linie live.'**
   String get discoverNoTrackYet;
 
   /// No description provided for @discoverDuration.
@@ -8783,13 +9479,13 @@ abstract class AppLocalizations {
   /// No description provided for @discoverStartEndReady.
   ///
   /// In de, this message translates to:
-  /// **'Start/Ziel gesetzt. Route berechnen oder Ziel anpassen.'**
+  /// **'Start/Ziel gesetzt. Die Strecke passt sich an — Ziel bleibt editierbar.'**
   String get discoverStartEndReady;
 
   /// No description provided for @discoverComputeAndSave.
   ///
   /// In de, this message translates to:
-  /// **'Route berechnen & speichern'**
+  /// **'Speichern'**
   String get discoverComputeAndSave;
 
   /// No description provided for @discoverChangePlaceSearch.
@@ -8885,7 +9581,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverNoLiveTrackPlan.
   ///
   /// In de, this message translates to:
-  /// **'Kein Live-Track — Route berechnen öffnet Planen mit Ziel-Vorschlag.'**
+  /// **'Kein Live-Track — Planen öffnet mit Ziel-Vorschlag.'**
   String get discoverNoLiveTrackPlan;
 
   /// No description provided for @discoverNotClosedLoopNav.
@@ -8933,7 +9629,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverNotLoopAb.
   ///
   /// In de, this message translates to:
-  /// **'Kein Rundkurs — A→B-Vorschlag gesetzt. „Route berechnen“ oder Ziel tippen.'**
+  /// **'Kein Rundkurs — A→B-Vorschlag gesetzt. Ziel tippen oder anpassen.'**
   String get discoverNotLoopAb;
 
   /// No description provided for @discoverApproxAb.
@@ -9155,13 +9851,13 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenTitle.
   ///
   /// In de, this message translates to:
-  /// **'Tipps'**
+  /// **'Stimmen'**
   String get stimmenTitle;
 
   /// No description provided for @stimmenHint.
   ///
   /// In de, this message translates to:
-  /// **'Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Tipps.'**
+  /// **'Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Stimmen.'**
   String get stimmenHint;
 
   /// No description provided for @stimmenWrite.
@@ -9203,7 +9899,7 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Tipps.'**
+  /// **'Noch keine Stimmen.'**
   String get stimmenEmpty;
 
   /// No description provided for @stimmenLabel.
@@ -9578,6 +10274,18 @@ abstract class AppLocalizations {
   /// **'Wege'**
   String get discoverLayerWays;
 
+  /// No description provided for @discoverLayerFarmTracks.
+  ///
+  /// In de, this message translates to:
+  /// **'Feldwege'**
+  String get discoverLayerFarmTracks;
+
+  /// No description provided for @discoverLayerFarmTracksHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Wirtschaftswege über Felder. Aus, wenn sie wie die Route aussehen.'**
+  String get discoverLayerFarmTracksHint;
+
   /// No description provided for @discoverLayerHeight.
   ///
   /// In de, this message translates to:
@@ -9662,6 +10370,12 @@ abstract class AppLocalizations {
   /// **'Auf der Karte'**
   String get discoverMapContentsLayers;
 
+  /// No description provided for @discoverLayersNeedNet.
+  ///
+  /// In de, this message translates to:
+  /// **'Trails, Heat und Orte brauchen Netz.'**
+  String get discoverLayersNeedNet;
+
   /// No description provided for @discoverMapContentsTools.
   ///
   /// In de, this message translates to:
@@ -9695,7 +10409,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverVariantValhallaOnly.
   ///
   /// In de, this message translates to:
-  /// **'Ohne Live-Strecke keine Varianten'**
+  /// **'Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.'**
   String get discoverVariantValhallaOnly;
 
   /// No description provided for @discoverGhMinuteLimit.
@@ -9715,6 +10429,42 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.'**
   String get discoverHonestyCycleway;
+
+  /// No description provided for @discoverHonestyFarmTail.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Weg bis zum Pin — Ziel liegt an der Straße.'**
+  String get discoverHonestyFarmTail;
+
+  /// No description provided for @discoverHonestyFarmMid.
+  ///
+  /// In de, this message translates to:
+  /// **'Teile der Route folgen Feldwegen — Ziel näher an eine Straße setzen.'**
+  String get discoverHonestyFarmMid;
+
+  /// No description provided for @discoverLastDestChip.
+  ///
+  /// In de, this message translates to:
+  /// **'Letztes Ziel: {name}'**
+  String discoverLastDestChip(String name);
+
+  /// No description provided for @discoverLastDestChipGeneric.
+  ///
+  /// In de, this message translates to:
+  /// **'Letztes Ziel wiederholen'**
+  String get discoverLastDestChipGeneric;
+
+  /// No description provided for @discoverLastDestApplied.
+  ///
+  /// In de, this message translates to:
+  /// **'Letztes Ziel übernommen.'**
+  String get discoverLastDestApplied;
+
+  /// No description provided for @discoverLastDestUndo.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückgängig'**
+  String get discoverLastDestUndo;
 
   /// No description provided for @discoverTrailWet.
   ///
@@ -9770,6 +10520,24 @@ abstract class AppLocalizations {
   /// **'{name} · {size} fürs Routing laden?'**
   String discoverOfflineAfterSavePackSized(String name, String size);
 
+  /// No description provided for @discoverOfflineAfterSavePackEnvelope.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Routing auf der Landesfläche laden?'**
+  String discoverOfflineAfterSavePackEnvelope(String name);
+
+  /// No description provided for @discoverOfflineAfterSavePackEnvelopeSized.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · {size} — Landesfläche laden?'**
+  String discoverOfflineAfterSavePackEnvelopeSized(String name, String size);
+
+  /// No description provided for @discoverOfflineNoRoute.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Netz: das Pack muss Start und Ziel decken.'**
+  String get discoverOfflineNoRoute;
+
   /// No description provided for @discoverOfflineAfterSaveAction.
   ///
   /// In de, this message translates to:
@@ -9809,7 +10577,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverTapEndCompute.
   ///
   /// In de, this message translates to:
-  /// **'Ziel tippen oder Adresse — dann Route berechnen.'**
+  /// **'Ziel tippen oder Adresse eingeben.'**
   String get discoverTapEndCompute;
 
   /// No description provided for @discoverPlanYourself.
@@ -10508,6 +11276,12 @@ abstract class AppLocalizations {
   /// **'Lenker gerade halten — setzt die aktuelle Neigung auf 0°.'**
   String get rideCalibrateLeanHint;
 
+  /// No description provided for @rideCalibrateLeanHold.
+  ///
+  /// In de, this message translates to:
+  /// **'Kurz anhalten zum Kalibrieren'**
+  String get rideCalibrateLeanHold;
+
   /// No description provided for @rideResetLeanCal.
   ///
   /// In de, this message translates to:
@@ -10751,7 +11525,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideChipOfflineMapOk.
   ///
   /// In de, this message translates to:
-  /// **'Offline · Street-Karte · Reroute: Netz'**
+  /// **'Offline · Straßenkarte · Reroute: Netz'**
   String get rideChipOfflineMapOk;
 
   /// No description provided for @rideChipMapsMissing.
@@ -10765,6 +11539,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Routing offline · Karte: Netz'**
   String get rideChipRoutingOffline;
+
+  /// No description provided for @rideChipRoutingOfflineShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing offline'**
+  String get rideChipRoutingOfflineShort;
+
+  /// No description provided for @rideHudStreetNeedsNet.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte braucht Netz'**
+  String get rideHudStreetNeedsNet;
 
   /// No description provided for @rideCardinalN.
   ///
@@ -10945,6 +11731,78 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Kein Intervall'**
   String get maintNoInterval;
+
+  /// No description provided for @maintAnnual.
+  ///
+  /// In de, this message translates to:
+  /// **'Jährliche Inspektion'**
+  String get maintAnnual;
+
+  /// No description provided for @maintAnnualEbike.
+  ///
+  /// In de, this message translates to:
+  /// **'Jährliche E-Bike-Inspektion'**
+  String get maintAnnualEbike;
+
+  /// No description provided for @maintFirst.
+  ///
+  /// In de, this message translates to:
+  /// **'Erste Inspektion'**
+  String get maintFirst;
+
+  /// No description provided for @maintFirstEbike.
+  ///
+  /// In de, this message translates to:
+  /// **'Erste E-Bike-Inspektion'**
+  String get maintFirstEbike;
+
+  /// No description provided for @maintTires.
+  ///
+  /// In de, this message translates to:
+  /// **'Reifen prüfen'**
+  String get maintTires;
+
+  /// No description provided for @maintBearings.
+  ///
+  /// In de, this message translates to:
+  /// **'Lager prüfen (Steuersatz/Naben/Tretlager)'**
+  String get maintBearings;
+
+  /// No description provided for @maintBleed.
+  ///
+  /// In de, this message translates to:
+  /// **'Bremsen: Druckpunkt / Entlüften'**
+  String get maintBleed;
+
+  /// No description provided for @maintBattery.
+  ///
+  /// In de, this message translates to:
+  /// **'Akku-Check (Kontakte, Kapazität)'**
+  String get maintBattery;
+
+  /// No description provided for @maintNeverLogged.
+  ///
+  /// In de, this message translates to:
+  /// **'noch keine Inspektion gemerkt'**
+  String get maintNeverLogged;
+
+  /// No description provided for @maintDueNow.
+  ///
+  /// In de, this message translates to:
+  /// **'fällig'**
+  String get maintDueNow;
+
+  /// No description provided for @maintKmLeft.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} km'**
+  String maintKmLeft(String n);
+
+  /// No description provided for @maintHoursLeft.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} h'**
+  String maintHoursLeft(String n);
 
   /// No description provided for @compatTitleDrv011.
   ///
@@ -11447,13 +12305,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideObsImpacts.
   ///
   /// In de, this message translates to:
-  /// **'Viele harte Impacts ({count} auf {km} km) — Front/Dämpfer stark belastet.'**
+  /// **'Viele harte Stöße ({count} auf {km} km) — Front/Dämpfer stark belastet.'**
   String postRideObsImpacts(String count, String km);
 
   /// No description provided for @postRideObsSmooth.
   ///
   /// In de, this message translates to:
-  /// **'Wenige Impacts bei {km} km — eher flowig oder glatter Untergrund.'**
+  /// **'Wenige Stöße bei {km} km — eher flowig oder glatter Untergrund.'**
   String postRideObsSmooth(String km);
 
   /// No description provided for @postRideObsFlowHigh.
@@ -11471,7 +12329,7 @@ abstract class AppLocalizations {
   /// No description provided for @postRideObsPeakG.
   ///
   /// In de, this message translates to:
-  /// **'Peak {g} g — harte Einschläge; Setup und Reifendruck prüfen.'**
+  /// **'Spitze {g} g — harte Einschläge; Setup und Reifendruck prüfen.'**
   String postRideObsPeakG(String g);
 
   /// No description provided for @postRideFrontTooFirm.
@@ -11555,7 +12413,7 @@ abstract class AppLocalizations {
   /// No description provided for @postRideSugReboundFastContent.
   ///
   /// In de, this message translates to:
-  /// **'Aktuell ca. {current} Klicks → Ziel {next} (weniger Dive).'**
+  /// **'Aktuell ca. {current} Klicks → Ziel {next} (weniger Nick).'**
   String postRideSugReboundFastContent(String current, String next);
 
   /// No description provided for @postRideSugReboundFastEffect.
@@ -11573,13 +12431,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideSugPressureContent.
   ///
   /// In de, this message translates to:
-  /// **'Sehr hohe Peak-g — Druck und Volumen-Spacer gegen Hersteller-Tabelle halten.'**
+  /// **'Sehr hohe Spitzen-g — Druck und Volumen-Spacer gegen Hersteller-Tabelle halten.'**
   String get postRideSugPressureContent;
 
   /// No description provided for @postRideSugPressureEffect.
   ///
   /// In de, this message translates to:
-  /// **'Weniger Bottom-out-Risiko, klareres Feedback.'**
+  /// **'Weniger Durchschlag-Risiko, klareres Feedback.'**
   String get postRideSugPressureEffect;
 
   /// No description provided for @postRideSugLimitsClicks.
@@ -11609,13 +12467,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideReasonImpacts.
   ///
   /// In de, this message translates to:
-  /// **'{count} Impacts / {km} km'**
+  /// **'{count} Stöße / {km} km'**
   String postRideReasonImpacts(String count, String km);
 
   /// No description provided for @postRideReasonRms.
   ///
   /// In de, this message translates to:
-  /// **'RMS {rms} g'**
+  /// **'mittlere g {rms}'**
   String postRideReasonRms(String rms);
 
   /// No description provided for @postRideReasonFrontLoad.
@@ -11639,13 +12497,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideReasonSoftDive.
   ///
   /// In de, this message translates to:
-  /// **'Front zu weich / Dive'**
+  /// **'Front zu weich / taucht ab'**
   String get postRideReasonSoftDive;
 
   /// No description provided for @postRideReasonPeakLong.
   ///
   /// In de, this message translates to:
-  /// **'Peak ≥ 5 g bei längerer Fahrt'**
+  /// **'Spitze ≥ 5 g bei längerer Fahrt'**
   String get postRideReasonPeakLong;
 
   /// No description provided for @postRideAnalysis.
@@ -11712,38 +12570,50 @@ abstract class AppLocalizations {
   /// No description provided for @postRideFactMetrics.
   ///
   /// In de, this message translates to:
-  /// **'Flow {flow} · Peak {g} g · {impacts} Impacts'**
+  /// **'Flow {flow} · Spitze {g} g · {impacts} Stöße'**
   String postRideFactMetrics(String flow, String g, String impacts);
 
   /// No description provided for @postRideFactMetricsLean.
   ///
   /// In de, this message translates to:
-  /// **'Flow {flow} · Peak {g} g · {impacts} Impacts · Lean {lean}°'**
+  /// **'Flow {flow} · Spitze {g} g · {impacts} Stöße · Neigung {lean}°'**
   String postRideFactMetricsLean(
       String flow, String g, String impacts, String lean);
 
   /// No description provided for @postRideFactBike.
   ///
   /// In de, this message translates to:
-  /// **'Bike: {name}'**
+  /// **'Rad: {name}'**
   String postRideFactBike(String name);
 
   /// No description provided for @postRideFactSoc.
   ///
   /// In de, this message translates to:
-  /// **'SOC {soc}%'**
+  /// **'Akku {soc}%'**
   String postRideFactSoc(String soc);
+
+  /// No description provided for @postRideFactSetup.
+  ///
+  /// In de, this message translates to:
+  /// **'Setup „{label}“ ({conditions})'**
+  String postRideFactSetup(String label, String conditions);
+
+  /// No description provided for @postRideFactMotor.
+  ///
+  /// In de, this message translates to:
+  /// **'Ø Akku {soc}% · Fahrer {power} W'**
+  String postRideFactMotor(String soc, String power);
 
   /// No description provided for @rideGPeak.
   ///
   /// In de, this message translates to:
-  /// **'G-Peak'**
+  /// **'g-Spitze'**
   String get rideGPeak;
 
   /// No description provided for @rideLean.
   ///
   /// In de, this message translates to:
-  /// **'Neig.'**
+  /// **'Neigung'**
   String get rideLean;
 
   /// No description provided for @rideFlow.
@@ -12073,7 +12943,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleStatusRetry.
   ///
   /// In de, this message translates to:
-  /// **'Verbinde … Retry {n}/{max}'**
+  /// **'Verbinde … Versuch {n}/{max}'**
   String bleStatusRetry(String n, String max);
 
   /// No description provided for @bleStatusAttempt.
@@ -13291,7 +14161,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineInvalidGraphFolder.
   ///
   /// In de, this message translates to:
-  /// **'Ordner {id} enthält keinen gültigen Graph für diese Region'**
+  /// **'Ordner {id} enthält keinen gültigen Graph für dieses Pack'**
   String offlineInvalidGraphFolder(String id);
 
   /// No description provided for @offlineNoRemotePack.
@@ -13339,7 +14209,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineSubInstalled.
   ///
   /// In de, this message translates to:
-  /// **'Installiert — tippen zum Aktivieren'**
+  /// **'Installiert'**
   String get offlineSubInstalled;
 
   /// No description provided for @offlineSubDemoGraph.
@@ -13366,16 +14236,28 @@ abstract class AppLocalizations {
   /// **'{size} · Routing'**
   String offlineSubLoadSized(String size);
 
+  /// No description provided for @offlineSubEnvelope.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing · Landesfläche'**
+  String get offlineSubEnvelope;
+
+  /// No description provided for @offlineSubEnvelopeSized.
+  ///
+  /// In de, this message translates to:
+  /// **'{size} · Routing · Landesfläche'**
+  String offlineSubEnvelopeSized(String size);
+
   /// No description provided for @offlineSubValhalla.
   ///
   /// In de, this message translates to:
-  /// **'Routing (Valhalla)'**
+  /// **'Routing'**
   String get offlineSubValhalla;
 
   /// No description provided for @offlineSubValhallaSized.
   ///
   /// In de, this message translates to:
-  /// **'{size} · Routing (Valhalla)'**
+  /// **'{size} · Routing'**
   String offlineSubValhallaSized(String size);
 
   /// No description provided for @offlineGraphMissing.
@@ -14099,10 +14981,52 @@ abstract class AppLocalizations {
   /// **'Runde'**
   String get loopTag;
 
+  /// No description provided for @mappeShowAll.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle zeigen'**
+  String get mappeShowAll;
+
+  /// No description provided for @mappeKeepOnMap.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf der Karte merken'**
+  String get mappeKeepOnMap;
+
+  /// No description provided for @mappeKeepName.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur den Namen merken'**
+  String get mappeKeepName;
+
+  /// No description provided for @mappeLastRidden.
+  ///
+  /// In de, this message translates to:
+  /// **'zuletzt {when}'**
+  String mappeLastRidden(String when);
+
+  /// No description provided for @mappeRename.
+  ///
+  /// In de, this message translates to:
+  /// **'Umbenennen'**
+  String get mappeRename;
+
+  /// No description provided for @akteMein.
+  ///
+  /// In de, this message translates to:
+  /// **'Akte'**
+  String get akteMein;
+
+  /// No description provided for @stimmeInboxUntitled.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimme'**
+  String get stimmeInboxUntitled;
+
   /// No description provided for @mappeStimmenEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Tipps zu deinen Touren. Nach Freigabe können andere schreiben.'**
+  /// **'Noch keine Stimmen zu deinen Touren. Nach Freigabe können andere schreiben.'**
   String get mappeStimmenEmpty;
 
   /// No description provided for @myRoutesSourceOwn.
@@ -14186,7 +15110,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofSyncLocalHint.
   ///
   /// In de, this message translates to:
-  /// **'Garage/Rides bleiben lokal — Konto für Cloud-Sync.'**
+  /// **'Rad und Fahrten bleiben lokal — Konto für Cloud-Sync.'**
   String get hofSyncLocalHint;
 
   /// No description provided for @hofSystemNotice.
@@ -14278,6 +15202,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'—'**
   String get garageStatDash;
+
+  /// No description provided for @garageStatCare.
+  ///
+  /// In de, this message translates to:
+  /// **'Pflege'**
+  String get garageStatCare;
+
+  /// No description provided for @garageStatDueNow.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt'**
+  String get garageStatDueNow;
+
+  /// No description provided for @garageStandTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Kilometer & Stunden'**
+  String get garageStandTitle;
+
+  /// No description provided for @garageStandHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Stand vom Computer oder Tacho. Stunden rechnen wir nicht aus km.'**
+  String get garageStandHint;
 
   /// No description provided for @garagePartsEmptyTitle.
   ///
@@ -14723,10 +15671,16 @@ abstract class AppLocalizations {
   /// **'Noch wenig km — Schwellen erscheinen mit dem Zähler. Keine Inspektion gemerkt.'**
   String get garageMaintEmptyLowKm;
 
+  /// No description provided for @garageMaintEmptyNoInspection.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Inspektion gemerkt — kein Alles-grün. Termin oder Check eintragen.'**
+  String get garageMaintEmptyNoInspection;
+
   /// No description provided for @garageSagWeightHint.
   ///
   /// In de, this message translates to:
-  /// **'SAG-Ziel in % bleibt gleich. Der Luftdruck-Richtwert folgt deinem Gewicht ({kg} kg){fork}.'**
+  /// **'Einfederung-Ziel in % bleibt gleich. Der Luftdruck-Richtwert folgt deinem Gewicht ({kg} kg){fork}.'**
   String garageSagWeightHint(String kg, String fork);
 
   /// No description provided for @garageSagWeightFork.
@@ -14741,6 +15695,60 @@ abstract class AppLocalizations {
   /// **'Druck merken / ändern'**
   String get garagePressureChange;
 
+  /// No description provided for @garageUnitBar.
+  ///
+  /// In de, this message translates to:
+  /// **'bar'**
+  String get garageUnitBar;
+
+  /// No description provided for @garageUnitPsi.
+  ///
+  /// In de, this message translates to:
+  /// **'psi'**
+  String get garageUnitPsi;
+
+  /// No description provided for @garageSagPartFork.
+  ///
+  /// In de, this message translates to:
+  /// **'Gabel'**
+  String get garageSagPartFork;
+
+  /// No description provided for @garageSagPartShock.
+  ///
+  /// In de, this message translates to:
+  /// **'Dämpfer'**
+  String get garageSagPartShock;
+
+  /// No description provided for @garageSagStepExtend.
+  ///
+  /// In de, this message translates to:
+  /// **'{part} voll ausfedern, O-Ring an die Dichtung schieben.'**
+  String garageSagStepExtend(String part);
+
+  /// No description provided for @garageSagStepBounce.
+  ///
+  /// In de, this message translates to:
+  /// **'Fahrbereit aufsteigen, 3× leicht einfedern.'**
+  String get garageSagStepBounce;
+
+  /// No description provided for @garageSagStepDismount.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorsichtig absteigen, ohne den O-Ring zu verschieben.'**
+  String get garageSagStepDismount;
+
+  /// No description provided for @garageSagStepRatio.
+  ///
+  /// In de, this message translates to:
+  /// **'Negativfederweg messen ÷ Gesamtfederweg → SAG %.'**
+  String get garageSagStepRatio;
+
+  /// No description provided for @garageSagStepAir.
+  ///
+  /// In de, this message translates to:
+  /// **'Luft nachpumpen oder ablassen bis Zielbereich.'**
+  String get garageSagStepAir;
+
   /// No description provided for @garageAddPhotoHint.
   ///
   /// In de, this message translates to:
@@ -14752,6 +15760,120 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'{count} Teile nach dem Anlegen eintragen.'**
   String garageAddPhotoPartsPending(int count);
+
+  /// No description provided for @garagePhotoKept.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto gemerkt'**
+  String get garagePhotoKept;
+
+  /// No description provided for @garagePhotoRetake.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu aufnehmen'**
+  String get garagePhotoRetake;
+
+  /// No description provided for @garagePhotoRetakeHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Cover sitzt. Neu aufnehmen, dann liegt das Rad auf dem Stand.'**
+  String get garagePhotoRetakeHint;
+
+  /// No description provided for @identifyReasonNoKey.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Vision-Schlüssel. Foto merken, Marke und Modell tippen.'**
+  String get identifyReasonNoKey;
+
+  /// No description provided for @identifyReasonQuota.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan-Kontingent leer. Marke und Modell tippen.'**
+  String get identifyReasonQuota;
+
+  /// No description provided for @identifyReasonFailed.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto nicht gelesen. Marke und Modell tippen.'**
+  String get identifyReasonFailed;
+
+  /// No description provided for @identifyReasonUnreadable.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad auf dem Foto nicht erkannt. Anderes Bild oder tippen.'**
+  String get identifyReasonUnreadable;
+
+  /// No description provided for @identifyReasonNoCatalog.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Treffer im Katalog. Gelesenen Text prüfen oder tippen.'**
+  String get identifyReasonNoCatalog;
+
+  /// No description provided for @identifyReasonFallback.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Treffer im Katalog. Marke und Modell tippen.'**
+  String get identifyReasonFallback;
+
+  /// No description provided for @receiptScanOk.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan hat Felder vorausgefüllt — bitte prüfen.'**
+  String get receiptScanOk;
+
+  /// No description provided for @receiptScanNoKey.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Vision-Schlüssel auf dem Server. Foto merken, Text nachtragen.'**
+  String get receiptScanNoKey;
+
+  /// No description provided for @receiptScanQuota.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan-Kontingent leer. Foto merken, Text nachtragen.'**
+  String get receiptScanQuota;
+
+  /// No description provided for @receiptScanFailed.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan nicht erreichbar. Foto merken, Text nachtragen.'**
+  String get receiptScanFailed;
+
+  /// No description provided for @receiptScanUnreadable.
+  ///
+  /// In de, this message translates to:
+  /// **'Beleg nicht erkannt. Felder selbst eintragen.'**
+  String get receiptScanUnreadable;
+
+  /// No description provided for @receiptScanNone.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto merken. Text später nachtragen.'**
+  String get receiptScanNone;
+
+  /// No description provided for @garageReceiptKindWorkshop.
+  ///
+  /// In de, this message translates to:
+  /// **'Werkstatt'**
+  String get garageReceiptKindWorkshop;
+
+  /// No description provided for @garageReceiptKindParts.
+  ///
+  /// In de, this message translates to:
+  /// **'Ersatzteil'**
+  String get garageReceiptKindParts;
+
+  /// No description provided for @garageReceiptKindWarranty.
+  ///
+  /// In de, this message translates to:
+  /// **'Garantie'**
+  String get garageReceiptKindWarranty;
+
+  /// No description provided for @garageReceiptKindOther.
+  ///
+  /// In de, this message translates to:
+  /// **'Beleg'**
+  String get garageReceiptKindOther;
 }
 
 class _AppLocalizationsDelegate

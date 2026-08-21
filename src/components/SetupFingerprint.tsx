@@ -1,10 +1,16 @@
 "use client";
 
 import type { Setup } from "@/types";
-import { setupConditionLabel } from "@/lib/setup/conditionLabels";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import {
+  localizeSetupCondition,
+  recapChromeCopy,
+} from "@/lib/i18n/recapChromeCopy";
+import { fillCopy } from "@/lib/i18n/postRideAnalysisCopy";
 
-/** Kompakter Setup-Fingerprint (Sag / Rebound / Druck) für Home & Garage. */
+/** Kompakter Setup-Fingerprint (Sag / Rebound / Druck) für Recap, Hof und Garage. */
 export function SetupFingerprint({ setup }: { setup: Setup }) {
+  const chrome = recapChromeCopy(useChromeLang());
   const sag = setup.values.find((v) => /sag/i.test(v.adjusterKey));
   const rebound = setup.values.find(
     (v) => v.slot === "fork" && /rebound/i.test(v.adjusterKey)
@@ -19,20 +25,27 @@ export function SetupFingerprint({ setup }: { setup: Setup }) {
 
   const chips = [
     sag
-      ? { label: "SAG", value: `${sag.valueNum}${sag.unit === "percent" || !sag.unit ? "%" : sag.unit}` }
+      ? {
+          label: "SAG",
+          value: `${sag.valueNum}${sag.unit === "percent" || !sag.unit ? "%" : sag.unit}`,
+        }
       : null,
     forkPsi
-      ? { label: "Gabel", value: `${forkPsi.valueNum} psi` }
+      ? { label: chrome.chipFork, value: `${forkPsi.valueNum} psi` }
       : rebound
-        ? { label: "Zug", value: `${rebound.valueNum}` }
+        ? { label: chrome.chipRebound, value: `${rebound.valueNum}` }
         : null,
-    tirePsi ? { label: "Reifen V", value: `${tirePsi.valueNum}` } : null,
+    tirePsi
+      ? { label: chrome.chipTireFront, value: `${tirePsi.valueNum}` }
+      : null,
   ].filter(Boolean) as { label: string; value: string }[];
+
+  const conditions = localizeSetupCondition(setup.conditions, chrome);
 
   if (chips.length === 0) {
     return (
       <p className="text-xs text-text-secondary">
-        Setup „{setup.label}“ · {setupConditionLabel(setup.conditions)}
+        {fillCopy(chrome.setupNamed, { label: setup.label, conditions })}
       </p>
     );
   }
@@ -48,9 +61,7 @@ export function SetupFingerprint({ setup }: { setup: Setup }) {
           <div className="text-[10px] text-text-secondary">{c.label}</div>
         </div>
       ))}
-      <span className="text-xs text-text-secondary">
-        {setupConditionLabel(setup.conditions)}
-      </span>
+      <span className="text-xs text-text-secondary">{conditions}</span>
     </div>
   );
 }

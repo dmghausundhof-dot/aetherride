@@ -2,31 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import { useAppStore } from "@/store/useAppStore";
 import type { BikeCategory } from "@/types";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { X } from "lucide-react";
 
 const SPORTS: { id: BikeCategory; label: string; blurb: string }[] = [
-  { id: "road", label: "Rennrad", blurb: "Asphalt & Radwege" },
+  { id: "urban", label: "City", blurb: "Alltag & Pendeln" },
   { id: "gravel", label: "Gravel", blurb: "Schotter & Distanz" },
-  { id: "urban", label: "Stadt", blurb: "Alltag & Pendeln" },
-  { id: "mtb_am", label: "MTB", blurb: "Trails & All-Mountain" },
+  { id: "road", label: "Rennrad", blurb: "Asphalt & Tempo" },
+  { id: "mtb_am", label: "MTB", blurb: "Trails & Touren" },
   { id: "mtb_enduro", label: "Enduro", blurb: "Steil & technisch" },
   { id: "emtb", label: "E-MTB", blurb: "Trail mit Assist" },
   { id: "etrekking", label: "E-Trekking", blurb: "Touren mit Assist" },
 ];
 
 /**
- * Flow A light: Sport → Gewicht → Bike anlegen oder Freeride.
+ * Flow A light: Sport → Gewicht → Rad anlegen oder Freeride.
  * Einmalig, bis abgeschlossen oder übersprungen.
  */
 export function OnboardingFlow({ onDone }: { onDone: () => void }) {
+  const copy = useHofCopy();
   const router = useRouter();
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const markOnboardingDone = useAppStore((s) => s.markOnboardingDone);
   const [step, setStep] = useState<1 | 2>(1);
-  const [sport, setSport] = useState<BikeCategory>("road");
+  const [sport, setSport] = useState<BikeCategory>("urban");
   const [weight, setWeight] = useState(78);
 
   const finish = (next: "garage" | "discover" | "skip") => {
@@ -34,11 +36,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
     markOnboardingDone(sport);
     onDone();
     if (next === "garage") {
-      const mode =
-        sport === "urban" || sport === "road" || sport === "etrekking"
-          ? "basic"
-          : "catalog";
-      router.push(`/garage?wizard=${mode}&category=${sport}`);
+      router.push(`/garage?wizard=1&category=${sport}`);
     } else if (next === "discover") {
       router.push("/discover");
     }
@@ -126,7 +124,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
                 onClick={() => finish("garage")}
                 className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
               >
-                Rad abstellen
+                {copy.workshopAdd}
               </button>
               <button
                 type="button"

@@ -34,7 +34,10 @@ export function AppHeader() {
     const inbox = myReviews.filter((r) =>
       savedRoutes.some((s) => stimmenTourIdOf(s) === r.tourId)
     );
-    return inbox.length > inboxSeen;
+    const listing = savedRoutes.filter(
+      (s) => s.listing === "candidate" || s.listing === "reverted"
+    ).length;
+    return inbox.length + listing > inboxSeen;
   }, [myReviews, savedRoutes, inboxSeen]);
 
   return (

@@ -4,7 +4,8 @@ import 'consents.dart';
 
 const double kPrivacyZoneMinRadiusM = 50;
 const double kPrivacyZoneMaxRadiusM = 2000;
-const double kPrivacyZoneDefaultRadiusM = 200;
+const double kPrivacyZoneDefaultRadiusM = 500;
+const List<double> kPrivacyZoneRadiusPresetsM = [200, 500, 1000];
 const String kPrivacyZoneDefaultLabel = 'Zuhause';
 
 /// Geographic center of Germany — last-resort camera, never Null Island.
@@ -34,11 +35,9 @@ class PrivacyZoneMapOrigin {
   final double zoom;
   final PrivacyZoneMapOriginSource source;
 
-  /// GPS / letzter Ride dürfen die Zone vorplatzieren; Land-Fallback nicht.
-  bool get shouldPrePlace =>
-      source == PrivacyZoneMapOriginSource.gps ||
-      source == PrivacyZoneMapOriginSource.ride ||
-      source == PrivacyZoneMapOriginSource.existing;
+  /// Nur eine bestehende Zone liegt schon; GPS/Ride nur als Kamera, kein
+  /// stilles „Zuhause“ am aktuellen Standort.
+  bool get shouldPrePlace => source == PrivacyZoneMapOriginSource.existing;
 }
 
 bool isPlausiblePrivacyCoord(double lat, double lng) {

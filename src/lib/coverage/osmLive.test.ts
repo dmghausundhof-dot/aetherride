@@ -3,6 +3,9 @@
  * npx tsx src/lib/coverage/osmLive.test.ts
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   isHonestOsmSGrade,
   normalizeMtbScale,
@@ -38,7 +41,26 @@ function testOverpassPartsAreScaleOnly() {
   assert.equal(q.includes("living_street"), false);
 }
 
+function testLiveTrailsSkipUntaggedFarmTracks() {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "osmLive.ts"),
+    "utf8"
+  );
+  assert.equal(
+    src.includes('tracktype"~"grade2|grade3|grade4|grade5"'),
+    false,
+    "live trail fetch must not pull untagged farm tracks"
+  );
+  assert.equal(
+    src.includes('ground|gravel|dirt|grass'),
+    false,
+    "live trail fetch must not pull untagged grass field paths"
+  );
+  assert.match(src, /\["mtb:scale"\]/);
+}
+
 testHonestScale();
 testNormalizeKeepsTaggedGrades();
 testOverpassPartsAreScaleOnly();
+testLiveTrailsSkipUntaggedFarmTracks();
 console.log("osmLive.test.ts: ok");

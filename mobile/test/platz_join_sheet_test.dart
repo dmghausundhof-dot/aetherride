@@ -85,7 +85,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('platz-join-field')), findsOneWidget);
     expect(find.byKey(const Key('platz-join-signin')), findsOneWidget);
-    expect(find.textContaining('sieht der Host dich nicht'), findsOneWidget);
+    expect(find.textContaining('sieht der Gastgeber dich nicht'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('platz-join-submit')));
     expect(find.byKey(const Key('platz-join-submit')), findsOneWidget);
   });

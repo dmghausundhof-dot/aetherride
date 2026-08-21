@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
 import '../../domain/bike.dart';
+import '../../domain/bike_owner.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/track_trim.dart';
@@ -65,11 +66,20 @@ class GarageRepository {
     int? travelRearMm,
     bool isEbike = false,
     bool makeActive = true,
+    BikeOwner owner = BikeOwner.empty,
   }) async {
     final existing = await listBikes();
+    final electric = isEbike ||
+        category == BikeCategory.emtb ||
+        category == BikeCategory.etrekking;
     if (catalogBikeId != null && catalogBikeId.isNotEmpty) {
+      final typed = name.trim();
+      final incoming = resolvedBikeName(name, category, isEbike: electric);
       for (final b in existing) {
-        if (b.catalogBikeId == catalogBikeId) {
+        if (b.catalogBikeId != catalogBikeId) continue;
+        // Gleicher Katalog + leerer/gleicher Name = dasselbe Rad.
+        // Anderer Spitzname = zweites Rad (Partner, Ersatzrahmen).
+        if (typed.isEmpty || incoming == b.name) {
           if (makeActive) await setActiveBike(b.id);
           return b;
         }
@@ -79,9 +89,6 @@ class GarageRepository {
       freeTierExtraBike = true;
     }
     final id = _uuid.v4();
-    final electric = isEbike ||
-        category == BikeCategory.emtb ||
-        category == BikeCategory.etrekking;
     final bike = Bike(
       id: id,
       name: resolvedBikeName(name, category, isEbike: electric),
@@ -96,6 +103,7 @@ class GarageRepository {
       travelRearMm: travelRearMm,
       isActive: makeActive || existing.isEmpty,
       isEbike: electric,
+      owner: owner,
     );
     await upsert(bike);
     if (bike.isActive) await setActiveBike(id);
@@ -108,7 +116,7 @@ class GarageRepository {
     String? note,
   }) async {
     final bike = await addBikeBasic(
-      name: name.trim().isEmpty ? 'Import-Bike' : name.trim(),
+      name: name.trim().isEmpty ? 'Import-Rad' : name.trim(),
       category: BikeCategory.urban,
       makeActive: true,
     );
@@ -145,6 +153,7 @@ class GarageRepository {
             hours: Value(bike.hours),
             isActive: Value(bike.isActive),
             isEbike: Value(bike.hasElectricAssist),
+            ownerJson: Value(jsonEncode(bike.owner.toJson())),
             updatedAt: DateTime.now().toUtc(),
           ),
         );
@@ -280,6 +289,9 @@ class GarageRepository {
               'isEbike': b.isEbike ||
                   b.category == 'emtb' ||
                   b.category == 'etrekking',
+              ...BikeOwner.fromJson(
+                _tryDecodeMap(b.ownerJson),
+              ).toSyncFields(),
               'components': [
                 for (final c in components.where((c) => c.bikeId == b.id))
                   {
@@ -366,6 +378,7 @@ class GarageRepository {
           ? null
           : [for (final r in profileStore!.familyRiders) r.toJson()],
       activeFamilyRiderId: profileStore?.activeFamilyRiderId,
+      ownSetupByBikeId: profileStore?.ownSetupByBikeId,
       commerceMode: profileStore?.commerceMode,
       rangeCalibration: profileStore?.rangeCalibration?.toJson(),
       maintenanceLogs:
@@ -532,6 +545,12 @@ class GarageRepository {
       if (payload.activeFamilyRiderId != null) {
         store.activeFamilyRiderId = payload.activeFamilyRiderId;
       }
+      if (payload.ownSetupByBikeId is Map) {
+        store.ownSetupByBikeId = {
+          for (final e in (payload.ownSetupByBikeId as Map).entries)
+            e.key.toString(): e.value.toString(),
+        };
+      }
       final cm = payload.commerceMode;
       if (cm is String && (cm == 'affiliate' || cm == 'marketplace')) {
         store.commerceMode = cm;
@@ -609,6 +628,9 @@ class GarageRepository {
                   hours: Value((m['hours'] as num?)?.toDouble() ?? 0),
                   isActive: Value(m['isActive'] == true),
                   isEbike: Value(syncIsEbike),
+                  ownerJson: Value(
+                    jsonEncode(BikeOwner.fromSync(m).toJson()),
+                  ),
                   updatedAt: DateTime.now().toUtc(),
                 ),
               );
@@ -870,6 +892,16 @@ class GarageRepository {
       isEbike: row.isEbike ||
           category == BikeCategory.emtb ||
           category == BikeCategory.etrekking,
+      owner: BikeOwner.fromJson(_tryDecodeMap(row.ownerJson)),
     );
+  }
+
+  Map<String, dynamic>? _tryDecodeMap(String? raw) {
+    if (raw == null || raw.isEmpty || raw == '{}') return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return null;
   }
 }

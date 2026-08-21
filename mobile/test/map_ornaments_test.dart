@@ -90,6 +90,19 @@ void main() {
       CompassViewPosition.topRight,
     );
   });
+
+  testWidgets('HUD-Locate sitzt links über der Tempo-Leiste', (tester) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(padding: EdgeInsets.only(bottom: 48, left: 8)),
+        child: _HudLocateProbe(),
+      ),
+    );
+    final p = _HudLocateProbe.last!;
+    expect(p.x, MapOrnaments.sideMin);
+    expect(p.y, 48 + MapOrnaments.hudLocateAboveStrip);
+    expect(MapOrnaments.hudLocateAboveStrip, greaterThan(90));
+  });
 }
 
 class _CompassProbe extends StatelessWidget {
@@ -104,6 +117,18 @@ class _CompassProbe extends StatelessWidget {
       context,
       extraBelowSafe: extraBelowSafe,
     );
+    return const SizedBox.shrink();
+  }
+}
+
+class _HudLocateProbe extends StatelessWidget {
+  const _HudLocateProbe();
+
+  static Point? last;
+
+  @override
+  Widget build(BuildContext context) {
+    last = MapOrnaments.hudLocateMargins(context);
     return const SizedBox.shrink();
   }
 }

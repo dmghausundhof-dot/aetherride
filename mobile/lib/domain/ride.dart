@@ -81,6 +81,10 @@ class TrackPoint {
     this.heartRateBpm,
     this.cadenceRpm,
     this.powerW,
+    this.leanDeg,
+    this.gPeak,
+    this.impact = false,
+    this.speedKmh,
   });
 
   final double lat;
@@ -93,6 +97,14 @@ class TrackPoint {
   final double? cadenceRpm;
   /// Cycling Power 0x1818 — omitted when null.
   final double? powerW;
+  /// IMU lean at this GPS sample — omitted when unknown.
+  final double? leanDeg;
+  /// Peak g in the last fused window.
+  final double? gPeak;
+  /// True when the last window detected an impact.
+  final bool impact;
+  /// GPS speed — omitted when stalled / unknown.
+  final double? speedKmh;
 
   Map<String, dynamic> toJson() => {
         'lat': lat,
@@ -107,6 +119,13 @@ class TrackPoint {
           'cad': cadenceRpm!.round(),
         if (powerW != null && powerW! > 0 && powerW! < 2500)
           'power': powerW!.round(),
+        if (leanDeg != null && leanDeg!.abs() <= 80)
+          'lean': (leanDeg! * 10).round() / 10,
+        if (gPeak != null && gPeak! > 0 && gPeak! <= 20)
+          'g': (gPeak! * 100).round() / 100,
+        if (impact) 'impact': 1,
+        if (speedKmh != null && speedKmh! > 0.4 && speedKmh! < 90)
+          'spd': (speedKmh! * 10).round() / 10,
       };
 }
 
@@ -131,6 +150,37 @@ int? livePowerFromTrackPoint(Map<String, dynamic> p) {
   if (v is! num) return null;
   final n = v.round();
   if (n < 1 || n > 2500) return null;
+  return n;
+}
+
+double? liveLeanFromTrackPoint(Map<String, dynamic> p) {
+  final v = p['lean'] ?? p['leanDeg'];
+  if (v is! num) return null;
+  final n = v.toDouble();
+  if (n.abs() > 80) return null;
+  return n;
+}
+
+double? liveGFromTrackPoint(Map<String, dynamic> p) {
+  final v = p['g'] ?? p['gPeak'];
+  if (v is! num) return null;
+  final n = v.toDouble();
+  if (n <= 0 || n > 20) return null;
+  return n;
+}
+
+bool liveImpactFromTrackPoint(Map<String, dynamic> p) {
+  final v = p['impact'];
+  if (v == true) return true;
+  if (v is num) return v > 0;
+  return false;
+}
+
+double? liveSpeedFromTrackPoint(Map<String, dynamic> p) {
+  final v = p['spd'] ?? p['speedKmh'];
+  if (v is! num) return null;
+  final n = v.toDouble();
+  if (n < 0.4 || n > 90) return null;
   return n;
 }
 

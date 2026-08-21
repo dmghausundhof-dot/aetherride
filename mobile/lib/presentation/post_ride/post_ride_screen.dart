@@ -9,25 +9,33 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../data/export/fit.dart';
+import '../../data/export/export_trimmed.dart';
 import '../../data/export/gpx.dart';
 import '../../data/export/strava_client.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/tours/route_visibility.dart';
+import '../../data/routing/routing_client.dart';
 import '../../data/weather/weather_client.dart';
+import '../../domain/bike.dart';
 import '../../domain/ebike/assist_log.dart';
 import '../../domain/post_ride/analyze.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 import '../../domain/ride_activity.dart';
+import '../../domain/ride_journal.dart';
+import '../../domain/ride_media_geo.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
+import '../privacy/privacy_screen.dart';
+import 'post_ride_journal.dart';
 import 'post_ride_ort_card.dart';
-import 'post_ride_photos.dart';
 import 'post_ride_stimme_card.dart';
+import 'post_ride_telemetry.dart';
 import 'post_ride_track_map.dart';
 
 class PostRideScreen extends ConsumerStatefulWidget {
@@ -41,6 +49,7 @@ class PostRideScreen extends ConsumerStatefulWidget {
 
 class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   RideRecord? _ride;
+  Bike? _bike;
   String? _bikeName;
   int _feel = 3;
   String? _front;
@@ -57,11 +66,13 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   WeatherSnapshot? _weatherStart;
   WeatherSnapshot? _weatherEnd;
   bool _weatherLoading = false;
-  List<String> _photoPaths = [];
+  RideJournal _journal = RideJournal.empty;
+  List<PrivacyZone> _privacyZones = const [];
   bool _savingAsTour = false;
   bool _savedAsTour = false;
   String? _stimmeTourId;
   bool _stimmePrivate = false;
+  RideSample? _hoverSample;
 
   @override
   void initState() {
@@ -95,11 +106,30 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     final bike = ride == null
         ? null
         : await ref.read(garageRepositoryProvider).getById(ride.bikeId);
+    final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
     if (!mounted) return;
+    var journal = RideJournal.fromSummary(ride?.summary);
+    if (ride != null && ride.track.isNotEmpty) {
+      journal = RideJournal(
+        photos: enrichRideMedia(
+          journal.photos,
+          track: ride.track,
+          zones: zones,
+        ),
+        videos: enrichRideMedia(
+          journal.videos,
+          track: ride.track,
+          zones: zones,
+        ),
+        notes: journal.notes,
+      );
+    }
     setState(() {
       _ride = ride;
+      _bike = bike;
       _bikeName = bike?.name;
-      _photoPaths = _photosFromSummary(ride?.summary);
+      _privacyZones = zones;
+      _journal = journal;
       if (ride != null) {
         _savedAsTour = rideActivityKind(
               routeId: ride.routeId,
@@ -107,10 +137,12 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
             ) ==
             RideActivityKind.liveTour;
         _analysis = analyzePostRide(ride: ride, bikeName: bike?.name);
+        final tel = buildRideTelemetry(ride.track);
         _assist = buildEstimatedAssistLog(
           durationSec: ride.movingTimeSec > 0 ? ride.movingTimeSec : 600,
           distanceM: ride.distanceKm * 1000,
-          elevationGainM: ride.elevationM,
+          elevationGainM:
+              tel.hasElev ? tel.climbM.toDouble() : ride.elevationM,
           avgSpeedKmh: ride.movingTimeSec > 0
               ? ride.distanceKm / (ride.movingTimeSec / 3600)
               : null,
@@ -125,19 +157,16 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       }
     });
     if (ride != null) {
+      unawaited(
+        ref.read(rideRepositoryProvider).mergeSummary(
+              ride.id,
+              journal.toSummaryPatch(),
+            ),
+      );
       unawaited(_postRideSideEffects(ride));
       unawaited(_loadWeather(ride));
       unawaited(_loadStimmeTourId(ride));
     }
-  }
-
-  List<String> _photosFromSummary(Map<String, dynamic>? summary) {
-    final raw = summary?['photoPaths'];
-    if (raw is! List) return [];
-    return [
-      for (final e in raw)
-        if (e is String && e.isNotEmpty) e,
-    ];
   }
 
   Future<void> _loadWeather(RideRecord ride) async {
@@ -158,15 +187,29 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
 
     setState(() => _weatherLoading = true);
     final client = ref.read(weatherClientProvider);
+    final bike = _bike ??
+        await ref.read(garageRepositoryProvider).getById(ride.bikeId);
+    final profile =
+        bike != null ? routingProfileForBike(bike.category).apiId : null;
     try {
-      final start = await client.fetch(lat: pts.first.$1, lon: pts.first.$2);
+      final start = await client.fetch(
+        lat: pts.first.$1,
+        lon: pts.first.$2,
+        profile: profile,
+      );
       WeatherSnapshot? end;
       if (pts.length > 1) {
         final last = pts.last;
         final first = pts.first;
         final moved = (last.$1 - first.$1).abs() > 0.02 ||
             (last.$2 - first.$2).abs() > 0.02;
-        end = moved ? await client.fetch(lat: last.$1, lon: last.$2) : start;
+        end = moved
+            ? await client.fetch(
+                lat: last.$1,
+                lon: last.$2,
+                profile: profile,
+              )
+            : start;
       } else {
         end = start;
       }
@@ -203,6 +246,13 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       precipMm: (m['precipMm'] as num?)?.toDouble() ?? 0,
       trailHint: (m['trailHint'] as String?) ?? 'dry_likely',
       summary: (m['summary'] as String?) ?? 'Open-Meteo',
+      precip72hMm: (m['precip72hMm'] as num?)?.toDouble(),
+      trailHintSource: m['trailHintSource'] as String?,
+      rideWindowLabel: () {
+        final w = m['rideWindow'];
+        if (w is Map && w['label'] is String) return w['label'] as String;
+        return m['rideWindowLabel'] as String?;
+      }(),
     );
   }
 
@@ -211,6 +261,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         'precipMm': w.precipMm,
         'trailHint': w.trailHint,
         'summary': w.summary,
+        if (w.precip72hMm != null) 'precip72hMm': w.precip72hMm,
+        if (w.trailHintSource != null) 'trailHintSource': w.trailHintSource,
+        if (w.rideWindowLabel != null) 'rideWindowLabel': w.rideWindowLabel,
       };
 
   List<(double, double)> _latLngFromTrack(List<Map<String, dynamic>> track) {
@@ -224,13 +277,29 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     return out;
   }
 
-  Future<void> _onPhotosChanged(List<String> paths) async {
-    setState(() => _photoPaths = paths);
+  Future<void> _onJournalChanged(RideJournal journal) async {
     final ride = _ride;
+    var next = journal;
+    if (ride != null && ride.track.isNotEmpty) {
+      next = RideJournal(
+        photos: enrichRideMedia(
+          journal.photos,
+          track: ride.track,
+          zones: _privacyZones,
+        ),
+        videos: enrichRideMedia(
+          journal.videos,
+          track: ride.track,
+          zones: _privacyZones,
+        ),
+        notes: journal.notes,
+      );
+    }
+    setState(() => _journal = next);
     if (ride == null) return;
-    await ref.read(rideRepositoryProvider).mergeSummary(widget.rideId, {
-      'photoPaths': paths,
-    });
+    await ref
+        .read(rideRepositoryProvider)
+        .mergeSummary(widget.rideId, next.toSummaryPatch());
     final updated =
         await ref.read(rideRepositoryProvider).getById(widget.rideId);
     if (mounted && updated != null) {
@@ -257,7 +326,10 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         id: (ride.routeId == null || ride.routeId!.trim().isEmpty)
             ? 'recorded-${ride.id}'
             : null,
-        photoPaths: _photoPaths,
+        photoPaths: _journal.photoPaths,
+        media: _journal.media,
+        notes: _journal.notes,
+        description: _journal.notes.isEmpty ? null : _journal.notes.first.text,
       );
       ref.invalidate(savedRoutesProvider);
       if (!mounted) return;
@@ -276,6 +348,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   }
 
   Future<void> _loadStimmeTourId(RideRecord ride) async {
+    if (rideIsEngineNav(ride.routeId)) return;
     final id = ride.routeId?.trim();
     if (id == null || id.isEmpty) return;
     final meta = await SavedRouteMetaStore.get(id);
@@ -326,11 +399,51 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     }
   }
 
+  Future<bool> _confirmShareIfNoZone() async {
+    if (_privacyZones.isNotEmpty) return true;
+    if (!mounted) return false;
+    final go = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.privacyShareNoZoneTitle),
+          content: Text(loc.privacyShareNoZoneBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: Text(loc.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'share'),
+              child: Text(loc.privacyShareAnyway),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, 'zone'),
+              child: Text(loc.privacyShareNoZoneCta),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted) return false;
+    if (go == 'zone') {
+      await openPrivacyScreen(context);
+      if (!mounted) return false;
+      final zones =
+          await ref.read(garageRepositoryProvider).listPrivacyZones();
+      setState(() => _privacyZones = zones);
+      return zones.isNotEmpty;
+    }
+    return go == 'share';
+  }
+
   Future<void> _uploadStrava() async {
     final ride = _ride;
     if (ride == null) return;
+    if (!await _confirmShareIfNoZone()) return;
     try {
-      final r = await uploadRideToStrava(ride);
+      final r = await uploadRideToStrava(ride, zones: _privacyZones);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(r.message)),
@@ -410,7 +523,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   Future<void> _shareGpx() async {
     final ride = _ride;
     if (ride == null) return;
-    if (!rideHasExportableTrack(ride)) {
+    if (!await _confirmShareIfNoZone()) return;
+    final trimmed = rideWithTrimmedTrack(ride, _privacyZones);
+    if (!rideHasExportableTrack(trimmed)) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -419,7 +534,11 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       return;
     }
     try {
-      final gpx = rideToGpx(ride, bikeName: _bikeName);
+      final gpx = exportGpxTrimmed(
+        ride,
+        zones: _privacyZones,
+        bikeName: _bikeName,
+      );
       final dir = await getTemporaryDirectory();
       final path = p.join(
         dir.path,
@@ -441,8 +560,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   Future<void> _shareFit() async {
     final ride = _ride;
     if (ride == null) return;
+    if (!await _confirmShareIfNoZone()) return;
     try {
-      final bytes = rideToFit(ride);
+      final bytes = exportFitTrimmed(ride, zones: _privacyZones);
       final dir = await getTemporaryDirectory();
       final path = p.join(
         dir.path,
@@ -473,6 +593,19 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     return '${h}h ${rem.toString().padLeft(2, '0')}m';
   }
 
+  String _recapTitle(RideRecord ride, {required String fallback}) {
+    final raw = (ride.name ?? '').trim();
+    if (raw.isEmpty) return fallback;
+    final parts = [
+      for (final p in raw.split(','))
+        if (p.trim().isNotEmpty) p.trim(),
+    ];
+    if (parts.length >= 2 && RegExp(r'^\d+').hasMatch(parts[1])) {
+      return '${parts[0]} ${parts[1]}';
+    }
+    return parts.first;
+  }
+
   String? _fmtPaceKmh(RideRecord ride) {
     if (ride.movingTimeSec <= 0 || ride.distanceKm <= 0) return null;
     final kmh = ride.distanceKm / (ride.movingTimeSec / 3600);
@@ -485,8 +618,8 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     final ride = _ride;
     final analysis = _analysis;
     final track = ride?.track ?? const <Map<String, dynamic>>[];
-    final isFreeride =
-        ride != null && (ride.routeId == null || ride.routeId!.isEmpty);
+    final telemetry =
+        track.length >= 2 ? buildRideTelemetry(track) : emptyRideTelemetry();
     final kind = ride == null
         ? RideActivityKind.freeride
         : rideActivityKind(
@@ -494,6 +627,19 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
             liveTour: ride.summary['liveTour'] == true || _savedAsTour,
           );
     final pace = ride == null ? null : _fmtPaceKmh(ride);
+    final engineNav = rideIsEngineNav(ride?.routeId);
+    final shortSession = ride != null &&
+        rideIsShortSession(
+          distanceKm: ride.distanceKm,
+          trackPoints: track.length,
+        );
+    final showChassisFeel = _bike?.category.showsChassisLayer ?? false;
+    final kindLabel = switch (kind) {
+      RideActivityKind.liveTour => l10n.postRideLiveTour,
+      RideActivityKind.following when engineNav => l10n.postRideNavEnded,
+      RideActivityKind.following => l10n.postRideOpenTour,
+      RideActivityKind.freeride => l10n.postRideFreeride,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -516,10 +662,12 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        ride.name ??
-                            (kind == RideActivityKind.freeride
-                                ? l10n.postRideFreeride
-                                : l10n.postRideDefaultName),
+                        _recapTitle(
+                          ride,
+                          fallback: kind == RideActivityKind.freeride
+                              ? l10n.postRideFreeride
+                              : l10n.postRideDefaultName,
+                        ),
                         style:
                             Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -536,11 +684,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
-                        switch (kind) {
-                          RideActivityKind.liveTour => l10n.postRideLiveTour,
-                          RideActivityKind.following => l10n.postRideOpenTour,
-                          RideActivityKind.freeride => l10n.postRideFreeride,
-                        },
+                        kindLabel,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -554,8 +698,14 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                 _StatsRow(
                   distance: _fmtDistance(ride.distanceKm),
                   duration: _fmtDuration(ride.movingTimeSec),
-                  pace: pace,
-                  elevation: '${ride.elevationM.round()} hm',
+                  pace: shortSession ? null : pace,
+                  elevation: shortSession
+                      ? null
+                      : telemetry.hasElev
+                          ? '${telemetry.climbM} hm'
+                          : (ride.elevationM >= 1
+                              ? '${ride.elevationM.round()} hm'
+                              : null),
                   distanceLabel: l10n.postRideStatDistance,
                   durationLabel: l10n.postRideStatDuration,
                   paceLabel: l10n.postRideStatPace,
@@ -597,15 +747,26 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.l),
-                Text(
-                  l10n.postRideTrackMap,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.s),
-                if (track.length >= 2)
-                  PostRideTrackMap(track: track)
+                if (!shortSession && track.length >= 2)
+                  PostRideTelemetryCard(
+                    telemetry: telemetry,
+                    onPickSample: (s) => setState(() => _hoverSample = s),
+                    map: PostRideTrackMap(
+                      track: track,
+                      telemetry: telemetry,
+                      embedded: true,
+                      pins: [
+                        for (final m in _journal.media)
+                          if (m.hasPin)
+                            RideMediaMapPin(lat: m.lat!, lng: m.lng!),
+                        if (_hoverSample != null)
+                          RideMediaMapPin(
+                            lat: _hoverSample!.lat,
+                            lng: _hoverSample!.lng,
+                          ),
+                      ],
+                    ),
+                  )
                 else
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -615,11 +776,22 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                           const TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                   ),
+                if (shortSession) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    l10n.postRideShortSession,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.l),
                 if (kind == RideActivityKind.freeride)
                   FilledButton.icon(
                     key: const Key('post-ride-primary'),
-                    onPressed: (_savingAsTour || _savedAsTour)
+                    onPressed: (_savingAsTour || _savedAsTour || shortSession)
                         ? null
                         : () => unawaited(_saveAsTour()),
                     icon: _savingAsTour
@@ -631,6 +803,13 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                         : const Icon(Icons.bookmark_add_outlined),
                     label: Text(l10n.postRideToMappe),
                   )
+                else if (engineNav)
+                  FilledButton.icon(
+                    key: const Key('post-ride-primary'),
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.check),
+                    label: Text(l10n.postRideDone),
+                  )
                 else
                   FilledButton.icon(
                     key: const Key('post-ride-primary'),
@@ -639,15 +818,34 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     icon: const Icon(Icons.folder_open_outlined),
                     label: Text(l10n.postRideOpenTour),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    kind == RideActivityKind.freeride
-                        ? l10n.postRideSaveAsTourHint
-                        : l10n.postRideSaveAsTourDone,
-                    style:
-                        const TextStyle(fontSize: 11, color: AppColors.muted),
+                if (kind == RideActivityKind.freeride)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      l10n.postRideSaveAsTourHint,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  )
+                else if (engineNav && !shortSession)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton.icon(
+                      onPressed: (_savingAsTour || _savedAsTour)
+                          ? null
+                          : () => unawaited(_saveAsTour()),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                      label: Text(l10n.postRideToMappe),
+                    ),
                   ),
+                const SizedBox(height: AppSpacing.l),
+                PostRideJournalSection(
+                  journal: _journal,
+                  track: track,
+                  privacyZones: _privacyZones,
+                  onChanged: (next) => unawaited(_onJournalChanged(next)),
                 ),
                 const SizedBox(height: AppSpacing.l),
                 ExpansionTile(
@@ -657,10 +855,6 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   children: [
-                    PostRidePhotosSection(
-                      photoPaths: _photoPaths,
-                      onChanged: (paths) => unawaited(_onPhotosChanged(paths)),
-                    ),
                     const SizedBox(height: AppSpacing.s),
                     _WeatherCard(
                       loading: _weatherLoading,
@@ -690,26 +884,28 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: (_stravaConfigured && _stravaConnected)
-                            ? _uploadStrava
-                            : null,
-                        icon: const Icon(Icons.upload_outlined),
-                        label: const Text('Strava'),
+                    if (_stravaConfigured)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _stravaConnected ? _uploadStrava : null,
+                          icon: const Icon(Icons.upload_outlined),
+                          label: const Text('Strava'),
+                        ),
                       ),
-                    ),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    _stravaHint ?? l10n.postRideStravaHint,
-                    style:
-                        const TextStyle(fontSize: 11, color: AppColors.muted),
+                if (_stravaConfigured)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _stravaHint ?? l10n.postRideStravaHint,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.muted,
+                      ),
+                    ),
                   ),
-                ),
-                if (analysis != null) ...[
+                if (analysis != null && !shortSession) ...[
                   const SizedBox(height: 16),
                   Text(
                     AppLocalizations.of(context).postRideAnalysis,
@@ -846,7 +1042,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     ),
                   ],
                 ],
-                if (_assist != null) ...[
+                if (_assist != null &&
+                    !shortSession &&
+                    (_bike?.hasElectricAssist == true)) ...[
                   const SizedBox(height: 16),
                   Text(
                     l10n.postRideAssistEstimate,
@@ -903,6 +1101,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                if (showChassisFeel) ...[
                 Text(l10n.postRideFrontSuspension, style: _labelStyle),
                 const SizedBox(height: 6),
                 Wrap(
@@ -956,6 +1155,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       ),
                   ],
                 ),
+                ],
                 const SizedBox(height: 16),
                   ],
                 ),
@@ -1022,7 +1222,7 @@ class _StatsRow extends StatelessWidget {
   final String distance;
   final String duration;
   final String? pace;
-  final String elevation;
+  final String? elevation;
   final String distanceLabel;
   final String durationLabel;
   final String paceLabel;
@@ -1034,7 +1234,7 @@ class _StatsRow extends StatelessWidget {
       (label: distanceLabel, value: distance),
       (label: durationLabel, value: duration),
       if (pace != null) (label: paceLabel, value: pace!),
-      (label: elevationLabel, value: elevation),
+      if (elevation != null) (label: elevationLabel, value: elevation!),
     ];
     return Row(
       children: [

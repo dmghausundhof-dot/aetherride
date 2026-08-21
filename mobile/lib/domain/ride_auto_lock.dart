@@ -9,12 +9,17 @@ abstract final class RideAutoLockPolicy {
   static const double movingKmh = 3;
 
   /// Whether the idle timer may show the overlay.
+  ///
+  /// [keepScreenOn] is Lenker: display stays on, so the privacy overlay
+  /// must not cover the map while the rider is still in a live session.
   static bool shouldArm({
     required bool riding,
     required bool paused,
     required double speedKmh,
+    bool keepScreenOn = false,
   }) {
     if (!riding) return false;
+    if (keepScreenOn && !paused) return false;
     if (paused) return true;
     return speedKmh < movingKmh;
   }

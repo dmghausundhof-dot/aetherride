@@ -4,28 +4,34 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../data/community/tour_share_codec.dart';
 import '../../../data/community/tour_share.dart';
+import '../../../data/community/tour_share_codec.dart';
 import '../../../data/community/tour_share_revoke.dart';
 import '../../../data/routing/saved_route_meta_store.dart';
 import '../../../domain/bike.dart';
+import '../../../domain/home/hof_stand.dart';
+import '../../../domain/routing/track_elevation.dart';
 import '../../../domain/saved_route.dart';
 import '../../../domain/saved_route_note.dart';
-import '../../../domain/home/hof_stand.dart';
 import '../../../domain/tours/route_visibility.dart';
 import '../../../domain/tours/tour_akte.dart';
+import '../../../domain/tours/tour_community_ux.dart';
+import '../../../domain/tours/tour_line.dart';
+import '../../../domain/tours/tour_listing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/app_providers.dart';
+import '../../library/tour_line_thumb.dart';
 import '../../shell/hof_threshold_nav.dart';
+import '../add_to_collection_sheet.dart';
 import '../saved_route_notes_section.dart';
 import 'tour_community_section.dart';
-import '../add_to_collection_sheet.dart';
 
 enum _AkteShelf { mein, stimmen }
 
-/// Tour-Detail: Freigeben / Stimmen. Das Rad bleibt in der Werkstatt.
+/// Tour-Detail: Freigeben / Stimmen. Das Rad bleibt am Stand.
 class TourAkteSheet extends ConsumerStatefulWidget {
   const TourAkteSheet({
     super.key,
@@ -52,10 +58,12 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
   _AkteShelf _shelf = _AkteShelf.mein;
   SavedRouteMeta _meta = SavedRouteMeta.empty;
   bool _loaded = false;
+  late String _name;
 
   @override
   void initState() {
     super.initState();
+    _name = widget.route.name;
     _reload();
   }
 
@@ -69,18 +77,16 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
   }
 
   Future<void> _setVisibility(String visibility) async {
-    var next = _meta;
-    if (visibility == RouteVisibility.private &&
-        RouteVisibility.isShared(_meta)) {
-      next = _meta.copyWith(
-        visibility: RouteVisibility.private,
-        shareEpoch: (_meta.shareEpoch) + 1,
-      );
-    } else {
-      next = _meta.copyWith(visibility: visibility);
-    }
+    final catalog = catalogTourIdOf(widget.route.id, _meta) != null;
+    final now = DateTime.now().toUtc();
+    final snap = listingSnapshotOf(_meta);
+    final nextSnap = visibility == RouteVisibility.private
+        ? unpublishTour(snap)
+        : beginTourShare(snap, now: now, isCatalog: catalog);
+    final next = applyListingSnapshot(_meta, nextSnap);
     await SavedRouteMetaStore.put(widget.route.id, next);
-    if (visibility == RouteVisibility.private && next.shareEpoch > 0) {
+    if (nextSnap.visibility == RouteVisibility.private &&
+        nextSnap.shareEpoch > snap.shareEpoch) {
       unawaited(
         revokeTourShareOnServer(
           routeId: widget.route.id,
@@ -117,6 +123,45 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(note)));
   }
 
+  Future<void> _rename() async {
+    final l10n = AppLocalizations.of(context);
+    final ctrl = TextEditingController(text: _name);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(l10n.mappeRename),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            maxLength: 80,
+            decoration: InputDecoration(labelText: l10n.garageName),
+            onSubmitted: (v) => Navigator.pop(ctx, v),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: Text(l10n.save),
+            ),
+          ],
+        );
+      },
+    );
+    ctrl.dispose();
+    final trimmed = next?.trim() ?? '';
+    if (trimmed.isEmpty || trimmed == _name) return;
+    await ref
+        .read(routeRepositoryProvider)
+        .renameSaved(widget.route.id, trimmed);
+    ref.invalidate(savedRoutesProvider);
+    if (!mounted) return;
+    setState(() => _name = trimmed);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -124,14 +169,33 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
     final stimmenId = RouteVisibility.stimmenTourIdOf(widget.route.id, _meta);
     final visibility = RouteVisibility.visibilityOf(_meta);
     final bikes = ref.watch(bikesProvider).valueOrNull ?? const <Bike>[];
-    final active = bikes.cast<Bike?>().firstWhere(
-          (b) => b?.isActive == true,
-          orElse: () => bikes.isEmpty ? null : bikes.first,
-        );
+    final rides = ref.watch(recentRidesProvider).valueOrNull ?? const [];
+    final last = lastRideForSavedRoute(
+      savedRouteId: widget.route.id,
+      catalogTourId: catalogId,
+      rides: rides,
+    );
     final riddenWith = riddenWithLabel(
-      preferredBikeId: _meta.preferredBikeId,
+      preferredBikeId: last?.bikeId ?? _meta.preferredBikeId,
       bikes: bikes,
-      active: active,
+      active: null,
+    );
+    final canRide = widget.onGoRide != null && savedRouteHasTrack(widget.route);
+    final caption = joinMappeCaption([
+      if (riddenWith != null) l10n.discoverRiddenWith(riddenWith),
+      if (last != null)
+        l10n.mappeLastRidden(formatMappeDay(last.endedAt ?? last.startedAt)),
+    ]);
+    final hm = mappeHonestHm(
+      widget.route.elevationM,
+      widget.route.distanceKm,
+      source: widget.route.source,
+      hasRealElev: trackHasRealElev(
+        trackCoordsOf(
+          coordinates: widget.route.coordinates,
+          tour: widget.route.tour,
+        ),
+      ),
     );
 
     return Padding(
@@ -155,60 +219,72 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              widget.route.name,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    _name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
+                ),
+                TextButton(
+                  onPressed: () => unawaited(_rename()),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: AppColors.muted,
+                  ),
+                  child: Text(l10n.mappeRename),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
-              '${widget.sourceBadge} · '
-              '${widget.route.distanceKm.toStringAsFixed(1)} km · '
-              '${widget.route.elevationM.round()} hm · '
-              '${widget.route.durationMin} min'
-              '${catalogId != null ? ' · ${l10n.discoverCatalog}' : ''}'
-              '${visibility == RouteVisibility.shared ? ' · ${l10n.discoverShared}' : ' · ${l10n.discoverPrivate}'}',
+              [
+                if (widget.sourceBadge.trim().isNotEmpty) widget.sourceBadge,
+                '${widget.route.distanceKm.toStringAsFixed(1)} km',
+                if (hm != null) '$hm hm',
+                '${widget.route.durationMin} min',
+                if (catalogId != null) l10n.discoverCatalog,
+                if (visibility == RouteVisibility.shared) l10n.discoverShared,
+              ].join(' · '),
               style: const TextStyle(color: AppColors.muted),
             ),
-            if (riddenWith != null) ...[
+            if (caption != null) ...[
               const SizedBox(height: 4),
               Text(
-                l10n.discoverRiddenWith(riddenWith),
+                caption,
                 style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
             ],
             const SizedBox(height: 12),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.overlay,
-                borderRadius: BorderRadius.circular(12),
+            SizedBox(
+              width: double.infinity,
+              child: TourLineThumb(
+                coordinates: trackCoordsOf(
+                  coordinates: widget.route.coordinates,
+                  tour: widget.route.tour,
+                ),
+                size: 88,
+                wide: true,
               ),
-              child: Row(
-                children: [
-                  for (final entry in [
-                    (_AkteShelf.mein, l10n.discoverShareRelease),
-                    (_AkteShelf.stimmen, l10n.stimmenTitle),
-                  ])
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => setState(() => _shelf = entry.$1),
-                        style: TextButton.styleFrom(
-                          foregroundColor: _shelf == entry.$1
-                              ? AppColors.chrome
-                              : AppColors.muted,
-                          backgroundColor: _shelf == entry.$1
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.transparent,
-                        ),
-                        child: Text(
-                          entry.$2,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+            ),
+            const SizedBox(height: 12),
+            _AkteRideBar(
+              l10n: l10n,
+              canRide: canRide,
+              onGoRide: widget.onGoRide,
+              onShowOnMap: widget.onShowOnMap,
+            ),
+            const SizedBox(height: 12),
+            _AkteChromePair(
+              left: l10n.akteMein,
+              right: l10n.stimmenTitle,
+              selectedIsLeft: _shelf == _AkteShelf.mein,
+              onLeft: () => setState(() => _shelf = _AkteShelf.mein),
+              onRight: () => setState(() => _shelf = _AkteShelf.stimmen),
             ),
             const SizedBox(height: 16),
             if (!_loaded)
@@ -239,57 +315,22 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
                     ),
             const SizedBox(height: 16),
             if (_shelf == _AkteShelf.mein) ...[
-              if (widget.onGoRide != null &&
-                  (widget.route.coordinates.length >= 2 ||
-                      widget.route.tour.length >= 2))
-                FilledButton.icon(
-                  onPressed: widget.onGoRide,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(l10n.goRide),
-                )
-              else
-                FilledButton.icon(
-                  onPressed: widget.onShowOnMap,
-                  icon: const Icon(Icons.map_outlined),
-                  label: Text(l10n.showOnMap),
-                ),
-              if (widget.onGoRide != null &&
-                  (widget.route.coordinates.length >= 2 ||
-                      widget.route.tour.length >= 2))
-                TextButton.icon(
-                  onPressed: widget.onShowOnMap,
-                  icon: const Icon(Icons.map_outlined, size: 18),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.muted,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  label: Text(l10n.showOnMap),
-                ),
               if (widget.onCreateGroup != null)
                 OutlinedButton.icon(
                   onPressed: widget.onCreateGroup,
                   icon: const Icon(Icons.group_add_outlined, size: 18),
                   label: Text(l10n.mappeInviteFriends),
                 ),
-            ] else
-              TextButton.icon(
-                onPressed: widget.onShowOnMap,
-                icon: const Icon(Icons.map_outlined, size: 18),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.muted,
-                  visualDensity: VisualDensity.compact,
+              if (widget.onRemoveFromMappe != null)
+                TextButton(
+                  onPressed: widget.onRemoveFromMappe,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.muted,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: Text(l10n.discoverRemoveFromMappe),
                 ),
-                label: Text(l10n.showOnMap),
-              ),
-            if (_shelf == _AkteShelf.mein && widget.onRemoveFromMappe != null)
-              TextButton(
-                onPressed: widget.onRemoveFromMappe,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.muted,
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: Text(l10n.discoverRemoveFromMappe),
-              ),
+            ],
           ],
         ),
       ),
@@ -318,7 +359,7 @@ class _MeinShelf extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTrack = route.coordinates.length >= 2 || route.tour.length >= 2;
+    final hasTrack = savedRouteHasTrack(route);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,25 +373,25 @@ class _MeinShelf extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
         const SizedBox(height: 8),
-        SegmentedButton<String>(
-          segments: [
-            ButtonSegment(
-              value: RouteVisibility.private,
-              label: Text(l10n.discoverPrivateCap),
-            ),
-            ButtonSegment(
-              value: RouteVisibility.shared,
-              label: Text(l10n.discoverShareRelease),
-            ),
-          ],
-          selected: {visibility},
-          onSelectionChanged: (s) => onSetVisibility(s.first),
+        _AkteChromePair(
+          left: l10n.discoverPrivateCap,
+          right: l10n.discoverShareRelease,
+          selectedIsLeft: visibility == RouteVisibility.private,
+          onLeft: () => unawaited(onSetVisibility(RouteVisibility.private)),
+          onRight: () => unawaited(onSetVisibility(RouteVisibility.shared)),
         ),
         const SizedBox(height: 8),
         Text(
           _akteHonesty(l10n, routeId: route.id, hasTrack: hasTrack, meta: meta),
           style: const TextStyle(color: AppColors.muted, fontSize: 12),
         ),
+        if (listingAkteHint(parseListingState(meta.listing)) != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            listingAkteHint(parseListingState(meta.listing))!,
+            style: const TextStyle(color: AppColors.muted, fontSize: 12),
+          ),
+        ],
         if (visibility == RouteVisibility.shared) ...[
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -388,19 +429,38 @@ class _MeinShelf extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final path = meta.photoPaths[i];
+                final pinned =
+                    meta.media.any((m) => m.path == path && m.hasPin);
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(path),
-                    width: 88,
-                    height: 88,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 88,
-                      height: 88,
-                      color: AppColors.muted.withValues(alpha: 0.2),
-                      child: const Icon(Icons.broken_image),
-                    ),
+                  child: Stack(
+                    children: [
+                      Image.file(
+                        File(path),
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 88,
+                          height: 88,
+                          color: AppColors.muted.withValues(alpha: 0.2),
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
+                      if (pinned)
+                        const Positioned(
+                          left: 4,
+                          top: 4,
+                          child: Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(blurRadius: 4, color: Colors.black54),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 );
               },
@@ -419,6 +479,117 @@ class _MeinShelf extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _AkteChromePair extends StatelessWidget {
+  const _AkteChromePair({
+    required this.left,
+    required this.right,
+    required this.selectedIsLeft,
+    required this.onLeft,
+    required this.onRight,
+  });
+
+  final String left;
+  final String right;
+  final bool selectedIsLeft;
+  final VoidCallback onLeft;
+  final VoidCallback onRight;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.overlay,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            Expanded(child: _seg(left, selectedIsLeft, onLeft)),
+            Expanded(child: _seg(right, !selectedIsLeft, onRight)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _seg(String label, bool on, VoidCallback tap) {
+    return TextButton(
+      onPressed: tap,
+      style: TextButton.styleFrom(
+        foregroundColor: on ? AppColors.onAccent : AppColors.muted,
+        backgroundColor: on ? AppColors.chrome : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _AkteRideBar extends StatelessWidget {
+  const _AkteRideBar({
+    required this.l10n,
+    required this.canRide,
+    required this.onGoRide,
+    required this.onShowOnMap,
+  });
+
+  final AppLocalizations l10n;
+  final bool canRide;
+  final VoidCallback? onGoRide;
+  final VoidCallback onShowOnMap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.overlay,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        child: Row(
+          children: [
+            if (canRide)
+              SvgPicture.asset(
+                'assets/tours/glyph-ride.svg',
+                width: 32,
+                height: 32,
+              )
+            else
+              const Icon(Icons.map_outlined, color: AppColors.muted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: InkWell(
+                onTap: canRide ? onGoRide : onShowOnMap,
+                child: Text(
+                  canRide ? l10n.goRide : l10n.showOnMap,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+            if (canRide)
+              TextButton(
+                onPressed: onShowOnMap,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.muted,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(l10n.showOnMap),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

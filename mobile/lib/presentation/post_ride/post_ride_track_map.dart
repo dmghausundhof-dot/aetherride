@@ -8,18 +8,40 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/routing/map_style_url.dart';
+import '../../data/routing/offline_pmtiles_store.dart';
+import '../../domain/ride/ride_telemetry.dart';
+import '../../l10n/app_localizations.dart';
+import '../ride/widgets/ride_network.dart';
+
+class RideMediaMapPin {
+  const RideMediaMapPin({required this.lat, required this.lng});
+
+  final double lat;
+  final double lng;
+}
 
 /// MapLibre-Karte mit GPS-Track als Polyline (Post-Ride / Freeride).
 class PostRideTrackMap extends StatefulWidget {
   const PostRideTrackMap({
     super.key,
     required this.track,
+    this.telemetry,
     this.height = 220,
+    this.pins = const [],
+    this.embedded = false,
   });
 
   /// Track points as `{lat,lng,...}`.
   final List<Map<String, dynamic>> track;
+
+  /// Vorab berechnete Telemetrie — sonst einmal hier.
+  final RideTelemetry? telemetry;
   final double height;
+  final List<RideMediaMapPin> pins;
+
+  /// Ohne eigene Ecken — sitzt in der Terrain-Fläche.
+  final bool embedded;
 
   @override
   State<PostRideTrackMap> createState() => _PostRideTrackMapState();
@@ -33,21 +55,57 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
   MapLibreMapController? _map;
   String _style = AppConfig.mapStyleUrl;
   int _drawGen = 0;
+  bool _online = true;
+  bool _offlineStreetTiles = false;
 
   @override
   void initState() {
     super.initState();
-    AppConfig.resolveMapStyleUrl().then((s) {
-      if (mounted) setState(() => _style = s);
-    });
+    unawaited(_resolveStyle());
+  }
+
+  Future<void> _resolveStyle() async {
+    try {
+      final s = await AppConfig.resolveMapStyleUrl();
+      final online = await rideHasNetwork();
+      final street = rideHudUsesOfflineStreetTiles(
+        liveStyle: AppConfig.mapStyleUrl,
+        resolvedStyle: s,
+      );
+      var empty = '';
+      try {
+        empty = await OfflinePmtilesStore.emptyHudStyleUri();
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _style = rideHudMapStyle(
+          liveStyle: AppConfig.mapStyleUrl,
+          resolvedStyle: s,
+          online: online,
+          offlineStreetTiles: street,
+          emptyStyleUri: empty,
+        );
+        _online = online;
+        _offlineStreetTiles = street;
+      });
+    } catch (_) {}
   }
 
   @override
   void didUpdateWidget(covariant PostRideTrackMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!listEquals(oldWidget.track, widget.track)) {
+    if (!listEquals(oldWidget.track, widget.track) ||
+        !_samePins(oldWidget.pins, widget.pins)) {
       unawaited(_draw());
     }
+  }
+
+  bool _samePins(List<RideMediaMapPin> a, List<RideMediaMapPin> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].lat != b[i].lat || a[i].lng != b[i].lng) return false;
+    }
+    return true;
   }
 
   List<LatLng> get _line {
@@ -85,23 +143,62 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
       await c.addLine(
         LineOptions(
           geometry: line,
-          lineColor: '#BF360C',
+          lineColor: '#1A120C',
           lineWidth: 10,
-          lineOpacity: 0.85,
+          lineOpacity: 0.72,
           lineJoin: 'round',
         ),
       );
       if (gen != _drawGen) return;
-      await c.addLine(
-        LineOptions(
-          geometry: line,
-          lineColor: '#FF6A00',
-          lineWidth: 5.5,
-          lineJoin: 'round',
-        ),
+      final graded = gradeMapLayers(
+        widget.telemetry ?? buildRideTelemetry(widget.track),
       );
+      if (graded.isEmpty) {
+        await c.addLine(
+          LineOptions(
+            geometry: line,
+            lineColor: '#FF6A00',
+            lineWidth: 5.5,
+            lineJoin: 'round',
+          ),
+        );
+      } else {
+        for (final seg in graded) {
+          if (gen != _drawGen) return;
+          if (seg.points.length < 2) continue;
+          await c.addLine(
+            LineOptions(
+              geometry: [
+                for (final p in seg.points) LatLng(p.lat, p.lng),
+              ],
+              lineColor: seg.colorHex,
+              lineWidth: 5.5,
+              lineJoin: 'round',
+            ),
+          );
+        }
+      }
       if (gen != _drawGen) return;
       await _fitBounds(c, line);
+      if (gen != _drawGen) return;
+      try {
+        await c.clearSymbols();
+      } catch (_) {}
+      for (final pin in widget.pins) {
+        if (gen != _drawGen) return;
+        try {
+          await c.addSymbol(
+            SymbolOptions(
+              geometry: LatLng(pin.lat, pin.lng),
+              textField: '●',
+              textSize: 16,
+              textColor: '#FF6A00',
+              textHaloColor: '#FFFFFF',
+              textHaloWidth: 1.6,
+            ),
+          );
+        } catch (_) {}
+      }
     } catch (_) {
       // Style/PlatformView kann während dispose weg sein.
     }
@@ -128,7 +225,12 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
           left: 36,
           top: 36,
           right: 36,
-          bottom: 36,
+          bottom: rideHudStreetMapNeedsNet(
+            online: _online,
+            offlineStreetTiles: _offlineStreetTiles,
+          )
+              ? 56
+              : 36,
         ),
       );
     } catch (_) {
@@ -158,23 +260,61 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
       );
     }
 
+    final mapHint = rideHudStreetMapNeedsNet(
+      online: _online,
+      offlineStreetTiles: _offlineStreetTiles,
+    );
     return SizedBox(
       height: widget.height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        child: MapLibreMap(
-          key: ValueKey('post-ride-map-$_style'),
-          styleString: _style,
-          initialCameraPosition: CameraPosition(target: _center, zoom: 13),
-          myLocationEnabled: false,
-          compassEnabled: false,
-          scrollGesturesEnabled: true,
-          zoomGesturesEnabled: true,
-          rotateGesturesEnabled: false,
-          tiltGesturesEnabled: false,
-          gestureRecognizers: _gestures,
-          onMapCreated: (c) => _map = c,
-          onStyleLoadedCallback: () => unawaited(_draw()),
+        borderRadius: widget.embedded
+            ? BorderRadius.zero
+            : BorderRadius.circular(AppRadius.card),
+        child: Stack(
+          children: [
+            MapLibreMap(
+              key: ValueKey('post-ride-map-$_style'),
+              styleString: _style,
+              initialCameraPosition: CameraPosition(target: _center, zoom: 13),
+              myLocationEnabled: false,
+              compassEnabled: false,
+              scrollGesturesEnabled: true,
+              zoomGesturesEnabled: true,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              gestureRecognizers: _gestures,
+              onMapCreated: (c) => _map = c,
+              onStyleLoadedCallback: () => unawaited(_draw()),
+            ),
+            if (mapHint)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: Material(
+                    color: AppColors.charcoal.withValues(alpha: 0.78),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).rideHudStreetNeedsNet,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

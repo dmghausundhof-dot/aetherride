@@ -24,9 +24,13 @@ void main() {
   });
 
   test('live network paints earlier than the old zoom-12 floor', () {
+    expect(BrowseMapPaint.quietOpacity, lessThan(BrowseMapPaint.lineOpacity));
+    expect(BrowseMapPaint.opacityForClass('urban'), BrowseMapPaint.quietOpacity);
+    expect(BrowseMapPaint.opacityForClass('gravel'), BrowseMapPaint.quietOpacity);
+    expect(BrowseMapPaint.opacityForClass('mtb'), BrowseMapPaint.lineOpacity);
     expect(BrowseMapPaint.liveCyclewayMinZoom, lessThanOrEqualTo(10));
     expect(BrowseMapPaint.livePathMinZoom, lessThan(12));
-    expect(BrowseMapPaint.liveTrackMinZoom, lessThan(12));
+    expect(BrowseMapPaint.liveTrackMinZoom, greaterThanOrEqualTo(13));
     expect(BrowseMapPaint.packMinZoom, 10);
     expect(
       BrowseMapPaint.liveCyclewayWidth,
@@ -36,6 +40,11 @@ void main() {
       BrowseMapPaint.liveCyclewayWidth,
       greaterThan(BrowseMapPaint.liveTrackWidth),
     );
+    expect(
+      BrowseMapPaint.farmTrackOpacity,
+      lessThan(BrowseMapPaint.quietOpacity),
+    );
+    expect(BrowseMapPaint.farmTrackDash.length, 2);
   });
 
   test('surface color falls back to class, dirt is trail not brown', () {

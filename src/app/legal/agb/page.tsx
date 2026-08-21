@@ -24,10 +24,10 @@ export default function LegalAgbPage() {
 
       <h2 className="text-base font-semibold">1. Leistung</h2>
       <p className="text-sm text-text-secondary">
-        FlowLine ist eine Outdoor-Cycling-Anwendung: Hof (Planen, Platz,
-        Werkstatt, Teilen) im Web; Ride-HUD, GPS, Sensoren und Offline in der
-        App. Free umfasst Karte, Planen und ein Rad. Pro vertieft Multi-Bike,
-        Bracketing, Reichweite und Offline-Packs.
+        FlowLine ist eine Outdoor-Cycling-Anwendung: Hof (Planen, Touren,
+        Rad, Teilen) im Web; Ride-HUD, GPS, Sensoren und Offline in der
+        App. Free umfasst Karte, Planen, ein Rad und Offline-Routing (Pack) in
+        der App. Pro vertieft mehrere Räder, Bracketing und Reichweite.
       </p>
 
       <h2 className="text-base font-semibold">2. Konto</h2>

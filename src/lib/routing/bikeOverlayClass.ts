@@ -305,10 +305,10 @@ export const BIKE_OVERLAY_COLORS = {
   S1: "#8BC34A",
   S2: "#FFC107",
   S3: "#E53935",
-  unrated: "#90A4AE",
-  gravel: "#C49A3C",
-  road: "#1E88E5",
-  urban: "#00897B",
+  unrated: "#3B7A45",
+  gravel: "#B8974A",
+  road: "#3E78B0",
+  urban: "#3E78B0",
   /** Dirt/ground/grass/unpaved — distinct from gravel gold on hillshade. */
   dirt: "#9A5B32",
 } as const;

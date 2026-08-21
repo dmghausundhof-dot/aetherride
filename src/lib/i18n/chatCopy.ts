@@ -26,13 +26,47 @@ export type ChatCopy = {
   upgradePro: string;
   freeProFoot: string;
   checkedOnData: string;
+  rideStats: (count: string, km: string, hm: string) => string;
+  incompleteData: string;
+  noBikeStand: string;
+  noBikeCompat: string;
+  noBikeSetup: string;
+  noBikeRoute: string;
+  noBikeShop: string;
+  noSetups: string;
+  rangeEbikeOnly: string;
+  unknownTool: string;
+  shopPaused: string;
+  noRoutes: string;
+  rideWindowNeedGps: string;
+  rideWindowSport: string;
+  garageStand: (names: string) => string;
+  rangeAnswer: (
+    low: string,
+    high: string,
+    whLow: string,
+    whHigh: string,
+    conf: string
+  ) => string;
+  watchNothing: string;
+  inboxEmpty: string;
+  inboxAsk: string;
+  inboxOpen: string;
+  inboxPlace: string;
+  inboxSnooze: string;
+  sevOverdue: string;
+  sevSoon: string;
+  sevInfo: string;
+  sevNew: string;
+  feedbackTitle: string;
+  feedbackDetail: string;
   prompts: ChatSuggested[];
 };
 
 const DE: ChatCopy = {
   title: "Mehr fragen",
   welcome:
-    "Frag nach dem, was ansteht, nach Garage, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell.",
+    "Frag nach dem, was ansteht, nach Rad, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell.",
   lockedRiding: "Während der Fahrt ist Chat gesperrt.",
   hint: "Nachricht…",
   send: "Senden",
@@ -52,12 +86,47 @@ const DE: ChatCopy = {
   freeLimit: "Free-Limit ausgeschöpft.",
   upgradePro: "Pro upgraden",
   freeProFoot: "Free: 5/Tag · Pro: 50/Tag",
-  checkedOnData: "Antwort anhand deiner Garage-/Ride-Daten geprüft",
+  checkedOnData: "Antwort anhand deiner Rad- und Fahrtdaten geprüft",
+  rideStats: (count, km, hm) =>
+    `Ride-Statistik: ${count} Fahrten, ${km} km, ${hm} hm — nur aus gespeicherten Rides.`,
+  incompleteData:
+    "Daten unvollständig — keine belastbare Antwort. Rad oder Fahrten prüfen.",
+  noBikeStand: "Kein Rad am Stand — Daten fehlen.",
+  noBikeCompat: "Kein aktives Rad — Kompatibilität nicht prüfbar.",
+  noBikeSetup: "Kein Rad — Setup-Historie fehlt.",
+  noBikeRoute: "Routensuche braucht ein aktives Rad.",
+  noBikeShop: "Produktsuche braucht ein aktives Rad.",
+  noSetups: "Keine Setup-Versionen vorhanden.",
+  rangeEbikeOnly: "Reichweite nur für E-Bikes.",
+  unknownTool: "Unbekanntes Werkzeug — Daten fehlen.",
+  shopPaused: "Der Teile-Shop ist vorerst aus. Pflege und Setup bleiben am Rad.",
+  noRoutes: "Keine Routen für diese Kategorie.",
+  rideWindowNeedGps:
+    "Standort setzen — dann sag ich, wann es heute trockener ist.",
+  rideWindowSport: "Fenster nur für Gravel und MTB.",
+  garageStand: (names) =>
+    `An deinem Stand: ${names}. Aktive Komponenten und km stammen vom Rad.`,
+  rangeAnswer: (low, high, whLow, whHigh, conf) =>
+    `Reichweite ${low}–${high} km (${whLow}–${whHigh} Wh/km), Konfidenz ${conf}.`,
+  watchNothing:
+    "Gerade steht nichts an. Wartung, Verschleiß, Setup und Kompatibilität sind im grünen Bereich.",
+  inboxEmpty:
+    "Nichts steht an. Der Assistent schaut auf Wartung, Verschleiß, Setup und Kompatibilität.",
+  inboxAsk: "Assistent fragen",
+  inboxOpen: "Öffnen",
+  inboxPlace: "Zur Stelle",
+  inboxSnooze: "7 Tage still",
+  sevOverdue: "Überfällig",
+  sevSoon: "Bald",
+  sevInfo: "Hinweis",
+  sevNew: "neu",
+  feedbackTitle: "Kurzes Feedback zur letzten Fahrt",
+  feedbackDetail: "Drei Taps — der Assistent nutzt das für Setup-Hinweise.",
   prompts: [
     { label: "Was steht an?", query: "Was steht an?", tool: "watch" },
     {
-      label: "Garage-Überblick",
-      query: "Was steckt in meiner Garage?",
+      label: "Rad-Überblick",
+      query: "Was steht an meinem Rad?",
       tool: "garage",
     },
     {
@@ -81,6 +150,11 @@ const DE: ChatCopy = {
       tool: "route_search",
     },
     {
+      label: "Trockener Fenster",
+      query: "Wann ist es heute trockener?",
+      tool: "ride_window",
+    },
+    {
       label: "Verschleiß / Shop",
       query: "Brauche ich bald neue Verschleißteile?",
       tool: "product_search",
@@ -91,7 +165,7 @@ const DE: ChatCopy = {
 const EN: ChatCopy = {
   title: "Ask more",
   welcome:
-    "Ask what’s due, or about garage, setup, range, routes, or parts. Numbers come from your app data — not from the chat model.",
+    "Ask what’s due, or about the bike, setup, range, routes, or parts. Numbers come from your app data — not from the chat model.",
   lockedRiding: "Chat is locked while riding.",
   hint: "Message…",
   send: "Send",
@@ -111,12 +185,47 @@ const EN: ChatCopy = {
   freeLimit: "Free limit used up.",
   upgradePro: "Upgrade to Pro",
   freeProFoot: "Free: 5/day · Pro: 50/day",
-  checkedOnData: "Reply checked against your garage/ride data",
+  checkedOnData: "Reply checked against your bike and ride data",
+  rideStats: (count, km, hm) =>
+    `Ride stats: ${count} rides, ${km} km, ${hm} hm — stored rides only.`,
+  incompleteData:
+    "Data incomplete — no reliable answer. Check the bike or rides.",
+  noBikeStand: "No bike at the stand — data missing.",
+  noBikeCompat: "No active bike — compatibility can’t be checked.",
+  noBikeSetup: "No bike — setup history missing.",
+  noBikeRoute: "Route search needs an active bike.",
+  noBikeShop: "Product search needs an active bike.",
+  noSetups: "No setup versions yet.",
+  rangeEbikeOnly: "Range is only for e-bikes.",
+  unknownTool: "Unknown tool — data missing.",
+  shopPaused: "The parts shop is off for now. Care and setup stay on the bike.",
+  noRoutes: "No routes for this category.",
+  rideWindowNeedGps:
+    "Set a location — then I can say when today is drier.",
+  rideWindowSport: "Windows only for gravel and MTB.",
+  garageStand: (names) =>
+    `At your stand: ${names}. Active parts and km come from the bike.`,
+  rangeAnswer: (low, high, whLow, whHigh, conf) =>
+    `Range ${low}–${high} km (${whLow}–${whHigh} Wh/km), confidence ${conf}.`,
+  watchNothing:
+    "Nothing due right now. Maintenance, wear, setup and compatibility look fine.",
+  inboxEmpty:
+    "Nothing due. The assistant watches maintenance, wear, setup and compatibility.",
+  inboxAsk: "Ask the assistant",
+  inboxOpen: "Open",
+  inboxPlace: "Go there",
+  inboxSnooze: "Quiet 7 days",
+  sevOverdue: "Overdue",
+  sevSoon: "Soon",
+  sevInfo: "Note",
+  sevNew: "new",
+  feedbackTitle: "Quick feedback on the last ride",
+  feedbackDetail: "Three taps — the assistant uses that for setup hints.",
   prompts: [
     { label: "What’s due?", query: "What’s due?", tool: "watch" },
     {
-      label: "Garage",
-      query: "What’s in my garage?",
+      label: "Bike",
+      query: "What’s on my bike?",
       tool: "garage",
     },
     {
@@ -140,6 +249,11 @@ const EN: ChatCopy = {
       tool: "route_search",
     },
     {
+      label: "Drier window",
+      query: "When is it drier today?",
+      tool: "ride_window",
+    },
+    {
       label: "Wear / shop",
       query: "Will I need wear parts soon?",
       tool: "product_search",
@@ -150,7 +264,7 @@ const EN: ChatCopy = {
 const FR: ChatCopy = {
   title: "Demande plus",
   welcome:
-    "Demande ce qui est dû, ou garage, setup, autonomie, itinéraires, pièces. Les chiffres viennent de tes données app — pas du modèle de chat.",
+    "Demande ce qui est dû, ou le vélo, setup, autonomie, itinéraires, pièces. Les chiffres viennent de tes données app — pas du modèle de chat.",
   lockedRiding: "Le chat est bloqué pendant la sortie.",
   hint: "Message…",
   send: "Envoyer",
@@ -170,7 +284,42 @@ const FR: ChatCopy = {
   freeLimit: "Limite Free épuisée.",
   upgradePro: "Passer à Pro",
   freeProFoot: "Free : 5/jour · Pro : 50/jour",
-  checkedOnData: "Réponse vérifiée sur tes données garage/sortie",
+  checkedOnData: "Réponse vérifiée sur tes données vélo/sortie",
+  rideStats: (count, km, hm) =>
+    `Stats sorties : ${count} sorties, ${km} km, ${hm} hm — uniquement les sorties enregistrées.`,
+  incompleteData:
+    "Données incomplètes — pas de réponse fiable. Vérifie le vélo ou les sorties.",
+  noBikeStand: "Pas de vélo au stand — données manquantes.",
+  noBikeCompat: "Pas de vélo actif — compatibilité non vérifiable.",
+  noBikeSetup: "Pas de vélo — historique de setup manquant.",
+  noBikeRoute: "La recherche d’itinéraire a besoin d’un vélo actif.",
+  noBikeShop: "La recherche produit a besoin d’un vélo actif.",
+  noSetups: "Aucune version de setup.",
+  rangeEbikeOnly: "Autonomie seulement pour les VTTAE.",
+  unknownTool: "Outil inconnu — données manquantes.",
+  shopPaused: "La boutique pièces est en pause. Entretien et setup restent sur le vélo.",
+  noRoutes: "Pas d’itinéraires pour cette catégorie.",
+  rideWindowNeedGps:
+    "Indique un lieu — ensuite je dis quand c’est plus sec aujourd’hui.",
+  rideWindowSport: "Créneau seulement pour gravel et VTT.",
+  garageStand: (names) =>
+    `À ton stand : ${names}. Pièces actives et km viennent du vélo.`,
+  rangeAnswer: (low, high, whLow, whHigh, conf) =>
+    `Autonomie ${low}–${high} km (${whLow}–${whHigh} Wh/km), confiance ${conf}.`,
+  watchNothing:
+    "Rien n’est dû. Entretien, usure, setup et compatibilité sont au vert.",
+  inboxEmpty:
+    "Rien n’est dû. L’assistant surveille entretien, usure, setup et compatibilité.",
+  inboxAsk: "Demander à l’assistant",
+  inboxOpen: "Ouvrir",
+  inboxPlace: "Y aller",
+  inboxSnooze: "Silence 7 jours",
+  sevOverdue: "En retard",
+  sevSoon: "Bientôt",
+  sevInfo: "Note",
+  sevNew: "nouveau",
+  feedbackTitle: "Court retour sur la dernière sortie",
+  feedbackDetail: "Trois taps — l’assistant s’en sert pour le setup.",
   prompts: [
     {
       label: "Qu’est-ce qui est dû ?",
@@ -178,8 +327,8 @@ const FR: ChatCopy = {
       tool: "watch",
     },
     {
-      label: "Garage",
-      query: "Qu’est-ce qu’il y a dans mon garage ?",
+      label: "Vélo",
+      query: "Qu’est-ce qu’il y a sur mon vélo ?",
       tool: "garage",
     },
     {
@@ -203,6 +352,11 @@ const FR: ChatCopy = {
       tool: "route_search",
     },
     {
+      label: "Créneau plus sec",
+      query: "Quand est-ce plus sec aujourd’hui ?",
+      tool: "ride_window",
+    },
+    {
       label: "Usure / magasin",
       query: "Bientôt besoin de pièces d’usure ?",
       tool: "product_search",
@@ -213,7 +367,7 @@ const FR: ChatCopy = {
 const IT: ChatCopy = {
   title: "Chiedi di più",
   welcome:
-    "Chiedi cosa è in scadenza, o garage, setup, autonomia, itinerari, pezzi. I numeri arrivano dai dati app — non dal modello di chat.",
+    "Chiedi cosa è in scadenza, o la bici, setup, autonomia, itinerari, pezzi. I numeri arrivano dai dati app — non dal modello di chat.",
   lockedRiding: "La chat è bloccata durante l’uscita.",
   hint: "Messaggio…",
   send: "Invia",
@@ -233,7 +387,42 @@ const IT: ChatCopy = {
   freeLimit: "Limite Free esaurito.",
   upgradePro: "Passa a Pro",
   freeProFoot: "Free: 5/giorno · Pro: 50/giorno",
-  checkedOnData: "Risposta controllata sui dati garage/uscita",
+  checkedOnData: "Risposta controllata sui dati bici/uscita",
+  rideStats: (count, km, hm) =>
+    `Statistiche uscite: ${count} uscite, ${km} km, ${hm} hm — solo uscite salvate.`,
+  incompleteData:
+    "Dati incompleti — nessuna risposta affidabile. Controlla bici o uscite.",
+  noBikeStand: "Nessuna bici allo stand — dati mancanti.",
+  noBikeCompat: "Nessuna bici attiva — compatibilità non verificabile.",
+  noBikeSetup: "Nessuna bici — cronologia setup mancante.",
+  noBikeRoute: "La ricerca itinerari serve una bici attiva.",
+  noBikeShop: "La ricerca prodotti serve una bici attiva.",
+  noSetups: "Nessuna versione di setup.",
+  rangeEbikeOnly: "Autonomia solo per e-bike.",
+  unknownTool: "Strumento sconosciuto — dati mancanti.",
+  shopPaused: "Il negozio pezzi è in pausa. Cura e setup restano sulla bici.",
+  noRoutes: "Nessun itinerario per questa categoria.",
+  rideWindowNeedGps:
+    "Imposta la posizione — poi dico quando oggi è più asciutto.",
+  rideWindowSport: "Finestra solo per gravel e MTB.",
+  garageStand: (names) =>
+    `Al tuo stand: ${names}. Parti attive e km vengono dalla bici.`,
+  rangeAnswer: (low, high, whLow, whHigh, conf) =>
+    `Autonomia ${low}–${high} km (${whLow}–${whHigh} Wh/km), confidenza ${conf}.`,
+  watchNothing:
+    "Nulla in scadenza. Manutenzione, usura, setup e compatibilità sono a posto.",
+  inboxEmpty:
+    "Nulla in scadenza. L’assistente guarda manutenzione, usura, setup e compatibilità.",
+  inboxAsk: "Chiedi all’assistente",
+  inboxOpen: "Apri",
+  inboxPlace: "Vai lì",
+  inboxSnooze: "Silenzio 7 giorni",
+  sevOverdue: "Scaduto",
+  sevSoon: "Presto",
+  sevInfo: "Nota",
+  sevNew: "nuovo",
+  feedbackTitle: "Feedback breve sull’ultima uscita",
+  feedbackDetail: "Tre tap — l’assistente lo usa per il setup.",
   prompts: [
     {
       label: "Cosa è in scadenza?",
@@ -241,8 +430,8 @@ const IT: ChatCopy = {
       tool: "watch",
     },
     {
-      label: "Garage",
-      query: "Cosa c’è nel mio garage?",
+      label: "Bici",
+      query: "Cosa c’è sulla mia bici?",
       tool: "garage",
     },
     {
@@ -266,6 +455,11 @@ const IT: ChatCopy = {
       tool: "route_search",
     },
     {
+      label: "Finestra più asciutta",
+      query: "Quando è più asciutto oggi?",
+      tool: "ride_window",
+    },
+    {
       label: "Usura / negozio",
       query: "Presto mi servono consumabili?",
       tool: "product_search",
@@ -276,7 +470,7 @@ const IT: ChatCopy = {
 const NL: ChatCopy = {
   title: "Meer vragen",
   welcome:
-    "Vraag wat er aan de beurt is, of naar garage, setup, actieradius, routes of onderdelen. Cijfers komen uit je app-data — niet uit het chatmodel.",
+    "Vraag wat er aan de beurt is, of naar de fiets, setup, actieradius, routes of onderdelen. Cijfers komen uit je app-data — niet uit het chatmodel.",
   lockedRiding: "Tijdens de rit is chat geblokkeerd.",
   hint: "Bericht…",
   send: "Versturen",
@@ -296,7 +490,42 @@ const NL: ChatCopy = {
   freeLimit: "Free-limiet opgebruikt.",
   upgradePro: "Upgraden naar Pro",
   freeProFoot: "Free: 5/dag · Pro: 50/dag",
-  checkedOnData: "Antwoord gecontroleerd op je garage-/ritdata",
+  checkedOnData: "Antwoord gecontroleerd op je fiets- en ritdata",
+  rideStats: (count, km, hm) =>
+    `Ritstatistiek: ${count} ritten, ${km} km, ${hm} hm — alleen opgeslagen ritten.`,
+  incompleteData:
+    "Data onvolledig — geen betrouwbaar antwoord. Check fiets of ritten.",
+  noBikeStand: "Geen fiets aan de stand — data ontbreekt.",
+  noBikeCompat: "Geen actieve fiets — compatibiliteit niet te toetsen.",
+  noBikeSetup: "Geen fiets — setupgeschiedenis ontbreekt.",
+  noBikeRoute: "Routezoeken heeft een actieve fiets nodig.",
+  noBikeShop: "Productzoeken heeft een actieve fiets nodig.",
+  noSetups: "Nog geen setupversies.",
+  rangeEbikeOnly: "Actieradius alleen voor e-bikes.",
+  unknownTool: "Onbekend gereedschap — data ontbreekt.",
+  shopPaused: "De onderdelenwinkel staat even uit. Zorg en setup blijven aan de fiets.",
+  noRoutes: "Geen routes voor deze categorie.",
+  rideWindowNeedGps:
+    "Zet een locatie — dan zeg ik wanneer het vandaag droger is.",
+  rideWindowSport: "Venster alleen voor gravel en MTB.",
+  garageStand: (names) =>
+    `Aan je stand: ${names}. Actieve delen en km komen van de fiets.`,
+  rangeAnswer: (low, high, whLow, whHigh, conf) =>
+    `Actieradius ${low}–${high} km (${whLow}–${whHigh} Wh/km), betrouwbaarheid ${conf}.`,
+  watchNothing:
+    "Niets aan de beurt. Onderhoud, slijtage, setup en compatibiliteit staan groen.",
+  inboxEmpty:
+    "Niets aan de beurt. De assistent kijkt naar onderhoud, slijtage, setup en compatibiliteit.",
+  inboxAsk: "Assistent vragen",
+  inboxOpen: "Openen",
+  inboxPlace: "Naar de plek",
+  inboxSnooze: "7 dagen stil",
+  sevOverdue: "Te laat",
+  sevSoon: "Binnenkort",
+  sevInfo: "Hint",
+  sevNew: "nieuw",
+  feedbackTitle: "Korte feedback over de laatste rit",
+  feedbackDetail: "Drie taps — de assistent gebruikt dat voor setup-hints.",
   prompts: [
     {
       label: "Wat is er aan de beurt?",
@@ -304,8 +533,8 @@ const NL: ChatCopy = {
       tool: "watch",
     },
     {
-      label: "Garage",
-      query: "Wat zit er in mijn garage?",
+      label: "Fiets",
+      query: "Wat staat er aan mijn fiets?",
       tool: "garage",
     },
     {
@@ -327,6 +556,11 @@ const NL: ChatCopy = {
       label: "Routes",
       query: "Welke routes passen bij mij?",
       tool: "route_search",
+    },
+    {
+      label: "Droger venster",
+      query: "Wanneer is het vandaag droger?",
+      tool: "ride_window",
     },
     {
       label: "Slijtage / winkel",

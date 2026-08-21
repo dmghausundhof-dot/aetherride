@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/location/safe_position.dart';
+import '../../data/routing/routing_client.dart';
 import '../../domain/ai/chat_context.dart';
 import '../../domain/ai/chat_surface.dart';
 import '../../domain/ai/coach_inbox.dart';
@@ -93,6 +95,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           label: l10n.chatPromptRoutes,
           query: l10n.chatPromptRoutesQuery,
           tool: 'route_search',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptWindow,
+          query: l10n.chatPromptWindowQuery,
+          tool: 'ride_window',
         ),
         _SuggestedPrompt(
           label: l10n.chatPromptShop,
@@ -227,6 +234,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
       final coachItems =
           ref.read(coachWatchProvider).valueOrNull ?? const <CoachInboxItem>[];
+      final pos = await readCachedPosition();
       final body = buildChatApiBody(
         query: q,
         tool: toolName,
@@ -240,6 +248,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         calibration: store.rangeCalibration,
         notices: [for (final i in coachItems) i.notice],
         lang: lang,
+        lat: pos?.latitude,
+        lon: pos?.longitude,
+        routingProfile: active != null
+            ? routingProfileForBike(active.category).apiId
+            : null,
       );
 
       final headers = <String, String>{

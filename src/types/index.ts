@@ -75,6 +75,14 @@ export interface Ride {
     hr?: number;
     cad?: number;
     power?: number;
+    /** IMU lean, stamped at GPS sample — omitted when unknown. */
+    lean?: number;
+    /** Peak g in the last sensor window. */
+    g?: number;
+    /** 1 when an impact was detected at this point. */
+    impact?: number;
+    /** GPS speed km/h, never invented. */
+    spd?: number;
   }[];
   summaryMetrics: SensorMetrics;
   motorData?: {

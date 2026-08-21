@@ -1,6 +1,6 @@
 /**
  * Daten-Join: SavedRoute ↔ Katalog-Stimmen ↔ Ride/Bike.
- * UI bleibt getrennt: Tour (Mein/Stimmen) ≠ Werkstatt (Das Rad).
+ * UI bleibt getrennt: Tour (Mein/Stimmen) ≠ Rad (Das Rad).
  */
 
 import { getPublicTour } from "@/lib/catalog/publicTours";
@@ -9,6 +9,7 @@ import type { Bike, BikeComponent } from "@/types/garage";
 import type { Ride } from "@/types";
 import type { SavedRoute } from "@/types/route";
 import type { TourReview } from "@/lib/community/types";
+import { parseStimmeTags } from "@/lib/community/stimmeTags";
 
 export function catalogTourIdOf(
   route: Pick<SavedRoute, "id" | "catalogTourId">
@@ -29,6 +30,34 @@ export function ridesForSavedRoute(
     }
     return false;
   });
+}
+
+/** Abgeschlossene Fahrt — laufende Sessions zählen nicht als „zuletzt“. */
+export function lastRideForSavedRoute(
+  rides: Ride[],
+  route: Pick<SavedRoute, "id" | "catalogTourId">,
+): Ride | null {
+  const hits = ridesForSavedRoute(rides, route).filter((r) => Boolean(r.endTime));
+  let best: Ride | null = null;
+  for (const r of hits) {
+    if (!best || Date.parse(r.startTime) > Date.parse(best.startTime)) best = r;
+  }
+  return best;
+}
+
+export function formatMappeDay(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  return `${d.getDate()}.${d.getMonth() + 1}.`;
+}
+
+export function joinMappeCaption(
+  parts: Array<string | null | undefined>,
+): string | undefined {
+  const out = parts
+    .map((p) => p?.trim())
+    .filter((p): p is string => Boolean(p));
+  return out.length ? out.join(" · ") : undefined;
 }
 
 export function componentWearLines(
@@ -141,4 +170,44 @@ export function resolveAkteSavedRoute(
 export function inferCatalogTourId(routeId: string, source: SavedRoute["source"]): string | undefined {
   if (source !== "suggestion") return undefined;
   return getPublicTour(routeId) ? routeId : undefined;
+}
+
+/** Erster Zustand-Tag der neuesten Stimme — nie aus Text geraten. */
+export function latestConditionTag(
+  reviews: Array<Pick<TourReview, "tourId" | "createdAt" | "tags">>,
+  tourId: string | null | undefined,
+): string | undefined {
+  const id = tourId?.trim();
+  if (!id) return undefined;
+  let best: Pick<TourReview, "tourId" | "createdAt" | "tags"> | undefined;
+  for (const r of reviews) {
+    if (r.tourId !== id) continue;
+    if (!best || Date.parse(r.createdAt) > Date.parse(best.createdAt)) best = r;
+  }
+  return parseStimmeTags(best?.tags)[0];
+}
+
+/** Inbox-Titel: Tourname, sonst erster Satz, nie eine Roh-ID. */
+export function stimmeInboxTitle(
+  routeName: string | undefined,
+  body: string,
+  untitled: string,
+): string {
+  const name = routeName?.trim();
+  if (name) return name;
+  const line = body.trim().split(/\n/)[0]?.trim() ?? "";
+  if (!line) return untitled;
+  return line.length <= 42 ? line : `${line.slice(0, 41)}…`;
+}
+
+/** Untertitel: Body nicht wiederholen, wenn er schon der Titel ist. */
+export function stimmeInboxShowsBody(title: string, body: string): boolean {
+  const line = body.trim().split(/\n/)[0]?.trim() ?? "";
+  if (!line) return false;
+  if (line === title) return false;
+  if (title.endsWith("…")) {
+    const stem = title.slice(0, -1);
+    if (stem && line.startsWith(stem)) return false;
+  }
+  return true;
 }

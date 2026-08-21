@@ -87,6 +87,33 @@ void main() {
         DiscoverBrowseSheetSnaps.peek,
       );
     });
+
+    test('handle tap climbs without a swipe', () {
+      expect(
+        DiscoverBrowseSheetSnaps.handleTapTarget(
+          DiscoverBrowseSheetSnaps.closed,
+        ),
+        DiscoverBrowseSheetSnaps.half,
+      );
+      expect(
+        DiscoverBrowseSheetSnaps.handleTapTarget(
+          DiscoverBrowseSheetSnaps.peek,
+        ),
+        DiscoverBrowseSheetSnaps.half,
+      );
+      expect(
+        DiscoverBrowseSheetSnaps.handleTapTarget(
+          DiscoverBrowseSheetSnaps.half,
+        ),
+        DiscoverBrowseSheetSnaps.full,
+      );
+      expect(
+        DiscoverBrowseSheetSnaps.handleTapTarget(
+          DiscoverBrowseSheetSnaps.full,
+        ),
+        DiscoverBrowseSheetSnaps.half,
+      );
+    });
   });
 
   testWidgets('draggable sheet attaches at half snap', (tester) async {
@@ -166,5 +193,60 @@ void main() {
       controller.size,
       closeTo(DiscoverBrowseSheetSnaps.full, 0.02),
     );
+  });
+
+  testWidgets('selection snap update keeps the same sheet controller',
+      (tester) async {
+    final controller = DraggableScrollableController();
+    addTearDown(controller.dispose);
+    var hasSelection = false;
+
+    Widget sheet() {
+      return MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 800,
+            width: 390,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: DraggableScrollableSheet(
+                expand: false,
+                controller: controller,
+                initialChildSize: hasSelection
+                    ? DiscoverBrowseSheetSnaps.peek
+                    : DiscoverBrowseSheetSnaps.closed,
+                minChildSize: DiscoverBrowseSheetSnaps.minSize(
+                  hasSelection: hasSelection,
+                ),
+                maxChildSize: DiscoverBrowseSheetSnaps.full,
+                snap: true,
+                snapSizes: DiscoverBrowseSheetSnaps.sheetSnapSizes(
+                  hasSelection: hasSelection,
+                ),
+                builder: (context, scroll) {
+                  return Material(
+                    color: Colors.white,
+                    child: ListView(
+                      controller: scroll,
+                      children: const [ListTile(title: Text('Tour'))],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(sheet());
+    await tester.pump();
+    expect(controller.isAttached, isTrue);
+
+    hasSelection = true;
+    await tester.pumpWidget(sheet());
+    await tester.pump();
+    expect(controller.isAttached, isTrue);
+    expect(tester.takeException(), isNull);
   });
 }

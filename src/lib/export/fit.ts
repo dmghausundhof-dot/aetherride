@@ -4,6 +4,8 @@
  */
 
 import type { Ride } from "@/types";
+import { trackPointEpochMs } from "@/lib/geo/trackPointTime";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 
 const CRC_TABLE = (() => {
   const t = new Uint16Array(16);
@@ -124,10 +126,14 @@ export function rideToFit(ride: Ride): Uint8Array {
     if (lat == null || lng == null) continue;
     if (Math.abs(lat) < 1e-6 && Math.abs(lng) < 1e-6) continue;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
-    const t =
-      typeof p.time === "number"
-        ? startFit + Math.floor(p.time)
-        : startFit + written * 30;
+    const epochMs = trackPointEpochMs(
+      p.time,
+      startMs,
+      i,
+      ride.durationSec,
+      pts.length
+    );
+    const t = Math.floor((epochMs - fitEpoch) / 1000);
     records.u8(1);
     records.u32(t);
     records.i32(toSemi(lat));
@@ -159,7 +165,7 @@ export function rideToFit(ride: Ride): Uint8Array {
   records.u8(2); // cycling
   records.u32(Math.round(ride.durationSec * 1000));
   records.u32(Math.round(ride.distanceM * 100));
-  records.u16(Math.round(ride.elevationGainM));
+  records.u16(Math.round(honestClimbM(ride.track, ride.elevationGainM)));
 
   const data = records.bytes();
   const header = new FitBuf();

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Navigation, Play, Loader2 } from "lucide-react";
+import { Navigation, Play, Loader2, Bookmark } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import type { ClientRouteResult } from "@/lib/routing/profiles";
@@ -15,10 +15,12 @@ import { isHonestLoop } from "@/lib/discover/loopHonesty";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverCopy } from "@/lib/i18n/discoverCopy";
 import { discoverUi } from "@/lib/i18n/discoverUi";
+import { profileAllowsOsmRoundTrip } from "@/lib/routing/osmRoundTrip";
 
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
  * Rundkurs mode: reject engine results that are not closed (≤300 m).
+ * Preview first — Mappe only after explicit Merken.
  */
 export function NearMeRouteCard({
   center,
@@ -45,14 +47,29 @@ export function NearMeRouteCard({
   const [uncontrolledMode, setUncontrolledMode] = useState<
     "loop" | "point_to_point"
   >("loop");
-  const mode = controlledMode ?? uncontrolledMode;
+  const loopOk = profileAllowsOsmRoundTrip(profile);
+  const mode = loopOk
+    ? (controlledMode ?? uncontrolledMode)
+    : "point_to_point";
   const setMode = (m: "loop" | "point_to_point") => {
     onRouteModeChange?.(m);
     if (controlledMode === undefined) setUncontrolledMode(m);
   };
+  useEffect(() => {
+    if (!loopOk && controlledMode === "loop") {
+      onRouteModeChange?.("point_to_point");
+    }
+  }, [loopOk, controlledMode, onRouteModeChange]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<ClientRouteResult | null>(null);
+  const [previewMeta, setPreviewMeta] = useState<{
+    name: string;
+    distanceKm: number;
+    elev: number | null;
+    isLoop: boolean;
+    tourId: string;
+  } | null>(null);
 
   const run = async (andStart: boolean) => {
     if (!center) {
@@ -88,6 +105,7 @@ export function NearMeRouteCard({
         !isHonestLoop({ loopFlag: true, trackLngLat: coords })
       ) {
         setPreview(null);
+        setPreviewMeta(null);
         setMsg(d.noHonestEngine);
         return;
       }
@@ -96,7 +114,6 @@ export function NearMeRouteCard({
         j.label ||
         (mode === "loop" ? `Runde ${km} km` : `Route ${km} km`);
       const distanceKm = Math.round((result.distanceM / 1000) * 10) / 10;
-      // Real API ascent only — never invent hm from distance/geometry.
       const elev =
         typeof j.elevationM === "number"
           ? sanitizeElevationM(j.elevationM, distanceKm)
@@ -104,18 +121,14 @@ export function NearMeRouteCard({
       const isLoop =
         mode === "loop" &&
         isHonestLoop({ loopFlag: true, trackLngLat: coords });
-      saveRoute({
-        id: j.tourId || `near-${Date.now()}`,
+      setPreviewMeta({
         name,
         distanceKm,
-        elevationM: elev ?? 0,
-        durationMin: Math.round(result.durationS / 60),
-        savedAt: new Date().toISOString(),
-        source: "engine",
-        geometry: result.geometry,
-        loop: isLoop,
+        elev,
+        isLoop,
+        tourId: j.tourId || `near-${Date.now()}`,
       });
-      setMsg(d.savedEngine(formatDistanceElevation(distanceKm, elev)));
+      setMsg(d.previewEngine(formatDistanceElevation(distanceKm, elev)));
       if (isLoop) {
         onLoopPreview?.(result, name);
       }
@@ -128,6 +141,22 @@ export function NearMeRouteCard({
     } finally {
       setBusy(false);
     }
+  };
+
+  const savePreview = () => {
+    if (!preview || !previewMeta) return;
+    saveRoute({
+      id: previewMeta.tourId,
+      name: previewMeta.name,
+      distanceKm: previewMeta.distanceKm,
+      elevationM: previewMeta.elev ?? 0,
+      durationMin: Math.round(preview.durationS / 60),
+      savedAt: new Date().toISOString(),
+      source: "engine",
+      geometry: preview.geometry,
+      loop: previewMeta.isLoop,
+    });
+    setMsg(d.savedEngine(formatDistanceElevation(previewMeta.distanceKm, previewMeta.elev)));
   };
 
   return (
@@ -152,7 +181,7 @@ export function NearMeRouteCard({
           }
           className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
         >
-          <option value="loop">{loopLabel}</option>
+          {loopOk ? <option value="loop">{loopLabel}</option> : null}
           <option value="point_to_point">{d.stretch}</option>
         </select>
         <label className="flex items-center gap-1 text-xs text-text-secondary">
@@ -189,6 +218,16 @@ export function NearMeRouteCard({
           <Play className="h-3.5 w-3.5 fill-current" /> {d.inApp}
         </button>
       </div>
+      {preview && previewMeta ? (
+        <button
+          type="button"
+          onClick={savePreview}
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-chrome/40 py-2 text-xs font-medium text-chrome"
+        >
+          <Bookmark className="h-3.5 w-3.5" />
+          {d.savePreview}
+        </button>
+      ) : null}
       {msg && (
         <p className="mt-2 text-[11px] text-text-secondary">{msg}</p>
       )}

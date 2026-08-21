@@ -4,19 +4,21 @@ import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Bike, BracketingParameter } from "@/types";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
+import { bracketingCopy, presentBracketingSummary } from "@/lib/i18n/bracketingCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 
-const SUSPENSION_PARAMS: { id: BracketingParameter; label: string }[] = [
-  { id: "fork.rebound", label: "Gabel Zugstufe" },
-  { id: "fork.lsc", label: "Gabel LSC" },
-  { id: "fork.sag_pct", label: "Gabel SAG %" },
-  { id: "fork.air_pressure_psi", label: "Gabel Luftdruck" },
-  { id: "shock.rebound", label: "Dämpfer Zugstufe" },
-  { id: "shock.sag_pct", label: "Dämpfer SAG %" },
+const SUSPENSION_PARAMS: BracketingParameter[] = [
+  "fork.rebound",
+  "fork.lsc",
+  "fork.sag_pct",
+  "fork.air_pressure_psi",
+  "shock.rebound",
+  "shock.sag_pct",
 ];
 
-const TIRE_PARAMS: { id: BracketingParameter; label: string }[] = [
-  { id: "tire.front_psi", label: "Reifen vorn" },
-  { id: "tire.rear_psi", label: "Reifen hinten" },
+const TIRE_PARAMS: BracketingParameter[] = [
+  "tire.front_psi",
+  "tire.rear_psi",
 ];
 
 function bikeHasSuspension(bike: Bike): boolean {
@@ -29,6 +31,8 @@ function bikeHasSuspension(bike: Bike): boolean {
 }
 
 export function BracketingPanel({ bike }: { bike: Bike }) {
+  const lang = useChromeLang();
+  const copy = bracketingCopy(lang);
   const bracketingSeries = useAppStore((s) => s.bracketingSeries);
   const seriesList = bracketingSeries.filter((x) => x.bikeId === bike.id);
   const startBracketing = useAppStore((s) => s.startBracketing);
@@ -41,16 +45,24 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
     : TIRE_PARAMS;
 
   const [parameter, setParameter] = useState<BracketingParameter>(
-    params[0]?.id ?? "tire.front_psi"
+    params[0] ?? "tire.front_psi"
   );
   const [from, setFrom] = useState(6);
   const [to, setTo] = useState(10);
   const [step, setStep] = useState(2);
-  const [segment, setSegment] = useState("Heimtrail Abfahrt");
+  const [segment, setSegment] = useState(copy.defaultSegment);
 
   const active = seriesList[0];
-  const paramLabel =
-    params.find((p) => p.id === active?.parameter)?.label ?? active?.parameter;
+  const paramLabel = active
+    ? copy.param(active.parameter)
+    : copy.param(parameter);
+
+  const statusLabel =
+    active?.status === "open"
+      ? copy.running
+      : active?.status === "evaluated"
+        ? copy.done
+        : copy.ready;
 
   const create = () => {
     if (!pro) return;
@@ -80,20 +92,17 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-1 font-semibold">Zwei Varianten testen</h3>
-      <p className="mb-3 text-xs text-text-secondary">
-        Nur eine Einstellung pro Vergleich. Nach ein paar vergleichbaren Fahrten
-        siehst du, welche Variante sich besser anfühlt.
-      </p>
+      <h3 className="mb-1 font-semibold">{copy.title}</h3>
+      <p className="mb-3 text-xs text-text-secondary">{copy.hint}</p>
       {!pro && (
         <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-          Vergleichen ist Pro. Unter Profil freischalten.
+          {copy.pro}
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <label className="col-span-2">
-          Was vergleichen?
+          {copy.what}
           <select
             value={parameter}
             disabled={!pro}
@@ -103,14 +112,14 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 disabled:opacity-50"
           >
             {params.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
+              <option key={p} value={p}>
+                {copy.param(p)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Von
+          {copy.from}
           <input
             type="number"
             value={from}
@@ -119,7 +128,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Bis
+          {copy.to}
           <input
             type="number"
             value={to}
@@ -128,7 +137,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Schrittweite
+          {copy.step}
           <input
             type="number"
             value={step}
@@ -137,7 +146,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Vergleichsstrecke
+          {copy.segment}
           <input
             value={segment}
             onChange={(e) => setSegment(e.target.value)}
@@ -152,7 +161,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
         disabled={!pro}
         className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-on-accent disabled:opacity-50"
       >
-        Vergleich starten
+        {copy.start}
       </button>
 
       {active && (
@@ -161,12 +170,8 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
             {paramLabel} · {active.rangeFrom}→{active.rangeTo}
           </div>
           <div className="text-xs text-text-secondary">
-            {active.referenceSegmentLabel} · {active.runs.length} Durchgänge ·{" "}
-            {active.status === "open"
-              ? "läuft"
-              : active.status === "evaluated"
-                ? "fertig"
-                : "bereit"}
+            {active.referenceSegmentLabel} · {copy.runs(active.runs.length)} ·{" "}
+            {statusLabel}
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {Array.from(
@@ -178,7 +183,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
               (_, i) => active.rangeFrom + i * active.step
             ).map((v) => (
               <p key={v} className="rounded-lg bg-muted px-2 py-1 text-xs">
-                Variante {v}
+                {copy.variant(v)}
               </p>
             ))}
           </div>
@@ -199,7 +204,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
                   onClick={() => addDemoRuns(active.id, v)}
                   className="rounded-lg border border-dashed border-border px-2 py-1 text-xs text-text-secondary"
                 >
-                  Demo: +2 Fahrten @ {v}
+                  {copy.demo(v)}
                 </button>
               ))}
             </div>
@@ -209,14 +214,14 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
             onClick={() => evaluateBracketing(active.id)}
             className="mt-3 w-full rounded-xl bg-accent py-2 text-sm font-semibold text-on-accent"
           >
-            Auswerten
+            {copy.evaluate}
           </button>
           {active.resultSummary && (
             <p className="mt-2 text-xs text-text-secondary">
-              {active.resultSummary}
+              {presentBracketingSummary(active.resultSummary, lang)}
               {active.provenBestValue !== undefined &&
-                ` · Beste: ${active.provenBestValue} ${active.unit}`}
-              {active.noProvenDifference && " · kein klarer Unterschied"}
+                ` · ${copy.best(active.provenBestValue, active.unit)}`}
+              {active.noProvenDifference && ` · ${copy.noDiff}`}
             </p>
           )}
         </div>

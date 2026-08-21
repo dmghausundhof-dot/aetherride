@@ -5,16 +5,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
+import '../../domain/bike_owner.dart';
 import '../../domain/component.dart';
 import '../../domain/garage/die_box.dart';
+import '../../domain/garage/rad_mark.dart';
+import '../../domain/garage/bike_value_strip_plan.dart';
+import 'bike_value_strip.dart';
+import 'bike_stand_editor.dart';
+import 'garage_chrome.dart';
+import 'rad_glyph.dart';
 import '../../domain/garage/pressure_unit.dart';
 import '../../domain/garage/werkstatt_setup.dart';
+import 'pressure_log_dialog.dart';
+import 'service_care_card.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/setup.dart';
+import '../../domain/setup/sag_guide.dart';
+import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../domain/ble/bike_ble_kind.dart';
+import '../post_ride/post_ride_screen.dart';
+import '../ride/ride_elev_sparkline.dart';
 import '../shared/bike_hero_banner.dart';
 
 /// Die Box — four zones, one resident bike. Tab title is the bike name.
@@ -30,17 +44,33 @@ class DieBoxSurface extends ConsumerStatefulWidget {
     this.onEditComponent,
     this.sensorChild,
     this.onPairSensor,
+    this.showOnBike = true,
+    this.showHeuteRest = false,
+    this.onChanged,
+    this.onOpenMaintenance,
+    this.footer,
   });
 
   final Bike bike;
   final List<BikeComponent> components;
   final List<MaintenanceAlert> due;
   final bool compact;
+
+  /// Teile-Liste in der Box. Im Rad-Detail aus — dort lebt sie im Tab.
+  final bool showOnBike;
+
+  /// Weitere Heute-Karten unter dem einen Knopf. Standard aus — eine Aktion.
+  final bool showHeuteRest;
   final VoidCallback? onOpenDetail;
   final Future<void> Function(ComponentSlot slot)? onInstallSlot;
   final Future<void> Function(BikeComponent component)? onEditComponent;
   final Widget? sensorChild;
   final Future<void> Function()? onPairSensor;
+  final VoidCallback? onChanged;
+  final VoidCallback? onOpenMaintenance;
+
+  /// Tabs sitzen in derselben Karte wie Hero und Werte — nicht darunter.
+  final Widget? footer;
 
   @override
   ConsumerState<DieBoxSurface> createState() => _DieBoxSurfaceState();
@@ -52,7 +82,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   bool _cscPaired = false;
   bool _driveNeedsWheel = false;
   bool _busy = false;
-  String? _lastRideLine;
+  RideRecord? _lastRide;
   final Set<String> _snoozed = {};
 
   @override
@@ -64,7 +94,11 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   @override
   void didUpdateWidget(covariant DieBoxSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.bike.id != widget.bike.id) {
+    if (oldWidget.bike.id != widget.bike.id ||
+        oldWidget.bike.odometerKm != widget.bike.odometerKm ||
+        oldWidget.bike.hours != widget.bike.hours ||
+        oldWidget.bike.owner.nextServiceAt !=
+            widget.bike.owner.nextServiceAt) {
       _reloadMeta();
     }
   }
@@ -89,7 +123,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
       _driveNeedsWheel = bleDriveNeedsWheelSensor(
         bikeBleKindFromStorage(ble.drive?.kind),
       );
-      _lastRideLine = AppLocalizations.of(context).lastRideHeroLineFor(last);
+      _lastRide = last;
     });
   }
 
@@ -102,6 +136,8 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         logs: _logs,
         cscPaired: _cscPaired,
         driveNeedsWheelSensor: _driveNeedsWheel,
+        receiptCount:
+            ref.watch(userProfileStoreProvider).receiptsForBike(widget.bike.id).length,
       );
 
   Future<void> _runToday(DieBoxTodayItem item) async {
@@ -122,7 +158,14 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
           final slot = item.slot;
           if (slot != null) await widget.onInstallSlot?.call(slot);
         case DieBoxItemId.pressureUnknown:
-          await _logPressure();
+          await logBikePressure(
+            context: context,
+            ref: ref,
+            bike: widget.bike,
+            existingSetups: _setups,
+          );
+        case DieBoxItemId.serviceAppointment:
+          await showServiceCareEditor(context, ref, widget.bike);
         case DieBoxItemId.sagUnknown:
           await _logSag();
         case DieBoxItemId.travelUnknown:
@@ -134,13 +177,15 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
                 activity: l10n.dieBoxChainLogged,
                 notes: l10n.dieBoxChainNotes,
                 odometerKm: widget.bike.odometerKm,
+                hours: widget.bike.hours,
               );
         case DieBoxItemId.dueCare:
           await ref.read(userProfileStoreProvider).addMaintenanceLog(
                 bikeId: widget.bike.id,
-                activity: item.title,
-                notes: item.hint,
+                activity: item.due?.label ?? item.title,
+                notes: item.due?.sourceLabel ?? item.hint,
                 odometerKm: widget.bike.odometerKm,
+                hours: widget.bike.hours,
               );
         case DieBoxItemId.pairCsc:
           await widget.onPairSensor?.call();
@@ -148,6 +193,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
           await _switchParkTrail();
       }
       await _reloadMeta();
+      widget.onChanged?.call();
       ref.invalidate(bikesProvider);
       ref.invalidate(bikeComponentsProvider(widget.bike.id));
       ref.invalidate(currentSetupProvider(widget.bike.id));
@@ -156,114 +202,26 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     }
   }
 
-  Future<void> _logPressure() async {
-    final l10n = AppLocalizations.of(context);
-    final usesBar = pressureUsesBar(widget.bike.category);
-    final unit = pressureUnitLabel(widget.bike.category);
-    final front = TextEditingController();
-    final rear = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final d = AppLocalizations.of(ctx);
-        return AlertDialog(
-          title: Text(d.dieBoxPressureTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                d.dieBoxPressureHint,
-                style: const TextStyle(fontSize: 13, color: AppColors.muted),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: front,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: '${d.dieBoxPressureFront} ($unit)',
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              TextField(
-                controller: rear,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: '${d.dieBoxPressureRear} ($unit)',
-                  isDense: true,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(d.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(d.save),
-            ),
-          ],
-        );
-      },
-    );
-    if (ok != true) return;
-    final enteredF = double.tryParse(front.text.replaceAll(',', '.'));
-    final enteredR = double.tryParse(rear.text.replaceAll(',', '.'));
-    if (enteredF == null && enteredR == null) return;
-    final f = enteredF == null
-        ? null
-        : enteredPressureToPsi(enteredF, widget.bike.category);
-    final r = enteredR == null
-        ? null
-        : enteredPressureToPsi(enteredR, widget.bike.category);
-    final current =
-        await ref.read(setupRepositoryProvider).getCurrent(widget.bike.id);
-    final values = _mergeValues(
-      current?.values ?? const [],
-      [
-        if (f != null)
-          SetupValue(
-            adjusterKey: 'tire_front.pressure_psi',
-            valueNum: f,
-            unit: 'psi',
-          ),
-        if (r != null)
-          SetupValue(
-            adjusterKey: 'tire_rear.pressure_psi',
-            valueNum: r,
-            unit: 'psi',
-          ),
-      ],
-    );
-    await ref.read(setupRepositoryProvider).createVersion(
-          bikeId: widget.bike.id,
-          label: l10n.dieBoxPressureLogged,
-          values: values,
-          createdBy: 'user',
-          parentSetupId: current?.id,
-        );
-    await ref.read(userProfileStoreProvider).addMaintenanceLog(
-          bikeId: widget.bike.id,
-          activity: l10n.dieBoxPressureLogged,
-          notes: [
-            if (enteredF != null)
-              usesBar
-                  ? l10n.garageLogBarFront(enteredF.toStringAsFixed(1))
-                  : l10n.garageLogPsiFront(enteredF.toStringAsFixed(0)),
-            if (enteredR != null)
-              usesBar
-                  ? l10n.garageLogBarRear(enteredR.toStringAsFixed(1))
-                  : l10n.garageLogPsiRear(enteredR.toStringAsFixed(0)),
-          ].join(' · '),
-        );
-  }
-
   Future<void> _logSag() async {
     final l10n = AppLocalizations.of(context);
+    final weight = ref.read(userProfileStoreProvider).effectiveWeightKg;
+    final hasShock = _plan.setup.hasRearShock;
+    final forkEst = estimateAirPsi(
+      riderWeightKg: weight,
+      bikeWeightKg: widget.bike.owner.weightKg,
+      category: widget.bike.category,
+      end: 'fork',
+      travelMm: widget.bike.travelFrontMm?.toDouble(),
+    );
+    final shockEst = hasShock
+        ? estimateAirPsi(
+            riderWeightKg: weight,
+            bikeWeightKg: widget.bike.owner.weightKg,
+            category: widget.bike.category,
+            end: 'shock',
+            travelMm: widget.bike.travelRearMm?.toDouble(),
+          )
+        : null;
     final fork = TextEditingController();
     final shock = TextEditingController();
     final ok = await showDialog<bool>(
@@ -272,32 +230,69 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         final d = AppLocalizations.of(ctx);
         return AlertDialog(
           title: Text(d.dieBoxSagTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                d.dieBoxSagHint,
-                style: const TextStyle(fontSize: 13, color: AppColors.muted),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: fork,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: d.dieBoxSagFork,
-                  isDense: true,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasShock ? d.dieBoxSagHint : d.garageSagGuideHint,
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              TextField(
-                controller: shock,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: d.dieBoxSagShock,
-                  isDense: true,
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  d.garageSagGuideFork(
+                    '${forkEst.psiTarget}',
+                    '${forkEst.psiMin}',
+                    '${forkEst.psiMax}',
+                    '${forkEst.sag.target}${forkEst.sagMm != null ? ' · ${forkEst.sagMm} mm' : ''}',
+                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 ),
-              ),
-            ],
+                if (shockEst != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    d.garageSagGuideShock(
+                      '${shockEst.psiTarget}',
+                      '${shockEst.psiMin}',
+                      '${shockEst.psiMax}',
+                      '${shockEst.sag.target}${shockEst.sagMm != null ? ' · ${shockEst.sagMm} mm' : ''}',
+                    ),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  d.sagMeasureStepsFor('fork').take(3).join('\n'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextField(
+                  controller: fork,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: d.dieBoxSagFork,
+                    hintText: '${forkEst.sag.target}',
+                    isDense: true,
+                  ),
+                ),
+                if (hasShock) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  TextField(
+                    controller: shock,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: d.dieBoxSagShock,
+                      hintText: '${shockEst!.sag.target}',
+                      isDense: true,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -422,6 +417,63 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     return map.values.toList();
   }
 
+  Future<void> _openStand({required bool focusHours}) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final saved = await showBikeStandEditor(
+        context: context,
+        km: widget.bike.odometerKm,
+        hours: widget.bike.hours,
+        focusHours: focusHours,
+      );
+      if (saved == null) return;
+      if (!mounted) return;
+      final sameKm = (saved.km - widget.bike.odometerKm).abs() < 0.01;
+      final sameHours = (saved.hours - widget.bike.hours).abs() < 0.01;
+      if (sameKm && sameHours) return;
+      await ref.read(garageRepositoryProvider).setOdometerAbsolute(
+            bikeId: widget.bike.id,
+            odometerKm: saved.km,
+            hours: saved.hours,
+          );
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      await ref.read(userProfileStoreProvider).addMaintenanceLog(
+            bikeId: widget.bike.id,
+            activity: sameKm ? 'hours_updated' : 'odo_updated',
+            odometerKm: saved.km,
+            hours: saved.hours,
+            notes:
+                '${l10n.garageLogManualKm(saved.km.toStringAsFixed(0))} · ${l10n.garageLogManualHours(saved.hours.toStringAsFixed(1))}',
+          );
+      await _reloadMeta();
+      widget.onChanged?.call();
+      ref.invalidate(bikesProvider);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openPressure() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await logBikePressure(
+        context: context,
+        ref: ref,
+        bike: widget.bike,
+        existingSetups: _setups,
+      );
+      await _reloadMeta();
+      widget.onChanged?.call();
+      ref.invalidate(bikesProvider);
+      ref.invalidate(currentSetupProvider(widget.bike.id));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   String _itemKey(DieBoxTodayItem item) {
     if (item.id == DieBoxItemId.dueCare) {
       return 'due:${item.due?.label ?? item.title}';
@@ -432,11 +484,15 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    ref.listen(currentSetupProvider(widget.bike.id), (prev, next) {
+      if (next.hasValue) unawaited(_reloadMeta());
+    });
     final plan = _plan;
     final today = [
       for (final item in plan.today)
         if (!_snoozed.contains(_itemKey(item))) l10n.localizeDieBoxItem(item),
     ];
+    final lastRideLine = l10n.lastRideHeroLineFor(_lastRide);
     final primary = today.isEmpty ? null : today.first;
     final rest =
         today.length <= 1 ? const <DieBoxTodayItem>[] : today.sublist(1);
@@ -448,39 +504,195 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         key: const Key('die-box-surface'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BikeHeroBanner(
-            key: widget.compact ? const Key('werkstatt-bike-hero') : null,
-            bike: widget.bike,
-            onTap: widget.onOpenDetail,
-            photoHeight: widget.compact ? 140 : 160,
-            lastRideLine: _lastRideLine,
+          Container(
+            decoration: garageCardDecoration(active: widget.bike.isActive),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                BikeHeroBanner(
+                  key: widget.compact
+                      ? const Key('werkstatt-bike-hero')
+                      : null,
+                  bike: widget.bike,
+                  onTap: widget.onOpenDetail,
+                  photoHeight: widget.compact ? 132 : 148,
+                  showCaption: false,
+                  embedded: true,
+                  usePhotoFill: true,
+                  onPhotoFilled: () {
+                    unawaited(_reloadMeta());
+                    widget.onChanged?.call();
+                    ref.invalidate(bikesProvider);
+                  },
+                ),
+                if (_lastRide != null) ...[
+                  if (lastRideLine != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.m,
+                        AppSpacing.s,
+                        AppSpacing.m,
+                        0,
+                      ),
+                      child: Text(
+                        lastRideLine,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      AppSpacing.s,
+                      AppSpacing.m,
+                      0,
+                    ),
+                    child: _GarageLastRidePeek(ride: _lastRide!),
+                  ),
+                ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.m,
+                    AppSpacing.s,
+                    AppSpacing.m,
+                    0,
+                  ),
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      final top = widget.due.isEmpty ? null : widget.due.first;
+                      final service = planStripService(
+                        appointmentLabel:
+                            widget.bike.owner.hasServiceAppointment
+                                ? BikeOwner.formatDate(
+                                    widget.bike.owner.nextServiceAt!,
+                                  )
+                                : null,
+                        intervalStatus: top == null
+                            ? null
+                            : top.status == DueStatus.overdue
+                                ? StripIntervalStatus.overdue
+                                : StripIntervalStatus.dueSoon,
+                        intervalRemaining: top == null
+                            ? null
+                            : l10n.maintRemainingFor(top.remainingLabel),
+                        appointmentCaption: l10n.garageStatService,
+                        careCaption: l10n.garageStatCare,
+                        dueNow: l10n.garageStatDueNow,
+                        dash: l10n.garageStatDash,
+                      );
+                      return BikeValueStrip(
+                        embedded: true,
+                        km: widget.bike.odometerKm,
+                        hours: widget.bike.hours,
+                        pressure: formatLoggedTirePressure(
+                          _setups,
+                          usesBar: resolvePressureUsesBar(
+                            widget.bike.category,
+                            ref
+                                .watch(userProfileStoreProvider)
+                                .pressureUnitPref,
+                          ),
+                        ),
+                        serviceLabel: service.value,
+                        serviceCaption: service.caption,
+                        onKm: _busy
+                            ? null
+                            : () => unawaited(_openStand(focusHours: false)),
+                        onHours: _busy
+                            ? null
+                            : () => unawaited(_openStand(focusHours: true)),
+                        onPressure:
+                            _busy ? null : () => unawaited(_openPressure()),
+                        onService: _busy
+                            ? null
+                            : () async {
+                                if (widget.onOpenMaintenance != null) {
+                                  widget.onOpenMaintenance!();
+                                  return;
+                                }
+                                await showServiceCareEditor(
+                                  context,
+                                  ref,
+                                  widget.bike,
+                                );
+                                await _reloadMeta();
+                                widget.onChanged?.call();
+                                ref.invalidate(bikesProvider);
+                              },
+                      );
+                    },
+                  ),
+                ),
+                _BereitCard(
+                  plan: plan,
+                  bike: widget.bike,
+                  embedded: true,
+                ),
+                if (primary != null)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      0,
+                      AppSpacing.m,
+                      widget.footer == null ? AppSpacing.m : AppSpacing.s,
+                    ),
+                    child: FilledButton(
+                      key: const Key('die-box-primary'),
+                      onPressed:
+                          _busy ? null : () => unawaited(_runToday(primary)),
+                      child: Text(primary.cta),
+                    ),
+                  )
+                else if (plan.isReady)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      0,
+                      AppSpacing.m,
+                      widget.footer == null ? AppSpacing.m : AppSpacing.s,
+                    ),
+                    child: Text(
+                      plan.setup.kind == WerkstattKind.urban
+                          ? l10n.dieBoxNothingDueMonday
+                          : l10n.dieBoxNothingDue,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.chrome,
+                      ),
+                    ),
+                  ),
+                if (widget.footer != null && widget.sensorChild != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      0,
+                      AppSpacing.m,
+                      AppSpacing.s,
+                    ),
+                    child: widget.sensorChild,
+                  ),
+                if (widget.footer != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      0,
+                      AppSpacing.m,
+                      AppSpacing.m,
+                    ),
+                    child: widget.footer,
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.s),
-          _BereitCard(plan: plan, bike: widget.bike),
-          if (primary != null) ...[
-            const SizedBox(height: AppSpacing.s),
-            FilledButton(
-              key: const Key('die-box-primary'),
-              onPressed: _busy ? null : () => unawaited(_runToday(primary)),
-              child: Text(primary.cta),
-            ),
-          ] else if (plan.isReady) ...[
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              plan.setup.kind == WerkstattKind.urban
-                  ? l10n.dieBoxNothingDueMonday
-                  : l10n.dieBoxNothingDue,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.chrome,
-              ),
-            ),
-          ],
-          if (rest.isNotEmpty) ...[
+          if (widget.showHeuteRest && rest.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.l),
-            _ZoneTitle(label: l10n.dieBoxZoneToday),
+            GarageSectionTitle(label: l10n.dieBoxZoneToday, mark: 'care'),
             const SizedBox(height: AppSpacing.s),
             _HeuteZone(
               items: rest,
@@ -490,27 +702,29 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
               onLater: (item) => setState(() => _snoozed.add(_itemKey(item))),
             ),
           ],
-          const SizedBox(height: AppSpacing.l),
-          _ZoneTitle(label: l10n.dieBoxZoneOnBike),
-          const SizedBox(height: AppSpacing.s),
-          _AmRadZone(
-            plan: plan,
-            onTap: widget.onEditComponent,
-            onAdd: widget.onInstallSlot == null
-                ? null
-                : () {
-                    final next = plan.addableSlots.where(
-                      (s) => !plan.onBike.any((c) => c.slot == s),
-                    );
-                    final slot = next.isEmpty
-                        ? plan.addableSlots.firstOrNull
-                        : next.first;
-                    if (slot != null) unawaited(widget.onInstallSlot!(slot));
-                  },
-          ),
-          const SizedBox(height: AppSpacing.l),
-          if (widget.sensorChild != null) ...[
-            _ZoneTitle(label: l10n.dieBoxZoneSensor),
+          if (widget.showOnBike) ...[
+            const SizedBox(height: AppSpacing.l),
+            GarageSectionTitle(label: l10n.dieBoxZoneOnBike, mark: 'parts'),
+            const SizedBox(height: AppSpacing.s),
+            _AmRadZone(
+              plan: plan,
+              onTap: widget.onEditComponent,
+              onAdd: widget.onInstallSlot == null
+                  ? null
+                  : () {
+                      final next = plan.addableSlots.where(
+                        (s) => !plan.onBike.any((c) => c.slot == s),
+                      );
+                      final slot = next.isEmpty
+                          ? plan.addableSlots.firstOrNull
+                          : next.first;
+                      if (slot != null) unawaited(widget.onInstallSlot!(slot));
+                    },
+            ),
+          ],
+          if (widget.sensorChild != null && widget.footer == null) ...[
+            const SizedBox(height: AppSpacing.l),
+            GarageSectionTitle(label: l10n.dieBoxZoneSensor, mark: 'battery'),
             const SizedBox(height: AppSpacing.s),
             widget.sensorChild!,
           ],
@@ -520,27 +734,15 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   }
 }
 
-class _ZoneTitle extends StatelessWidget {
-  const _ZoneTitle({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: AppColors.muted,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.4,
-          ),
-    );
-  }
-}
-
 class _BereitCard extends StatelessWidget {
-  const _BereitCard({required this.plan, required this.bike});
+  const _BereitCard({
+    required this.plan,
+    required this.bike,
+    this.embedded = false,
+  });
   final DieBoxPlan plan;
   final Bike bike;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -552,20 +754,15 @@ class _BereitCard extends StatelessWidget {
     };
     return Container(
       key: const Key('die-box-bereit'),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: bike.isActive ? AppColors.chrome : AppColors.border,
-          width: bike.isActive ? 1.5 : 1,
-        ),
-      ),
+      decoration: embedded ? null : garageCardDecoration(active: bike.isActive),
       padding: const EdgeInsets.all(AppSpacing.m),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              RadGlyph(radMarkForReadiness(plan.readiness), size: 16),
+              const SizedBox(width: 6),
               Text(
                 l10n.dieBoxReadiness(plan.readiness),
                 style: TextStyle(
@@ -592,34 +789,17 @@ class _BereitCard extends StatelessWidget {
               height: 1.25,
             ),
           ),
-          if (plan.chips.any((c) => c.known)) ...[
+          if (plan.chips.any((c) => c.known && !c.fact)) ...[
             const SizedBox(height: AppSpacing.s),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
                 for (final c in plan.chips)
-                  if (c.known)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.chipIdle,
-                        borderRadius: BorderRadius.circular(AppRadius.chip),
-                        border: Border.all(
-                          color: AppColors.chrome.withValues(alpha: 0.45),
-                        ),
-                      ),
-                      child: Text(
-                        l10n.dieBoxChipLabel(c.label),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.chipIdleText,
-                        ),
-                      ),
+                  if (c.known && !c.fact)
+                    GarageFactChip(
+                      label: l10n.dieBoxChipLabel(c.label),
+                      leading: RadGlyph(radMarkForChip(c.label), size: 12),
                     ),
               ],
             ),
@@ -659,15 +839,21 @@ class _HeuteZone extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.s),
             child: Material(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.circular(AppRadius.card),
+              color: Colors.transparent,
               child: InkWell(
                 onTap: busy ? null : () => unawaited(onTap(item)),
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.m),
+                child: Ink(
+                  decoration: garageCardDecoration(),
+                  child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.m,
+                    vertical: AppSpacing.s,
+                  ),
                   child: Row(
                     children: [
+                      RadGlyph(radMarkForItem(item.id), size: 18),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,15 +862,17 @@ class _HeuteZone extends StatelessWidget {
                               item.title,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
+                                fontSize: 13,
                               ),
                             ),
-                            const SizedBox(height: 2),
                             Text(
                               item.hint,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.muted,
-                                height: 1.3,
+                                height: 1.25,
                               ),
                             ),
                           ],
@@ -702,14 +890,22 @@ class _HeuteZone extends StatelessWidget {
                               color: AppColors.chrome,
                             ),
                           ),
-                          TextButton(
-                            onPressed: busy ? null : () => onLater(item),
-                            child: Text(laterLabel),
+                          const SizedBox(height: 2),
+                          GestureDetector(
+                            onTap: busy ? null : () => onLater(item),
+                            child: Text(
+                              laterLabel,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
+                ),
                 ),
               ),
             ),
@@ -734,19 +930,10 @@ class _AmRadZone extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (plan.onBike.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.dieBoxEmptyHint,
-            style: const TextStyle(fontSize: 13, color: AppColors.muted),
-          ),
-          if (onAdd != null)
-            TextButton(
-              onPressed: onAdd,
-              child: Text(l10n.dieBoxAddSomething),
-            ),
-        ],
+      return GarageInviteCard(
+        title: l10n.dieBoxAddSomething,
+        hint: l10n.dieBoxOnBikeEmpty,
+        onTap: onAdd,
       );
     }
     return Column(
@@ -756,18 +943,21 @@ class _AmRadZone extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: Material(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.circular(AppRadius.card),
+              color: Colors.transparent,
               child: InkWell(
                 onTap: onTap == null ? null : () => unawaited(onTap!(c)),
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                child: Padding(
+                child: Ink(
+                  decoration: garageCardDecoration(),
+                  child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.m,
                     vertical: AppSpacing.s,
                   ),
                   child: Row(
                     children: [
+                      RadGlyph(radMarkForSlot(c.slot), size: 16),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '${l10n.componentSlotLabel(c.slot)} · ${c.displayName}',
@@ -782,6 +972,7 @@ class _AmRadZone extends StatelessWidget {
                     ],
                   ),
                 ),
+                ),
               ),
             ),
           ),
@@ -794,6 +985,29 @@ class _AmRadZone extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _GarageLastRidePeek extends StatelessWidget {
+  const _GarageLastRidePeek({required this.ride});
+
+  final RideRecord ride;
+
+  @override
+  Widget build(BuildContext context) {
+    final tel = buildRideTelemetry(ride.track);
+    if (!tel.hasElev) return const SizedBox.shrink();
+    return RideTerrainPeek(
+      telemetry: tel,
+      caption: terrainCaption(tel),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PostRideScreen(rideId: ride.id),
+          ),
+        );
+      },
     );
   }
 }

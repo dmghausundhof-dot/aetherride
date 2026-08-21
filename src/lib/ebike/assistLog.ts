@@ -123,7 +123,7 @@ export function buildEstimatedAssistLog(input: {
     avgSpeedKmh: speed * 0.75,
     avgRiderPowerW: power * 0.85,
     estimatedWh: (d2 / 1000) * 14 * ASSIST_WH_FACTOR[climbEst.mode],
-    label: `Schätzung: ${climbEst.mode.toUpperCase()} (Steigung, Konfidenz ${(climbEst.confidence * 100).toFixed(0)} %)`,
+    label: `Schätzung: ${climbEst.mode.toUpperCase()} (Steigung, ${(climbEst.confidence * 100).toFixed(0)} %)`,
   });
 
   // Segment 3: Rest Tour

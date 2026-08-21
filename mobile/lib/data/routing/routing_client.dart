@@ -15,7 +15,6 @@ import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../native/routing_core_ffi.dart';
 import '../local/ride_prefs.dart';
-import 'offline_maps_prefs.dart';
 import 'offline_pack_dirs.dart';
 import 'offline_tiles.dart';
 
@@ -63,6 +62,24 @@ extension RoutingProfileApi on RoutingProfile {
       };
 
   bool get isAccessOnly => this == RoutingProfile.driving;
+}
+
+/// ORS mountain costing is forest road, not a Trailforks trail.
+bool profileAllowsOsmRoundTrip(RoutingProfile profile) {
+  switch (profile) {
+    case RoutingProfile.gravel:
+    case RoutingProfile.road:
+    case RoutingProfile.urban:
+    case RoutingProfile.ebikeTour:
+      return true;
+    case RoutingProfile.mtbTrail:
+    case RoutingProfile.mtbEnduro:
+    case RoutingProfile.downhill:
+    case RoutingProfile.emtb:
+    case RoutingProfile.hiking:
+    case RoutingProfile.driving:
+      return false;
+  }
 }
 
 RoutingProfile routingProfileForBike(BikeCategory category) =>
@@ -192,6 +209,206 @@ class GeoPoint {
   final double lng;
 }
 
+/// Native Dijkstra (`offline_graph`) or Valhalla tiles — not ORS/GraphHopper.
+bool isOfflineRoutingEngine(String? engine) {
+  final e = (engine ?? '').toLowerCase();
+  return e == 'offline_graph' || e == 'valhalla';
+}
+
+/// After a region pack is activated, do not keep serving an older live
+/// (ORS/GraphHopper) cache hit — otherwise the graph never runs.
+///
+/// Keep the cache when FFI is missing, vias force online, the cached line
+/// is already native, or it was written *after* the pack was activated
+/// (offline failed over to live).
+bool skipLiveCacheForOfflinePack({
+  required DateTime? cacheFetchedAt,
+  required DateTime? packActivatedAt,
+  required String? cachedEngine,
+  required bool ffiAvailable,
+  required bool viasEmpty,
+  bool planned = true,
+}) {
+  if (!planned || !viasEmpty || !ffiAvailable) return false;
+  final fetched = cacheFetchedAt;
+  final activated = packActivatedAt;
+  if (fetched == null || activated == null) return false;
+  if (!fetched.isBefore(activated)) return false;
+  return !isOfflineRoutingEngine(cachedEngine);
+}
+
+/// Mid-ride without net: do not serve an ORS/GraphHopper cache hit.
+bool skipLiveCacheWhenOffline({
+  required bool allowOnline,
+  required String? cachedEngine,
+}) {
+  return !allowOnline && !isOfflineRoutingEngine(cachedEngine);
+}
+
+/// Native Dijkstra only when A–B sits in an activated pack, or we just
+/// switched to a downloaded pack that covers the trip.
+///
+/// [preferOffline] must not skip that check — a Schwarzwald graph must
+/// not swallow a plan in the Alps.
+bool shouldAttemptOfflineGraphFirst({
+  required bool planned,
+  required bool viasEmpty,
+  required bool activePackCovers,
+  required bool switchedToCoveringPack,
+  bool allowOfflineFirst = true,
+}) {
+  if (!allowOfflineFirst) return false;
+  if (!planned || !viasEmpty) return false;
+  return activePackCovers || switchedToCoveringPack;
+}
+
+/// After ORS/GraphHopper fail: Dijkstra only if a pack on disk covers A–B.
+/// Alps + Schwarzwald graph must not sneak in here.
+bool shouldFallbackOfflineAfterOnlineFail({
+  required bool planned,
+  required bool viasEmpty,
+  required bool packCoversOrSwitched,
+  bool allowOfflineFallback = true,
+}) {
+  if (!allowOfflineFallback) return false;
+  return planned && viasEmpty && packCoversOrSwitched;
+}
+
+const kOnlineRouteTimeout = Duration(seconds: 28);
+const kOnlineRouteTimeoutWithOfflineFallback = Duration(seconds: 10);
+const kBrowseLiveRouteTimeout = Duration(seconds: 12);
+
+/// A–B with a covering pack: fail over to Dijkstra sooner than live/via trips.
+/// Browse pin A–B has no Dijkstra — fail the live call sooner than 28 s.
+Duration onlineRouteTimeout({
+  required bool planned,
+  required bool viasEmpty,
+  required bool allowOfflineFallback,
+  bool packMayCover = false,
+}) {
+  if (planned && viasEmpty && allowOfflineFallback && packMayCover) {
+    return kOnlineRouteTimeoutWithOfflineFallback;
+  }
+  if (planned && !allowOfflineFallback) {
+    return kBrowseLiveRouteTimeout;
+  }
+  return kOnlineRouteTimeout;
+}
+
+bool isOfflineNoRouteError(Object error) =>
+    error.toString().contains('offline-no-route');
+
+bool isOfflineViasNeedNetworkError(Object error) =>
+    error.toString().contains('offline-vias-need-network');
+
+bool isLoopNotClosedError(Object error) =>
+    error.toString().contains('loop-not-closed');
+
+bool isLoopProfileError(Object error) =>
+    error.toString().contains('loop-profile');
+
+bool isLoopGeneratorError(Object error) {
+  final s = error.toString();
+  return s.contains('loop-not-closed') ||
+      s.contains('loop-profile') ||
+      s.contains('loop-ors-unconfigured') ||
+      s.contains('loop-offline') ||
+      s.contains('Loop failed');
+}
+
+RouteResult routeResultFromJson(
+  Map<String, dynamic> data, {
+  GeoPoint? fallbackFrom,
+  GeoPoint? fallbackTo,
+}) {
+  final coords = <GeoPoint>[];
+  final geom = data['geometry'];
+  if (geom is Map && geom['coordinates'] is List) {
+    for (final c in geom['coordinates'] as List) {
+      if (c is List && c.length >= 2) {
+        coords.add(
+          GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
+        );
+      }
+    }
+  } else if (geom is List) {
+    for (final c in geom) {
+      if (c is List && c.length >= 2) {
+        coords.add(
+          GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
+        );
+      } else if (c is Map) {
+        coords.add(
+          GeoPoint(
+            (c['lat'] as num).toDouble(),
+            (c['lng'] as num? ?? c['lon'] as num).toDouble(),
+          ),
+        );
+      }
+    }
+  }
+  final usedFallback = coords.isEmpty;
+  if (usedFallback && fallbackFrom != null && fallbackTo != null) {
+    coords.addAll([fallbackFrom, fallbackTo]);
+  }
+
+  final rawSteps = data['steps'];
+  final steps = <RouteStep>[];
+  if (rawSteps is List) {
+    for (final s in rawSteps) {
+      if (s is! Map) continue;
+      final instruction =
+          '${s['instruction'] ?? (AppLocaleBinding.isEnglish ? 'Continue' : 'Weiter')}';
+      final streetRaw = s['streetName'] ?? s['street'] ?? s['name'];
+      final streetFromField =
+          streetRaw is String && streetRaw.trim().isNotEmpty
+              ? streetRaw.trim()
+              : null;
+      final coord = s['coordinate'];
+      double? lat;
+      double? lng;
+      if (coord is Map) {
+        lat = (coord['lat'] as num?)?.toDouble();
+        lng = (coord['lng'] as num? ?? coord['lon'] as num?)?.toDouble();
+      }
+      steps.add(
+        RouteStep(
+          id: '${s['id']}',
+          instruction: instruction,
+          distanceAlongM: (s['distanceAlongM'] as num?)?.toDouble() ?? 0,
+          streetName: streetFromField ??
+              extractStreetNameFromInstruction(instruction),
+          lat: lat,
+          lng: lng,
+        ),
+      );
+    }
+  }
+
+  final rawWarnings = data['warnings'];
+  final warnings = <String>[];
+  if (rawWarnings is List) {
+    for (final w in rawWarnings) {
+      if (w is String && w.trim().isNotEmpty) warnings.add(w.trim());
+    }
+  }
+
+  return RouteResult(
+    coordinates: coords,
+    distanceM: (data['distance'] as num?)?.toDouble() ??
+        (data['distanceM'] as num?)?.toDouble() ??
+        0,
+    durationS: (data['duration'] as num?)?.toDouble() ??
+        (data['durationS'] as num?)?.toDouble() ??
+        0,
+    engine: usedFallback ? 'fallback-line' : data['engine'] as String?,
+    steps: steps.isNotEmpty ? steps : stepsFromCoordinates(coords),
+    warnings: warnings,
+    variant: parseRouteVariant(data['variant'] as String? ?? 'planned'),
+    variantApplied: data['variantApplied'] == true,
+  );
+}
+
 class RouteResult {
   const RouteResult({
     required this.coordinates,
@@ -270,55 +487,82 @@ class RoutingClient {
   final http.Client _http;
   final RoutingCoreFfi _ffi;
 
+  /// Native `routing_core` loaded — graph routes can run on this device.
+  bool get nativeOfflineAvailable => _ffi.available;
+
   Future<RouteResult> requestRoute({
     required GeoPoint from,
     required GeoPoint to,
     RoutingProfile profile = RoutingProfile.mtbTrail,
     bool preferOffline = false,
+    bool allowOnline = true,
     List<GeoPoint> vias = const [],
     LiveRoutingEngine? engine,
     bool accessLeg = false,
     RouteVariant variant = RouteVariant.planned,
+    bool allowOfflineFirst = true,
+    bool allowOfflineFallback = true,
   }) async {
-    var offlineFirst = preferOffline || AppConfig.preferOfflineRouting;
-    if (variant != RouteVariant.planned) {
-      offlineFirst = false;
+    final viaLngLats = [
+      for (final v in vias) (lng: v.lng, lat: v.lat),
+    ];
+    // Dijkstra is A→B only — vias without net must not look like a pack miss.
+    if (!allowOnline && vias.isNotEmpty) {
+      throw StateError('offline-vias-need-network');
     }
-    if (!offlineFirst) {
-      offlineFirst = await OfflineMapsPrefs.coversRoute(
-        fromLng: from.lng,
-        fromLat: from.lat,
-        toLng: to.lng,
-        toLat: to.lat,
+    var coversActive = false;
+    var switched = false;
+    if (allowOfflineFirst && variant == RouteVariant.planned && vias.isEmpty) {
+      final covering = await _ensureCoveringPack(
+        from: from,
+        to: to,
+        vias: viaLngLats,
       );
+      coversActive = covering.covers;
+      switched = covering.switched;
     }
-    if (!offlineFirst) {
-      final switched = await OfflinePackDirs.switchToPackCovering(
-        fromLng: from.lng,
-        fromLat: from.lat,
-        toLng: to.lng,
-        toLat: to.lat,
-      );
-      if (switched) {
-        OfflineTilesStore.instance.clearCache();
+    var offlineFirst = shouldAttemptOfflineGraphFirst(
+      planned: variant == RouteVariant.planned,
+      viasEmpty: vias.isEmpty,
+      activePackCovers: coversActive,
+      switchedToCoveringPack: switched,
+      allowOfflineFirst: allowOfflineFirst,
+    );
+    // Ride without net, graph on disk, but no bbox to test — last chance.
+    // A known bbox that does not cover A–B must not reach Dijkstra.
+    if (!offlineFirst &&
+        !allowOnline &&
+        vias.isEmpty &&
+        variant == RouteVariant.planned &&
+        preferOffline) {
+      final bbox = await OfflinePackDirs.activatedCoverageBbox();
+      if (bbox == null && await OfflinePackDirs.hasLegitimateActivatedPack()) {
         offlineFirst = true;
       }
     }
     if (offlineFirst) {
-      final offline = await _tryOffline(from, to, profile);
-      if (offline != null &&
-          !isImplausibleAbDetour(
-            distanceM: offline.distanceM,
-            fromLat: from.lat,
-            fromLng: from.lng,
-            toLat: to.lat,
-            toLng: to.lng,
-            vias: [
-              for (final v in vias) (lat: v.lat, lng: v.lng),
-            ],
-          )) {
-        return offline;
-      }
+      final offline = await _tryOfflineIfPlausible(from, to, profile, vias);
+      if (offline != null) return offline;
+    }
+
+    if (!allowOnline) {
+      throw StateError('offline-no-route');
+    }
+
+    // Live-first still needs coverage for a short ORS timeout and for
+    // Dijkstra after a hang — Alps + Schwarzwald must not look covered.
+    if (!coversActive &&
+        !switched &&
+        allowOfflineFallback &&
+        variant == RouteVariant.planned &&
+        vias.isEmpty) {
+      final covering = await _ensureCoveringPack(
+        from: from,
+        to: to,
+        vias: viaLngLats,
+      );
+      coversActive = covering.covers;
+      switched = covering.switched;
     }
 
     try {
@@ -330,13 +574,74 @@ class RoutingClient {
         engine: engine,
         accessLeg: accessLeg,
         variant: variant,
+        timeout: onlineRouteTimeout(
+          planned: variant == RouteVariant.planned,
+          viasEmpty: vias.isEmpty,
+          allowOfflineFallback: allowOfflineFallback,
+          packMayCover: coversActive || switched,
+        ),
       );
     } catch (_) {
-      if (variant != RouteVariant.planned) rethrow;
-      final offline = await _tryOffline(from, to, profile);
+      if (variant != RouteVariant.planned || vias.isNotEmpty) rethrow;
+      if (!shouldFallbackOfflineAfterOnlineFail(
+        planned: true,
+        viasEmpty: true,
+        packCoversOrSwitched: coversActive || switched,
+        allowOfflineFallback: allowOfflineFallback,
+      )) {
+        rethrow;
+      }
+      final offline = await _tryOfflineIfPlausible(from, to, profile, vias);
       if (offline != null) return offline;
       rethrow;
     }
+  }
+
+  Future<({bool covers, bool switched})> _ensureCoveringPack({
+    required GeoPoint from,
+    required GeoPoint to,
+    required List<({double lng, double lat})> vias,
+  }) async {
+    final covers = await OfflinePackDirs.legitimateCoversRoute(
+      fromLng: from.lng,
+      fromLat: from.lat,
+      toLng: to.lng,
+      toLat: to.lat,
+      vias: vias,
+    );
+    if (covers) return (covers: true, switched: false);
+    final switched = await OfflinePackDirs.switchToPackCovering(
+      fromLng: from.lng,
+      fromLat: from.lat,
+      toLng: to.lng,
+      toLat: to.lat,
+      vias: vias,
+    );
+    if (switched) OfflineTilesStore.instance.clearCache();
+    return (covers: false, switched: switched);
+  }
+
+  Future<RouteResult?> _tryOfflineIfPlausible(
+    GeoPoint from,
+    GeoPoint to,
+    RoutingProfile profile,
+    List<GeoPoint> vias,
+  ) async {
+    final offline = await _tryOffline(from, to, profile);
+    if (offline == null) return null;
+    if (isImplausibleAbDetour(
+      distanceM: offline.distanceM,
+      fromLat: from.lat,
+      fromLng: from.lng,
+      toLat: to.lat,
+      toLng: to.lng,
+      vias: [
+        for (final v in vias) (lat: v.lat, lng: v.lng),
+      ],
+    )) {
+      return null;
+    }
+    return offline;
   }
 
   Future<RouteResult?> _tryOffline(
@@ -384,6 +689,7 @@ class RoutingClient {
     LiveRoutingEngine? engine,
     bool accessLeg = false,
     RouteVariant variant = RouteVariant.planned,
+    Duration timeout = kOnlineRouteTimeout,
   }) async {
     // Web-API: from=lng,lat&to=lng,lat&via=... (Spec /api/route)
     final choice = engine ?? await RidePrefs.routingEngine();
@@ -404,99 +710,83 @@ class RoutingClient {
       final extra = vias.map((v) => 'via=${v.lng},${v.lat}').join('&');
       url = Uri.parse('${url.toString()}&$extra');
     }
-    final res = await _http.get(url, headers: {
-      'Accept': 'application/json'
-    }).timeout(const Duration(seconds: 28));
+    final res = await _http
+        .get(url, headers: {'Accept': 'application/json'}).timeout(timeout);
     if (res.statusCode != 200) {
       throw Exception('Route failed: ${res.statusCode} ${res.body}');
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final coords = <GeoPoint>[];
-    final geom = data['geometry'];
-    if (geom is Map && geom['coordinates'] is List) {
-      for (final c in geom['coordinates'] as List) {
-        if (c is List && c.length >= 2) {
-          coords.add(
-            GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
-          );
-        }
-      }
-    } else if (geom is List) {
-      for (final c in geom) {
-        if (c is List && c.length >= 2) {
-          coords.add(
-            GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
-          );
-        } else if (c is Map) {
-          coords.add(
-            GeoPoint(
-              (c['lat'] as num).toDouble(),
-              (c['lng'] as num? ?? c['lon'] as num).toDouble(),
-            ),
-          );
-        }
-      }
-    }
-    final usedFallback = coords.isEmpty;
-    if (usedFallback) {
-      coords.addAll([from, to]);
-    }
-
-    final rawSteps = data['steps'];
-    final steps = <RouteStep>[];
-    if (rawSteps is List) {
-      for (final s in rawSteps) {
-        if (s is! Map) continue;
-        final instruction =
-            '${s['instruction'] ?? (AppLocaleBinding.isEnglish ? 'Continue' : 'Weiter')}';
-        final streetRaw = s['streetName'] ?? s['street'] ?? s['name'];
-        final streetFromField =
-            streetRaw is String && streetRaw.trim().isNotEmpty
-                ? streetRaw.trim()
-                : null;
-        final coord = s['coordinate'];
-        double? lat;
-        double? lng;
-        if (coord is Map) {
-          lat = (coord['lat'] as num?)?.toDouble();
-          lng = (coord['lng'] as num? ?? coord['lon'] as num?)?.toDouble();
-        }
-        steps.add(
-          RouteStep(
-            id: '${s['id']}',
-            instruction: instruction,
-            distanceAlongM: (s['distanceAlongM'] as num?)?.toDouble() ?? 0,
-            streetName: streetFromField ??
-                extractStreetNameFromInstruction(instruction),
-            lat: lat,
-            lng: lng,
-          ),
-        );
-      }
-    }
-
-    final rawWarnings = data['warnings'];
-    final warnings = <String>[];
-    if (rawWarnings is List) {
-      for (final w in rawWarnings) {
-        if (w is String && w.trim().isNotEmpty) warnings.add(w.trim());
-      }
-    }
-
-    return RouteResult(
-      coordinates: coords,
-      distanceM: (data['distance'] as num?)?.toDouble() ??
-          (data['distanceM'] as num?)?.toDouble() ??
-          0,
-      durationS: (data['duration'] as num?)?.toDouble() ??
-          (data['durationS'] as num?)?.toDouble() ??
-          0,
-      engine: usedFallback ? 'fallback-line' : data['engine'] as String?,
-      steps: steps.isNotEmpty ? steps : stepsFromCoordinates(coords),
-      warnings: warnings,
-      variant: parseRouteVariant(data['variant'] as String? ?? variant.apiId),
-      variantApplied: data['variantApplied'] == true,
+    return routeResultFromJson(
+      data,
+      fallbackFrom: from,
+      fallbackTo: to,
     );
+  }
+
+  /// OSM round-trip around [from]. Online only — no offline graph.
+  Future<RouteResult> requestLoop({
+    required GeoPoint from,
+    required RoutingProfile profile,
+    int minutes = 60,
+    int seed = 1,
+    double? lengthKm,
+    Duration timeout = kOnlineRouteTimeout,
+  }) async {
+    final url = Uri.parse('${AppConfig.apiBaseUrl}/api/route/loop');
+    final body = <String, dynamic>{
+      'profile': profile.apiId,
+      'from': [from.lng, from.lat],
+      'minutes': minutes,
+      'seed': seed,
+      'lang': AppLocaleBinding.chromeLanguageCode,
+      if (lengthKm != null) 'lengthKm': lengthKm,
+    };
+    final res = await _http
+        .post(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(timeout);
+    if (res.statusCode == 422) {
+      throw StateError('loop-not-closed');
+    }
+    if (res.statusCode == 503) {
+      throw StateError('loop-ors-unconfigured');
+    }
+    if (res.statusCode == 400) {
+      throw StateError('loop-profile');
+    }
+    if (res.statusCode != 200) {
+      throw Exception('Loop failed: ${res.statusCode} ${res.body}');
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final result = routeResultFromJson(data);
+    if (result.coordinates.length < 4) {
+      throw StateError('loop-not-closed');
+    }
+    return result;
+  }
+
+  /// Compile GraphHopper custom_model for [near] — discard the dummy path.
+  Future<void> warmupLiveRouting({
+    required GeoPoint near,
+    required RoutingProfile profile,
+  }) async {
+    final url = Uri.parse('${AppConfig.apiBaseUrl}/api/route/warmup').replace(
+      queryParameters: {
+        'near': '${near.lng},${near.lat}',
+        'profile': profile.apiId,
+      },
+    );
+    try {
+      await _http
+          .get(url, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 18));
+    } catch (_) {}
   }
 }
 

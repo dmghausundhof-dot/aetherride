@@ -119,6 +119,21 @@ CompatibilityResult? evaluateRule(
   final valuesB = {
     for (final k in rule.requiresB) k: '${_read(mapB, k) ?? '?'}',
   };
+  if (mapA['_compat_placeholder'] == true ||
+      mapB['_compat_placeholder'] == true) {
+    return CompatibilityResult(
+      verdict: CompatVerdict.insufficientData,
+      ruleCode: rule.code,
+      title: rule.title,
+      severity: rule.severity,
+      explainDe:
+          'Platzhalter-Maße — kein Fit, solange echte Angaben fehlen.',
+      safetyWorkshopHint: _workshopHint(rule),
+      sourceUrl: rule.sourceUrl,
+      valuesA: valuesA,
+      valuesB: valuesB,
+    );
+  }
 
   final missing = <({String key, String howToObtain})>[];
   for (final key in rule.requiresA) {

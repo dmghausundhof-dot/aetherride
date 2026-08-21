@@ -45,12 +45,13 @@ export function canJoinWithoutInviteToken(listing: RideGroupListing): boolean {
   return listing === "public";
 }
 
-/** Host allein → Einladen, sonst Losfahren (App). */
+/** Host allein und Fenster noch zu → Einladen. Sonst Losfahren. */
 export function platzGroupPrimaryIsInvite(
   selfIsHost: boolean,
-  otherMemberCount: number
+  otherMemberCount: number,
+  windowOpen = false
 ): boolean {
-  return selfIsHost && otherMemberCount <= 0;
+  return selfIsHost && otherMemberCount <= 0 && !windowOpen;
 }
 
 /** Code eintippen — dasselbe Tor wie Listen-Join ohne Token. */
@@ -174,6 +175,21 @@ export function canJoinRideGroup(
   return now <= end;
 }
 
+/** Öffentliche Liste: nicht meine, nicht geschlossen, Fenster noch offen. */
+export function listedPublicJoinGroups<T extends {
+  id: string;
+  status: RideGroupStatus;
+  startWindowEnd: string;
+}>(groups: T[], mineIds: Iterable<string>, now = new Date()): T[] {
+  const mine = mineIds instanceof Set ? mineIds : new Set(mineIds);
+  const nowIso = now.toISOString();
+  return groups.filter(
+    (g) =>
+      !mine.has(g.id) &&
+      canJoinRideGroup(nowIso, g.startWindowEnd, g.status),
+  );
+}
+
 /** Nächstes offenes Treffen — geschlossen oder abgelaufen fällt weg. */
 export function nextActiveMeeting<T extends {
   status: RideGroupStatus;
@@ -212,10 +228,12 @@ export function formatRideGroupDurationHours(
   decimal = "."
 ): string {
   if (!Number.isFinite(hours) || hours <= 0) return "0 h";
-  if (hours >= 1 && Math.abs(hours - Math.round(hours)) < 0.05) {
-    return `${Math.round(hours)} h`;
-  }
-  return `${hours.toFixed(1).replace(".", decimal)} h`;
+  const mins = Math.round(hours * 60);
+  if (mins < 60) return `${mins} Min`;
+  if (mins % 60 === 0) return `${mins / 60} h`;
+  const value = mins / 60;
+  const places = mins % 60 === 30 ? 1 : 2;
+  return `${value.toFixed(places).replace(".", decimal)} h`;
 }
 
 export function parseRideGroupWindow(input: {

@@ -7,6 +7,7 @@ import type { ElevationProfile } from "@/lib/routing/elevationProfile";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
+import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
 
 /**
  * Höhenprofil: zuerst synthetisch aus Metadaten, optional API-Anreicherung
@@ -75,7 +76,7 @@ export function TourElevationClient({ tour }: { tour: PublicTour }) {
         {source === "api" ? e.noteApi : e.noteMeta}
       </p>
       <p className="mt-1 text-xs tabular-nums text-text-secondary">
-        ~{tour.elevationM} hm · {tour.distanceKm} km
+        {formatDistanceElevation(tour.distanceKm, tour.elevationM)}
       </p>
     </div>
   );

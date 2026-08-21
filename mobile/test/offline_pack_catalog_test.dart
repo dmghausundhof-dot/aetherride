@@ -32,7 +32,11 @@ void main() {
     expect(formatPackBytes(row.bytes), '10.5 MB');
     expect(
       offlinePackSubtitle(row, active: false, installed: false),
-      '10.5 MB · Routing + Karte',
+      '10.5 MB · Routing',
+    );
+    expect(
+      offlinePackSubtitle(row, active: true, installed: true),
+      'Aktiv',
     );
   });
 
@@ -261,5 +265,431 @@ void main() {
       ),
       'Graph-Engine · Valhalla-Tiles nicht gebaut',
     );
+  });
+
+  test('inferPackKind splits city / envelope / europe', () {
+    expect(
+      inferPackKind(
+        const OfflinePackRow(
+            id: 'berlin', name: 'Berlin', bbox: [13.1, 52.3, 13.7, 52.7]),
+      ),
+      OfflinePackKind.city,
+    );
+    expect(
+      inferPackKind(
+        const OfflinePackRow(id: 'de-saarland', name: 'Saarland'),
+      ),
+      OfflinePackKind.envelope,
+    );
+    expect(
+      inferPackKind(
+        const OfflinePackRow(
+          id: 'milano',
+          name: 'Mailand',
+          bbox: [9.05, 45.38, 9.3, 45.55],
+        ),
+      ),
+      OfflinePackKind.europe,
+    );
+    expect(
+      inferPackKind(
+        const OfflinePackRow(
+          id: 'paris',
+          name: 'Paris',
+          bbox: [2.2, 48.8, 2.48, 48.92],
+        ),
+      ),
+      OfflinePackKind.europe,
+    );
+    expect(isEnvelopePackId('ch-wallis'), isTrue);
+    expect(isEnvelopePackId('li-liechtenstein'), isTrue);
+    expect(isEnvelopePackId('berlin'), isFalse);
+    expect(skipFitCameraForPackId('de-bayern'), isTrue);
+    expect(skipFitCameraForPackId('karlsruhe'), isFalse);
+    expect(skipFitCameraForPackId(null), isFalse);
+    expect(skipFitCameraForPackId(''), isFalse);
+    expect(kEnvelopePackNames['de-saarland'], 'Saarland');
+    expect(kEnvelopePackNames['de-bayern'], 'Bayern');
+    expect(isEnvelopePackId('de-saarland'), isTrue);
+    expect(
+        envelopePackDisplayName(id: 'ch-wallis', languageCode: 'de'), 'Wallis');
+    expect(
+        envelopePackDisplayName(id: 'ch-wallis', languageCode: 'fr'), 'Valais');
+    expect(
+        envelopePackDisplayName(id: 'ch-tessin', languageCode: 'it'), 'Ticino');
+    expect(
+        envelopePackDisplayName(id: 'de-bayern', languageCode: 'fr'), 'Bayern');
+  });
+
+  test('disk bbox wins over inflated prefs', () {
+    const disk = [8.2, 49.2, 9.0, 49.6];
+    const prefs = [6.0, 47.0, 15.0, 55.0];
+    expect(
+      preferDiskPackBbox(fromDisk: disk, fromPrefs: prefs),
+      disk,
+    );
+    expect(
+      preferDiskPackBbox(fromDisk: null, fromPrefs: prefs),
+      prefs,
+    );
+    expect(preferDiskPackBbox(fromDisk: const [1], fromPrefs: prefs), prefs);
+    expect(preferDiskPackBbox(fromDisk: null, fromPrefs: null), isNull);
+    expect(
+      bboxCoversLngLats(preferDiskPackBbox(fromDisk: disk, fromPrefs: prefs)!, [
+        (lng: 8.68, lat: 49.41),
+        (lng: 8.47, lat: 49.48),
+      ]),
+      isTrue,
+    );
+    expect(
+      bboxCoversLngLats(preferDiskPackBbox(fromDisk: disk, fromPrefs: prefs)!, [
+        (lng: 11.3, lat: 47.4),
+      ]),
+      isFalse,
+    );
+    expect(
+      bboxCoversLngLats(prefs, [(lng: 11.3, lat: 47.4)]),
+      isTrue,
+    );
+  });
+
+  test('suggested pack is the smallest bbox covering the point', () {
+    final rn = OfflinePackRow(
+      id: 'rhein-neckar',
+      name: 'Rhein-Neckar',
+      bbox: [8.2, 49.2, 9.0, 49.6],
+      downloadable: true,
+      status: 'ready',
+    );
+    final env = OfflinePackRow(
+      id: 'de-baden-wuerttemberg',
+      name: 'Baden-Württemberg',
+      bbox: [7.5, 47.5, 10.5, 49.8],
+      downloadable: true,
+      status: 'ready',
+    );
+    final hit = suggestedPackForPoint(
+      packs: [env, rn],
+      lng: 8.68,
+      lat: 49.4,
+    );
+    expect(hit?.id, 'rhein-neckar');
+  });
+
+  test('suggested pack for route prefers bbox covering both ends', () {
+    final rn = OfflinePackRow(
+      id: 'rhein-neckar',
+      name: 'Rhein-Neckar',
+      bbox: [8.2, 49.2, 9.0, 49.6],
+      downloadable: true,
+      status: 'ready',
+      graphBytes: 10518381,
+    );
+    final berlin = OfflinePackRow(
+      id: 'berlin',
+      name: 'Berlin',
+      bbox: [13.0, 52.3, 13.8, 52.7],
+      downloadable: true,
+      status: 'ready',
+    );
+    final env = OfflinePackRow(
+      id: 'de-baden-wuerttemberg',
+      name: 'Baden-Württemberg',
+      bbox: [7.5, 47.5, 10.5, 49.8],
+      downloadable: true,
+      status: 'ready',
+      bytes: 33000000,
+    );
+    expect(
+      suggestedPackForRoute(
+        packs: [env, rn, berlin],
+        fromLng: 8.68,
+        fromLat: 49.41,
+        toLng: 8.47,
+        toLat: 49.48,
+      )?.id,
+      'rhein-neckar',
+    );
+    expect(
+      suggestedPackForRoute(
+        packs: [env, rn, berlin],
+        fromLng: 8.3,
+        fromLat: 48.8,
+        toLng: 9.1,
+        toLat: 48.8,
+      )?.id,
+      'de-baden-wuerttemberg',
+    );
+    expect(
+      suggestedPackForRoute(
+        packs: [env, rn, berlin],
+        fromLng: 8.68,
+        fromLat: 49.41,
+        toLng: 8.47,
+        toLat: 49.48,
+        extra: [(lng: 9.2, lat: 48.8)],
+      )?.id,
+      'de-baden-wuerttemberg',
+    );
+  });
+
+  test('suggested pack for route falls back to unready overlay name', () {
+    final stub = OfflinePackRow(
+      id: 'muenchen',
+      name: 'München',
+      bbox: [11.3, 48.0, 11.8, 48.3],
+    );
+    expect(
+      suggestedPackForRoute(
+        packs: [stub],
+        fromLng: 11.57,
+        fromLat: 48.14,
+        toLng: 11.58,
+        toLat: 48.15,
+      )?.id,
+      'muenchen',
+    );
+  });
+
+  test('parseOfflineCatalogPacks reads packs list', () {
+    final packs = parseOfflineCatalogPacks({
+      'packs': [
+        {
+          'id': 'berlin',
+          'name': 'Berlin',
+          'downloadable': true,
+          'status': 'ready',
+          'bytes': 2000000,
+        },
+      ],
+    });
+    expect(packs.single.id, 'berlin');
+    expect(packs.single.isReady, isTrue);
+  });
+
+  test('bbox ring is closed west-south-east-north', () {
+    expect(
+      offlinePackBboxRing([8.2, 49.2, 9.0, 49.6]),
+      [
+        [8.2, 49.2],
+        [9.0, 49.2],
+        [9.0, 49.6],
+        [8.2, 49.6],
+        [8.2, 49.2],
+      ],
+    );
+    expect(offlinePackBboxRing([8.2, 49.2]), isEmpty);
+    expect(offlinePackCoverageRing([8.2, 49.2, 9.0, 49.6]), hasLength(9));
+    expect(
+      offlinePackCoverageRing([8.2, 49.2, 9.0, 49.6]).first,
+      offlinePackCoverageRing([8.2, 49.2, 9.0, 49.6]).last,
+    );
+  });
+
+  test('packRemoteIsNewer needs both timestamps', () {
+    expect(
+      packRemoteIsNewer(
+        localBuiltAt: '2026-08-01T00:00:00Z',
+        remoteBuiltAt: '2026-08-15T00:00:00Z',
+      ),
+      isTrue,
+    );
+    expect(
+      packRemoteIsNewer(
+        localBuiltAt: '2026-08-15T00:00:00Z',
+        remoteBuiltAt: '2026-08-15T00:02:00Z',
+      ),
+      isFalse,
+    );
+    expect(
+      packRemoteIsNewer(
+          localBuiltAt: null, remoteBuiltAt: '2026-08-15T00:00:00Z'),
+      isFalse,
+    );
+    expect(networkInterfaceLooksLikeWifi('wlan0'), isTrue);
+    expect(networkInterfaceLooksLikeWifi('en0'), isTrue);
+    expect(networkInterfaceLooksLikeWifi('rmnet_data0'), isFalse);
+    expect(networkInterfaceLooksLikeCellular('pdp_ip0'), isTrue);
+  });
+
+  test('packCountryCode uses registry then prefix', () {
+    expect(
+      packCountryCode(const OfflinePackRow(id: 'berlin', name: 'Berlin')),
+      'DE',
+    );
+    expect(
+      packCountryCode(const OfflinePackRow(id: 'milano', name: 'Mailand')),
+      'IT',
+    );
+    expect(
+      packCountryCode(const OfflinePackRow(id: 'paris', name: 'Paris')),
+      'FR',
+    );
+    expect(
+      packCountryCode(const OfflinePackRow(id: 'groningen', name: 'Groningen')),
+      'NL',
+    );
+    expect(
+      packCountryCode(const OfflinePackRow(id: 'bodensee', name: 'Bodensee')),
+      'DACH',
+    );
+    expect(
+      packCountryCode(
+          const OfflinePackRow(id: 'de-saarland', name: 'Saarland')),
+      'DE',
+    );
+    expect(sortOfflineCountryCodes(['IT', 'DE'], focus: 'IT').first, 'IT');
+    expect(
+      packNeedsDownloadConfirm(
+        const OfflinePackRow(id: 'berlin', name: 'Berlin', bytes: 2000000),
+      ),
+      isFalse,
+    );
+    expect(
+      packNeedsDownloadConfirm(
+        const OfflinePackRow(
+          id: 'de-saarland',
+          name: 'Saarland',
+          bytes: 54209122,
+        ),
+      ),
+      isTrue,
+    );
+  });
+
+  test('groupOfflinePacks splits by country and keeps installed', () {
+    final rn = OfflinePackRow(
+      id: 'rhein-neckar',
+      name: 'Rhein-Neckar',
+      bbox: [8.2, 49.2, 9.0, 49.6],
+      downloadable: true,
+      status: 'ready',
+      bytes: 10518381,
+    );
+    final ffm = const OfflinePackRow(
+      id: 'frankfurt-rhein-main',
+      name: 'Frankfurt',
+    );
+    final saar = OfflinePackRow(
+      id: 'de-saarland',
+      name: 'Saarland',
+      downloadable: true,
+      status: 'ready',
+      bytes: 54209122,
+      valhallaTiles: true,
+    );
+    final milano = OfflinePackRow(
+      id: 'milano',
+      name: 'Mailand',
+      bbox: [9.05, 45.38, 9.3, 45.55],
+      downloadable: true,
+      status: 'ready',
+      bytes: 2500000,
+    );
+    final g = groupOfflinePacks(
+      filtered: [rn, ffm, saar, milano],
+      installed: {'rhein-neckar'},
+      userLng: 8.68,
+      userLat: 49.4,
+      searching: false,
+    );
+    expect(g.suggested?.id, 'rhein-neckar');
+    expect(g.focusCountry, 'DE');
+    expect(g.installed, isEmpty);
+    expect(
+      [for (final c in g.countries) ...c.packs.map((p) => p.id)],
+      isNot(contains('rhein-neckar')),
+    );
+    expect(g.countries.first.code, 'DE');
+    expect(g.countries.first.packs, isEmpty);
+    expect(g.countries.first.envelopes.map((r) => r.id), ['de-saarland']);
+    expect(g.countries.map((c) => c.code), contains('IT'));
+    expect(g.stubs.map((r) => r.id), ['frankfurt-rhein-main']);
+    expect(
+      offlinePackSubtitle(saar, active: false, installed: false),
+      '54.2 MB · Routing · Landesfläche',
+    );
+
+    final pinned = groupOfflinePacks(
+      filtered: [rn, ffm, saar, milano],
+      installed: {'rhein-neckar'},
+      userLng: 8.68,
+      userLat: 49.4,
+      searching: false,
+      focusPackId: 'milano',
+    );
+    expect(pinned.suggested?.id, 'milano');
+    expect(pinned.focusCountry, 'IT');
+    expect(pinned.installed.map((r) => r.id), ['rhein-neckar']);
+    expect(
+      [for (final c in pinned.countries) ...c.packs.map((p) => p.id)],
+      isNot(contains('milano')),
+    );
+
+    final stubPin = groupOfflinePacks(
+      filtered: [rn, ffm, saar, milano],
+      installed: {'rhein-neckar'},
+      userLng: 8.68,
+      userLat: 49.4,
+      searching: false,
+      focusPackId: 'frankfurt-rhein-main',
+    );
+    expect(stubPin.suggested?.id, 'rhein-neckar');
+  });
+
+  test('packIsPinTarget rejects catalog stubs', () {
+    const stub = OfflinePackRow(id: 'frankfurt-rhein-main', name: 'Frankfurt');
+    expect(packIsPinTarget(stub, installed: {}), isFalse);
+    expect(packIsPinTarget(stub, installed: {'frankfurt-rhein-main'}), isTrue);
+    expect(
+      packIsPinTarget(
+        const OfflinePackRow(
+          id: kBundledOfflineGraphRegionId,
+          name: 'Schwarzwald Süd',
+        ),
+        installed: {},
+      ),
+      isTrue,
+    );
+  });
+
+  test('sampleLngLats keeps ends and caps length', () {
+    final pts = [
+      for (var i = 0; i < 100; i++) (lng: i.toDouble(), lat: 0.0),
+    ];
+    final sampled = sampleLngLats(pts, maxPoints: 5);
+    expect(sampled.length, 5);
+    expect(sampled.first.lng, 0);
+    expect(sampled.last.lng, 99);
+  });
+
+  test('collapseCountryPacks keeps nearest 8 and pins suggested', () {
+    final packs = [
+      for (var i = 0; i < 12; i++)
+        OfflinePackRow(
+          id: 'de-city-$i',
+          name: 'City $i',
+          bbox: [i.toDouble(), 50, i + 0.2, 50.2],
+          downloadable: true,
+          status: 'ready',
+        ),
+    ];
+    final split = collapseCountryPacks(
+      packs: packs,
+      userLng: 0.1,
+      userLat: 50.1,
+      pinId: 'de-city-11',
+    );
+    expect(split.shown.length, 9);
+    expect(split.more.length, 3);
+    expect(split.shown.first.id, 'de-city-0');
+    expect(split.shown.last.id, 'de-city-11');
+    expect(split.more.map((p) => p.id), isNot(contains('de-city-11')));
+    final all = collapseCountryPacks(
+      packs: packs,
+      searching: true,
+    );
+    expect(all.shown.length, 12);
+    expect(all.more, isEmpty);
   });
 }

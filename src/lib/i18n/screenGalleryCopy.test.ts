@@ -24,7 +24,14 @@ function testParity() {
       de.shots.map((s) => s.src),
       lang,
     );
-    assert.ok(g.hint.includes("Platz"), lang);
+    const toursDoor = {
+      de: "Touren",
+      en: "Tours",
+      fr: "Parcours",
+      it: "Percorsi",
+      nl: "Tochten",
+    } as const;
+    assert.ok(g.hint.includes(toursDoor[lang]), lang);
   }
 }
 

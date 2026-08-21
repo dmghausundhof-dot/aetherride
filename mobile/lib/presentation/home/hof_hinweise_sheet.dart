@@ -13,6 +13,7 @@ Future<void> showHofHinweiseSheet(
   String? careText,
   String? stimmenText,
   String? groupText,
+  String? listingText,
   VoidCallback? onOpenCare,
   VoidCallback? onOpenTours,
 }) {
@@ -23,6 +24,7 @@ Future<void> showHofHinweiseSheet(
       careText: careText,
       stimmenText: stimmenText,
       groupText: groupText,
+      listingText: listingText,
       onOpenCare: onOpenCare,
       onOpenTours: onOpenTours,
     ),
@@ -35,6 +37,7 @@ class HofHinweiseSheet extends ConsumerWidget {
     this.careText,
     this.stimmenText,
     this.groupText,
+    this.listingText,
     this.onOpenCare,
     this.onOpenTours,
   });
@@ -42,6 +45,7 @@ class HofHinweiseSheet extends ConsumerWidget {
   final String? careText;
   final String? stimmenText;
   final String? groupText;
+  final String? listingText;
   final VoidCallback? onOpenCare;
   final VoidCallback? onOpenTours;
 
@@ -56,9 +60,11 @@ class HofHinweiseSheet extends ConsumerWidget {
     final care = careText?.trim();
     final stimmen = stimmenText?.trim();
     final group = groupText?.trim();
+    final listing = listingText?.trim();
     final hasTafel = (care != null && care.isNotEmpty) ||
         (stimmen != null && stimmen.isNotEmpty) ||
-        (group != null && group.isNotEmpty);
+        (group != null && group.isNotEmpty) ||
+        (listing != null && listing.isNotEmpty);
     final empty = coach.isEmpty && !hasTafel;
 
     return SafeArea(
@@ -98,6 +104,17 @@ class HofHinweiseSheet extends ConsumerWidget {
                 onTap: () {
                   Navigator.pop(context);
                   onOpenCare?.call();
+                },
+              ),
+            if (listing != null && listing.isNotEmpty)
+              ListTile(
+                key: const Key('hof-hinweise-listing'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.how_to_vote_outlined),
+                title: Text(listing),
+                onTap: () {
+                  Navigator.pop(context);
+                  onOpenTours?.call();
                 },
               ),
             if (group != null && group.isNotEmpty)

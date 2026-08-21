@@ -4,10 +4,13 @@ import {
 } from "@/lib/routing/routingStatus";
 import {
   HONESTY_CYCLEWAY_DE,
+  HONESTY_FARM_MID_DE,
+  HONESTY_FARM_TAIL_DE,
   HONESTY_ROAD_DE,
 } from "@/lib/routing/graphhopperHints";
 import type { ChromeLang } from "./chromeLang";
 import { discoverCopy } from "./discoverCopy";
+import { osmSurfaceLabel } from "@/lib/routing/osmSurfaceLabel";
 
 /** Exact DE status / pin strings stored in Discover state. */
 export const DISCOVER_STATUS_DE = {
@@ -80,6 +83,8 @@ export type DiscoverUi = {
   ghMinuteLimit: string;
   honestyRoad: string;
   honestyCycleway: string;
+  honestyFarmTail: string;
+  honestyFarmMid: string;
   sixtyTitle: string;
   sixtyLead: string;
   noLoopsNearby: string;
@@ -99,8 +104,44 @@ export type DiscoverUi = {
   startAbbr: string;
   endAbbr: string;
   startMyPos: string;
+  swapStartEnd: string;
+  addStop: string;
+  closeLoop: string;
+  viaN: (n: number) => string;
+  nextPickStart: string;
+  nextPickEnd: string;
+  nextPickVia: string;
+  loopClosed: string;
   computingRoute: string;
   computeRoute: string;
+  statLength: string;
+  statDuration: string;
+  statAscent: string;
+  statSurface: string;
+  elevTitle: string;
+  onMapPlace: string;
+  viaAddr: string;
+  routingAdapts: string;
+  recently: string;
+  backToGps: string;
+  mapArea: string;
+  tapLineVia: string;
+  lastDestChip: (name: string) => string;
+  lastDestChipGeneric: string;
+  lastDestUndo: string;
+  planUndo: string;
+  planRedo: string;
+  planLineCoach: string;
+  planLineCoachOk: string;
+  planMapSteep: string;
+  planMapUnknown: string;
+  planStopSetHint: string;
+  placeOnRoute: string;
+  lastDestApplied: string;
+  endSetComputing: string;
+  setEndCta: string;
+  closeLoopHint: string;
+  browserPlanOnly: string;
   waysNearby: string;
   overlay: string;
   osmLoading: string;
@@ -126,6 +167,23 @@ export type DiscoverUi = {
   loosenLoop: string;
   loosenOrPlan: string;
   loopFilterOff: string;
+  aroundYouCta: string;
+  aroundYouAnother: string;
+  aroundYouLoop: string;
+  aroundYouHint: string;
+  aroundYouBusy: string;
+  aroundYouFail: string;
+  aroundYouSport: string;
+  aroundYouNeedGps: string;
+  aroundYouOffline: string;
+  aroundYouUncertain: string;
+  aroundYouUncertainShort: string;
+  aroundYouStats: (km: string, min: number) => string;
+  aroundYouReasonDuration: (got: number, want: number) => string;
+  aroundYouReasonSurface: (surface: string) => string;
+  aroundYouReasonOsm: string;
+  previewEngine: (line: string) => string;
+  savePreview: string;
   fartherRegions: (n: number) => string;
   outdooractive: (n: number) => string;
   googlePois: (n: number) => string;
@@ -136,6 +194,7 @@ export type DiscoverUi = {
   mappeHeading: string;
   mappeEmpty: string;
   mappeFilterEmpty: string;
+  mappeShowAll: string;
   importGpx: string;
   withTrack: string;
   importTag: string;
@@ -250,6 +309,7 @@ export type DiscoverUi = {
   unlockPro: string;
   offlineMapsHint: string;
   offlineMapsAfter: string;
+  offlineMapsChip: string;
   savedLink: string;
   heatCold: (k: number) => string;
   heatConsent: (k: number) => string;
@@ -302,7 +362,7 @@ export type DiscoverUi = {
 };
 
 const DE: DiscoverUi = {
-  osmOptional: "OSM · ~60-Min-Rundkurse — Bike optional",
+  osmOptional: "OSM · ~60-Min-Rundkurse — Rad optional",
   hereBtn: "Hier",
   placeEllipsis: "Ort…",
   heatmapPrefix: "Beliebt: ",
@@ -328,6 +388,10 @@ const DE: DiscoverUi = {
     "Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.",
   honestyCycleway:
     "Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.",
+  honestyFarmTail:
+    "Kein Weg bis zum Pin — Ziel liegt an der Straße.",
+  honestyFarmMid:
+    "Teile der Route folgen Feldwegen — Ziel näher an eine Straße setzen.",
   sixtyTitle: "~60 Min Rundkurse",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar & kuratierte Feierabend-Loops — unabhängig vom Live-Routing.",
@@ -348,9 +412,46 @@ const DE: DiscoverUi = {
   tapEnd: "Ziel tippen",
   startAbbr: "S",
   endAbbr: "Z",
-  startMyPos: "Start = meine Position",
-  computingRoute: "Wird berechnet…",
+  startMyPos: "Mein Standort",
+  swapStartEnd: "Start und Ziel tauschen",
+  addStop: "Zwischenstopp",
+  closeLoop: "Zurück zum Start",
+  viaN: (n) => `Via ${n}`,
+  nextPickStart: "Nächster Punkt: Start — Karte tippen oder Adresse",
+  nextPickEnd: "Nächster Punkt: Ziel — Karte tippen oder Adresse",
+  nextPickVia: "Jetzt Karte tippen — Zwischenstopp setzen.",
+  loopClosed: "Rundkurs",
+  computingRoute: "Route passt sich an…",
   computeRoute: "Route berechnen",
+  statLength: "Länge",
+  statDuration: "Dauer",
+  statAscent: "Aufstieg",
+  statSurface: "Untergrund",
+  elevTitle: "Höhenprofil",
+  onMapPlace: "Punkt auf der Karte",
+  viaAddr: "Zwischenstopp",
+  routingAdapts: "Route passt sich an…",
+  recently: "Zuletzt",
+  backToGps: "Zurück zu GPS",
+  mapArea: "Kartenausschnitt",
+  tapLineVia:
+    "Linie oder die Punkte darauf ziehen: Zwischenstopp. Tipp daneben zieht durch. Höhenprofil tippen: Stopp. Alt-Klick oder Halten: neues Ziel.",
+  lastDestChip: (name) => `Letztes Ziel: ${name}`,
+  lastDestChipGeneric: "Letztes Ziel wiederholen",
+  lastDestUndo: "Rückgängig",
+  planUndo: "Rückgängig",
+  planRedo: "Wiederholen",
+  planLineCoach: "Linie oder die Scheiben ziehen — Zwischenstopp. Halten oder Alt-Klick: neues Ziel.",
+  planLineCoachOk: "Verstanden",
+  planMapSteep: "Steil",
+  planMapUnknown: "Unbekannt",
+  planStopSetHint: "Stopp gesetzt. Punkt ziehen: Strecke biegen.",
+  placeOnRoute: "In die Route",
+  lastDestApplied: "Letztes Ziel übernommen.",
+  endSetComputing: "Ziel gesetzt — Route wird berechnet",
+  setEndCta: "Ziel setzen",
+  closeLoopHint: "Runde: Ziel wird der Start.",
+  browserPlanOnly: "Die App führt. Hier planst du nur.",
   waysNearby: "Wege in der Nähe",
   overlay: "Overlay",
   osmLoading: "OSM-Wege werden geladen…",
@@ -367,7 +468,7 @@ const DE: DiscoverUi = {
   trailGravityHint:
     "DH: Auto oder zu Fuß zum oberen Einstieg. Die Abfahrt folgt dem Trail, nicht der Straße.",
   trailUnsuitable: (bike) =>
-    `Mit ${bike} nicht auf diesen Trail. Garage wechseln — nicht heimlich als MTB routen.`,
+    `Mit ${bike} nicht auf diesen Trail. Rad am Stand wechseln — nicht heimlich als MTB routen.`,
   difficultyOpen: "offen",
   rangeLine: (lo, hi) => `Reichweite ${lo}–${hi} km`,
   fromLocation: (n, farther) =>
@@ -384,6 +485,26 @@ const DE: DiscoverUi = {
     "Nur echte Loops (Start≈Ziel) — keine A→B-Touren als Füllung. Filter lockern oder Ort ändern.",
   loosenOrPlan: "Filter lockern oder Planer öffnen.",
   loopFilterOff: "Rundkurs-Filter aus",
+  aroundYouCta: "Hier rundherum",
+  aroundYouAnother: "Andere Runde",
+  aroundYouLoop: "Rundkurs um dich · OSM-Wege",
+  aroundYouHint:
+    "Rundkurs auf OSM-Wegen — kein Trailforks-Trail",
+  aroundYouBusy: "Runde wird gelegt…",
+  aroundYouFail:
+    "Keine geschlossene Runde hier — Ort oder Dauer ändern.",
+  aroundYouSport:
+    "Rundkurs-Generator für Gravel, Rennrad, City und E-Trekking.",
+  aroundYouNeedGps: "Standort setzen — dann Runde um dich.",
+  aroundYouOffline: "Rundkurs-Generator braucht Netz.",
+  aroundYouUncertain: "Länge ungefähr — etwa ±12 %",
+  aroundYouUncertainShort: "±12 %",
+  aroundYouStats: (km, min) => `${km} km · ${min} min`,
+  aroundYouReasonDuration: (got, want) => `Dauer ${got} min · Ziel ${want} min`,
+  aroundYouReasonSurface: (surface) => `Überwiegend ${surface}`,
+  aroundYouReasonOsm: "OSM-Wege — kein Trailforks-Trail",
+  previewEngine: (line) => `${line} · Vorschau`,
+  savePreview: "Merken",
   fartherRegions: (n) => `Weitere Regionen (${n})`,
   outdooractive: (n) => `Outdooractive (${n})`,
   googlePois: (n) =>
@@ -397,6 +518,7 @@ const DE: DiscoverUi = {
     "Noch nichts gespeichert — Route hinzufügen, Tour speichern oder GPX.",
   mappeFilterEmpty:
     "Keine Touren in diesem Filter. Private bleiben in „Privat“ / „Alle“.",
+  mappeShowAll: "Alle zeigen",
   importGpx: "GPX importieren",
   withTrack: "mit Track",
   importTag: "Import",
@@ -448,7 +570,7 @@ const DE: DiscoverUi = {
   geocodeFailHttp: (status) => `Adresssuche fehlgeschlagen (${status})`,
   inPlanNamed: (name) => `In Planen: ${name} — Start/Ziel editierbar`,
   inPlanNeedEnd: (name) =>
-    `In Planen: ${name} — Ziel setzen, dann Route berechnen (kein Track).`,
+    `In Planen: ${name} — Ziel auf der Karte oder als Adresse setzen (kein Track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Ziel: ${label}`,
   gpxImported: (name, km) => `GPX importiert: ${name} · ${km} km`,
@@ -492,7 +614,8 @@ const DE: DiscoverUi = {
   variantPlanned: "Wie geplant",
   variantFlatter: "Weniger hm",
   variantUnpaved: "Mehr Schotter",
-  variantValhallaOnly: "Ohne Live-Strecke keine Varianten",
+  variantValhallaOnly:
+    "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
   openNativeApp: "In der App öffnen",
   placeKind: (kind) =>
     kind === "cafe"
@@ -522,8 +645,9 @@ const DE: DiscoverUi = {
   rangeProTitle: "Reichweitenprognose · Pro",
   rangeProBody: "Zeigt die Spanne gegen die Touranforderung.",
   unlockPro: "Pro unter Profil freischalten →",
-  offlineMapsHint: "Offline-Karten lädst du in der App. Hier vormerken geht über ",
+  offlineMapsHint: "Offline-Routing lädst du in der App. Hier vormerken geht über ",
   offlineMapsAfter: ".",
+  offlineMapsChip: "Routing",
   savedLink: "Gespeichert",
   heatCold: (k) =>
     `Noch wenig, wo viele fahren (erst ab ${k}) — eigene Fahrten und mehr Fahrer füllen die Karte.`,
@@ -553,7 +677,7 @@ const DE: DiscoverUi = {
   elevProfile: (hm) => `Höhenprofil ca. ${hm} hm`,
   fromHereTitle: "Route ab hier",
   fromHereHint:
-    "Live-Routing vom GPS oder der Kartenmitte — speichern & in der App fahren.",
+    "Live-Routing vom GPS oder der Kartenmitte — Vorschau, merken oder in der App fahren.",
   needCenter: "Standort oder Kartenmitte fehlt",
   stretch: "Strecke",
   compute: "Berechnen",
@@ -564,9 +688,9 @@ const DE: DiscoverUi = {
   routingFail: "Routing fehlgeschlagen",
   roundKm: (km) => `Runde ${km} km`,
   tourKm: (km) => `Tour ${km} km`,
-  packsTitle: "Offline-Regionen",
+  packsTitle: "Routing-Packs",
   packsLead:
-    "Nur gebaute Packs sind ladbar. Aktivierung (Routing + Kartenkacheln) läuft in der Android/iOS-App.",
+    "Nur gebaute Packs sind ladbar. Der Routing-Graph wird in der App aktiviert — nicht im Browser. Die Übersichtskarte ist extra und groß.",
   packsCatalog: "Katalog…",
   packsEmpty: "Keine Packs im Katalog — Region-Build lokal ausführen.",
   packsUnreachable: "Offline-Katalog nicht erreichbar.",
@@ -609,6 +733,10 @@ const EN: DiscoverUi = {
     "Route mostly follows roads — tap a trail on the map and attach it.",
   honestyCycleway:
     "Little dedicated bike path — the live route often stays on the road.",
+  honestyFarmTail:
+    "No path all the way to the pin — destination is on the street.",
+  honestyFarmMid:
+    "Parts of the route follow farm tracks — set the destination closer to a street.",
   sixtyTitle: "~60 min loops",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar and curated after-work loops — independent of live routing.",
@@ -629,9 +757,46 @@ const EN: DiscoverUi = {
   tapEnd: "Tap finish",
   startAbbr: "S",
   endAbbr: "F",
-  startMyPos: "Start = my position",
-  computingRoute: "Computing…",
+  startMyPos: "My location",
+  swapStartEnd: "Swap start and destination",
+  addStop: "Add stop",
+  closeLoop: "Return to start",
+  viaN: (n) => `Via ${n}`,
+  nextPickStart: "Next: start — tap the map or type an address",
+  nextPickEnd: "Next: destination — tap the map or type an address",
+  nextPickVia: "Tap the map now to place a stop.",
+  loopClosed: "Loop",
+  computingRoute: "Updating route…",
   computeRoute: "Compute route",
+  statLength: "Length",
+  statDuration: "Duration",
+  statAscent: "Ascent",
+  statSurface: "Surface",
+  elevTitle: "Elevation",
+  onMapPlace: "Point on the map",
+  viaAddr: "Stop",
+  routingAdapts: "Updating route…",
+  recently: "Recent",
+  backToGps: "Back to GPS",
+  mapArea: "Map area",
+  tapLineVia:
+    "Tap or drag the line or its discs for a stop. A tap beside it pulls the route through. Tap the elevation profile: stop. Alt-click or hold: new finish.",
+  lastDestChip: (name) => `Last destination: ${name}`,
+  lastDestChipGeneric: "Repeat last destination",
+  lastDestUndo: "Undo",
+  planUndo: "Undo",
+  planRedo: "Redo",
+  planLineCoach: "Drag the line or its discs for a stop. Hold or Alt-click: new destination.",
+  planLineCoachOk: "Got it",
+  planMapSteep: "Steep",
+  planMapUnknown: "Unknown",
+  planStopSetHint: "Stop added. Drag the disc to reshape.",
+  placeOnRoute: "Include on route",
+  lastDestApplied: "Last destination applied.",
+  endSetComputing: "End set — computing the route",
+  setEndCta: "Set destination",
+  closeLoopHint: "Loop: destination becomes start.",
+  browserPlanOnly: "The app navigates. This page only plans.",
   waysNearby: "Ways nearby",
   overlay: "Overlay",
   osmLoading: "Loading OSM ways…",
@@ -647,7 +812,7 @@ const EN: DiscoverUi = {
   trailGravityHint:
     "DH: drive or walk to the top entry. The descent follows the trail, not the road.",
   trailUnsuitable: (bike) =>
-    `Not with ${bike} on this trail. Switch bikes in the garage — don't secretly MTB-route.`,
+    `Not with ${bike} on this trail. Switch bikes at the stand — don't secretly MTB-route.`,
   difficultyOpen: "open",
   rangeLine: (lo, hi) => `Range ${lo}–${hi} km`,
   fromLocation: (n, farther) =>
@@ -662,6 +827,25 @@ const EN: DiscoverUi = {
     "Real loops only (start≈finish) — no A→B filler. Loosen filters or change place.",
   loosenOrPlan: "Loosen filters or open the planner.",
   loopFilterOff: "Loop filter off",
+  aroundYouCta: "Around you",
+  aroundYouAnother: "Another loop",
+  aroundYouLoop: "Loop around you · OSM ways",
+  aroundYouHint: "Loop on OSM ways — not a Trailforks trail",
+  aroundYouBusy: "Laying a loop…",
+  aroundYouFail: "No closed loop here — change place or duration.",
+  aroundYouSport:
+    "Loop generator for gravel, road, city and e-trekking.",
+  aroundYouNeedGps: "Set a location — then a loop around you.",
+  aroundYouOffline: "Loop generator needs a network.",
+  aroundYouUncertain: "Length is approximate — about ±12%",
+  aroundYouUncertainShort: "±12%",
+  aroundYouStats: (km, min) => `${km} km · ${min} min`,
+  aroundYouReasonDuration: (got, want) =>
+    `Duration ${got} min · target ${want} min`,
+  aroundYouReasonSurface: (surface) => `Mostly ${surface}`,
+  aroundYouReasonOsm: "OSM ways — not a Trailforks trail",
+  previewEngine: (line) => `${line} · preview`,
+  savePreview: "Save",
   fartherRegions: (n) => `More regions (${n})`,
   outdooractive: (n) => `Outdooractive (${n})`,
   googlePois: (n) =>
@@ -674,6 +858,7 @@ const EN: DiscoverUi = {
   mappeEmpty: "Nothing saved yet — add a route, save a tour or GPX.",
   mappeFilterEmpty:
     "No tours in this filter. Private ones stay under Private / All.",
+  mappeShowAll: "Show all",
   importGpx: "Import GPX",
   withTrack: "with track",
   importTag: "Import",
@@ -726,7 +911,7 @@ const EN: DiscoverUi = {
   geocodeFailHttp: (status) => `Address search failed (${status})`,
   inPlanNamed: (name) => `In Plan: ${name} — start/finish editable`,
   inPlanNeedEnd: (name) =>
-    `In Plan: ${name} — set finish, then compute (no track).`,
+    `In Plan: ${name} — set finish on the map or as an address (no track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Finish: ${label}`,
   gpxImported: (name, km) => `GPX imported: ${name} · ${km} km`,
@@ -771,7 +956,8 @@ const EN: DiscoverUi = {
   variantPlanned: "As planned",
   variantFlatter: "Less climb",
   variantUnpaved: "More unpaved",
-  variantValhallaOnly: "No variants without a live route",
+  variantValhallaOnly:
+    "Flatter and more gravel need a live route — this is the planned line.",
   openNativeApp: "Open in the app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -801,8 +987,9 @@ const EN: DiscoverUi = {
   rangeProTitle: "Range forecast · Pro",
   rangeProBody: "Shows the span against the tour demand.",
   unlockPro: "Unlock Pro under Profile →",
-  offlineMapsHint: "You load offline maps in the app. Bookmark here via ",
+  offlineMapsHint: "You load offline routing in the app. Bookmark here via ",
   offlineMapsAfter: ".",
+  offlineMapsChip: "Routing",
   savedLink: "Saved",
   heatCold: (k) =>
     `Little of where many ride yet (from ${k} up) — your rides and more riders fill the map.`,
@@ -832,7 +1019,7 @@ const EN: DiscoverUi = {
   elevProfile: (hm) => `Elevation profile ~${hm} hm`,
   fromHereTitle: "Route from here",
   fromHereHint:
-    "Live routing from GPS or map centre — save and ride in the app.",
+    "Live routing from GPS or map centre — preview, then save, or ride in the app.",
   needCenter: "Location or map centre missing",
   stretch: "Point to point",
   compute: "Compute",
@@ -843,9 +1030,9 @@ const EN: DiscoverUi = {
   routingFail: "Routing failed",
   roundKm: (km) => `Loop ${km} km`,
   tourKm: (km) => `Tour ${km} km`,
-  packsTitle: "Offline regions",
+  packsTitle: "Routing packs",
   packsLead:
-    "Only built packs can download. Activation (routing + tiles) runs in the Android/iOS app.",
+    "Only built packs can download. You activate the routing graph in the app — not in the browser. The overview map is a separate, large download.",
   packsCatalog: "Catalogue…",
   packsEmpty: "No packs in the catalogue — run a region build locally.",
   packsUnreachable: "Offline catalogue unreachable.",
@@ -888,6 +1075,10 @@ const FR: DiscoverUi = {
     "L’itinéraire suit surtout la route — touche un sentier sur la carte et accroche-le.",
   honestyCycleway:
     "Peu de piste cyclable — la route live reste souvent sur la chaussée.",
+  honestyFarmTail:
+    "Pas de chemin jusqu’à l’épingle — l’arrivée est sur la route.",
+  honestyFarmMid:
+    "Des parties de l’itinéraire suivent des chemins agricoles — place l’arrivée plus près d’une route.",
   sixtyTitle: "Boucles ~60 min",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar et boucles after-work — indépendant du routing live.",
@@ -908,9 +1099,46 @@ const FR: DiscoverUi = {
   tapEnd: "Taper arrivée",
   startAbbr: "D",
   endAbbr: "A",
-  startMyPos: "Départ = ma position",
-  computingRoute: "Calcul…",
+  startMyPos: "Ma position",
+  swapStartEnd: "Inverser départ et arrivée",
+  addStop: "Arrêt",
+  closeLoop: "Retour au départ",
+  viaN: (n) => `Via ${n}`,
+  nextPickStart: "Suivant : départ — tape la carte ou une adresse",
+  nextPickEnd: "Suivant : arrivée — tape la carte ou une adresse",
+  nextPickVia: "Tape la carte maintenant pour l’arrêt.",
+  loopClosed: "Boucle",
+  computingRoute: "L’itinéraire s’adapte…",
   computeRoute: "Calculer la route",
+  statLength: "Distance",
+  statDuration: "Durée",
+  statAscent: "Dénivelé",
+  statSurface: "Revêtement",
+  elevTitle: "Profil altimétrique",
+  onMapPlace: "Point sur la carte",
+  viaAddr: "Arrêt",
+  routingAdapts: "L’itinéraire s’adapte…",
+  recently: "Récents",
+  backToGps: "Retour au GPS",
+  mapArea: "Zone de la carte",
+  tapLineVia:
+    "Touche ou glisse la ligne ou ses points pour un stop. Un tap à côté tire l’itinéraire. Tape le profil altimétrique : arrêt. Alt-clic ou maintien : nouvelle arrivée.",
+  lastDestChip: (name) => `Dernière arrivée : ${name}`,
+  lastDestChipGeneric: "Répéter la dernière arrivée",
+  lastDestUndo: "Annuler",
+  planUndo: "Annuler",
+  planRedo: "Rétablir",
+  planLineCoach: "Glisse la ligne ou les disques pour un arrêt. Maintiens ou Alt-clic : nouvelle arrivée.",
+  planLineCoachOk: "Compris",
+  planMapSteep: "Raide",
+  planMapUnknown: "Inconnu",
+  planStopSetHint: "Arrêt ajouté. Glisse le point pour ajuster.",
+  placeOnRoute: "Inclure dans l’itinéraire",
+  lastDestApplied: "Dernière arrivée reprise.",
+  endSetComputing: "Arrivée posée — calcul de la route",
+  setEndCta: "Indique l’arrivée",
+  closeLoopHint: "Boucle : l’arrivée redevient le départ.",
+  browserPlanOnly: "L’app guide. Ici tu ne fais que planifier.",
   waysNearby: "Chemins à proximité",
   overlay: "Overlay",
   osmLoading: "Chemins OSM en chargement…",
@@ -926,7 +1154,7 @@ const FR: DiscoverUi = {
   trailGravityHint:
     "DH : voiture ou à pied jusqu'à l'entrée haute. La descente suit le trail, pas la route.",
   trailUnsuitable: (bike) =>
-    `Pas avec un ${bike} sur ce trail. Change de vélo au garage — pas de routage VTT caché.`,
+    `Pas avec un ${bike} sur ce trail. Change de vélo au stand — pas de routage VTT caché.`,
   difficultyOpen: "ouvert",
   rangeLine: (lo, hi) => `Autonomie ${lo}–${hi} km`,
   fromLocation: (n, farther) =>
@@ -943,6 +1171,26 @@ const FR: DiscoverUi = {
     "Seulement de vraies boucles (départ≈arrivée) — pas de A→B pour remplir. Desserrer les filtres ou changer de lieu.",
   loosenOrPlan: "Desserrer les filtres ou ouvrir le planificateur.",
   loopFilterOff: "Filtre boucle off",
+  aroundYouCta: "Autour de toi",
+  aroundYouAnother: "Autre boucle",
+  aroundYouLoop: "Boucle autour de toi · chemins OSM",
+  aroundYouHint:
+    "Boucle sur chemins OSM — pas un sentier Trailforks",
+  aroundYouBusy: "Boucle en cours…",
+  aroundYouFail:
+    "Pas de boucle fermée ici — change de lieu ou de durée.",
+  aroundYouSport:
+    "Générateur de boucle pour gravel, route, ville et e-trekking.",
+  aroundYouNeedGps: "Pose un lieu — puis une boucle autour de toi.",
+  aroundYouOffline: "Le générateur de boucle a besoin du réseau.",
+  aroundYouUncertain: "Longueur approx. — environ ±12 %",
+  aroundYouUncertainShort: "±12 %",
+  aroundYouStats: (km, min) => `${km} km · ${min} min`,
+  aroundYouReasonDuration: (got, want) => `Durée ${got} min · visée ${want} min`,
+  aroundYouReasonSurface: (surface) => `Surtout ${surface}`,
+  aroundYouReasonOsm: "Chemins OSM — pas un sentier Trailforks",
+  previewEngine: (line) => `${line} · aperçu`,
+  savePreview: "Garder",
   fartherRegions: (n) => `Autres régions (${n})`,
   outdooractive: (n) => `Outdooractive (${n})`,
   googlePois: (n) =>
@@ -956,6 +1204,7 @@ const FR: DiscoverUi = {
     "Rien d’enregistré — ajoute une route, sauve une sortie ou GPX.",
   mappeFilterEmpty:
     "Pas de sorties dans ce filtre. Les privées restent sous Privé / Tous.",
+  mappeShowAll: "Tout afficher",
   importGpx: "Importer GPX",
   withTrack: "avec trace",
   importTag: "Import",
@@ -1008,7 +1257,7 @@ const FR: DiscoverUi = {
   geocodeFailHttp: (status) => `Recherche d’adresse échouée (${status})`,
   inPlanNamed: (name) => `Dans Planifier : ${name} — départ/arrivée éditables`,
   inPlanNeedEnd: (name) =>
-    `Dans Planifier : ${name} — pose l’arrivée, puis calcule (pas de trace).`,
+    `Dans Planifier : ${name} — pose l’arrivée sur la carte ou en adresse (pas de trace).`,
   waypointStart: (label) => `Départ : ${label}`,
   waypointEnd: (label) => `Arrivée : ${label}`,
   gpxImported: (name, km) => `GPX importé : ${name} · ${km} km`,
@@ -1054,7 +1303,8 @@ const FR: DiscoverUi = {
   variantPlanned: "Comme prévu",
   variantFlatter: "Moins de dénivelé",
   variantUnpaved: "Plus de non bitumé",
-  variantValhallaOnly: "Sans route live, pas de variantes",
+  variantValhallaOnly:
+    "Moins de dénivelé et plus de graviers uniquement avec la route live.",
   openNativeApp: "Ouvrir dans l’app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -1084,8 +1334,9 @@ const FR: DiscoverUi = {
   rangeProTitle: "Prévision d’autonomie · Pro",
   rangeProBody: "Montre la fourchette contre la demande de la sortie.",
   unlockPro: "Débloquer Pro sous Profil →",
-  offlineMapsHint: "Tu charges les cartes hors ligne dans l’app. Marquer ici via ",
+  offlineMapsHint: "Tu charges le routage hors ligne dans l’app. Marquer ici via ",
   offlineMapsAfter: ".",
+  offlineMapsChip: "Routage",
   savedLink: "Enregistré",
   heatCold: (k) =>
     `Encore peu, là où on roule (dès ${k}) — tes sorties et plus de riders remplissent la carte.`,
@@ -1116,7 +1367,7 @@ const FR: DiscoverUi = {
   elevProfile: (hm) => `Profil d’altitude ~${hm} hm`,
   fromHereTitle: "Route d’ici",
   fromHereHint:
-    "Routing live depuis le GPS ou le centre carte — enregistrer et rouler dans l’app.",
+    "Routing live depuis le GPS ou le centre carte — aperçu, puis garder, ou rouler dans l’app.",
   needCenter: "Lieu ou centre carte manquant",
   stretch: "Trajet",
   compute: "Calculer",
@@ -1127,9 +1378,9 @@ const FR: DiscoverUi = {
   routingFail: "Routing échoué",
   roundKm: (km) => `Boucle ${km} km`,
   tourKm: (km) => `Sortie ${km} km`,
-  packsTitle: "Régions hors ligne",
+  packsTitle: "Packs de routage",
   packsLead:
-    "Seuls les packs construits se téléchargent. L’activation (routing + tuiles) tourne dans l’app Android/iOS.",
+    "Seuls les packs construits se téléchargent. Le graphe de routage s’active dans l’app, pas dans le navigateur. La carte d’ensemble est un téléchargement à part.",
   packsCatalog: "Catalogue…",
   packsEmpty: "Pas de packs au catalogue — lance un build région en local.",
   packsUnreachable: "Catalogue hors ligne injoignable.",
@@ -1173,6 +1424,10 @@ const IT: DiscoverUi = {
     "Il percorso segue soprattutto la strada — tocca un trail sulla mappa e aggancialo.",
   honestyCycleway:
     "Poco percorso ciclabile — la route live resta spesso sulla carreggiata.",
+  honestyFarmTail:
+    "Nessun sentiero fino al pin — l’arrivo è sulla strada.",
+  honestyFarmMid:
+    "Parti del percorso seguono strade agricole — metti l’arrivo più vicino a una strada.",
   sixtyTitle: "Anelli ~60 min",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar e anelli after-work — indipendente dal routing live.",
@@ -1193,9 +1448,46 @@ const IT: DiscoverUi = {
   tapEnd: "Tocca arrivo",
   startAbbr: "P",
   endAbbr: "A",
-  startMyPos: "Partenza = la mia posizione",
-  computingRoute: "Calcolo…",
+  startMyPos: "La mia posizione",
+  swapStartEnd: "Inverti partenza e arrivo",
+  addStop: "Fermata",
+  closeLoop: "Torna alla partenza",
+  viaN: (n) => `Via ${n}`,
+  nextPickStart: "Prossimo: partenza — tocca la mappa o un indirizzo",
+  nextPickEnd: "Prossimo: arrivo — tocca la mappa o un indirizzo",
+  nextPickVia: "Tocca la mappa ora per la fermata.",
+  tapLineVia:
+    "Tocca o trascina la linea o i dischi per una sosta. Un tap accanto tira il percorso. Tocca il profilo altimetrico: sosta. Alt-clic o tieni premuto: nuovo arrivo.",
+  loopClosed: "Anello",
+  computingRoute: "Il percorso si adatta…",
   computeRoute: "Calcola route",
+  statLength: "Lunghezza",
+  statDuration: "Durata",
+  statAscent: "Salita",
+  statSurface: "Superficie",
+  elevTitle: "Profilo altimetrico",
+  onMapPlace: "Punto sulla mappa",
+  viaAddr: "Fermata",
+  routingAdapts: "Il percorso si adatta…",
+  recently: "Recenti",
+  backToGps: "Torna al GPS",
+  mapArea: "Area della mappa",
+  lastDestChip: (name) => `Ultima destinazione: ${name}`,
+  lastDestChipGeneric: "Ripeti l’ultima destinazione",
+  lastDestUndo: "Annulla",
+  planUndo: "Annulla",
+  planRedo: "Ripeti",
+  planLineCoach: "Trascina la linea o i dischi per una sosta. Tieni o Alt-clic: nuovo arrivo.",
+  planLineCoachOk: "Capito",
+  planMapSteep: "Ripido",
+  planMapUnknown: "Sconosciuto",
+  planStopSetHint: "Fermata aggiunta. Trascina il punto per adattare.",
+  placeOnRoute: "Includi nel percorso",
+  lastDestApplied: "Ultima destinazione applicata.",
+  endSetComputing: "Arrivo impostato — calcolo del percorso",
+  setEndCta: "Imposta l’arrivo",
+  closeLoopHint: "Anello: l’arrivo torna la partenza.",
+  browserPlanOnly: "L’app guida. Qui pianifichi soltanto.",
   waysNearby: "Vie vicine",
   overlay: "Overlay",
   osmLoading: "Vie OSM in caricamento…",
@@ -1211,7 +1503,7 @@ const IT: DiscoverUi = {
   trailGravityHint:
     "DH: auto o a piedi all'ingresso in alto. La discesa segue il trail, non la strada.",
   trailUnsuitable: (bike) =>
-    `Non con ${bike} su questo trail. Cambia bici in garage — niente routing MTB nascosto.`,
+    `Non con ${bike} su questo trail. Cambia bici allo stand — niente routing MTB nascosto.`,
   difficultyOpen: "aperto",
   rangeLine: (lo, hi) => `Autonomia ${lo}–${hi} km`,
   fromLocation: (n, farther) =>
@@ -1228,6 +1520,25 @@ const IT: DiscoverUi = {
     "Solo anelli veri (partenza≈arrivo) — niente A→B di riempimento. Allenta i filtri o cambia luogo.",
   loosenOrPlan: "Allenta i filtri o apri il planner.",
   loopFilterOff: "Filtro anello off",
+  aroundYouCta: "Intorno a te",
+  aroundYouAnother: "Altro anello",
+  aroundYouLoop: "Anello intorno a te · vie OSM",
+  aroundYouHint: "Anello su vie OSM — non un trail Trailforks",
+  aroundYouBusy: "Anello in corso…",
+  aroundYouFail:
+    "Nessun anello chiuso qui — cambia luogo o durata.",
+  aroundYouSport:
+    "Generatore di anelli per gravel, strada, città ed e-trekking.",
+  aroundYouNeedGps: "Imposta un luogo — poi un anello intorno a te.",
+  aroundYouOffline: "Il generatore di anelli serve la rete.",
+  aroundYouUncertain: "Lunghezza approssimativa — circa ±12 %",
+  aroundYouUncertainShort: "±12 %",
+  aroundYouStats: (km, min) => `${km} km · ${min} min`,
+  aroundYouReasonDuration: (got, want) => `Durata ${got} min · obiettivo ${want} min`,
+  aroundYouReasonSurface: (surface) => `Prevalentemente ${surface}`,
+  aroundYouReasonOsm: "Vie OSM — non un trail Trailforks",
+  previewEngine: (line) => `${line} · anteprima`,
+  savePreview: "Salva",
   fartherRegions: (n) => `Altre regioni (${n})`,
   outdooractive: (n) => `Outdooractive (${n})`,
   googlePois: (n) =>
@@ -1240,6 +1551,7 @@ const IT: DiscoverUi = {
   mappeEmpty: "Ancora niente salvato — aggiungi una route, salva un’uscita o GPX.",
   mappeFilterEmpty:
     "Nessuna uscita in questo filtro. I privati restano sotto Privato / Tutti.",
+  mappeShowAll: "Mostra tutti",
   importGpx: "Importa GPX",
   withTrack: "con traccia",
   importTag: "Import",
@@ -1291,7 +1603,7 @@ const IT: DiscoverUi = {
   geocodeFailHttp: (status) => `Ricerca indirizzo fallita (${status})`,
   inPlanNamed: (name) => `In Pianifica: ${name} — partenza/arrivo modificabili`,
   inPlanNeedEnd: (name) =>
-    `In Pianifica: ${name} — imposta l’arrivo, poi calcola (niente traccia).`,
+    `In Pianifica: ${name} — imposta l’arrivo sulla mappa o come indirizzo (niente traccia).`,
   waypointStart: (label) => `Partenza: ${label}`,
   waypointEnd: (label) => `Arrivo: ${label}`,
   gpxImported: (name, km) => `GPX importato: ${name} · ${km} km`,
@@ -1337,7 +1649,8 @@ const IT: DiscoverUi = {
   variantPlanned: "Come previsto",
   variantFlatter: "Meno dislivello",
   variantUnpaved: "Più sterrato",
-  variantValhallaOnly: "Senza route live, niente varianti",
+  variantValhallaOnly:
+    "Meno dislivello e più ghiaia solo con la route live.",
   openNativeApp: "Apri nell’app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -1367,8 +1680,9 @@ const IT: DiscoverUi = {
   rangeProTitle: "Previsione autonomia · Pro",
   rangeProBody: "Mostra la forchetta contro la domanda dell’uscita.",
   unlockPro: "Sblocca Pro sotto Profilo →",
-  offlineMapsHint: "Carichi le mappe offline nell’app. Segna qui via ",
+  offlineMapsHint: "Carichi il routing offline nell’app. Segna qui via ",
   offlineMapsAfter: ".",
+  offlineMapsChip: "Routing",
   savedLink: "Salvato",
   heatCold: (k) =>
     `Ancora poco, dove si gira (da ${k} in su) — le tue uscite e più rider riempiono la mappa.`,
@@ -1399,7 +1713,7 @@ const IT: DiscoverUi = {
   elevProfile: (hm) => `Profilo quota ~${hm} hm`,
   fromHereTitle: "Route da qui",
   fromHereHint:
-    "Routing live da GPS o centro mappa — salva e pedala nell’app.",
+    "Routing live da GPS o centro mappa — anteprima, poi salva, o pedala nell’app.",
   needCenter: "Luogo o centro mappa mancante",
   stretch: "Tratta",
   compute: "Calcola",
@@ -1410,9 +1724,9 @@ const IT: DiscoverUi = {
   routingFail: "Routing fallito",
   roundKm: (km) => `Anello ${km} km`,
   tourKm: (km) => `Uscita ${km} km`,
-  packsTitle: "Regioni offline",
+  packsTitle: "Pack di routing",
   packsLead:
-    "Solo i pack costruiti si scaricano. L’attivazione (routing + tile) gira nell’app Android/iOS.",
+    "Si scaricano solo i pack già costruiti. Il grafo di routing si attiva nell’app, non nel browser. La mappa d’insieme è un download a parte.",
   packsCatalog: "Catalogo…",
   packsEmpty: "Nessun pack in catalogo — esegui un build regione in locale.",
   packsUnreachable: "Catalogo offline non raggiungibile.",
@@ -1456,6 +1770,10 @@ const NL: DiscoverUi = {
     "Route volgt vooral wegen — tik een trail op de kaart en hang die aan.",
   honestyCycleway:
     "Weinig eigen fietspad — de live-route blijft vaak op de rijbaan.",
+  honestyFarmTail:
+    "Geen pad tot de pin — het doel ligt aan de straat.",
+  honestyFarmMid:
+    "Delen van de route volgen landwegen — zet het doel dichter bij een straat.",
   sixtyTitle: "Lussen ~60 min",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar en after-work-lussen — los van live-routing.",
@@ -1476,9 +1794,46 @@ const NL: DiscoverUi = {
   tapEnd: "Tik finish",
   startAbbr: "S",
   endAbbr: "F",
-  startMyPos: "Start = mijn positie",
-  computingRoute: "Berekenen…",
+  startMyPos: "Mijn locatie",
+  swapStartEnd: "Wissel start en bestemming",
+  addStop: "Stop",
+  closeLoop: "Terug naar start",
+  viaN: (n) => `Via ${n}`,
+  nextPickStart: "Volgende: start — tik op de kaart of typ een adres",
+  nextPickEnd: "Volgende: bestemming — tik op de kaart of typ een adres",
+  nextPickVia: "Tik nu op de kaart voor de stop.",
+  loopClosed: "Lus",
+  computingRoute: "Route past zich aan…",
   computeRoute: "Route berekenen",
+  statLength: "Lengte",
+  statDuration: "Duur",
+  statAscent: "Stijging",
+  statSurface: "Ondergrond",
+  elevTitle: "Hoogteprofiel",
+  onMapPlace: "Punt op de kaart",
+  viaAddr: "Stop",
+  routingAdapts: "Route past zich aan…",
+  recently: "Recent",
+  backToGps: "Terug naar GPS",
+  mapArea: "Kaartuitsnede",
+  tapLineVia:
+    "Tik of sleep de lijn of de schijven voor een stop. Tik ernaast trekt de route door. Tik het hoogteprofiel: stop. Alt-klik of vasthouden: nieuw doel.",
+  lastDestChip: (name) => `Laatste doel: ${name}`,
+  lastDestChipGeneric: "Laatste doel herhalen",
+  lastDestUndo: "Ongedaan maken",
+  planUndo: "Ongedaan maken",
+  planRedo: "Opnieuw",
+  planLineCoach: "Sleep de lijn of de schijven voor een stop. Vasthouden of Alt-klik: nieuw doel.",
+  planLineCoachOk: "Begrepen",
+  planMapSteep: "Steil",
+  planMapUnknown: "Onbekend",
+  planStopSetHint: "Stop gezet. Sleep het punt om bij te sturen.",
+  placeOnRoute: "Op de route",
+  lastDestApplied: "Laatste doel overgenomen.",
+  endSetComputing: "Einde gezet — route berekenen",
+  setEndCta: "Zet bestemming",
+  closeLoopHint: "Ronde: bestemming wordt start.",
+  browserPlanOnly: "De app navigeert. Hier plan je alleen.",
   waysNearby: "Paden in de buurt",
   overlay: "Overlay",
   osmLoading: "OSM-paden laden…",
@@ -1494,7 +1849,7 @@ const NL: DiscoverUi = {
   trailGravityHint:
     "DH: auto of te voet naar de bovenste ingang. De afdaling volgt het trail, niet de weg.",
   trailUnsuitable: (bike) =>
-    `Niet met ${bike} op dit trail. Wissel in de garage — niet stiekem als MTB routen.`,
+    `Niet met ${bike} op dit trail. Wissel aan de stand — niet stiekem als MTB routen.`,
   difficultyOpen: "open",
   rangeLine: (lo, hi) => `Bereik ${lo}–${hi} km`,
   fromLocation: (n, farther) =>
@@ -1511,6 +1866,24 @@ const NL: DiscoverUi = {
     "Alleen echte lussen (start≈finish) — geen A→B als vulling. Filters ruimer of plaats wijzigen.",
   loosenOrPlan: "Filters ruimer of planner openen.",
   loopFilterOff: "Lusfilter uit",
+  aroundYouCta: "Hier rondom",
+  aroundYouAnother: "Andere lus",
+  aroundYouLoop: "Lus om je heen · OSM-wegen",
+  aroundYouHint: "Lus over OSM-wegen — geen Trailforks-trail",
+  aroundYouBusy: "Lus wordt gelegd…",
+  aroundYouFail: "Geen gesloten lus hier — wijzig plaats of duur.",
+  aroundYouSport:
+    "Lusgenerator voor gravel, race, stad en e-trekking.",
+  aroundYouNeedGps: "Zet een locatie — dan een lus om je heen.",
+  aroundYouOffline: "Lusgenerator heeft netwerk nodig.",
+  aroundYouUncertain: "Lengte ongeveer — zo’n ±12 %",
+  aroundYouUncertainShort: "±12 %",
+  aroundYouStats: (km, min) => `${km} km · ${min} min`,
+  aroundYouReasonDuration: (got, want) => `Duur ${got} min · doel ${want} min`,
+  aroundYouReasonSurface: (surface) => `Vooral ${surface}`,
+  aroundYouReasonOsm: "OSM-wegen — geen Trailforks-trail",
+  previewEngine: (line) => `${line} · voorbeeld`,
+  savePreview: "Bewaren",
   fartherRegions: (n) => `Meer regio's (${n})`,
   outdooractive: (n) => `Outdooractive (${n})`,
   googlePois: (n) =>
@@ -1524,6 +1897,7 @@ const NL: DiscoverUi = {
     "Nog niets opgeslagen — voeg een route toe, bewaar een tocht of GPX.",
   mappeFilterEmpty:
     "Geen tochten in dit filter. Privé blijft onder Privé / Alle.",
+  mappeShowAll: "Alles tonen",
   importGpx: "GPX importeren",
   withTrack: "met track",
   importTag: "Import",
@@ -1575,7 +1949,7 @@ const NL: DiscoverUi = {
   geocodeFailHttp: (status) => `Adreszoeken mislukt (${status})`,
   inPlanNamed: (name) => `In Plannen: ${name} — start/finish bewerkbaar`,
   inPlanNeedEnd: (name) =>
-    `In Plannen: ${name} — zet finish, dan berekenen (geen track).`,
+    `In Plannen: ${name} — zet finish op de kaart of als adres (geen track).`,
   waypointStart: (label) => `Start: ${label}`,
   waypointEnd: (label) => `Finish: ${label}`,
   gpxImported: (name, km) => `GPX geïmporteerd: ${name} · ${km} km`,
@@ -1621,7 +1995,8 @@ const NL: DiscoverUi = {
   variantPlanned: "Zoals gepland",
   variantFlatter: "Minder hm",
   variantUnpaved: "Meer onverhard",
-  variantValhallaOnly: "Zonder live-route geen varianten",
+  variantValhallaOnly:
+    "Minder hm en meer grind alleen met live-route — dit is de geplande lijn.",
   openNativeApp: "Openen in de app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -1651,8 +2026,9 @@ const NL: DiscoverUi = {
   rangeProTitle: "Bereikprognose · Pro",
   rangeProBody: "Toont de spanne tegen de tochtvraag.",
   unlockPro: "Pro onder Profiel ontgrendelen →",
-  offlineMapsHint: "Offline-kaarten laad je in de app. Hier merken via ",
+  offlineMapsHint: "Offline-routing laad je in de app. Hier merken via ",
   offlineMapsAfter: ".",
+  offlineMapsChip: "Routing",
   savedLink: "Opgeslagen",
   heatCold: (k) =>
     `Nog weinig, waar velen rijden (vanaf ${k}) — je ritten en meer rijders vullen de kaart.`,
@@ -1683,7 +2059,7 @@ const NL: DiscoverUi = {
   elevProfile: (hm) => `Hoogteprofiel ca. ${hm} hm`,
   fromHereTitle: "Route vanaf hier",
   fromHereHint:
-    "Live-routing vanaf GPS of kaartmidden — opslaan en rijden in de app.",
+    "Live-routing vanaf GPS of kaartmidden — voorbeeld, daarna bewaren, of rijden in de app.",
   needCenter: "Locatie of kaartmidden ontbreekt",
   stretch: "Traject",
   compute: "Berekenen",
@@ -1694,9 +2070,9 @@ const NL: DiscoverUi = {
   routingFail: "Routing mislukt",
   roundKm: (km) => `Lus ${km} km`,
   tourKm: (km) => `Tocht ${km} km`,
-  packsTitle: "Offline-regio's",
+  packsTitle: "Routing-packs",
   packsLead:
-    "Alleen gebouwde packs zijn te laden. Activeren (routing + tegels) draait in de Android/iOS-app.",
+    "Alleen gebouwde packs zijn te laden. De routing-graaf activeer je in de app, niet in de browser. De overzichtskaart is extra en groot.",
   packsCatalog: "Catalogus…",
   packsEmpty: "Geen packs in de catalogus — region-build lokaal uitvoeren.",
   packsUnreachable: "Offline-catalogus niet bereikbaar.",
@@ -1800,6 +2176,10 @@ export function discoverStatus(
     /^In Planen: (.+) — Ziel setzen, dann Route berechnen \(kein Track\)\.$/,
   );
   if (planEnd) return d.inPlanNeedEnd(planEnd[1]);
+  const planEndMap = raw.match(
+    /^In Planen: (.+) — Ziel auf der Karte oder als Adresse setzen \(kein Track\)\.$/,
+  );
+  if (planEndMap) return d.inPlanNeedEnd(planEndMap[1]);
   const plan = raw.match(/^In Planen: (.+) — Start\/Ziel editierbar$/);
   if (plan) return d.inPlanNamed(plan[1]);
   const start = raw.match(/^Start: (.+)$/);
@@ -1815,7 +2195,9 @@ export function discoverStatus(
   return stripEngineStatusTail(
     raw
       .replaceAll(HONESTY_ROAD_DE, d.honestyRoad)
-      .replaceAll(HONESTY_CYCLEWAY_DE, d.honestyCycleway),
+      .replaceAll(HONESTY_CYCLEWAY_DE, d.honestyCycleway)
+      .replaceAll(HONESTY_FARM_TAIL_DE, d.honestyFarmTail)
+      .replaceAll(HONESTY_FARM_MID_DE, d.honestyFarmMid),
   );
 }
 
@@ -1875,6 +2257,18 @@ export function discoverSurfaceLabel(
   lang: ChromeLang,
 ): string | undefined {
   return discoverMappedDe(raw, SURFACE_DE, lang);
+}
+
+export function discoverOsmSurfaceLabel(
+  raw: string | null | undefined,
+  lang: ChromeLang,
+): string {
+  const d = discoverUi(lang);
+  return osmSurfaceLabel(raw, {
+    asphalt: d.surfaceAsphalt,
+    gravel: d.surfaceSchotter,
+    trail: d.surfaceNatur,
+  });
 }
 
 export function discoverHighwayLabel(

@@ -5,6 +5,23 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import 'routing_client.dart';
 
+/// Roh-Tokens der Elevation-API gehören nicht in die Nutzerzeile.
+bool elevationSourceIsUserFacing(String? source) {
+  final s = source?.trim() ?? '';
+  if (s.isEmpty) return false;
+  const hidden = {
+    'api',
+    'graphhopper',
+    'valhalla',
+    'osrm',
+    'offline',
+    'http',
+    'engine',
+    'fallback-line',
+  };
+  return !hidden.contains(s.toLowerCase());
+}
+
 class ElevationProfile {
   const ElevationProfile({
     required this.gainM,
@@ -17,6 +34,94 @@ class ElevationProfile {
   final double lossM;
   final List<Map<String, dynamic>> points;
   final String? source;
+}
+
+List<double> elevationSamplesOf(ElevationProfile profile) {
+  final out = <double>[];
+  for (final m in profile.points) {
+    final raw = m['elevM'] ?? m['elev'] ?? m['elevation'] ?? m['ele'] ?? m['z'];
+    if (raw is num) out.add(raw.toDouble());
+  }
+  return out;
+}
+
+/// Along-track km aligned with [elevationSamplesOf]. Empty if any sample
+/// is missing distKm (chart then uses uniform spacing).
+List<double> elevationDistKmOf(ElevationProfile profile) {
+  final out = <double>[];
+  for (final m in profile.points) {
+    final raw = m['elevM'] ?? m['elev'] ?? m['elevation'] ?? m['ele'] ?? m['z'];
+    if (raw is! num) continue;
+    final dist = m['distKm'] ?? m['dist_km'];
+    if (dist is! num) return const [];
+    out.add(dist.toDouble());
+  }
+  return out;
+}
+
+List<({double fromKm, double toKm, String? surface})> elevationSurfaceBandsOf(
+  List<Map<String, dynamic>> points,
+) {
+  if (points.length < 2) return const [];
+  final bands = <({double fromKm, double toKm, String? surface})>[];
+  String? cur;
+  double? start;
+  var lastKm = 0.0;
+  for (final m in points) {
+    final dist = m['distKm'] ?? m['dist_km'];
+    if (dist is! num) continue;
+    final km = dist.toDouble();
+    lastKm = km;
+    final raw = m['surface'];
+    final s = raw is String && raw.trim().isNotEmpty
+        ? raw.trim().toLowerCase()
+        : null;
+    if (start == null) {
+      start = km;
+      cur = s;
+      continue;
+    }
+    if (s != cur) {
+      bands.add((fromKm: start, toKm: km, surface: cur));
+      start = km;
+      cur = s;
+    }
+  }
+  if (start != null) {
+    bands.add((fromKm: start, toKm: lastKm, surface: cur));
+  }
+  return bands;
+}
+
+class SurfaceShare {
+  const SurfaceShare({required this.key, required this.share});
+  final String key;
+  final double share;
+}
+
+/// Mix from elevation points — unknown/null surfaces dropped.
+List<SurfaceShare> surfaceSharesFromElevPoints(List<Map<String, dynamic>> points) {
+  if (points.length < 2) return const [];
+  final kmBy = <String, double>{};
+  var known = 0.0;
+  for (var i = 1; i < points.length; i++) {
+    final prev = points[i - 1]['distKm'] ?? points[i - 1]['dist_km'];
+    final cur = points[i]['distKm'] ?? points[i]['dist_km'];
+    if (prev is! num || cur is! num) continue;
+    final km = (cur - prev).toDouble();
+    if (km <= 0) continue;
+    final raw = points[i]['surface'] ?? points[i - 1]['surface'];
+    final key = raw is String ? raw.trim().toLowerCase() : '';
+    if (key.isEmpty) continue;
+    kmBy[key] = (kmBy[key] ?? 0) + km;
+    known += km;
+  }
+  if (known <= 0) return const [];
+  final out = [
+    for (final e in kmBy.entries)
+      SurfaceShare(key: e.key, share: e.value / known),
+  ]..sort((a, b) => b.share.compareTo(a.share));
+  return out;
 }
 
 /// Calls `${AppConfig.apiBaseUrl}/api/elevation`.

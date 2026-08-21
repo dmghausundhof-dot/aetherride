@@ -16,6 +16,7 @@ import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { isShopEnabled } from "@/lib/shop/shopEnabled";
 import { estimateRange } from "@/lib/ebike/range";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 import {
   buildCoachWatch,
   formulateCoachWatch,
@@ -35,6 +36,14 @@ import type {
   RiderProfile,
 } from "@/types";
 import type { RangeCalibration } from "@/lib/ebike/range";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import { chatCopy } from "@/lib/i18n/chatCopy";
+import { fetchOpenMeteoWeather } from "@/lib/weather/openMeteoWeather";
+import {
+  formatRideWindowLabel,
+  profileAllowsRideWindow,
+  rideWindowNumbers,
+} from "@/lib/weather/rideWindow";
 
 export interface WhitelistedNumber {
   value: number;
@@ -126,7 +135,8 @@ export type ChatToolName =
   | "route_search"
   | "product_search"
   | "range"
-  | "watch";
+  | "watch"
+  | "ride_window";
 
 export type ChatContext = {
   bike?: Bike;
@@ -138,6 +148,12 @@ export type ChatContext = {
   rideFeedbacks?: RideFeedback[];
   /** Clientseitig berechnete Hinweise (App) — sonst baut der Server sie. */
   notices?: CoachNotice[];
+  lang?: ChromeLang;
+  /** Required for ride_window — no invented GPS. */
+  lat?: number | null;
+  lon?: number | null;
+  /** Routing / soil profile id (gravel, mtb_enduro, …). */
+  routingProfile?: string | null;
 };
 
 /** Engine-Ergebnisse ohne LLM — für Numeric-Guard Whitelist */
@@ -153,8 +169,7 @@ export function buildChatRecommendation(
       toolName: tool,
       facts: [],
       numbers: [],
-      rawAnswer:
-        "Daten unvollständig — keine belastbare Antwort. Werkstatt oder Fahrten prüfen.",
+      rawAnswer: chatCopy(ctx.lang ?? "de").incompleteData,
     };
   }
 }
@@ -187,7 +202,7 @@ function buildChatRecommendationInner(
         toolName: tool,
         facts: notices.map((n) => `${n.severity}: ${n.title}`),
         numbers: notices.flatMap((n) => n.numbers),
-        rawAnswer: formulateCoachWatch(notices),
+        rawAnswer: formulateCoachWatch(notices, ctx.lang ?? "de"),
       };
       break;
     }
@@ -208,8 +223,10 @@ function buildChatRecommendationInner(
         ]),
         rawAnswer:
           bikes.length === 0
-            ? "Keine Bikes in der Garage — Daten fehlen."
-            : `In deiner Garage: ${bikes.map((b) => b.name).join(", ")}. Aktive Komponenten und km stammen aus dem Garage-Store.`,
+            ? chatCopy(ctx.lang ?? "de").noBikeStand
+            : chatCopy(ctx.lang ?? "de").garageStand(
+                bikes.map((b) => b.name).join(", ")
+              ),
       };
       break;
     }
@@ -219,7 +236,7 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: [],
           numbers: [],
-          rawAnswer: "Kein aktives Bike — Kompatibilität nicht prüfbar.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").noBikeCompat,
         };
         break;
       }
@@ -246,7 +263,7 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: [],
           numbers: [],
-          rawAnswer: "Kein Bike — Setup-Historie fehlt.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").noBikeSetup,
         };
         break;
       }
@@ -264,7 +281,7 @@ function buildChatRecommendationInner(
         })),
         rawAnswer:
           setups.length === 0
-            ? "Keine Setup-Versionen vorhanden."
+            ? chatCopy(ctx.lang ?? "de").noSetups
             : `Setup-Historie: ${setups
                 .slice(0, 5)
                 .map((s) => `v${s.version} „${s.label}"`)
@@ -274,7 +291,10 @@ function buildChatRecommendationInner(
     }
     case "ride_stats": {
       const km = rides.reduce((s, r) => s + r.distanceM / 1000, 0);
-      const hm = rides.reduce((s, r) => s + r.elevationGainM, 0);
+      const hm = rides.reduce(
+        (s, r) => s + honestClimbM(r.track, r.elevationGainM),
+        0
+      );
       set = {
         toolName: tool,
         facts: [
@@ -287,7 +307,11 @@ function buildChatRecommendationInner(
           { value: Math.round(km * 10) / 10, unit: "km", source: "rides.km" },
           { value: Math.round(hm), unit: "hm", source: "rides.hm" },
         ],
-        rawAnswer: `Ride-Statistik: ${rides.length} Fahrten, ${km.toFixed(1)} km, ${Math.round(hm)} hm — nur aus gespeicherten Rides.`,
+        rawAnswer: chatCopy(ctx.lang ?? "de").rideStats(
+          String(rides.length),
+          km.toFixed(1),
+          String(Math.round(hm))
+        ),
       };
       break;
     }
@@ -297,14 +321,14 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: [],
           numbers: [],
-          rawAnswer: "Routensuche braucht ein aktives Bike.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").noBikeRoute,
         };
         break;
       }
       const routes = suggestRoutes({
         bike,
         profile: ctx.profile,
-        availableMinutes: /lang|marathon|3\s*h/.test(q) ? 180 : 120,
+        availableMinutes: /lang|long|marathon|3\s*h|3h/.test(q) ? 180 : 120,
       });
       const top = routes[0];
       set = {
@@ -322,7 +346,7 @@ function buildChatRecommendationInner(
           : [],
         rawAnswer: top
           ? `Vorschlag „${top.name}": ${top.distanceKm} km, ${top.elevationM} hm, ${top.durationMin} min (Score ${top.matchScore} %). Gründe: ${top.reasons.join("; ")}.`
-          : "Keine Routen für diese Kategorie.",
+          : chatCopy(ctx.lang ?? "de").noRoutes,
       };
       break;
     }
@@ -332,8 +356,7 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: ["Laden pausiert"],
           numbers: [],
-          rawAnswer:
-            "Der Teile-Shop ist vorerst aus. Pflege und Setup bleiben in der Werkstatt.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").shopPaused,
         };
         break;
       }
@@ -342,7 +365,7 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: [],
           numbers: [],
-          rawAnswer: "Produktsuche braucht aktives Bike.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").noBikeShop,
         };
         break;
       }
@@ -395,7 +418,7 @@ function buildChatRecommendationInner(
           toolName: tool,
           facts: [],
           numbers: [],
-          rawAnswer: "Reichweite nur für E-Bikes.",
+          rawAnswer: chatCopy(ctx.lang ?? "de").rangeEbikeOnly,
         };
         break;
       }
@@ -413,7 +436,48 @@ function buildChatRecommendationInner(
           { value: est.whPerKmLow, unit: "Wh", source: "range.whlow" },
           { value: est.whPerKmHigh, unit: "Wh", source: "range.whhigh" },
         ],
-        rawAnswer: `Reichweite ${est.kmLow}–${est.kmHigh} km (${est.whPerKmLow}–${est.whPerKmHigh} Wh/km), Konfidenz ${est.confidence}.`,
+        rawAnswer: chatCopy(ctx.lang ?? "de").rangeAnswer(
+          String(est.kmLow),
+          String(est.kmHigh),
+          String(est.whPerKmLow),
+          String(est.whPerKmHigh),
+          est.confidence
+        ),
+      };
+      break;
+    }
+    case "ride_window": {
+      const copy = chatCopy(ctx.lang ?? "de");
+      const lat = ctx.lat;
+      const lon = ctx.lon;
+      if (
+        typeof lat !== "number" ||
+        typeof lon !== "number" ||
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+      ) {
+        set = {
+          toolName: tool,
+          facts: [],
+          numbers: [],
+          rawAnswer: copy.rideWindowNeedGps,
+        };
+        break;
+      }
+      if (!profileAllowsRideWindow(routingProfileFromCtx(ctx))) {
+        set = {
+          toolName: tool,
+          facts: [],
+          numbers: [],
+          rawAnswer: copy.rideWindowSport,
+        };
+        break;
+      }
+      set = {
+        toolName: tool,
+        facts: [],
+        numbers: [],
+        rawAnswer: copy.incompleteData,
       };
       break;
     }
@@ -422,11 +486,96 @@ function buildChatRecommendationInner(
         toolName: "garage",
         facts: [],
         numbers: [],
-        rawAnswer: "Unbekanntes Werkzeug — Daten fehlen.",
+        rawAnswer: chatCopy(ctx.lang ?? "de").unknownTool,
       };
   }
 
   return set;
+}
+
+function routingProfileFromCtx(ctx: ChatContext): string | null {
+  return ctx.routingProfile ?? ctx.bike?.category ?? null;
+}
+
+export async function buildRideWindowRecommendation(
+  ctx: ChatContext
+): Promise<RecommendationSet> {
+  const copy = chatCopy(ctx.lang ?? "de");
+  const lat = ctx.lat;
+  const lon = ctx.lon;
+  if (
+    typeof lat !== "number" ||
+    typeof lon !== "number" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon)
+  ) {
+    return {
+      toolName: "ride_window",
+      facts: [],
+      numbers: [],
+      rawAnswer: copy.rideWindowNeedGps,
+    };
+  }
+  const routingProfile = routingProfileFromCtx(ctx);
+  if (!profileAllowsRideWindow(routingProfile)) {
+    return {
+      toolName: "ride_window",
+      facts: [],
+      numbers: [],
+      rawAnswer: copy.rideWindowSport,
+    };
+  }
+  try {
+    const weather = await fetchOpenMeteoWeather({
+      lat,
+      lon,
+      profile: routingProfile,
+      lang: ctx.lang ?? "de",
+    });
+    const win = weather.rideWindow;
+    if (!win) {
+      return {
+        toolName: "ride_window",
+        facts: [],
+        numbers: [],
+        rawAnswer: formatRideWindowLabel({ kind: "none" }, ctx.lang ?? "de"),
+      };
+    }
+    const numbers =
+      win.kind === "drier" &&
+      typeof win.startHour === "number" &&
+      typeof win.endHour === "number"
+        ? rideWindowNumbers({
+            kind: "drier",
+            startHour: win.startHour,
+            endHour: win.endHour,
+            startIso: "",
+            endIso: "",
+          })
+        : [];
+    return {
+      toolName: "ride_window",
+      facts: [win.label],
+      numbers,
+      rawAnswer: win.label,
+    };
+  } catch {
+    return {
+      toolName: "ride_window",
+      facts: [],
+      numbers: [],
+      rawAnswer: formatRideWindowLabel({ kind: "none" }, ctx.lang ?? "de"),
+    };
+  }
+}
+
+export async function resolveChatRecommendation(
+  tool: ChatToolName,
+  query: string,
+  ctx: ChatContext
+): Promise<RecommendationSet> {
+  if (tool === "ride_window") return buildRideWindowRecommendation(ctx);
+  return buildChatRecommendation(tool, query, ctx);
 }
 
 export function runChatTool(
@@ -445,20 +594,45 @@ export function runChatTool(
 export function detectTool(query: string): ChatToolName {
   const q = query.toLowerCase();
   if (
-    /steht an|f[äa]llig|überf[äa]llig|hinweis|überwach|was ist los|\bcoach\b|ansteh/.test(
+    /steht an|f[äa]llig|überf[äa]llig|hinweis|überwach|was ist los|\bcoach\b|ansteh|what.?s due|what is due|\bdue\?|est dû|scadenza|aan de beurt/.test(
       q
     )
   ) {
     return "watch";
   }
-  if (/kompat|\bpasst\b|incompat/.test(q)) return "compat";
-  if (/setup|zugstufe|dämpferklick|gabelzug|reifensag|\brebound\b/.test(q)) {
+  if (/kompat|\bpasst\b|incompat|compatib/.test(q)) return "compat";
+  if (
+    /setup|zugstufe|dämpferklick|gabelzug|reifensag|\brebound\b|réglage/.test(q)
+  ) {
     return "setup_history";
   }
-  if (/route|trail|tour|entdeck/.test(q)) return "route_search";
-  if (/produkt|shop|kauf|belag|kette|reifen/.test(q)) return "product_search";
-  if (/reichweite|akku|wh\/km|\brange\b/.test(q)) return "range";
-  if (/statistik|fahrten|rides?\b|kilometer|h[oö]henmeter/.test(q)) {
+  if (
+    /fenster|trockener|wann\s+(fahr|reiten|los)|when is it drier|plus sec|più asciutto|vandaag droger|ride window/.test(
+      q
+    )
+  ) {
+    return "ride_window";
+  }
+  if (/route|trail|tour|entdeck|itin[eé]rair|itinerar/.test(q)) {
+    return "route_search";
+  }
+  if (
+    /produkt|shop|kauf|belag|kette|reifen|wear parts|usure|consumabil|slijtdelen/.test(
+      q
+    )
+  ) {
+    return "product_search";
+  }
+  if (
+    /reichweite|akku|wh\/km|\brange\b|autonomie|autonomia|actieradius/.test(q)
+  ) {
+    return "range";
+  }
+  if (
+    /statistik|fahrten|rides?\b|kilometer|h[oö]henmeter|sorties|uscite|ritten|recent rides|dernières|ultime uscite|laatste ritten/.test(
+      q
+    )
+  ) {
     return "ride_stats";
   }
   return "garage";

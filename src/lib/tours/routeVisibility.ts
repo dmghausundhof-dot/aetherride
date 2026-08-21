@@ -5,6 +5,7 @@
 
 import type { RouteVisibility, SavedRoute } from "@/types/route";
 import { catalogTourIdOf } from "@/lib/tours/tourAkte";
+import { listedForPublicExplore } from "@/lib/tours/tourListing";
 
 export type { RouteVisibility };
 
@@ -39,11 +40,11 @@ export function stimmenTourIdOf(
   return null;
 }
 
-/** Öffentliche Explore-/Community-Listen: nur freigegebene Kopien. */
+/** Explore-Pin erst nach dem Listing-Gate, nicht schon beim Link-Share. */
 export function visibleInPublicExplore(
-  route: Pick<SavedRoute, "visibility">
+  route: Pick<SavedRoute, "visibility" | "listing">
 ): boolean {
-  return isShared(route);
+  return listedForPublicExplore(route);
 }
 
 /** Heatmap-Beitrag aus einer gespeicherten Tour-Geometrie: nur nach Freigabe. */
@@ -97,7 +98,7 @@ export function shareHonesty(route: SavedRoute): string {
     return "Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.";
   }
   if (hasTrack) {
-    return "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur in diesem Browser.";
+    return "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Auf der Karte erscheint sie erst nach 3 Stimmen in 14 Tagen — sonst wieder privat. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur in diesem Browser.";
   }
   return "Freigeben erzeugt einen Link mit Name und Stats — ohne Track, weil keiner gespeichert ist.";
 }

@@ -10,6 +10,8 @@ import {
   canJoinWithoutInviteToken,
   isTypedJoinCode,
   formatGroupWhen,
+  formatRideGroupDurationHours,
+  listedPublicJoinGroups,
   generateJoinCode,
   normalizeJoinCode,
   canShowMeetingOnExplore,
@@ -140,6 +142,66 @@ assert.equal(
   ),
   false
 );
+assert.equal(
+  isEventWindowOpen(
+    "2026-08-15T09:00:00.000Z",
+    "2026-08-15T09:00:00.000Z",
+    "2026-08-15T13:00:00.000Z",
+    "open"
+  ),
+  true,
+  "Fenster genau am Start ist offen"
+);
+assert.equal(
+  isEventWindowOpen(
+    "2026-08-15T13:00:00.000Z",
+    "2026-08-15T09:00:00.000Z",
+    "2026-08-15T13:00:00.000Z",
+    "open"
+  ),
+  true,
+  "Fenster genau am Ende ist noch offen"
+);
+assert.equal(
+  canJoinRideGroup(
+    "2026-08-15T13:00:00.000Z",
+    "2026-08-15T13:00:00.000Z",
+    "open"
+  ),
+  true
+);
+assert.equal(formatRideGroupDurationHours(0.25, ","), "15 Min");
+assert.equal(formatRideGroupDurationHours(1.25, ","), "1,25 h");
+assert.equal(formatRideGroupDurationHours(0.5, ","), "30 Min");
+assert.equal(
+  listedPublicJoinGroups(
+    [
+      {
+        id: "closed",
+        status: "closed" as const,
+        startWindowEnd: "2026-08-19T18:00:00.000Z",
+      },
+      {
+        id: "ended",
+        status: "open" as const,
+        startWindowEnd: "2026-08-19T10:00:00.000Z",
+      },
+      {
+        id: "mine",
+        status: "open" as const,
+        startWindowEnd: "2026-08-19T18:00:00.000Z",
+      },
+      {
+        id: "live",
+        status: "open" as const,
+        startWindowEnd: "2026-08-19T18:00:00.000Z",
+      },
+    ],
+    ["mine"],
+    new Date("2026-08-19T12:00:00.000Z"),
+  ).map((g) => g.id).join(","),
+  "live",
+);
 
 const win = parseRideGroupWindow({
   startsAt: "2026-08-16T08:00:00.000Z",
@@ -196,6 +258,29 @@ assert.equal(
 assert.equal(
   "error" in parseRideGroupWindow({ durationHours: 13 }),
   true
+);
+const nowCap = new Date("2026-08-19T09:00:00.000Z");
+assert.equal(
+  "error" in
+    parseRideGroupWindow({
+      startsAt: new Date(
+        nowCap.getTime() + 14 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      durationHours: 3,
+      now: nowCap,
+    }),
+  false,
+);
+assert.equal(
+  "error" in
+    parseRideGroupWindow({
+      startsAt: new Date(
+        nowCap.getTime() + 14 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000,
+      ).toISOString(),
+      durationHours: 3,
+      now: nowCap,
+    }),
+  true,
 );
 
 assert.equal(
@@ -318,6 +403,8 @@ assert.equal(
 assert.equal(platzGroupPrimaryIsInvite(true, 0), true);
 assert.equal(platzGroupPrimaryIsInvite(true, 1), false);
 assert.equal(platzGroupPrimaryIsInvite(false, 0), false);
+assert.equal(platzGroupPrimaryIsInvite(true, 0, true), false);
+assert.equal(platzGroupPrimaryIsInvite(true, 0, false), true);
 
 assert.equal(
   extendRideGroupWindowEnd(

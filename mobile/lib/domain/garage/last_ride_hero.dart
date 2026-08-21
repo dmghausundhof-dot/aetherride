@@ -1,10 +1,13 @@
 import '../ride.dart';
+import '../ride/ride_telemetry.dart';
 
 /// Hero-Zeile: nur echte Fahrten, keine erfundenen Kilometer.
 String? lastRideHeroLine(RideRecord? ride) {
   if (ride == null) return null;
   if (ride.distanceKm >= 0.05) {
-    return 'Zuletzt ${ride.distanceKm.toStringAsFixed(1)} km';
+    final climb = honestClimbM(ride.track, ride.elevationM);
+    final hm = climb >= 10 ? ' · $climb hm' : '';
+    return 'Zuletzt ${ride.distanceKm.toStringAsFixed(1)} km$hm';
   }
   return 'Zuletzt unterwegs — ohne GPS-Strecke';
 }

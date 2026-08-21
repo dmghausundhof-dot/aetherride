@@ -1,4 +1,8 @@
 import type { ChromeLang } from "./chromeLang";
+import {
+  maintIntervalLabel,
+  maintRemainingLabel,
+} from "./maintDomainCopy";
 import type { Bike, Ride } from "@/types";
 import type {
   DieBoxPlan,
@@ -7,6 +11,7 @@ import type {
 } from "@/lib/garage/dieBox";
 import { wheelLabel } from "@/lib/garage/dieBox";
 import { lastRideForBike } from "@/lib/maintenance/summary";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 
 /** Die Box chrome. Domain plan/sentence stay German; UI maps by id/label. */
 export type DieBoxCopy = {
@@ -59,7 +64,15 @@ export type DieBoxCopy = {
   travelMissingCta: string;
   sagMissingTitle: string;
   sagMissingHint: string;
+  sagMissingHintFork: string;
   sagMissingCta: string;
+  sagHintFork: string;
+  coachForkLine: (pct: string, mm: string, psi: string) => string;
+  coachShockLine: (pct: string, mm: string, psi: string) => string;
+  coachPressureLine: (front: string, rear: string, unit: string) => string;
+  sagStep1: string;
+  sagStep2: string;
+  sagStep3: string;
   chainTitle: string;
   chainHint: string;
   chainCta: string;
@@ -121,6 +134,8 @@ const DE: DieBoxCopy = {
   sagTitle: "Federung merken",
   sagHint:
     "Prozent an Gabel und Dämpfer. SAG ist, wie weit die Federung mit dir einsinkt.",
+  sagHintFork:
+    "Prozent an der Gabel. SAG ist, wie weit die Gabel mit dir einsinkt.",
   sagFork: "Gabel SAG %",
   sagShock: "Dämpfer SAG %",
   travelTitle: "Federweg eintragen",
@@ -153,7 +168,17 @@ const DE: DieBoxCopy = {
   travelMissingCta: "Federweg eintragen",
   sagMissingTitle: "Federung merken",
   sagMissingHint: "Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.",
+  sagMissingHintFork: "Eine Zahl an der Gabel, abgelesen am Rad.",
   sagMissingCta: "Federung merken",
+  coachForkLine: (pct, mm, psi) =>
+    `Gabel ${pct} %${mm ? ` · ${mm} mm` : ""} · Start ${psi} psi`,
+  coachShockLine: (pct, mm, psi) =>
+    `Dämpfer ${pct} %${mm ? ` · ${mm} mm` : ""} · Start ${psi} psi`,
+  coachPressureLine: (front, rear, unit) =>
+    `Richtwert ${front} / ${rear} ${unit} — am Ventil ablesen.`,
+  sagStep1: "O-Ring an die Dichtung schieben.",
+  sagStep2: "Fahrbereit aufsteigen, 3× leicht einfedern.",
+  sagStep3: "Absteigen, Weg messen, durch Federweg teilen → %.",
   chainTitle: "Kette merken",
   chainHint: "Mit der Lehre messen, dann hier merken.",
   chainCta: "Kette gemessen",
@@ -216,6 +241,8 @@ const EN: DieBoxCopy = {
   sagTitle: "Log suspension",
   sagHint:
     "Percent on fork and shock. SAG is how far the suspension sinks with you on it.",
+  sagHintFork:
+    "Percent on the fork. SAG is how far the fork sinks with you on it.",
   sagFork: "Fork SAG %",
   sagShock: "Shock SAG %",
   travelTitle: "Log travel",
@@ -248,7 +275,17 @@ const EN: DieBoxCopy = {
   travelMissingCta: "Log travel",
   sagMissingTitle: "Log suspension",
   sagMissingHint: "One number on fork and shock, read on the bike.",
+  sagMissingHintFork: "One number on the fork, read on the bike.",
   sagMissingCta: "Log suspension",
+  coachForkLine: (pct, mm, psi) =>
+    `Fork ${pct}%${mm ? ` · ${mm} mm` : ""} · start ${psi} psi`,
+  coachShockLine: (pct, mm, psi) =>
+    `Shock ${pct}%${mm ? ` · ${mm} mm` : ""} · start ${psi} psi`,
+  coachPressureLine: (front, rear, unit) =>
+    `Starting point ${front} / ${rear} ${unit} — read at the valve.`,
+  sagStep1: "Slide the O-ring to the seal.",
+  sagStep2: "Get on ready to ride, bounce gently 3 times.",
+  sagStep3: "Get off, measure the gap, divide by travel → %.",
   chainTitle: "Log the chain",
   chainHint: "Measure with a gauge, then log it here.",
   chainCta: "Chain measured",
@@ -311,6 +348,8 @@ const FR: DieBoxCopy = {
   sagTitle: "Noter la suspension",
   sagHint:
     "Pourcent sur fourche et amortisseur. Le SAG, c’est l’enfoncement avec toi dessus.",
+  sagHintFork:
+    "Pourcent sur la fourche. Le SAG, c’est l’enfoncement de la fourche avec toi dessus.",
   sagFork: "SAG fourche %",
   sagShock: "SAG amortisseur %",
   travelTitle: "Inscrire le débattement",
@@ -343,7 +382,17 @@ const FR: DieBoxCopy = {
   travelMissingCta: "Inscrire le débattement",
   sagMissingTitle: "Noter la suspension",
   sagMissingHint: "Un chiffre sur fourche et amortisseur, lu sur le vélo.",
+  sagMissingHintFork: "Un chiffre sur la fourche, lu sur le vélo.",
   sagMissingCta: "Noter la suspension",
+  coachForkLine: (pct, mm, psi) =>
+    `Fourche ${pct} %${mm ? ` · ${mm} mm` : ""} · départ ${psi} psi`,
+  coachShockLine: (pct, mm, psi) =>
+    `Amortisseur ${pct} %${mm ? ` · ${mm} mm` : ""} · départ ${psi} psi`,
+  coachPressureLine: (front, rear, unit) =>
+    `Repère ${front} / ${rear} ${unit} — lis à la valve.`,
+  sagStep1: "Pousse le joint torique contre le joint.",
+  sagStep2: "Monte prêt à rouler, enfonce 3 fois légèrement.",
+  sagStep3: "Descends, mesure le débattement, divise par le total → %.",
   chainTitle: "Noter la chaîne",
   chainHint: "Mesure au calibre, puis note ici.",
   chainCta: "Chaîne mesurée",
@@ -406,6 +455,8 @@ const IT: DieBoxCopy = {
   sagTitle: "Segna la sospensione",
   sagHint:
     "Percentuale su forcella e ammortizzatore. Il SAG è quanto affonda con te sopra.",
+  sagHintFork:
+    "Percentuale sulla forcella. Il SAG è quanto affonda la forcella con te sopra.",
   sagFork: "SAG forcella %",
   sagShock: "SAG ammortizzatore %",
   travelTitle: "Iscrivi l'escursione",
@@ -439,7 +490,17 @@ const IT: DieBoxCopy = {
   sagMissingTitle: "Segna la sospensione",
   sagMissingHint:
     "Un numero su forcella e ammortizzatore, letto sulla bici.",
+  sagMissingHintFork: "Un numero sulla forcella, letto sulla bici.",
   sagMissingCta: "Segna la sospensione",
+  coachForkLine: (pct, mm, psi) =>
+    `Forcella ${pct} %${mm ? ` · ${mm} mm` : ""} · partenza ${psi} psi`,
+  coachShockLine: (pct, mm, psi) =>
+    `Ammortizzatore ${pct} %${mm ? ` · ${mm} mm` : ""} · partenza ${psi} psi`,
+  coachPressureLine: (front, rear, unit) =>
+    `Riferimento ${front} / ${rear} ${unit} — leggi alla valvola.`,
+  sagStep1: "Spingi l’O-ring contro la tenuta.",
+  sagStep2: "Sali pronto a pedalare, comprimi piano 3 volte.",
+  sagStep3: "Scendi, misura il tratto, dividi per l’escursione → %.",
   chainTitle: "Segna la catena",
   chainHint: "Misura col calibro, poi segna qui.",
   chainCta: "Catena misurata",
@@ -502,6 +563,8 @@ const NL: DieBoxCopy = {
   sagTitle: "Vering noteren",
   sagHint:
     "Procent op vork en demper. SAG is hoe ver de vering inzakt met jou erop.",
+  sagHintFork:
+    "Procent op de vork. SAG is hoe ver de vork inzakt met jou erop.",
   sagFork: "Vork SAG %",
   sagShock: "Demper SAG %",
   travelTitle: "Veerweg invullen",
@@ -534,7 +597,17 @@ const NL: DieBoxCopy = {
   travelMissingCta: "Veerweg invullen",
   sagMissingTitle: "Vering noteren",
   sagMissingHint: "Eén getal op vork en demper, afgelezen op de fiets.",
+  sagMissingHintFork: "Eén getal op de vork, afgelezen op de fiets.",
   sagMissingCta: "Vering noteren",
+  coachForkLine: (pct, mm, psi) =>
+    `Vork ${pct} %${mm ? ` · ${mm} mm` : ""} · start ${psi} psi`,
+  coachShockLine: (pct, mm, psi) =>
+    `Demper ${pct} %${mm ? ` · ${mm} mm` : ""} · start ${psi} psi`,
+  coachPressureLine: (front, rear, unit) =>
+    `Richtwaarde ${front} / ${rear} ${unit} — aflezen bij het ventiel.`,
+  sagStep1: "O-ring tegen de keerring schuiven.",
+  sagStep2: "Opstappen rijklaar, 3× licht inveren.",
+  sagStep3: "Afstappen, weg meten, delen door veerweg → %.",
   chainTitle: "Ketting noteren",
   chainHint: "Met de meter meten, dan hier noteren.",
   chainCta: "Ketting gemeten",
@@ -584,83 +657,6 @@ const BY_LANG: Record<ChromeLang, DieBoxCopy> = {
   nl: NL,
 };
 
-const MAINT: Record<ChromeLang, Record<string, string>> = {
-  de: {
-    "Gabel Lower-Leg Service": "Gabel Lower-Leg Service",
-    "Gabel Vollservice (Feder/Dämpfer)": "Gabel Vollservice (Feder/Dämpfer)",
-    "Dämpfer Air-Can Service": "Dämpfer Air-Can Service",
-    "Dämpfer Vollservice": "Dämpfer Vollservice",
-    "Kettenverschleiß prüfen": "Kettenverschleiß prüfen",
-    "Kassette prüfen (nach 2–3 Ketten)": "Kassette prüfen (nach 2–3 Ketten)",
-    "Bremsbeläge vorne prüfen": "Bremsbeläge vorne prüfen",
-    "Bremsbeläge hinten prüfen": "Bremsbeläge hinten prüfen",
-    "Tubeless-Milch erneuern": "Tubeless-Milch erneuern",
-    "Dropper Lower-Post Service": "Dropper Lower-Post Service",
-  },
-  en: {
-    "Gabel Lower-Leg Service": "Fork lower-leg service",
-    "Gabel Vollservice (Feder/Dämpfer)": "Fork full service (spring/damper)",
-    "Dämpfer Air-Can Service": "Shock air-can service",
-    "Dämpfer Vollservice": "Shock full service",
-    "Kettenverschleiß prüfen": "Check chain wear",
-    "Kassette prüfen (nach 2–3 Ketten)": "Check cassette (after 2–3 chains)",
-    "Bremsbeläge vorne prüfen": "Check front brake pads",
-    "Bremsbeläge hinten prüfen": "Check rear brake pads",
-    "Tubeless-Milch erneuern": "Refresh tubeless sealant",
-    "Dropper Lower-Post Service": "Dropper lower-post service",
-  },
-  fr: {
-    "Gabel Lower-Leg Service": "Service lower-leg fourche",
-    "Gabel Vollservice (Feder/Dämpfer)":
-      "Révision complète fourche (ressort/amortisseur)",
-    "Dämpfer Air-Can Service": "Service air-can amortisseur",
-    "Dämpfer Vollservice": "Révision complète amortisseur",
-    "Kettenverschleiß prüfen": "Contrôle usure chaîne",
-    "Kassette prüfen (nach 2–3 Ketten)":
-      "Contrôle cassette (après 2–3 chaînes)",
-    "Bremsbeläge vorne prüfen": "Contrôle plaquettes avant",
-    "Bremsbeläge hinten prüfen": "Contrôle plaquettes arrière",
-    "Tubeless-Milch erneuern": "Renouveler le lait tubeless",
-    "Dropper Lower-Post Service": "Service lower-post dropper",
-  },
-  it: {
-    "Gabel Lower-Leg Service": "Service lower-leg forcella",
-    "Gabel Vollservice (Feder/Dämpfer)":
-      "Revisione completa forcella (molla/ammortizzatore)",
-    "Dämpfer Air-Can Service": "Service air-can ammortizzatore",
-    "Dämpfer Vollservice": "Revisione completa ammortizzatore",
-    "Kettenverschleiß prüfen": "Controlla usura catena",
-    "Kassette prüfen (nach 2–3 Ketten)":
-      "Controlla cassetta (dopo 2–3 catene)",
-    "Bremsbeläge vorne prüfen": "Controlla pastiglie anteriori",
-    "Bremsbeläge hinten prüfen": "Controlla pastiglie posteriori",
-    "Tubeless-Milch erneuern": "Rinnova latte tubeless",
-    "Dropper Lower-Post Service": "Service lower-post dropper",
-  },
-  nl: {
-    "Gabel Lower-Leg Service": "Voorvork lower-leg service",
-    "Gabel Vollservice (Feder/Dämpfer)":
-      "Voorvork volledige service (veer/demper)",
-    "Dämpfer Air-Can Service": "Demper air-can service",
-    "Dämpfer Vollservice": "Demper volledige service",
-    "Kettenverschleiß prüfen": "Check kettingslijtage",
-    "Kassette prüfen (nach 2–3 Ketten)":
-      "Check cassette (na 2–3 kettingen)",
-    "Bremsbeläge vorne prüfen": "Check voorremblokken",
-    "Bremsbeläge hinten prüfen": "Check achterremblokken",
-    "Tubeless-Milch erneuern": "Tubeless-melk vernieuwen",
-    "Dropper Lower-Post Service": "Dropper lower-post service",
-  },
-};
-
-const DAYS: Record<ChromeLang, (n: string) => string> = {
-  de: (n) => `${n} Tage`,
-  en: (n) => `${n} days`,
-  fr: (n) => `${n} jours`,
-  it: (n) => `${n} giorni`,
-  nl: (n) => `${n} dagen`,
-};
-
 export function dieBoxCopy(lang: ChromeLang = "de"): DieBoxCopy {
   return BY_LANG[lang];
 }
@@ -706,35 +702,19 @@ export function dieBoxChipLabel(label: string, lang: ChromeLang): string {
       return c.chipPressure;
     case "Cockpit":
       return c.chipCockpit;
+    case "Ausweis":
+      return lang === "en"
+        ? "ID"
+        : lang === "fr"
+          ? "Identité"
+          : lang === "it"
+            ? "Documento"
+            : lang === "nl"
+              ? "Paspoort"
+              : "Ausweis";
     default:
       return label;
   }
-}
-
-function maintIntervalLabel(de: string, lang: ChromeLang): string {
-  return MAINT[lang][de] ?? de;
-}
-
-function maintRemaining(raw: string | undefined, lang: ChromeLang): string {
-  if (!raw) return "";
-  if (raw === "Kein Intervall") {
-    return lang === "en"
-      ? "No interval"
-      : lang === "fr"
-        ? "Pas d’intervalle"
-        : lang === "it"
-          ? "Nessun intervallo"
-          : lang === "nl"
-            ? "Geen interval"
-            : raw;
-  }
-  return raw
-    .split(" · ")
-    .map((part) => {
-      const m = /^(\d+)\s+Tage$/.exec(part.trim());
-      return m ? DAYS[lang](m[1]!) : part.trim();
-    })
-    .join(" · ");
 }
 
 export function localizeDieBoxItem(
@@ -783,7 +763,7 @@ export function localizeDieBoxItem(
       return {
         ...item,
         title: c.sagMissingTitle,
-        hint: c.sagMissingHint,
+        hint: item.slot === "fork" ? c.sagMissingHintFork : c.sagMissingHint,
         cta: c.sagMissingCta,
       };
     case "chainTeach":
@@ -805,7 +785,7 @@ export function localizeDieBoxItem(
       return {
         ...item,
         title: chain ? c.chainDueTitle : maintIntervalLabel(item.title, lang),
-        hint: chain ? c.chainDueHint : maintRemaining(item.hint, lang),
+        hint: chain ? c.chainDueHint : maintRemainingLabel(item.hint ?? "", lang),
         cta: c.done,
       };
     }
@@ -887,7 +867,11 @@ export function lastRideHeroUi(
   if (!ride) return null;
   const km = ride.distanceM / 1000;
   const c = dieBoxCopy(lang);
-  if (Number.isFinite(km) && km >= 0.05) return c.lastRideKm(km.toFixed(1));
+  if (Number.isFinite(km) && km >= 0.05) {
+    const base = c.lastRideKm(km.toFixed(1));
+    const climb = honestClimbM(ride.track, ride.elevationGainM);
+    return climb >= 10 ? `${base} · ${climb} hm` : base;
+  }
   return c.lastRideNoGps;
 }
 
@@ -903,7 +887,8 @@ export function lastRideHeroUiForBike(
 export function dieBoxMeasureSpec(
   kind: "pressure" | "sag" | "travel",
   lang: ChromeLang,
-  pressureUnit?: string
+  pressureUnit?: string,
+  forkOnly = false
 ): { title: string; hint: string; front: string; rear: string; save: string } {
   const c = dieBoxCopy(lang);
   if (kind === "pressure") {
@@ -919,7 +904,7 @@ export function dieBoxMeasureSpec(
   if (kind === "sag") {
     return {
       title: c.sagTitle,
-      hint: c.sagHint,
+      hint: forkOnly ? c.sagHintFork : c.sagHint,
       front: c.sagFork,
       rear: c.sagShock,
       save: c.sagMissingCta,

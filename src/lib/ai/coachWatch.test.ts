@@ -105,6 +105,8 @@ assert(empty.length === 0, "leere Garage → keine Hinweise");
 
 const text = formulateCoachWatch(notices);
 assert(text.length > 10, "Formulierung");
+const emptyEn = formulateCoachWatch([], "en");
+assert(/nothing|due|fine/i.test(emptyEn), emptyEn);
 const set = buildChatRecommendation("watch", "Was steht an?", {
   bikes: [bike],
   rides: [ride],

@@ -10,11 +10,13 @@ export function SagGuidePanel({
   travelFrontMm,
   travelRearMm,
   defaultWeightKg,
+  bikeWeightKg,
 }: {
   category: BikeCategory;
   travelFrontMm?: number;
   travelRearMm?: number;
   defaultWeightKg?: number;
+  bikeWeightKg?: number;
 }) {
   const [weight, setWeight] = useState(defaultWeightKg ?? 75);
   const [gear, setGear] = useState(5);
@@ -25,11 +27,12 @@ export function SagGuidePanel({
       estimateAirPsi({
         riderWeightKg: weight,
         gearWeightKg: gear,
+        bikeWeightKg,
         category,
         end,
         travelMm: end === "fork" ? travelFrontMm : travelRearMm,
       }),
-    [weight, gear, category, end, travelFrontMm, travelRearMm]
+    [weight, gear, bikeWeightKg, category, end, travelFrontMm, travelRearMm]
   );
 
   const steps = sagMeasureSteps(end);
@@ -40,7 +43,7 @@ export function SagGuidePanel({
     <section className="rounded-2xl border border-border bg-surface p-4">
       <h3 className="font-semibold">SAG einstellen</h3>
       <p className="mt-1 text-xs text-text-secondary">
-        Gewicht → Luft-Richtwert → am Bike messen. Quellen: Enduro MTB Mag /
+        Gewicht → Luft-Richtwert → am Rad messen. Quellen: Enduro MTB Mag /
         Simplon / Dirt (SAG-Spannen).
       </p>
 
@@ -93,9 +96,11 @@ export function SagGuidePanel({
         <div className="rounded-xl bg-surface-elevated p-2">
           <div className="tabular-nums text-lg font-bold">
             {estimate.sag.target}%
+            {estimate.sagMm != null ? ` · ${estimate.sagMm}` : ""}
           </div>
           <div className="text-[10px] text-text-secondary">
-            SAG-Ziel ({estimate.sag.min}–{estimate.sag.max})
+            SAG-Ziel ({estimate.sag.min}–{estimate.sag.max}
+            {estimate.sagMm != null ? " %, mm" : ""})
           </div>
         </div>
         <div className="rounded-xl bg-surface-elevated p-2">
@@ -142,6 +147,7 @@ export function SagGuideForBike({
       travelFrontMm={bike.travelFrontMm}
       travelRearMm={bike.travelRearMm}
       defaultWeightKg={defaultWeightKg}
+      bikeWeightKg={bike.weightKg}
     />
   );
 }

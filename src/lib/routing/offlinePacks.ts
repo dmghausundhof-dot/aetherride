@@ -9,6 +9,7 @@ import { constants } from "node:fs";
 import {
   applyPackCdn,
   catalogPackBytes,
+  catalogPackGraphBytes,
   catalogStatus,
   fetchPublishedCatalog,
   isSafePackId,
@@ -29,11 +30,13 @@ export {
   DEFAULT_PACK_CDN_ROOT,
   applyPackCdn,
   catalogPackBytes,
+  catalogPackGraphBytes,
   catalogStatus,
   fetchPublishedCatalog,
   fetchPublishedManifest,
   manifestHasFileEntries,
   mergeCatalogPreferReady,
+  mergeCatalogUnion,
   packCdnRoot,
   parsePublishedCatalog,
   pickPreferredManifest,
@@ -124,6 +127,7 @@ export async function toCatalogRow(
     downloadable: status === "ready",
     status,
     bytes: withCdn ? catalogPackBytes(withCdn) : null,
+    graphBytes: withCdn ? catalogPackGraphBytes(withCdn) : null,
     cdn: status === "ready" ? withCdn?.cdn ?? null : m?.cdn ?? null,
   };
 }

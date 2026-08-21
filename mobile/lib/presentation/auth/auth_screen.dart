@@ -32,6 +32,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   StreamSubscription<AuthState>? _authSub;
   bool _handledOAuthSession = false;
   bool _awaitingOAuth = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -120,6 +121,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       setState(() => _message = e.message);
     } catch (e) {
       setState(() => _message = friendlyErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final l10n = AppLocalizations.of(context);
+    if (!AppConfig.isSupabaseConfigured) {
+      setState(() => _message = l10n.authCloudUnavailable);
+      return;
+    }
+    final email = _email.text.trim();
+    if (email.isEmpty) {
+      setState(() => _message = l10n.authResetNeedEmail);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: '${AppConfig.apiBaseUrl}/anmelden',
+      );
+      if (mounted) setState(() => _message = l10n.authResetSent);
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _message = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _message = friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -341,6 +372,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   border: const OutlineInputBorder(),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                 ),
+                onChanged: (_) {
+                  if (_message != null) setState(() => _message = null);
+                },
               ),
             ),
             const SizedBox(height: 12),
@@ -349,15 +383,31 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               textField: true,
               child: TextField(
                 controller: _password,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 autofillHints: const [AutofillHints.password],
                 decoration: InputDecoration(
                   labelText: l10n.authPassword,
                   hintText: l10n.authPassword,
                   prefixIcon: Icon(Icons.lock_outline, semanticLabel: l10n.authPassword),
+                  suffixIcon: IconButton(
+                    tooltip: _obscurePassword
+                        ? l10n.authPassword
+                        : l10n.authPassword,
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                  ),
                   border: const OutlineInputBorder(),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                 ),
+                onChanged: (_) {
+                  if (_message != null) setState(() => _message = null);
+                },
               ),
             ),
             const SizedBox(height: 16),
@@ -381,6 +431,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 _register ? l10n.authHaveAccount : l10n.authNewHere,
               ),
             ),
+            if (!_register)
+              TextButton(
+                onPressed: _busy ? null : _resetPassword,
+                child: Text(l10n.authForgotPassword),
+              ),
             if (AppConfig.isSupabaseConfigured &&
                 (AppConfig.enableGoogleOAuth ||
                     AppConfig.enableAppleOAuth)) ...[

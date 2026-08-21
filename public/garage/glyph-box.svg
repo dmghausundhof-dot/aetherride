@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Die Box">
+  <title>FlowLine Die Box</title>
+  <path d="M5.2 8.4 L12 5.2 L18.8 8.4 V16.8 C18.8 17.6 18.2 18.2 17.4 18.2 H6.6 C5.8 18.2 5.2 17.6 5.2 16.8 Z" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M5.2 8.4 L12 11.2 L18.8 8.4" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M12 11.2 V18.2" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

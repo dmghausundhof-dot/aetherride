@@ -6,10 +6,6 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { filterHonestLoopSuggestions } from "@/lib/discover/loopHonesty";
 import { berlinLoopSuggestions, berlinSixtyMinLoopSuggestions } from "./berlinLoops";
-import {
-  rheinNeckarLoopSuggestions,
-  rheinNeckarSixtyMinLoopSuggestions,
-} from "./rheinNeckarLoops";
 
 function dedupeById(routes: RouteSuggestion[]): RouteSuggestion[] {
   const seen = new Set<string>();
@@ -28,7 +24,6 @@ export function curatedP0CatalogSuggestions(
 ): RouteSuggestion[] {
   return dedupeById([
     ...berlinLoopSuggestions(near),
-    ...rheinNeckarLoopSuggestions(near),
   ]).sort((a, b) => {
     const da = a.distanceFromOriginKm ?? 1e9;
     const db = b.distanceFromOriginKm ?? 1e9;
@@ -44,7 +39,6 @@ export function curatedSixtyMinLoopSuggestions(
   return filterHonestLoopSuggestions(
     dedupeById([
       ...berlinSixtyMinLoopSuggestions(near),
-      ...rheinNeckarSixtyMinLoopSuggestions(near),
     ])
   ).sort((a, b) => {
     return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);

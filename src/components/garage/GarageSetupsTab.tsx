@@ -1,12 +1,16 @@
 "use client";
 
-import { Settings2 } from "lucide-react";
+import { RadGlyph } from "@/components/garage/RadGlyph";
 import { BracketingPanel } from "@/components/garage/BracketingPanel";
 import { templatesForCategory } from "@/lib/setup/templates";
 import {
-  SETUP_CONDITION_OPTIONS,
   setupConditionLabel,
+  setupConditionOptions,
 } from "@/lib/setup/conditionLabels";
+import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import { presentSetupTemplate } from "@/lib/i18n/setupTemplateCopy";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import type { Bike, SetupCondition } from "@/types";
 
 interface Props {
@@ -17,13 +21,17 @@ interface Props {
   setSetupCondition: (v: SetupCondition) => void;
   createSetup: () => void;
   setCurrentSetup: (bikeId: string, setupId: string) => void;
-  applySetupTemplate: (bikeId: string, templateId: string) => void;
+  applySetupTemplate: (
+    bikeId: string,
+    templateId: string,
+    lang?: import("@/lib/i18n/chromeLang").ChromeLang
+  ) => void;
 }
 
-function formatSetupDate(iso: string): string {
+function formatSetupDate(iso: string, locale: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("de-DE", {
+  return d.toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -40,29 +48,32 @@ export function GarageSetupsTab({
   setCurrentSetup,
   applySetupTemplate,
 }: Props) {
+  const lang = useChromeLang();
+  const tab = garageTabCopy(lang);
+  const dateLoc = chromeDateLocale(lang);
+  const conditions = setupConditionOptions(lang);
   const sorted = [...selected.setups].sort((a, b) => b.version - a.version);
 
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-1 font-semibold">Versionen & Vergleich</h3>
+        <h3 className="mb-1 font-semibold">{tab.setupVersionsTitle}</h3>
         <p className="mb-3 text-xs text-text-secondary">
-          Jede Änderung speichert eine neue Version. Du kannst jederzeit
-          zurückwechseln.
+          {tab.setupVersionsHint}
         </p>
 
         <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <Settings2 className="h-4 w-4 text-accent" />
-          Neue Version
+          <RadGlyph name="setup" size={16} />
+          {tab.setupNew}
         </h4>
         <p className="mb-2 text-xs text-text-secondary">
-          Gib ihr einen Namen, den du wiedererkennst — z. B. „Trail trocken“.
+          {tab.setupNewHint}
         </p>
         <div className="flex flex-col gap-2">
           <input
             value={setupLabel}
             onChange={(e) => setSetupLabel(e.target.value)}
-            placeholder="Name z. B. Bikepark nass"
+            placeholder={tab.setupNamePlaceholder}
             className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
           />
           <select
@@ -72,7 +83,7 @@ export function GarageSetupsTab({
             }
             className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
           >
-            {SETUP_CONDITION_OPTIONS.map((c) => (
+            {conditions.map((c) => (
               <option key={c.value} value={c.value}>
                 {c.label}
               </option>
@@ -83,17 +94,16 @@ export function GarageSetupsTab({
             onClick={createSetup}
             className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
           >
-            Version speichern
+            {tab.setupSave}
           </button>
         </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-2 font-semibold">Gespeicherte Versionen</h3>
+        <h3 className="mb-2 font-semibold">{tab.setupSaved}</h3>
         {sorted.length === 0 ? (
           <p className="text-xs text-text-secondary">
-            Noch keine Version — starte mit einer Vorlage oder speichere deine
-            Einstellungen.
+            {tab.setupEmpty}
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -112,19 +122,19 @@ export function GarageSetupsTab({
                   <div className="font-medium">{setup.label}</div>
                   {setup.isCurrent ? (
                     <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-on-accent">
-                      Aktiv
+                      {tab.active}
                     </span>
                   ) : (
                     <span className="text-[11px] font-medium text-accent">
-                      Nutzen
+                      {tab.use}
                     </span>
                   )}
                 </div>
                 <p className="mt-1 text-xs text-text-secondary">
                   {[
-                    `Version ${setup.version}`,
-                    formatSetupDate(setup.createdAt),
-                    setupConditionLabel(setup.conditions),
+                    tab.setupVersion(setup.version),
+                    formatSetupDate(setup.createdAt, dateLoc),
+                    setupConditionLabel(setup.conditions, lang),
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -151,20 +161,22 @@ export function GarageSetupsTab({
       <BracketingPanel bike={selected} />
 
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-2 font-semibold">Vorlagen zum Start</h3>
+        <h3 className="mb-2 font-semibold">{tab.setupTemplates}</h3>
         <p className="mb-2 text-xs text-text-secondary">
-          Ausgangspunkt — keine persönliche Empfehlung.
+          {tab.setupTemplatesHint}
         </p>
         <div className="flex flex-col gap-2">
-          {templatesForCategory(selected.category).map((tpl) => (
+          {templatesForCategory(selected.category).map((tpl) => {
+            const presented = presentSetupTemplate(tpl.id, lang, tpl);
+            return (
             <button
               key={tpl.id}
               type="button"
-              onClick={() => applySetupTemplate(selected.id, tpl.id)}
+              onClick={() => applySetupTemplate(selected.id, tpl.id, lang)}
               className="rounded-xl border border-border bg-surface-elevated p-3 text-left text-sm"
             >
-              <div className="font-medium">{tpl.label}</div>
-              <div className="mt-1 text-[11px] text-warning">{tpl.disclaimer}</div>
+              <div className="font-medium">{presented.label}</div>
+              <div className="mt-1 text-[11px] text-warning">{presented.disclaimer}</div>
               <a
                 href={tpl.sourceUrl}
                 target="_blank"
@@ -175,7 +187,8 @@ export function GarageSetupsTab({
                 {tpl.sourceLabel}
               </a>
             </button>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

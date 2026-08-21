@@ -75,6 +75,24 @@ function medianCrossTrackM(
   return ds[Math.floor(ds.length / 2)] ?? Infinity;
 }
 
+/** Ride scale from OSM `mtb:scale` — not an untagged farm track. */
+export function trailHasRideScale(difficulty?: string): boolean {
+  return /S[0-3]/i.test(difficulty ?? "");
+}
+
+/**
+ * Cycleway / bridleway, or a way with a real MTB scale.
+ * Untagged path/track is usually a farm or field path.
+ */
+export function trailIsCorridorEligible(trail: {
+  highway?: string;
+  difficulty?: string;
+}): boolean {
+  const hw = (trail.highway ?? "").toLowerCase();
+  if (hw === "cycleway" || hw === "bridleway") return true;
+  return trailHasRideScale(trail.difficulty);
+}
+
 function highwayOk(profile: RoutingProfile, highway?: string): boolean {
   const hw = (highway ?? "").toLowerCase();
   if (profile === "urban" || profile === "ebike") {
@@ -278,8 +296,13 @@ export function pickTrailAlongRoute(opts: {
   const routeM = Math.max(opts.route.distanceM, lineLengthM(routeCoords));
   if (routeM < 400) return null;
 
-  const destHits = opts.trails.filter((t) => destLiesOnTrail(t, opts.to, 40));
-  const pool = destHits.length ? destHits : opts.trails;
+  const destHits = opts.trails.filter(
+    (t) => destLiesOnTrail(t, opts.to, DEST_ON_TRAIL_M) && trailIsCorridorEligible(t),
+  );
+  // Pin in a field: do not fish S-trails along the A–B (that cuts through
+  // meadows). Last-mile only when the rider’s dest sits on the trail.
+  if (!destHits.length) return null;
+  const pool = destHits;
 
   let best: { trail: TrailSegment; score: number } | null = null;
 
@@ -287,6 +310,7 @@ export function pickTrailAlongRoute(opts: {
     const rawCoords = (raw.geometry?.coordinates ?? []) as [number, number][];
     if (rawCoords.length < 2) continue;
     if (!trailFitsProfile(opts.profile, raw)) continue;
+    if (!trailIsCorridorEligible(raw)) continue;
 
     const onDest = destHits.length > 0;
     let coords = orientTowardFrom(rawCoords, opts.from);
@@ -464,12 +488,29 @@ function closeEnough(
 
 export type CorridorKind = "trail" | "cycleway";
 
+const GENERIC_CORRIDOR_NAMES = new Set([
+  "pfad",
+  "path",
+  "trail",
+  "footway",
+  "track",
+  "radweg",
+  "cycleway",
+  "weg",
+]);
+
+export function isGenericCorridorName(name: string): boolean {
+  return GENERIC_CORRIDOR_NAMES.has(name.trim().toLowerCase());
+}
+
 function corridorAnnounce(trail: TrailSegment, kind: CorridorKind) {
   if (kind === "cycleway") {
     const name = trail.name.trim() || "Radweg";
     const spoken = /^radweg\b/i.test(name) ? name : `Radweg ${name}`;
     return {
-      warning: `Radweg „${name}“ in die Navi übernommen.`,
+      warning: isGenericCorridorName(name)
+        ? undefined
+        : `Radweg „${name}“ in die Navi übernommen.`,
       enter: spoken,
       leave: `Ende ${name}`,
       enterEn: spoken,
@@ -478,7 +519,9 @@ function corridorAnnounce(trail: TrailSegment, kind: CorridorKind) {
   }
   const name = trail.name.trim() || "Trail";
   return {
-    warning: `Trail „${name}“ in die Navi übernommen.`,
+    warning: isGenericCorridorName(name)
+      ? undefined
+      : `Trail „${name}“ in die Navi übernommen.`,
     enter: `Trail ${name}`,
     leave: `Ende ${name}`,
     enterEn: `Trail ${name}`,
@@ -606,7 +649,10 @@ export function spliceTrailIntoRoute<T extends CorridorRouteShape>(
   };
 
   const warnings = announce
-    ? [labels.warning, ...(route.warnings ?? []).filter(dropStaleRoadWarnings)]
+    ? [
+        ...(labels.warning ? [labels.warning] : []),
+        ...(route.warnings ?? []).filter(dropStaleRoadWarnings),
+      ]
     : [...(route.warnings ?? []).filter(dropStaleRoadWarnings)];
 
   return {
@@ -626,7 +672,9 @@ export function applyCorridorTrailSnap<T extends CorridorRouteShape>(opts: {
   route: T;
   trails: TrailSegment[];
 }): T {
-  const destHits = opts.trails.filter((t) => destLiesOnTrail(t, opts.to, 40));
+  const destHits = opts.trails.filter(
+    (t) => destLiesOnTrail(t, opts.to, DEST_ON_TRAIL_M) && trailIsCorridorEligible(t),
+  );
   if (destHits.length) {
     let best: { trail: TrailSegment; joinOff: number } | null = null;
     for (const raw of destHits) {
@@ -717,6 +765,16 @@ export function viaMaySnapOntoTrail(label?: string | null): boolean {
   if (!t) return true;
   if (/^-?\d+[.,]\d+/.test(t)) return true;
   return false;
+}
+
+/** Vias may snap onto a path / tagged trail — never an untagged farm track. */
+export function trailsForViaSnap(
+  trails: TrailSegment[],
+): [number, number][][] {
+  return trails
+    .filter((t) => trailIsCorridorEligible(t))
+    .map((t) => (t.geometry?.coordinates ?? []) as [number, number][])
+    .filter((coords) => coords.length >= 2);
 }
 
 /** Snap a via/place onto the nearest trail. Unchanged if none within maxOffM. */

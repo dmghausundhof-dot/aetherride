@@ -477,7 +477,14 @@ class TourCommunityStore {
               if (review.difficultyDelta != null)
                 'difficultyDelta': review.difficultyDelta,
               'photos': [
-                for (final path in photoPaths) {'storagePath': path},
+                for (final path in photoPaths)
+                  {
+                    'storagePath': path,
+                    if (review.pinLat != null && review.pinLng != null) ...{
+                      'lat': review.pinLat,
+                      'lng': review.pinLng,
+                    },
+                  },
               ],
             }),
           )

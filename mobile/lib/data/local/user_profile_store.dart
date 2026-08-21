@@ -8,6 +8,8 @@ import '../../domain/bike.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/ai/coach_inbox.dart';
 import '../../domain/ai/coach_watch.dart';
+import '../../domain/garage/bike_receipt.dart';
+import '../../domain/garage/pressure_unit.dart';
 import '../../domain/rider_profile.dart';
 
 /// Persistiert Rider-Profil + Familien-Fahrer (Sync-fähig).
@@ -17,6 +19,9 @@ class UserProfileStore {
   RiderProfile riderProfile = const RiderProfile();
   List<FamilyRider> familyRiders = [];
   String? activeFamilyRiderId;
+
+  /// bikeId → last setup while "Ich" was selected.
+  Map<String, String> ownSetupByBikeId = {};
   String? displayName;
   String?
       bikePhotoPath; // active bike local photo override path map via bikePhotos
@@ -27,6 +32,12 @@ class UserProfileStore {
   Map<String, String> bikePhotos = {}; // bikeId → local path oder https-URL
   /// Pending local paths still needing Storage-Upload (bikeId → path).
   Map<String, String> bikePhotoPending = {};
+
+  /// bikeId → photo ref that already matches the stand strip (skip re-encode).
+  Map<String, String> bikePhotoStandCropped = {};
+
+  /// Grok-Rohtext vom Foto (bikeId → „Canyon Spectral · Fox 36 Grip2“).
+  Map<String, String> bikeGrokReads = {};
   List<String> wishlistIds = []; // catalog / shop ids
   List<Map<String, dynamic>> chatHistory = [];
   Map<String, CoachMeta> coachMeta = {};
@@ -35,6 +46,7 @@ class UserProfileStore {
   String commerceMode = 'affiliate';
   RangeCalibration? rangeCalibration;
   List<Map<String, dynamic>> maintenanceLogs = [];
+  List<BikeReceipt> bikeReceipts = [];
 
   /// Einmaliges Onboarding (Sport → Gewicht → erster Ride / Garage).
   bool onboardingDone = false;
@@ -44,6 +56,9 @@ class UserProfileStore {
 
   /// Alle gewählten Disziplinen inkl. Haupt. Nie ohne Haupt, wenn gesetzt.
   List<BikeCategory> preferredSports = [];
+
+  /// Reifendruck: Auto nach Kategorie, oder fest bar/psi.
+  PressureUnitPref pressureUnitPref = PressureUnitPref.auto;
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -65,6 +80,10 @@ class UserProfileStore {
           if (e is Map) FamilyRider.fromJson(Map<String, dynamic>.from(e)),
       ];
       activeFamilyRiderId = m['activeFamilyRiderId'] as String?;
+      ownSetupByBikeId = {
+        for (final e in (m['ownSetupByBikeId'] as Map? ?? {}).entries)
+          e.key.toString(): e.value.toString(),
+      };
       displayName = m['displayName'] as String?;
       profilePhotoPath = m['profilePhotoPath'] as String?;
       bikePhotos = {
@@ -74,6 +93,15 @@ class UserProfileStore {
       bikePhotoPending = {
         for (final e in (m['bikePhotoPending'] as Map? ?? {}).entries)
           e.key.toString(): e.value.toString(),
+      };
+      bikePhotoStandCropped = {
+        for (final e in (m['bikePhotoStandCropped'] as Map? ?? {}).entries)
+          e.key.toString(): e.value.toString(),
+      };
+      bikeGrokReads = {
+        for (final e in (m['bikeGrokReads'] as Map? ?? {}).entries)
+          if (e.value.toString().trim().isNotEmpty)
+            e.key.toString(): e.value.toString().trim(),
       };
       wishlistIds = [
         for (final e in (m['wishlistIds'] as List? ?? const []))
@@ -103,9 +131,14 @@ class UserProfileStore {
         for (final e in (m['maintenanceLogs'] as List? ?? const []))
           if (e is Map) Map<String, dynamic>.from(e),
       ];
+      bikeReceipts = [
+        for (final e in (m['bikeReceipts'] as List? ?? const []))
+          if (e is Map) BikeReceipt.fromJson(Map<String, dynamic>.from(e)),
+      ];
       onboardingDone = m.containsKey('onboardingDone')
           ? m['onboardingDone'] == true
           : true; // Legacy: bestehende Profile ohne Key nicht erneut onboarden
+      pressureUnitPref = pressureUnitPrefFrom(m['pressureUnitPref'] as String?);
       applyPreferredFromJson(m);
     } catch (_) {}
   }
@@ -117,10 +150,13 @@ class UserProfileStore {
         'riderProfile': riderProfile.toJson(),
         'familyRiders': [for (final r in familyRiders) r.toJson()],
         'activeFamilyRiderId': activeFamilyRiderId,
+        'ownSetupByBikeId': ownSetupByBikeId,
         'displayName': displayName,
         if (profilePhotoPath != null) 'profilePhotoPath': profilePhotoPath,
         'bikePhotos': bikePhotos,
         'bikePhotoPending': bikePhotoPending,
+        'bikePhotoStandCropped': bikePhotoStandCropped,
+        'bikeGrokReads': bikeGrokReads,
         'wishlistIds': wishlistIds,
         'chatHistory': chatHistory,
         'coachMeta': {
@@ -130,7 +166,9 @@ class UserProfileStore {
         if (rangeCalibration != null)
           'rangeCalibration': rangeCalibration!.toJson(),
         'maintenanceLogs': maintenanceLogs,
+        'bikeReceipts': [for (final r in bikeReceipts) r.toJson()],
         'onboardingDone': onboardingDone,
+        'pressureUnitPref': pressureUnitPref.name,
         ...preferredSportsJson(),
       }),
     );
@@ -214,6 +252,18 @@ class UserProfileStore {
     normalizePreferredSports();
   }
 
+  /// Nach einem neuen Rad: leeres Profil bekommt die Kategorie als Haupt,
+  /// sonst wird sie nur in die Liste aufgenommen.
+  void adoptBikeCategory(BikeCategory category, {required bool makePrimary}) {
+    if (preferredSport == null || makePrimary) {
+      setPrimarySport(category);
+      return;
+    }
+    if (!prefersSport(category)) {
+      togglePreferredSport(category);
+    }
+  }
+
   bool prefersSport(BikeCategory sport) => preferredSports.contains(sport);
 
   Future<void> markOnboardingDone({
@@ -255,6 +305,27 @@ class UserProfileStore {
     await save();
   }
 
+  Future<void> rememberOwnSetup(String bikeId, String setupId) async {
+    if (bikeId.isEmpty || setupId.isEmpty) return;
+    ownSetupByBikeId = {...ownSetupByBikeId, bikeId: setupId};
+    await save();
+  }
+
+  String? ownSetupFor(String bikeId) => ownSetupByBikeId[bikeId];
+
+  Future<void> assignSetupToActiveRider(String setupId) async {
+    final id = activeFamilyRiderId;
+    if (id == null || setupId.isEmpty) return;
+    familyRiders = [
+      for (final r in familyRiders)
+        if (r.id == id && !r.setupIds.contains(setupId))
+          r.copyWith(setupIds: [...r.setupIds, setupId])
+        else
+          r,
+    ];
+    await save();
+  }
+
   Future<void> setCommerceMode(String mode) async {
     if (mode != 'affiliate' && mode != 'marketplace') return;
     commerceMode = mode;
@@ -290,6 +361,31 @@ class UserProfileStore {
     await save();
   }
 
+  List<BikeReceipt> receiptsForBike(String bikeId) =>
+      bikeReceipts.where((r) => r.bikeId == bikeId).toList();
+
+  Future<void> upsertReceipt(BikeReceipt receipt) async {
+    final next = [
+      for (final r in bikeReceipts)
+        if (r.id != receipt.id) r,
+    ];
+    next.insert(0, receipt);
+    if (next.length > 80) {
+      bikeReceipts = next.sublist(0, 80);
+    } else {
+      bikeReceipts = next;
+    }
+    await save();
+  }
+
+  Future<void> deleteReceipt(String id) async {
+    bikeReceipts = [
+      for (final r in bikeReceipts)
+        if (r.id != id) r
+    ];
+    await save();
+  }
+
   /// Gewicht des aktiven Familien-Fahrers oder eigenes Rider-Gewicht.
   double get effectiveWeightKg {
     final id = activeFamilyRiderId;
@@ -301,6 +397,13 @@ class UserProfileStore {
     return riderProfile.riderWeightKg;
   }
 
+  Future<void> setBikeGrokRead(String bikeId, String text) async {
+    final t = text.trim();
+    if (t.isEmpty) return;
+    bikeGrokReads[bikeId] = t.length > 400 ? t.substring(0, 400) : t;
+    await save();
+  }
+
   Future<void> setBikePhoto(String bikeId, String path) async {
     bikePhotos[bikeId] = path;
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -308,6 +411,15 @@ class UserProfileStore {
     } else {
       bikePhotoPending[bikeId] = path;
     }
+    await save();
+  }
+
+  bool isBikePhotoStandCropped(String bikeId, String ref) =>
+      bikePhotoStandCropped[bikeId] == ref;
+
+  Future<void> markBikePhotoStandCropped(String bikeId, String ref) async {
+    if (bikeId.isEmpty || ref.isEmpty) return;
+    bikePhotoStandCropped = {...bikePhotoStandCropped, bikeId: ref};
     await save();
   }
 
@@ -393,27 +505,39 @@ class UserProfileStore {
     riderProfile = const RiderProfile();
     familyRiders = [];
     activeFamilyRiderId = null;
+    ownSetupByBikeId = {};
     displayName = null;
     profilePhotoPath = null;
     bikePhotos = {};
     bikePhotoPending = {};
+    bikePhotoStandCropped = {};
+    bikeGrokReads = {};
     wishlistIds = [];
     chatHistory = [];
     coachMeta = {};
     commerceMode = 'affiliate';
     rangeCalibration = null;
     maintenanceLogs = [];
+    bikeReceipts = [];
     onboardingDone = false;
     preferredSport = null;
     preferredSports = [];
+    pressureUnitPref = PressureUnitPref.auto;
     await save();
   }
 }
 
 BikeCategory? bikeCategoryFromName(String? name) {
   if (name == null || name.isEmpty) return null;
+  final raw = name.trim();
   for (final c in BikeCategory.values) {
-    if (c.name == name) return c;
+    if (c.name == raw) return c;
+  }
+  // Web writes snake_case (`mtb_am`); Dart enums are camelCase (`mtbAm`).
+  String norm(String s) => s.replaceAll('_', '').toLowerCase();
+  final needle = norm(raw);
+  for (final c in BikeCategory.values) {
+    if (norm(c.name) == needle) return c;
   }
   return null;
 }

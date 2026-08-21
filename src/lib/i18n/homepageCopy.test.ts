@@ -60,6 +60,16 @@ function testParity() {
     assert.equal(h.voices.kicker, "Stimmen", `${lang} Stimmen stays brand`);
     assert.ok(h.ui.heroLead("X").includes("X"));
     assert.ok(!JSON.stringify(h.honesty).includes("Musterstraße"), lang);
+    const offlineApp = h.appSurfaces.find((s) =>
+      /offline|hors ligne/i.test(s.title),
+    );
+    assert.ok(offlineApp, `${lang} offline app surface`);
+    assert.match(offlineApp!.body, /pack/i, `${lang} pack not region`);
+    assert.doesNotMatch(
+      offlineApp!.body,
+      /\b(region|région|regio)\b/i,
+      `${lang} no region noun`,
+    );
   }
 }
 

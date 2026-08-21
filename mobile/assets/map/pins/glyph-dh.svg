@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 26" width="48" height="26" role="img" aria-label="dh">
+  <title>FlowLine dh</title>
+  <circle cx="10" cy="18" r="7.1" fill="#3A4046"/><circle cx="10" cy="18" r="2.84" fill="#F4F1EC"/><circle cx="38" cy="18" r="7.1" fill="#3A4046"/><circle cx="38" cy="18" r="2.84" fill="#F4F1EC"/><path d="M10 18 L21.2 18 L24.8 4.2 L33.4 10.2 L21.2 18" fill="none" stroke="#3A4046" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.8 4.2 L38 18" fill="none" stroke="#3A4046" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.8 4.2 L24.8 1.8 H36.2" fill="none" stroke="#3A4046" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="26.6" y="5.6" width="8.4" height="4.6" rx="0.8" fill="#FF6A00"/>
+</svg>

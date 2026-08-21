@@ -28,11 +28,15 @@ void main() {
     expect(de.mappeEmptyTitle, 'Noch keine Linie');
     expect(de.noTrackLabel, 'Kein Track');
     expect(de.loopTag, 'Runde');
+    expect(de.mappeShowAll, 'Alle zeigen');
+    expect(de.mappeKeepOnMap, 'Auf der Karte merken');
+    expect(de.akteMein, 'Akte');
     expect(de.mappeInviteFriends, 'Freunde mitnehmen');
     expect(de.platzTogetherKicker, isNot(de.platzTogetherKicker.toUpperCase()));
     expect(de.filterVisibilityPublic, 'Freigegeben');
     expect(de.platzPinsOff, contains('Freunde'));
-    expect(de.platzHostCannotSee, contains('Host sieht dich nicht'));
+    expect(de.platzHostCannotSee, contains('Gastgeber sieht dich nicht'));
+    expect(de.platzHostCannotSee, isNot(contains('Host sieht')));
     expect(de.platzInviteAsYou, contains('als Du'));
     expect(de.postRideStimmePrivate, contains('privat'));
     expect(de.platzTogetherHint, contains('Deine Gruppen bleiben'));
@@ -42,11 +46,18 @@ void main() {
     expect(de.platzJoinLocal('Bodensee'), contains('Nur auf diesem Gerät'));
     expect(de.platzJoinLocal('Bodensee'), isNot(contains('Lokal dabei')));
     expect(de.platzJoinLocalCta, 'Auf diesem Gerät merken');
-    expect(de.platzJoinUnsignedHint, contains('sieht der Host dich nicht'));
+    expect(de.platzJoinUnsignedHint, contains('sieht der Gastgeber dich nicht'));
     expect(de.platzJoinWithCode, 'Verbinden');
     expect(de.platzConnectField, contains('Code'));
-    expect(de.platzJoinSignInFirst, contains('sieht der Host dich nicht'));
+    expect(de.platzJoinSignInFirst, contains('sieht der Gastgeber dich nicht'));
     expect(de.rideGroupHudSelfOn('noch 2 h'), 'Du teilst · noch 2 h');
+    expect(de.hofRideGroupHint, contains('Karte auf Touren'));
+    expect(de.platzJoinPrivateCode, contains('Einladungslink'));
+    expect(de.platzJoinExpired, contains('Fenster zu'));
+    expect(de.platzJoinClosed, contains('aufgelöst'));
+    expect(de.platzJoinUnknown, contains('Einladungslink'));
+    expect(de.platzShareInRide, 'Teilen in der Fahrt');
+    expect(de.platzTimeTapHint, 'Tippen zum Ändern');
     expect(de.stimmenShareNeedRelease, contains('Freigeben'));
     expect(de.stimmenShareNeedRelease, isNot(contains('Mein')));
     expect(de.akteHonestyCatalog, contains('freigegeben'));
@@ -73,7 +84,10 @@ void main() {
     expect(de.platzGroupListedNote, contains('Sichtbar gelistet'));
     expect(de.platzGroupPrivateHint, contains('Nicht gelistet'));
     expect(de.myRouteNotesHint, isNot(contains('Öffentlich')));
-    expect(de.myRouteNotesHint, contains('unter Tipps'));
+    expect(de.myRouteNotesHint, contains('unter Stimmen'));
+    expect(de.stimmenTitle, 'Stimmen');
+    expect(de.mappeKeepName, 'Nur den Namen merken');
+    expect(de.mappeRename, 'Umbenennen');
     expect(de.postRideOrtHint, isNot(contains('Öffentlich')));
     expect(de.postRideOrtHint, contains('Auf der Karte'));
     expect(de.stimmenStatusPending, 'In Prüfung');
@@ -99,6 +113,9 @@ void main() {
     expect(en.mappeEmptyTitle, 'No line yet');
     expect(en.noTrackLabel, 'No track');
     expect(en.loopTag, 'Loop');
+    expect(en.akteMein, 'Akte');
+    expect(en.discoverPeekAkte, 'Akte');
+    expect(en.stimmeInboxUntitled, 'Voice');
 
     late AppLocalizations fr;
     await tester.pumpWidget(
@@ -116,6 +133,11 @@ void main() {
     );
     expect(fr.platzTogetherKicker, 'Groupe');
     expect(fr.platzCollectionsKicker, 'Collections');
+    expect(fr.akteMein, 'Akte');
+    expect(fr.discoverPeekAkte, 'Akte');
+    expect(fr.platzHost, 'Hôte');
+    expect(fr.platzJoinPrivateCode, contains('lien d’invitation'));
+    expect(fr.hofRideGroupHint, contains('carte'));
 
     late AppLocalizations it;
     await tester.pumpWidget(
@@ -133,5 +155,7 @@ void main() {
     );
     expect(it.platzTogetherKicker, 'Gruppo');
     expect(it.platzCollectionsKicker, 'Raccolte');
+    expect(it.akteMein, 'Akte');
+    expect(it.platzHost, 'Organizzatore');
   });
 }

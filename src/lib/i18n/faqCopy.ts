@@ -31,7 +31,7 @@ const EN: FaqItem[] = [
   {
     id: "web-app",
     q: "What runs in the browser, what in the app?",
-    a: "On the web: Home, Map, planning, Platz, workshop. In the app: Ride HUD, offline packs, GPS recording, sensors and watch. There is no live navigation in the tab.",
+    a: "On the web: Home, Map, planning, Tours, Bike. In the app: Ride HUD, offline routing, GPS recording, sensors and watch. There is no live navigation in the tab.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -46,7 +46,7 @@ const EN: FaqItem[] = [
   {
     id: "ohne-app",
     q: "Does FlowLine work only in the browser?",
-    a: "Planning, Map, Platz and workshop: yes. Navigation, offline, GPS recording, sensors and watch need the native app. There is no live navigation in the tab — and no dummy that pretends there is.",
+    a: "Planning, Map, Tours and Bike: yes. Navigation, offline, GPS recording, sensors and watch need the native app. There is no live navigation in the tab — and no dummy that pretends there is.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -90,8 +90,8 @@ const EN: FaqItem[] = [
   {
     id: "shop",
     q: "Can I buy spare parts here?",
-    a: "No. The shop and Shopify are off for now. The workshop stays for the bike, setup and service — no till in FlowLine.",
-    links: [{ href: "/garage", label: "Workshop" }],
+    a: "No. The shop and Shopify are off for now. The bike stays for setup and service — no till in FlowLine.",
+    links: [{ href: "/garage", label: "Bike" }],
   },
   {
     id: "regionen",
@@ -112,7 +112,7 @@ const EN: FaqItem[] = [
   {
     id: "app-stores",
     q: "Where do I get the app?",
-    a: "Store links appear once the listings are live. Until then Home, Map, Platz and workshop run in the browser. HUD, offline and sensors come with the native app.",
+    a: "Store links appear once the listings are live. Until then Home, Map, Tours and the bike run in the browser. HUD, offline and sensors come with the native app.",
     links: [{ href: "/download", label: "App" }],
   },
   {
@@ -149,7 +149,7 @@ const FR: FaqItem[] = [
   {
     id: "web-app",
     q: "Qu’est-ce qui tourne dans le navigateur, qu’est-ce qui tourne dans l’appli ?",
-    a: "Sur le web : Home, Carte, planifier, Platz, atelier. Dans l’appli : Ride-HUD, packs hors ligne, enregistrement GPS, capteurs et montre. Il n’y a pas de navigation live dans l’onglet.",
+    a: "Sur le web : Home, Carte, planifier, Parcours, Vélo. Dans l’appli : Ride-HUD, routage hors ligne, enregistrement GPS, capteurs et montre. Il n’y a pas de navigation live dans l’onglet.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide : Web vs. App" },
       { href: "/download", label: "App" },
@@ -164,7 +164,7 @@ const FR: FaqItem[] = [
   {
     id: "ohne-app",
     q: "FlowLine marche seulement dans le navigateur ?",
-    a: "Planifier, Carte, Platz et atelier : oui. Navigation, hors ligne, enregistrement GPS, capteurs et montre ont besoin de l’appli native. Il n’y a pas de navigation live dans l’onglet — et pas de simulacre qui fait semblant.",
+    a: "Planifier, Carte, Parcours et Vélo : oui. Navigation, hors ligne, enregistrement GPS, capteurs et montre ont besoin de l’appli native. Il n’y a pas de navigation live dans l’onglet — et pas de simulacre qui fait semblant.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide : Web vs. App" },
       { href: "/download", label: "App" },
@@ -208,8 +208,8 @@ const FR: FaqItem[] = [
   {
     id: "shop",
     q: "Est-ce que je peux acheter des pièces ici ?",
-    a: "Non. Le magasin et Shopify sont coupés pour l’instant. L’atelier reste pour le vélo, le setup et l’entretien — pas de caisse dans FlowLine.",
-    links: [{ href: "/garage", label: "Atelier" }],
+    a: "Non. Le magasin et Shopify sont coupés pour l’instant. Le vélo reste pour le setup et l’entretien — pas de caisse dans FlowLine.",
+    links: [{ href: "/garage", label: "Vélo" }],
   },
   {
     id: "regionen",
@@ -230,7 +230,7 @@ const FR: FaqItem[] = [
   {
     id: "app-stores",
     q: "Où je charge l’appli ?",
-    a: "Les liens store apparaissent dès que les listings sont en ligne. Jusque-là Home, Carte, Platz et atelier tournent dans le navigateur. HUD, hors ligne et capteurs viennent avec l’appli native.",
+    a: "Les liens store apparaissent dès que les listings sont en ligne. Jusque-là Home, Carte, Parcours et le vélo tournent dans le navigateur. HUD, hors ligne et capteurs viennent avec l’appli native.",
     links: [{ href: "/download", label: "App" }],
   },
   {
@@ -267,7 +267,7 @@ const IT: FaqItem[] = [
   {
     id: "web-app",
     q: "Cosa gira nel browser, cosa nell’app?",
-    a: "Sul web: Home, Mappa, pianifica, Platz, officina. Nell’app: Ride-HUD, pack offline, registrazione GPS, sensori e orologio. Non c’è navigazione live nel tab.",
+    a: "Sul web: Home, Mappa, pianifica, Percorsi, Bici. Nell’app: Ride-HUD, routing offline, registrazione GPS, sensori e orologio. Non c’è navigazione live nel tab.",
     links: [
       { href: "/guides/web-vs-app", label: "Guida: Web vs. App" },
       { href: "/download", label: "App" },
@@ -282,7 +282,7 @@ const IT: FaqItem[] = [
   {
     id: "ohne-app",
     q: "FlowLine funziona solo nel browser?",
-    a: "Pianificare, Mappa, Platz e officina: sì. Navigazione, offline, registrazione GPS, sensori e orologio hanno bisogno dell’app nativa. Non c’è navigazione live nel tab — e nessun finto che faccia finta.",
+    a: "Pianificare, Mappa, Percorsi e Bici: sì. Navigazione, offline, registrazione GPS, sensori e orologio hanno bisogno dell’app nativa. Non c’è navigazione live nel tab — e nessun finto che faccia finta.",
     links: [
       { href: "/guides/web-vs-app", label: "Guida: Web vs. App" },
       { href: "/download", label: "App" },
@@ -326,8 +326,8 @@ const IT: FaqItem[] = [
   {
     id: "shop",
     q: "Posso comprare ricambi qui?",
-    a: "No. Il negozio e Shopify sono spenti per ora. L’officina resta per bici, setup e manutenzione — niente cassa in FlowLine.",
-    links: [{ href: "/garage", label: "Officina" }],
+    a: "No. Il negozio e Shopify sono spenti per ora. La bici resta per setup e manutenzione — niente cassa in FlowLine.",
+    links: [{ href: "/garage", label: "Bici" }],
   },
   {
     id: "regionen",
@@ -348,7 +348,7 @@ const IT: FaqItem[] = [
   {
     id: "app-stores",
     q: "Dove scarico l’app?",
-    a: "I link store compaiono quando i listing sono live. Fino ad allora Home, Mappa, Platz e officina girano nel browser. HUD, offline e sensori arrivano con l’app nativa.",
+    a: "I link store compaiono quando i listing sono live. Fino ad allora Home, Mappa, Percorsi e la bici girano nel browser. HUD, offline e sensori arrivano con l’app nativa.",
     links: [{ href: "/download", label: "App" }],
   },
   {
@@ -385,7 +385,7 @@ const NL: FaqItem[] = [
   {
     id: "web-app",
     q: "Wat draait in de browser, wat in de app?",
-    a: "Op het web: Home, Kaart, plannen, Platz, werkplaats. In de app: Ride-HUD, offline-packs, GPS-registratie, sensoren en horloge. Live-navigatie in de tab is er niet.",
+    a: "Op het web: Home, Kaart, plannen, Tochten, Fiets. In de app: Ride-HUD, offline-routing, GPS-registratie, sensoren en horloge. Live-navigatie in de tab is er niet.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -400,7 +400,7 @@ const NL: FaqItem[] = [
   {
     id: "ohne-app",
     q: "Werkt FlowLine alleen in de browser?",
-    a: "Plannen, Kaart, Platz en werkplaats: ja. Navigatie, offline, GPS-registratie, sensoren en horloge hebben de native app nodig. Live-navigatie in de tab is er niet — en geen namaak die dat veinst.",
+    a: "Plannen, Kaart, Tochten en Fiets: ja. Navigatie, offline, GPS-registratie, sensoren en horloge hebben de native app nodig. Live-navigatie in de tab is er niet — en geen namaak die dat veinst.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -444,8 +444,8 @@ const NL: FaqItem[] = [
   {
     id: "shop",
     q: "Kan ik hier onderdelen kopen?",
-    a: "Nee. De winkel en Shopify staan voorlopig uit. De werkplaats blijft voor fiets, setup en onderhoud — geen kassa in FlowLine.",
-    links: [{ href: "/garage", label: "Werkplaats" }],
+    a: "Nee. De winkel en Shopify staan voorlopig uit. De fiets blijft voor setup en onderhoud — geen kassa in FlowLine.",
+    links: [{ href: "/garage", label: "Fiets" }],
   },
   {
     id: "regionen",
@@ -466,7 +466,7 @@ const NL: FaqItem[] = [
   {
     id: "app-stores",
     q: "Waar haal ik de app?",
-    a: "Store-links verschijnen zodra de listings live zijn. Tot dan draaien Home, Kaart, Platz en werkplaats in de browser. HUD, offline en sensoren komen met de native app.",
+    a: "Store-links verschijnen zodra de listings live zijn. Tot dan draaien Home, Kaart, Tochten en de fiets in de browser. HUD, offline en sensoren komen met de native app.",
     links: [{ href: "/download", label: "App" }],
   },
   {

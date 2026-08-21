@@ -3,7 +3,9 @@
  */
 import assert from "node:assert/strict";
 import {
+  cinemaPlaceQuery,
   geocodeHitScore,
+  isCinemaQuery,
   nameMatchesQuery,
   rankGeocodeHits,
 } from "./photonRank";
@@ -42,6 +44,36 @@ assert.ok(
       lng: 6.67,
       kind: "city",
     })
+);
+
+assert.equal(isCinemaQuery("Walldorf Kino"), true);
+assert.equal(cinemaPlaceQuery("Walldorf Kino"), "Walldorf");
+
+const nearLuxor = rankGeocodeHits(
+  "Walldorf Kino",
+  [
+    {
+      label:
+        "Lichtblick - Walldorfer Kinotreff, Mörfelder Straße, 20, 64546, Walldorf, Hessen, Deutschland",
+      lat: 49.9998755,
+      lng: 8.5708116,
+      kind: "house",
+      name: "Lichtblick - Walldorfer Kinotreff",
+    },
+    {
+      label:
+        "Luxor Filmpalast Walldorf-Wiesloch, Impexstraße, 1, 69190, Wiesloch, Baden-Württemberg, Deutschland",
+      lat: 49.2927126,
+      lng: 8.664038,
+      kind: "house",
+      name: "Luxor Filmpalast Walldorf-Wiesloch",
+    },
+  ],
+  { lat: 49.27968, lng: 8.67009 }
+);
+assert.ok(
+  nearLuxor[0].name?.includes("Luxor"),
+  "nearby cinema must beat Hessen Walldorf"
 );
 
 console.log("photonRank.test.ts OK");

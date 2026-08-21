@@ -21,6 +21,7 @@ import {
   CONSENT_LABELS,
   type ConsentPurpose,
 } from "@/lib/privacy/consents";
+import { rideWithTrimmedTrack } from "@/lib/privacy/trimRide";
 import Link from "next/link";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
@@ -41,7 +42,6 @@ export default function PrivacyExportPage() {
   const [stravaStatusMsg, setStravaStatusMsg] = useState<string | null>(null);
   const [stravaBusy, setStravaBusy] = useState(false);
   const privacyZones = useAppStore((s) => s.privacyZones);
-  const addPrivacyZone = useAppStore((s) => s.addPrivacyZone);
   const removePrivacyZone = useAppStore((s) => s.removePrivacyZone);
   const familyRiders = useAppStore((s) => s.familyRiders);
   const addFamilyRider = useAppStore((s) => s.addFamilyRider);
@@ -58,10 +58,12 @@ export default function PrivacyExportPage() {
     () =>
       fullJsonExport({
         bikes,
-        rides: rides.slice(0, 3),
+        rides: rides
+          .slice(0, 3)
+          .map((r) => rideWithTrimmedTrack(r, privacyZones)),
         profile,
       }).slice(0, 400) + "…",
-    [bikes, rides, profile]
+    [bikes, rides, profile, privacyZones]
   );
 
   useEffect(() => {
@@ -118,7 +120,8 @@ export default function PrivacyExportPage() {
     setStravaBusy(true);
     setStravaStatusMsg(null);
     try {
-      const stub = rideToStravaActivityStub(lastRide) as {
+      const forUpload = rideWithTrimmedTrack(lastRide, privacyZones);
+      const stub = rideToStravaActivityStub(forUpload) as {
         name?: string;
         type?: string;
         sport_type?: string;
@@ -128,8 +131,8 @@ export default function PrivacyExportPage() {
         total_elevation_gain?: number;
         description?: string;
       };
-      const gpx = rideHasExportableTrack(lastRide)
-        ? rideToGpx(lastRide, activeBike?.name)
+      const gpx = rideHasExportableTrack(forUpload)
+        ? rideToGpx(forUpload, activeBike?.name)
         : undefined;
       const res = await fetch("/api/strava/upload", {
         method: "POST",
@@ -197,7 +200,10 @@ export default function PrivacyExportPage() {
                 );
                 return;
               }
-              const gpx = rideToGpx(lastRide, activeBike?.name);
+              const gpx = rideToGpx(
+                rideWithTrimmedTrack(lastRide, privacyZones),
+                activeBike?.name
+              );
               downloadText(
                 `aetherride-${lastRide.id.slice(0, 8)}.gpx`,
                 gpx,
@@ -211,7 +217,11 @@ export default function PrivacyExportPage() {
           <button
             type="button"
             onClick={() => {
-              const json = fullJsonExport({ bikes, rides, profile });
+              const json = fullJsonExport({
+                bikes,
+                rides: rides.map((r) => rideWithTrimmedTrack(r, privacyZones)),
+                profile,
+              });
               downloadText(
                 "aetherride-export.json",
                 json,
@@ -227,7 +237,9 @@ export default function PrivacyExportPage() {
             disabled={!lastRide}
             onClick={() => {
               if (!lastRide) return;
-              const fit = rideToFit(lastRide);
+              const fit = rideToFit(
+                rideWithTrimmedTrack(lastRide, privacyZones)
+              );
               downloadBytes(
                 `aetherride-${lastRide.id.slice(0, 8)}.fit`,
                 fit,
@@ -371,7 +383,13 @@ export default function PrivacyExportPage() {
         <p className="mb-2 text-xs text-text-secondary">
           Tracks werden in diesen Radien gekappt — für Export und wo viele fahren.
         </p>
-        {privacyZones.map((z) => (
+        {privacyZones.length === 0 ? (
+          <p className="mb-2 text-sm text-text-secondary">
+            Keine Zonen — Start/Ziel-Umgebung kannst du in der App auf der Karte
+            setzen. Hier keine erfundene Heimat-Zone.
+          </p>
+        ) : (
+          privacyZones.map((z) => (
           <div
             key={z.id}
             className="mb-2 flex items-center justify-between rounded-xl bg-surface-elevated px-3 py-2 text-sm"
@@ -387,29 +405,16 @@ export default function PrivacyExportPage() {
               Entfernen
             </button>
           </div>
-        ))}
-        <button
-          type="button"
-          onClick={() =>
-            addPrivacyZone({
-              label: "Arbeit",
-              lat: 47.452,
-              lng: 12.16,
-              radiusM: 150,
-            })
-          }
-          className="mt-1 text-sm text-chrome"
-        >
-          + Beispiel-Zone „Arbeit“
-        </button>
+          ))
+        )}
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Users className="h-4 w-4 text-chrome" /> Familien-Garage
+          <Users className="h-4 w-4 text-chrome" /> Familie am Rad
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
-          Ein Bike, mehrere Fahrer mit eigenen Setups.
+          Ein Rad, mehrere Fahrer mit eigenen Setups.
         </p>
         {familyRiders.map((r) => (
           <button

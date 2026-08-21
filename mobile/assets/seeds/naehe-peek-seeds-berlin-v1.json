@@ -141,27 +141,32 @@
         {
           "offset_min": 7,
           "title": "Tempelhofer Feld (runway loop)",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Former Tempelhof Airport’s vast asphalt/gravel runways, Berlin’s favorite flat spin with skyline views."
         },
         {
           "offset_min": 17,
           "title": "Columbia Damm entrance",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Main Neukölln/Kreuzberg gateway into the Feld with bike-friendly access."
         },
         {
           "offset_min": 28,
           "title": "Allmende-Kontor",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Community gardens on the Feld that show Berlin’s DIY urban culture up close."
         },
         {
           "offset_min": 38,
           "title": "Maybachufer / Landwehrkanal",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Canal bank famous for the Turkish market and easy café stops between Kreuzberg and Neukölln."
         },
         {
           "offset_min": 48,
           "title": "Platz der Luftbrücke",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Airlift memorial and U-Bahn hub anchoring the historic airport approach."
         }
       ],
       "center": {

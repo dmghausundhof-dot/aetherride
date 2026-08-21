@@ -32,8 +32,10 @@ export interface RouteFilterState {
   /** Kanonischer Surface-Key (nicht Substring) */
   surfaceQuery: SurfaceKey | null;
   sport: SportFilter;
-  /** Max. Distanz in km; null = egal */
+  /** Max. Tourlänge in km; null = egal. Sitzt im Filter-Sheet. */
   maxDistanceKm: number | null;
+  /** Umkreis: Abstand Tour-Mitte → Standort in km. Sitzt am Umkreis-Chip. */
+  maxAwayKm?: number | null;
   /** Nur Mappe / eigene SavedRoutes — Katalog bleibt öffentlich. */
   visibility: VisibilityScope;
 }
@@ -45,6 +47,7 @@ export const DEFAULT_ROUTE_FILTERS: RouteFilterState = {
   surfaceQuery: null,
   sport: "all",
   maxDistanceKm: null,
+  maxAwayKm: null,
   visibility: "all_mine",
 };
 
@@ -229,22 +232,27 @@ export function filterRouteSuggestions(
     ) {
       return false;
     }
+    if (
+      filters.maxAwayKm != null &&
+      filters.maxAwayKm > 0 &&
+      r.distanceFromOriginKm != null &&
+      r.distanceFromOriginKm > filters.maxAwayKm + 0.05
+    ) {
+      return false;
+    }
     if (filters.surfaceQuery) {
       if (!surfaceMatches(r.surface, filters.surfaceQuery)) return false;
+    }
+    if (
+      filters.sport !== "all" &&
+      !categoryMatchesSport(r.category, filters.sport)
+    ) {
+      return false;
     }
     return true;
   });
 
-  // Sport: weiche Präferenz — Treffer nach vorn, Rest bleibt sichtbar.
-  if (filters.sport === "all") return hard;
-  const matched: RouteSuggestion[] = [];
-  const rest: RouteSuggestion[] = [];
-  for (const r of hard) {
-    if (categoryMatchesSport(r.category, filters.sport)) matched.push(r);
-    else rest.push(r);
-  }
-  if (matched.length === 0) return hard;
-  return [...matched, ...rest];
+  return hard;
 }
 
 /** Schwierigkeits-Chips — Labels sportabhängig, Keys einheitlich easy/mid/hard */

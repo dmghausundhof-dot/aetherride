@@ -64,12 +64,5 @@ export const DEFAULT_CONSENTS: ConsentState[] = (
   policyVersion: "1.0",
 }));
 
-export const DEFAULT_PRIVACY_ZONES: PrivacyZone[] = [
-  {
-    id: "pz-home",
-    label: "Zuhause",
-    lat: 47.448,
-    lng: 12.148,
-    radiusM: 200,
-  },
-];
+/** Keine erfundene Heimat-Zone — Nutzer legt sie selbst an. */
+export const DEFAULT_PRIVACY_ZONES: PrivacyZone[] = [];

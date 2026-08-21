@@ -8,7 +8,8 @@ import { CoachInbox } from "@/components/chat/CoachInbox";
 import { useCoachInbox } from "@/hooks/useCoachInbox";
 import type { CoachInboxItem } from "@/lib/ai/coachInbox";
 import Link from "next/link";
-import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofLocation } from "@/hooks/useHofLocation";
+import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { chatCopy } from "@/lib/i18n/chatCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
@@ -47,6 +48,7 @@ export default function ChatPage() {
   const isRiding = useAppStore((s) => s.isRiding);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const bike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+  const { geo } = useHofLocation();
   const { items: coachItems } = useCoachInbox();
   const markRead = useAppStore((s) => s.markCoachNoticesRead);
 
@@ -58,7 +60,7 @@ export default function ChatPage() {
     {
       id: "sys",
       role: "assistant",
-      text: chatCopy("de").welcome,
+      text: chatCopy(lang).welcome,
     },
   ]);
 
@@ -103,6 +105,11 @@ export default function ChatPage() {
           tool: toolHint,
           ...ctx,
           lang,
+          lat: geo?.lat,
+          lon: geo?.lng,
+          routingProfile: bike?.category
+            ? profileForBikeCategory(bike.category)
+            : undefined,
         }),
       });
       const data = await res.json();

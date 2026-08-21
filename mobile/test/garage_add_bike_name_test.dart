@@ -87,5 +87,38 @@ void main() {
       expect((await garage.getById(luna.id))!.name, 'Luna');
       expect((await garage.getById(legacy.id))!.name, 'Mein Bike');
     });
+
+    test('gleicher Katalog ohne Spitznamen bleibt ein Rad', () async {
+      final first = await garage.addBikeBasic(
+        name: 'Trek Slash',
+        category: BikeCategory.mtbAm,
+        catalogBikeId: 'trek-slash-8',
+      );
+      final again = await garage.addBikeBasic(
+        name: '',
+        category: BikeCategory.mtbAm,
+        catalogBikeId: 'trek-slash-8',
+        makeActive: false,
+      );
+      expect(again.id, first.id);
+      expect((await garage.listBikes()).length, 1);
+    });
+
+    test('gleicher Katalog mit anderem Spitznamen legt zweites Rad an', () async {
+      final first = await garage.addBikeBasic(
+        name: 'Luna',
+        category: BikeCategory.mtbAm,
+        catalogBikeId: 'trek-slash-8',
+      );
+      final partner = await garage.addBikeBasic(
+        name: 'Partner',
+        category: BikeCategory.mtbAm,
+        catalogBikeId: 'trek-slash-8',
+        makeActive: false,
+      );
+      expect(partner.id, isNot(first.id));
+      expect(partner.name, 'Partner');
+      expect((await garage.listBikes()).length, 2);
+    });
   });
 }

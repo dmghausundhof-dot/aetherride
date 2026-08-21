@@ -667,7 +667,7 @@ const BUILTIN: Record<string, GeometryOverride> = Object.fromEntries(
   Object.entries(SPECS).map(([id, s]) => [id, buildFromSpec(id, s)])
 );
 
-const FILE = bakedRaw as Record<string, GeometryOverride>;
+const FILE = bakedRaw as unknown as Record<string, GeometryOverride>;
 
 export function listBuiltinOverrideIds(): string[] {
   return Object.keys(BUILTIN);

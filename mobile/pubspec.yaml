@@ -37,6 +37,8 @@ dependencies:
   archive: ^4.0.2
   sensors_plus: ^6.1.1
   image_picker: ^1.1.2
+  image: ^4.5.0
+  video_player: ^2.10.0
   dsp_core:
     path: packages/dsp_core
   share_plus: ^13.3.0
@@ -45,6 +47,7 @@ dependencies:
   permission_handler: ^11.3.1
   flutter_svg: ^2.0.17
   sentry_flutter: ^9.6.0
+  three_js: ^0.3.0
 
 dev_dependencies:
   flutter_test:
@@ -73,11 +76,15 @@ flutter:
     - assets/seeds/p0-france-60min-naehe-v1.json
     - assets/catalog/tour-geometry-overrides.json
     - assets/seeds/heroes/
+    - assets/garage/
     - assets/garage/silhouettes/
     - assets/brand/
     - assets/brand/boot/
+    - assets/map/pins/
     - assets/community/rider/
     - assets/tours/
+    - assets/weather/
+    - assets/nav/
   fonts:
     - family: Inter
       fonts:

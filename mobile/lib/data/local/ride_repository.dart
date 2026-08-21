@@ -174,7 +174,7 @@ class RideRepository {
     await mergeSummary(rideId, {'savedRouteId': id, 'liveTour': true});
   }
 
-  /// Merges keys into [RideRecord.summary] (weather snapshot, photo paths, …).
+  /// Merges keys into [RideRecord.summary] (weather, photos, videos, notes, …).
   Future<void> mergeSummary(
     String rideId,
     Map<String, dynamic> patch,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Ausweis">
+  <title>FlowLine Ausweis</title>
+  <rect x="4.2" y="6.4" width="15.6" height="11.2" rx="2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M7.2 10.2 H16.8" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M7.2 13.6 H13.4" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

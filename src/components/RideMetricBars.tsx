@@ -7,12 +7,19 @@ export function RideMetricBars({
   flowScore,
   gForcePeak,
   gForceRms,
+  labels,
 }: {
   impactCount: number;
   distanceM: number;
   flowScore: number;
   gForcePeak: number;
   gForceRms: number;
+  labels?: {
+    flow: string;
+    impactsPerKm: string;
+    peakG: string;
+    rmsG: string;
+  };
 }) {
   const km = Math.max(0.1, distanceM / 1000);
   const impactsPerKm = impactCount / km;
@@ -21,17 +28,23 @@ export function RideMetricBars({
   const flowPct = Math.min(100, Math.max(0, Math.round(flowScore)));
   const peakPct = Math.min(100, Math.round((gForcePeak / 5) * 100));
   const rmsPct = Math.min(100, Math.round((gForceRms / 2) * 100));
+  const L = labels ?? {
+    flow: "Flow",
+    impactsPerKm: "Impacts / km",
+    peakG: "Peak g",
+    rmsG: "RMS g",
+  };
 
   const rows = [
-    { label: "Flow", value: `${flowScore}`, pct: flowPct, accent: true },
+    { label: L.flow, value: `${flowScore}`, pct: flowPct, accent: true },
     {
-      label: "Impacts / km",
+      label: L.impactsPerKm,
       value: impactsPerKm.toFixed(1),
       pct: impactPct,
       accent: false,
     },
-    { label: "Peak g", value: `${gForcePeak}`, pct: peakPct, accent: false },
-    { label: "RMS g", value: `${gForceRms}`, pct: rmsPct, accent: false },
+    { label: L.peakG, value: `${gForcePeak}`, pct: peakPct, accent: false },
+    { label: L.rmsG, value: `${gForceRms}`, pct: rmsPct, accent: false },
   ];
 
   return (

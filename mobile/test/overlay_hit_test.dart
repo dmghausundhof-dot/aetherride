@@ -1,6 +1,7 @@
 import 'package:aetherride_mobile/data/routing/bike_overlay.dart';
 import 'package:aetherride_mobile/data/routing/osm_trail_network_client.dart';
 import 'package:aetherride_mobile/data/routing/sgrade_live.dart';
+import 'package:aetherride_mobile/domain/routing/bike_overlay_class.dart';
 import 'package:aetherride_mobile/domain/routing/trail_difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,5 +55,27 @@ void main() {
   test('map tap queries live S-grade and OSM path layers, not only packs', () {
     expect(kBikeOverlayQueryLayerIds, contains(kOsmSGradeLayerId));
     expect(kBikeOverlayQueryLayerIds, contains(kOsmLivePathLayerId));
+  });
+
+  test('live streets follow Wege, paths follow Trails', () {
+    expect(kOsmLiveLayerClass[kOsmLiveStreetLayerId], BikeOverlayClass.urban);
+    expect(kOsmLiveLayerClass[kOsmLiveCyclewayLayerId], BikeOverlayClass.road);
+    expect(kOsmLiveLayerClass[kOsmLivePathLayerId], BikeOverlayClass.mtbUnrated);
+    expect(kOsmLiveLayerClass[kOsmLiveTrackLayerId], BikeOverlayClass.gravel);
+  });
+
+  test('farm tracks hide only when hideFarmTracks is set', () {
+    expect(
+      osmLiveTrackLayerVisible(classVisible: true, hideFarmTracks: true),
+      isFalse,
+    );
+    expect(
+      osmLiveTrackLayerVisible(classVisible: true, hideFarmTracks: false),
+      isTrue,
+    );
+    expect(
+      osmLiveTrackLayerVisible(classVisible: false, hideFarmTracks: true),
+      isFalse,
+    );
   });
 }

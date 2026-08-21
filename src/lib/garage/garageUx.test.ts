@@ -6,8 +6,11 @@ import { estimateAirPsi } from "../setup/sagGuide";
 import { setupConditionLabel } from "../setup/conditionLabels";
 import { weeklyRideKm, verdictSummaryDe } from "./readiness";
 import { resolveGaragePrimaryAction } from "./primaryCta";
-import { planDieBox, listedWorkshopParts } from "./dieBox";
+import { planDieBox, listedWorkshopParts, bikeHealthLine, ghostSlotsFor } from "./dieBox";
 import { slotLabel } from "../catalog/slots";
+import { snapshotOwnSetup, setupToApplyOnFamilySwitch } from "./family";
+import { standPhotoIsRemote, standPhotoNeedsCrop, standPhotoSourceRect } from "./standPhoto";
+import { schemaHiddenOpenCount, schemaHotspotQuiet, schemaInviteSlots } from "./schema/invites";
 import type { Bike } from "../../types/garage";
 
 function assert(cond: boolean, msg: string) {
@@ -104,6 +107,42 @@ assert(!gravel.today.some((t) => t.id === "bagsMissing"), "gravel bags not heute
 assert(!gravel.today.some((t) => t.id === "sagUnknown"), "gravel no sag heute");
 assert(gravel.addableSlots.includes("bags"), "gravel can add bags");
 
+const gravelForkBike: Bike = {
+  ...gravelBike,
+  id: "g-fork",
+  components: [
+    {
+      id: "fork1",
+      bikeId: "g-fork",
+      slot: "fork",
+      installedAt: now,
+      odometerKmAtInstall: 0,
+      hoursAtInstall: 0,
+      attributes: [],
+      currentSettings: {},
+    },
+  ],
+};
+const gravelFork = planDieBox({ bike: gravelForkBike });
+assert(
+  gravelFork.today.some((t) => t.id === "sagUnknown" && t.slot === "fork"),
+  "gravel fork asks sag on the fork only"
+);
+
+const trailHt: Bike = {
+  ...cityBike,
+  id: "ht1",
+  name: "Hard",
+  category: "mtb_trail",
+  type: "all_mountain",
+  travelFrontMm: 130,
+};
+const htPlan = planDieBox({ bike: trailHt });
+assert(
+  htPlan.today.some((t) => t.id === "sagUnknown" && t.slot === "fork"),
+  "hardtail sag is fork only"
+);
+
 const dhBike: Bike = {
   ...cityBike,
   id: "d1",
@@ -191,7 +230,48 @@ assert(jamPlan.sentence.includes("150/150"), "jam2 travel in sentence");
 assert(jamPlan.sentence.includes("E-Antrieb"), "jam2 assist named honestly");
 assert(!jamPlan.chips.some((c) => c.label === "Bosch CX"), "no invented motor sku");
 assert(!jamPlan.chips.some((c) => c.label === "800 Wh"), "no invented battery");
-assert(!jamPlan.addableSlots.includes("headset"), "headset not addable");
+assert(jamPlan.addableSlots.includes("headset"), "headset addable for front-end fit");
+assert(jamPlan.addableSlots.includes("front_hub"), "front hub addable");
+
+const mtbDrivetrain: Bike = {
+  ...cityBike,
+  id: "k1",
+  name: "Konflikt",
+  category: "mtb_trail",
+  type: "all_mountain",
+  travelFrontMm: 140,
+  travelRearMm: 140,
+  components: [
+    {
+      id: "k-cass",
+      bikeId: "k1",
+      slot: "cassette",
+      manufacturer: "SRAM",
+      model: "XO Eagle",
+      installedAt: now,
+      odometerKmAtInstall: 0,
+      hoursAtInstall: 0,
+      attributes: [],
+      currentSettings: {},
+    },
+    {
+      id: "k-hs",
+      bikeId: "k1",
+      slot: "headset",
+      componentModelId: "cm-headset",
+      manufacturer: "Cane Creek",
+      model: "Hellbender OEM",
+      installedAt: now,
+      odometerKmAtInstall: 0,
+      hoursAtInstall: 0,
+      attributes: [],
+      currentSettings: {},
+    },
+  ],
+};
+const mtbPlan = planDieBox({ bike: mtbDrivetrain });
+assert(mtbPlan.onBike.some((c) => c.slot === "cassette"), "mtb rider cassette");
+assert(!mtbPlan.onBike.some((c) => c.slot === "headset"), "mtb no oem headset");
 
 const hike = planDieBox({
   bike: {
@@ -210,6 +290,8 @@ assert(!hike.addableSlots.includes("fork"), "hiking no fork");
 
 assert(slotLabel("chain") === "Kette", "slotLabel Kette");
 assert(slotLabel("fork") === "Gabel", "slotLabel Gabel");
+assert(slotLabel("chain", "en") === "Chain", "slotLabel chain en");
+assert(slotLabel("fork", "fr") === "Fourche", "slotLabel fork fr");
 assert(
   slotLabel("chain") !== slotLabel("chain").toUpperCase(),
   "slotLabel stays sentence case"
@@ -225,7 +307,62 @@ assert(partsDoor.includes("shopPartsForBike"), "list door copy");
 assert(partsDoor.includes("shopLookupInShop"), "lookup door copy");
 assert(!partsDoor.includes("<Hero"), "no shop hero");
 assert(!partsDoor.includes("€"), "no euro on the door");
-assert(partsDoor.includes("ArrowUpRight"), "northeast door mark");
+assert(partsDoor.includes("RadGlyph"), "stand door mark");
+assert(!partsDoor.includes("lucide-react"), "parts door stays in stand marks");
+
+assert(
+  readFileSync("src/components/garage/RadEmpty.tsx", "utf8").includes(
+    "RadEmptyStage"
+  ),
+  "rad empty uses stand stage"
+);
+assert(
+  readFileSync("src/components/hof/HofEmpty.tsx", "utf8").includes(
+    "RadEmptyStage"
+  ),
+  "hof empty uses stand stage"
+);
+assert(
+  readFileSync("src/components/home/HofStand.tsx", "utf8").includes(
+    "RadEmptyStage"
+  ),
+  "hof stand empty uses stand stage"
+);
+assert(
+  readFileSync("src/components/shop/ShopImageFallback.tsx", "utf8").includes(
+    "RAD_STAND_GROUND"
+  ),
+  "shop empty sits on stand ground"
+);
+assert(
+  readFileSync("src/components/garage/AddBikeWizard.tsx", "utf8").includes(
+    'heightClass="h-28"'
+  ),
+  "add wizard shows type on the stand"
+);
+
+const shopDoor = readFileSync("src/components/shop/ShopGateway.tsx", "utf8");
+assert(shopDoor.includes("RadNavMark"), "shop bike door uses stand mark");
+assert(shopDoor.includes("ShopImageFallback"), "shop merch empty uses stand mark");
+assert(!shopDoor.includes("icon={Bike}"), "shop door no lucide Bike");
+assert(!shopDoor.includes("typeof Bike"), "shop door no lucide Bike type");
+
+const bikeChip = readFileSync("src/components/BikeChip.tsx", "utf8");
+assert(bikeChip.includes("useHofCopy"), "empty chip uses hof copy");
+assert(bikeChip.includes("parkBike"), "empty chip CTA is parkBike");
+assert(!bikeChip.includes("Rad abstellen"), "empty chip no abstellen");
+
+for (const path of [
+  "src/components/shop/FeaturedBikeCard.tsx",
+  "src/components/shop/PartsProductCard.tsx",
+  "src/components/shop/ShopCatalogPreview.tsx",
+  "src/app/shop/p/[handle]/page.tsx",
+]) {
+  assert(
+    readFileSync(path, "utf8").includes("ShopImageFallback"),
+    `${path} empty photo uses stand mark`
+  );
+}
 
 const garagePage = readFileSync("src/app/garage/page.tsx", "utf8");
 assert(garagePage.includes("dueSlot"), "maintenance lookup carries due slot");
@@ -237,8 +374,8 @@ assert(
 const kickerFiles = [
   "src/components/garage/DieBoxSurface.tsx",
   "src/app/garage/page.tsx",
-  "src/components/garage/AddBikeWizard.tsx",
   "src/components/garage/GarageComponentsTab.tsx",
+  "src/components/garage/RadSectionLabel.tsx",
 ];
 for (const path of kickerFiles) {
   const src = readFileSync(path, "utf8");
@@ -246,16 +383,381 @@ for (const path of kickerFiles) {
     !src.includes("uppercase tracking"),
     `${path} section kickers stay sentence case`
   );
+}
+const trackingFiles = [
+  "src/components/garage/RadSectionLabel.tsx",
+  "src/components/garage/AddBikeWizard.tsx",
+  "src/components/garage/GarageComponentsTab.tsx",
+];
+for (const path of trackingFiles) {
   assert(
-    src.includes("tracking-wide"),
+    readFileSync(path, "utf8").includes("tracking-wide"),
     `${path} tracking stays`
   );
 }
-const teileTab = readFileSync(
+const garagePageSrc = readFileSync("src/app/garage/page.tsx", "utf8");
+assert(
+  garagePageSrc.includes("RadSectionLabel"),
+  "garage page uses the stand section mark"
+);
+assert(
+  garagePageSrc.includes("workshopMoreHint"),
+  "mehr-am-rad hint uses hof copy"
+);
+assert(
+  !garagePageSrc.includes("Teile, Setup-Versionen"),
+  "mehr-am-rad hint no hardcoded de"
+);
+assert(
+  !garagePageSrc.includes("RAD_STAND_HEADER"),
+  "decorative stand header gone from garage page"
+);
+assert(
+  garagePageSrc.includes("BikeSchemaHotspots"),
+  "teile tab mounts schema hotspots"
+);
+assert(
+  garagePageSrc.includes("OdometerImportPanel"),
+  "setup tab mounts tacho import"
+);
+assert(
+  readFileSync("src/components/garage/OdometerImportPanel.tsx", "utf8").includes(
+    "BikeStandEditor"
+  ),
+  "setup stand uses the same editor as the strip"
+);
+assert(
+  !readFileSync("src/components/garage/OdometerImportPanel.tsx", "utf8").includes(
+    'type="number"'
+  ),
+  "setup tab has no second km form"
+);
+assert(
+  garagePageSrc.includes("SagGuideForBike"),
+  "setup tab mounts sag when travel exists"
+);
+assert(
+  !garagePageSrc.includes("<details"),
+  "garage tabs are not hidden in details"
+);
+assert(
+  readFileSync("src/components/home/HofStand.tsx", "utf8").includes(
+    "hof-bike-health"
+  ),
+  "hof shows bike health line"
+);
+
+const health = bikeHealthLine({
+  readiness: "ready",
+  odometerKm: 412.4,
+  readyLabel: "Bereit",
+  almostLabel: "Fast",
+  unknownLabel: "Unklar",
+});
+assert(health === "Bereit · 412 km", "health line names readiness and km");
+
+const ghosts = ghostSlotsFor({
+  addable: ["tire_front", "chain", "headset", "front_hub", "lock"],
+  installed: ["tire_front"],
+  schemaSlots: ["chain"],
+});
+assert(ghosts.includes("lock"), "ghost lock");
+assert(!ghosts.includes("headset"), "no headset ghost");
+assert(!ghosts.includes("front_hub"), "no front hub ghost");
+assert(!ghosts.includes("chain"), "schema slot not a ghost");
+
+assert(
+  garagePageSrc.includes("FamilyRiderStrip"),
+  "garage mounts family rider chips"
+);
+assert(
+  garagePageSrc.includes("overflow-x-auto"),
+  "garage tabs scroll on a narrow screen"
+);
+assert(
+  garagePageSrc.includes("FadeEdgeRow"),
+  "tab row fades when chips overflow"
+);
+assert(
+  garagePageSrc.includes("workshopTabOverview"),
+  "web garage has an Übersicht tab"
+);
+assert(
+  garagePageSrc.includes("compact"),
+  "Die Box on the garage page is compact above the tabs"
+);
+assert(
+  garagePageSrc.includes("workshopTitle"),
+  "garage heading is Rad, not Werkstatt chrome"
+);
+assert(
+  readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "photoDataUrl"
+  ),
+  "web receipt stores a photo"
+);
+assert(
+  readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "workshopWearTitle"
+  ),
+  "maintenance headings use hof copy"
+);
+assert(
+  readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "presentWear"
+  ),
+  "wear cards are presented in chrome language"
+);
+assert(
+  readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "maintIntervalLabel"
+  ),
+  "interval titles map off the German engine key"
+);
+assert(
+  readFileSync("src/components/garage/GarageComponentsTab.tsx", "utf8").includes(
+    "garageTabCopy"
+  ),
+  "teile chrome uses tab copy"
+);
+assert(
+  !readFileSync("src/components/garage/GarageComponentsTab.tsx", "utf8").includes(
+    "Ersatzteil-Regal"
+  ),
+  "teile tab has no hardcoded German shelf heading"
+);
+assert(
+  !readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(
+    "Verschleißprognose"
+  ),
+  "maintenance tab has no hardcoded German heading"
+);
+assert(
+  readFileSync("src/components/garage/BikeSchemaHotspots.tsx", "utf8").includes(
+    "workshopSchemaLegendOk"
+  ),
+  "schema legend is in hof copy"
+);
+
+const teileTabSrc = readFileSync(
   "src/components/garage/GarageComponentsTab.tsx",
   "utf8"
 );
-assert(teileTab.includes("planDieBox"), "Teile-Tab lists via Die Box");
-assert(teileTab.includes(".onBike"), "Teile-Tab hides catalog OEM dump");
+assert(teileTabSrc.includes("workshopAddPart"), "teile cta uses hof copy");
+assert(
+  !teileTabSrc.includes("Teil selbst anlegen"),
+  "teile cta matches native add part"
+);
+assert(teileTabSrc.includes("planDieBox"), "Teile-Tab lists via Die Box");
+assert(teileTabSrc.includes(".onBike"), "Teile-Tab hides catalog OEM dump");
+assert(
+  readFileSync("src/components/garage/DieBoxSurface.tsx", "utf8").includes(
+    "RadSectionLabel"
+  ),
+  "Die Box uses the stand section mark"
+);
+
+const ownSnap = snapshotOwnSetup({
+  activeRiderId: null,
+  currentSetupId: "mine",
+});
+assert(ownSnap === "mine", "leaving Ich snapshots the live setup");
+assert(
+  snapshotOwnSetup({ activeRiderId: "kid", currentSetupId: "kid-setup" }) ==
+    null,
+  "leaving a family rider does not overwrite own setup"
+);
+
+const restored = setupToApplyOnFamilySwitch({
+  nextRiderId: null,
+  rememberedOwnId: "mine",
+  nextRiderSetupIds: [],
+  existingSetupIds: ["mine", "kid-setup"],
+  familyOwnedSetupIds: ["kid-setup"],
+  currentSetupId: "kid-setup",
+});
+assert(restored === "mine", "Ich restores the remembered setup");
+
+const kidApply = setupToApplyOnFamilySwitch({
+  nextRiderId: "kid",
+  rememberedOwnId: "mine",
+  nextRiderSetupIds: ["kid-setup"],
+  existingSetupIds: ["mine", "kid-setup"],
+  familyOwnedSetupIds: ["kid-setup"],
+  currentSetupId: "mine",
+});
+assert(kidApply === "kid-setup", "family chip applies the rider setup");
+
+const tall = standPhotoSourceRect(1200, 1600);
+assert(tall.sw === 1200, "tall photo keeps width");
+assert(tall.sh < 1600, "tall photo crops height");
+assert(tall.sy > 0, "tall photo crop sits toward the ground");
+assert(standPhotoNeedsCrop(1200, 1600), "legacy tall photo needs crop");
+assert(!standPhotoNeedsCrop(2350, 1000), "stand strip is not recropped");
+
+const wide = standPhotoSourceRect(4000, 1000);
+assert(wide.sh === 1000, "wide photo keeps height");
+assert(wide.sw < 4000, "wide photo crops sides");
+
+assert(
+  readFileSync("src/components/garage/RadStandFrame.tsx", "utf8").includes(
+    "object-[center_72%]"
+  ),
+  "stand photos bias toward the ground"
+);
+
+assert(
+  readFileSync("src/components/garage/FamilyRiderStrip.tsx", "utf8").includes(
+    "workshopFamilyAdd"
+  ),
+  "stand can add a family rider"
+);
+assert(
+  readFileSync("src/components/garage/FamilyRiderStrip.tsx", "utf8").includes(
+    "workshopFamilyHintEmpty"
+  ),
+  "empty family has its own hint"
+);
+assert(
+  !readFileSync("src/components/garage/FamilyRiderStrip.tsx", "utf8").includes(
+    "riders.length === 0 ? ("
+  ),
+  "add chip stays after the first rider"
+);
+assert(
+  garagePageSrc.includes("garage-bike-scroller"),
+  "bike rail fades when chips overflow"
+);
+assert(
+  readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
+    "standPhotoNeedsCrop"
+  ),
+  "legacy data-url photos crop once"
+);
+assert(
+  readFileSync("src/lib/sync/payload.ts", "utf8").includes("ownSetupByBikeId"),
+  "own setup memory syncs"
+);
+assert(
+  readFileSync("src/components/garage/BikeSchemaHotspots.tsx", "utf8").includes(
+    "schemaInviteSlots"
+  ),
+  "schema chips use invite cap"
+);
+
+const invites = schemaInviteSlots({
+  hotspotSlots: ["a", "b", "c", "d"],
+  installed: [],
+});
+assert(invites.length === 2, "empty schema invites two slots");
+assert(
+  schemaHiddenOpenCount({ hotspotSlots: ["a", "b", "c", "d"], installed: [] }) ===
+    2,
+  "two open slots stay on the dots"
+);
+assert(
+  schemaInviteSlots({
+    hotspotSlots: ["stem", "frame", "saddle"],
+    installed: [],
+  }).join() === "stem,saddle",
+  "frame is not an invitation"
+);
+assert(
+  schemaHotspotQuiet("frame", "missing"),
+  "missing frame is a quiet anatomy dot"
+);
+assert(
+  !schemaHotspotQuiet("frame", "ok"),
+  "installed frame is a normal status dot"
+);
+assert(
+  !schemaHotspotQuiet("fork", "missing"),
+  "open fork stays a missing invitation"
+);
+assert(
+  readFileSync("src/components/garage/DieBoxSurface.tsx", "utf8").includes(
+    "BikeValueStrip"
+  ),
+  "Die Box shows km/h/pressure/service under the photo"
+);
+assert(
+  readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
+    "workshopPhotoRetake"
+  ),
+  "https photos offer retake instead of silent crop"
+);
+assert(
+  standPhotoIsRemote("https://cdn.example/bike.jpg"),
+  "https photo is remote"
+);
+assert(!standPhotoIsRemote("data:image/jpeg;base64,xx"), "data url is local");
+assert(
+  readFileSync("src/components/garage/BikeSchemaHotspots.tsx", "utf8").includes(
+    "RAD_STAND_GROUND"
+  ),
+  "schema paper sits on the stand"
+);
+assert(
+  readFileSync("src/app/garage/page.tsx", "utf8").includes(
+    '["maintenance", copy.workshopTabCare]'
+  ),
+  "web tabs follow Übersicht / Teile / Wartung / Setup"
+);
+assert(
+  readFileSync("src/components/garage/DieBoxSurface.tsx", "utf8").includes(
+    "BikeStandEditor"
+  ),
+  "km tap opens a stand editor, not the setups tab"
+);
+assert(
+  readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
+    "bottom-7"
+  ),
+  "retake overlay sits above the stand rail"
+);
+assert(
+  readFileSync(
+    "src/components/garage/GarageMaintenanceTab.tsx",
+    "utf8"
+  ).includes("bike-next-service"),
+  "web maintenance tab holds the workshop date"
+);
+assert(
+  readFileSync("src/lib/home/hofCopy.ts", "utf8").includes(
+    'workshopStatCare: "Pflege"'
+  ),
+  "interval cell is Pflege, appointment stays Termin"
+);
+
+assert(
+  readFileSync("src/components/garage/InstallComponentSheet.tsx", "utf8").includes(
+    "presentCompat"
+  ),
+  "install sheet presents compat in chrome language"
+);
+assert(
+  !readFileSync("src/components/garage/InstallComponentSheet.tsx", "utf8").includes(
+    "r.explainDe"
+  ),
+  "install sheet does not dump German explainDe"
+);
+assert(
+  readFileSync("src/components/garage/GarageSetupsTab.tsx", "utf8").includes(
+    "presentSetupTemplate"
+  ),
+  "setup tab presents template labels"
+);
+assert(
+  readFileSync("src/components/garage/BracketingPanel.tsx", "utf8").includes(
+    "bracketingCopy"
+  ),
+  "bracketing chrome uses copy"
+);
+assert(
+  !readFileSync("src/components/garage/BracketingPanel.tsx", "utf8").includes(
+    "Zwei Varianten testen"
+  ),
+  "bracketing panel has no hardcoded German heading"
+);
 
 console.log("garageUx.test.ts OK");

@@ -7,8 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 RideGroup _group({
   String host = 'host',
   RideGroupVisibility visibility = RideGroupVisibility.private,
+  DateTime? start,
 }) {
-  final now = DateTime(2026, 8, 19, 15);
+  final now = start ?? DateTime(2026, 8, 19, 18);
   return RideGroup(
     id: 'g1',
     hostUserId: host,
@@ -17,7 +18,7 @@ RideGroup _group({
     startWindowStart: now,
     startWindowEnd: now.add(const Duration(hours: 3, minutes: 30)),
     joinCode: '8SGSL9',
-    status: RideGroupStatus.open,
+    status: RideGroupStatus.scheduled,
     livePinsAllowed: true,
     createdAt: now,
     visibility: visibility,
@@ -37,7 +38,9 @@ Future<void> _pump(
   required RideGroup group,
   required List<RideGroupMember> members,
   required Set<String> selfIds,
+  DateTime? now,
 }) {
+  final clock = now ?? DateTime(2026, 8, 19, 11, 20);
   return tester.pumpWidget(
     MaterialApp(
       locale: const Locale('de'),
@@ -50,6 +53,7 @@ Future<void> _pump(
           selfIds: selfIds,
           signedIn: true,
           optIn: false,
+          now: clock,
           onInvite: () {},
           onRide: () {},
           onLeave: () {},
@@ -78,6 +82,10 @@ void main() {
     expect(find.text('8SGSL9'), findsNothing);
     expect(find.textContaining('Du · Gastgeber'), findsOneWidget);
     expect(find.textContaining('1/1'), findsNothing);
+    expect(find.textContaining('3,5 h'), findsOneWidget);
+    expect(find.text('Tippen zum Ändern'), findsOneWidget);
+    expect(find.text('Auflösen'), findsOneWidget);
+    expect(find.byKey(const Key('platz-group-leave-g1')), findsOneWidget);
     expect(find.byType(FilledButton), findsOneWidget);
   });
 
@@ -102,6 +110,33 @@ void main() {
       group: _group(),
       members: [_member('host', 'Anna'), _member('me', 'Du')],
       selfIds: {'me'},
+    );
+    expect(find.byKey(const Key('platz-group-ride-g1')), findsOneWidget);
+    expect(find.byKey(const Key('platz-group-invite-g1')), findsNothing);
+    expect(find.text('Losfahren'), findsOneWidget);
+  });
+
+  testWidgets('Host allein, Fenster offen: Losfahren primary', (tester) async {
+    final start = DateTime(2026, 8, 19, 10);
+    await _pump(
+      tester,
+      group: RideGroup(
+        id: 'g1',
+        hostUserId: 'host',
+        savedRouteId: 'tour-1',
+        title: 'Schloss–Rhein',
+        startWindowStart: start,
+        startWindowEnd: start.add(const Duration(hours: 3, minutes: 30)),
+        joinCode: '8SGSL9',
+        status: RideGroupStatus.open,
+        livePinsAllowed: true,
+        createdAt: start,
+        visibility: RideGroupVisibility.private,
+        onServer: true,
+      ),
+      members: [_member('host', 'Du')],
+      selfIds: {'host'},
+      now: DateTime(2026, 8, 19, 11, 20),
     );
     expect(find.byKey(const Key('platz-group-ride-g1')), findsOneWidget);
     expect(find.byKey(const Key('platz-group-invite-g1')), findsNothing);

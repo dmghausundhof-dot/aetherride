@@ -106,23 +106,28 @@ const LAYER_PAINT: LinePaint[] = [
     cls: "gravel",
     filter: ["==", ["get", "bike_class"], "gravel"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.gravel),
-    width: 2,
+    width: 1.7,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.road,
     cls: "road",
     filter: ["==", ["get", "bike_class"], "road"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.road),
-    width: 2.2,
+    width: 1.85,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.urban,
     cls: "urban",
     filter: ["==", ["get", "bike_class"], "urban"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.urban),
-    width: 1.8,
+    width: 1.45,
   },
 ];
+
+function overlayLineOpacity(cls: Exclude<BikeOverlayClass, "hidden">): number {
+  if (cls === "road" || cls === "urban" || cls === "gravel") return 0.34;
+  return 0.7;
+}
 
 export type BikeOverlayMapLike = {
   getSource: (id: string) => unknown;
@@ -142,7 +147,23 @@ export type BikeOverlayApplyOpts = {
   extraOn?: BikeOverlayClass[];
   /** RideProfile SSOT — filtert MTB nach S-Skala und hebt Matches hervor. */
   rideProfileId?: RideProfileId | null;
+  /** Hide OSM `highway=track` (Feldwege) — same as the app layer toggle. */
+  hideFarmTracks?: boolean;
 };
+
+const FARM_TRACK_HIGHWAY_FILTER: unknown[] = [
+  "!=",
+  ["downcase", ["to-string", ["coalesce", ["get", "highway"], ""]]],
+  "track",
+];
+
+/** Drop untagged farm tracks from an overlay class filter. */
+export function bikeOverlayExcludeFarmTracks(
+  filter: unknown[] | false
+): unknown[] | false {
+  if (filter === false) return false;
+  return ["all", filter, FARM_TRACK_HIGHWAY_FILTER];
+}
 
 /**
  * MapLibre-Filter je Overlay-Klasse.
@@ -227,6 +248,7 @@ export function addBikeOverlayLayers(
     visible: boolean;
     extraOn?: BikeOverlayClass[];
     rideProfileId?: RideProfileId | null;
+    hideFarmTracks?: boolean;
     /** Ways tiles start ~z10; signed mesh can show from atlas zoom. */
     minzoom?: number;
   }
@@ -292,7 +314,7 @@ export function addBikeOverlayLayers(
           14,
           layer.width,
         ],
-        "line-opacity": 0.92,
+        "line-opacity": overlayLineOpacity(layer.cls),
         ...(layer.dasharray ? { "line-dasharray": layer.dasharray } : {}),
       },
     });
@@ -303,6 +325,7 @@ export function addBikeOverlayLayers(
     visible: opts.visible,
     extraOn: opts.extraOn,
     rideProfileId: opts.rideProfileId,
+    hideFarmTracks: opts.hideFarmTracks,
   });
 }
 
@@ -323,18 +346,21 @@ export function applyBikeOverlayVisibility(
       filter === false && extraForced
         ? (["==", ["get", "bike_class"], layer.cls] as unknown[])
         : filter;
+    const farmFilter = opts.hideFarmTracks
+      ? bikeOverlayExcludeFarmTracks(resolvedFilter)
+      : resolvedFilter;
     const hide =
-      !opts.visible || resolvedFilter === false || !on.has(layer.cls);
+      !opts.visible || farmFilter === false || !on.has(layer.cls);
 
     if (hide) {
       map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
 
-    map.setFilter(layer.id, resolvedFilter);
+    map.setFilter(layer.id, farmFilter);
     map.setLayoutProperty(layer.id, "visibility", "visible");
     map.setPaintProperty(layer.id, "line-color", layer.color);
-    map.setPaintProperty(layer.id, "line-opacity", 0.92);
+    map.setPaintProperty(layer.id, "line-opacity", overlayLineOpacity(layer.cls));
     const width =
       highlightMtb && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;
     map.setPaintProperty(layer.id, "line-width", [

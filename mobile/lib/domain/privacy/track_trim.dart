@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'consents.dart';
 
 /// Port of web `trimTrackForHeatmap` — drop end caps + privacy-zone points.
+/// Extra fields (elev, time, sensors) stay on the kept maps.
 List<Map<String, dynamic>> trimTrackForPrivacyZones(
   List<Map<String, dynamic>> track,
   List<PrivacyZone> privacyZones, {
@@ -49,8 +50,13 @@ List<Map<String, dynamic>> trimTrackForPrivacyZones(
 
   return [
     for (final p in sliced)
-      if (!_inAnyZone(latOf(p), lngOf(p), privacyZones)) p,
+      if (!pointInPrivacyZones(latOf(p), lngOf(p), privacyZones)) p,
   ];
+}
+
+/// True when [lat]/[lng] sits inside any zone radius (same rule as Presence).
+bool pointInPrivacyZones(double lat, double lng, List<PrivacyZone> zones) {
+  return _inAnyZone(lat, lng, zones);
 }
 
 bool _inAnyZone(double lat, double lng, List<PrivacyZone> zones) {

@@ -143,6 +143,97 @@ bool isNatureWaterFillLayer(String id) {
   return u.contains('water');
 }
 
+bool isWaterwayLineLayer(String id) {
+  final u = id.toLowerCase();
+  return u == 'waterway' ||
+      u == 'waterways' ||
+      u.contains('waterway') ||
+      u.endsWith('-waterway');
+}
+
+/// Fill-Layer dürfen nur Flächen füllen. LineString-Flüsse sonst zu
+/// Sehnen + „Überschwemmung“ (Start/Ende verbunden).
+const kWaterFillPolygonOnlyFilter = <dynamic>[
+  'match',
+  ['geometry-type'],
+  ['Polygon', 'MultiPolygon'],
+  true,
+  false,
+];
+
+/// z11-Overview: grobe Fluss-Polygone wirken wie Überschwemmung.
+const kWaterFillPolygonFilter = <dynamic>[
+  'all',
+  kWaterFillPolygonOnlyFilter,
+  ['!=', ['get', 'pmap:kind'], 'river'],
+  ['!=', ['get', 'kind'], 'river'],
+  ['!=', ['get', 'pmap:kind'], 'stream'],
+  ['!=', ['get', 'kind'], 'stream'],
+  ['!=', ['get', 'pmap:kind'], 'canal'],
+  ['!=', ['get', 'kind'], 'canal'],
+];
+
+const kWaterwayLineWidth = <dynamic>[
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  8,
+  0.8,
+  11,
+  1.5,
+  14,
+  3.0,
+];
+
+/// z11-Overview: grobe Wasser-Polygone nicht überzoomen.
+bool styleHasCoarseWaterPolygons(String styleUrl) {
+  final u = styleUrl.toLowerCase();
+  return u.contains('-z11-style.json') || u.contains('aetherride:overview');
+}
+
+/// Flüsse als Linie, Seen als Fläche — keine Sehnen zwischen Mäandern.
+Future<void> fixBasemapWaterLayers(
+  MapLibreMapController c, {
+  bool coarseOverview = false,
+}) async {
+  final ids = <String>{
+    'water',
+    'water-fill',
+    'water_fill',
+    'waterway',
+    'waterways',
+  };
+  try {
+    for (final raw in await c.getLayerIds()) {
+      ids.add(raw.toString());
+    }
+  } catch (_) {}
+  var n = 0;
+  for (final id in ids) {
+    if (isNatureWaterFillLayer(id)) {
+      try {
+        await c.setFilter(
+          id,
+          coarseOverview
+              ? kWaterFillPolygonFilter
+              : kWaterFillPolygonOnlyFilter,
+        );
+        n++;
+      } catch (_) {}
+    }
+    if (isWaterwayLineLayer(id)) {
+      try {
+        await c.setLayerProperties(
+          id,
+          LineLayerProperties(lineWidth: kWaterwayLineWidth),
+        );
+        n++;
+      } catch (_) {}
+    }
+  }
+  debugPrint('water geometry: fixed $n layers');
+}
+
 /// Parks/Wald/Wasser kräftiger — nicht Straßen, nicht path/track.
 Future<void> warmBasemapNatureFills(MapLibreMapController c) async {
   final ids = <String>{...kKnownNatureFillLayerIds};

@@ -11,7 +11,8 @@ bool isUnnamedPlaceholderBike(Bike bike) {
   final isLegacyDefault = name.isEmpty ||
       name == kDefaultBikeName ||
       name == 'Mein Rad' ||
-      name == 'Import-Bike';
+      name == 'Import-Bike' ||
+      name == 'Import-Rad';
   if (!isLegacyDefault) return false;
   final noCatalog =
       bike.catalogBikeId == null || bike.catalogBikeId!.trim().isEmpty;

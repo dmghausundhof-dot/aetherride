@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/shop/shop_product.dart';
 import '../../l10n/app_localizations.dart';
+import '../garage/rad_stand_frame.dart';
 
 String shopPriceLabel(ShopProduct product) {
   return NumberFormat.simpleCurrency(
@@ -72,28 +73,19 @@ class ShopProductSheet extends StatelessWidget {
                     child: Image.network(
                       product.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const ColoredBox(
-                        color: AppColors.overlay,
-                        child: Icon(
-                          Icons.pedal_bike_outlined,
-                          color: AppColors.muted,
-                          size: 48,
-                        ),
+                      errorBuilder: (_, __, ___) => const RadShopStandFallback(
+                        markSize: 48,
                       ),
                     ),
                   ),
                 )
               else
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.overlay,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                  child: const Icon(
-                    Icons.pedal_bike_outlined,
-                    color: AppColors.muted,
-                    size: 48,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  child: const SizedBox(
+                    height: 120,
+                    width: double.infinity,
+                    child: RadShopStandFallback(markSize: 48),
                   ),
                 ),
               const SizedBox(height: AppSpacing.l),

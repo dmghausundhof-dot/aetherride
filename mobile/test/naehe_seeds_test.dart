@@ -80,6 +80,7 @@ void main() {
     // Canonical offset_min / type shape accepted by parser.
     expect(seed.poiStops.first.atMin, greaterThan(0));
     expect(seed.poiStops.first.kind, isNotEmpty);
+    expect(seed.poiStops.any((p) => p.whyGood != null), isTrue);
   });
 
   test('DACH Nähe bundle has ≥6 non-Berlin loops', () {
@@ -103,6 +104,8 @@ void main() {
       expect(l.poiStops, isNotEmpty);
       expect(l.poiStops.every((p) => p.atMin > 0), isTrue);
     }
+    final munich = dach.byId('seed-loop-munich-froettmaning-60')!;
+    expect(munich.poiStops.any((p) => p.whyGood != null), isTrue);
   });
 
   test('catalog Baden-Baden attaches Lichtental seed track + pin', () {
@@ -271,6 +274,19 @@ void main() {
     final ma = merged.byId('seed-dach-60-rn-2-mannheim-schloss-waldpark')!;
     expect(distKm(wLat, wLng, hd.centerLat, hd.centerLng), lessThan(35 * 35));
     expect(distKm(wLat, wLng, ma.centerLat, ma.centerLng), lessThan(35 * 35));
+  });
+
+  test('Rhein-Neckar Nähe fallback keeps why_good', () {
+    final raw = _readFirstExisting([
+      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
+      'mobile/assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
+      '../assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
+    ], label: 'Rhein-Neckar Nähe fallback');
+    final rn = NaeheSeedsBundle.parse(raw);
+    expect(rn.loops, isNotEmpty);
+    for (final l in rn.loops) {
+      expect(l.poiStops.any((p) => p.whyGood != null), isTrue, reason: l.id);
+    }
   });
 
   test('synthetic loop track is RouteShape.loop', () {

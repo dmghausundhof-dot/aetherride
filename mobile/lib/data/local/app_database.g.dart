@@ -104,6 +104,14 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_ebike" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _ownerJsonMeta =
+      const VerificationMeta('ownerJson');
+  @override
+  late final GeneratedColumn<String> ownerJson = GeneratedColumn<String>(
+      'owner_json', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('{}'));
   static const VerificationMeta _updatedAtMeta =
       const VerificationMeta('updatedAt');
   @override
@@ -127,6 +135,7 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
         hours,
         isActive,
         isEbike,
+        ownerJson,
         updatedAt
       ];
   @override
@@ -212,6 +221,10 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       context.handle(_isEbikeMeta,
           isEbike.isAcceptableOrUnknown(data['is_ebike']!, _isEbikeMeta));
     }
+    if (data.containsKey('owner_json')) {
+      context.handle(_ownerJsonMeta,
+          ownerJson.isAcceptableOrUnknown(data['owner_json']!, _ownerJsonMeta));
+    }
     if (data.containsKey('updated_at')) {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
@@ -257,6 +270,9 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       isEbike: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_ebike'])!,
+      ownerJson: attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}owner_json']) ??
+          '{}',
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
     );
@@ -284,6 +300,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
   final double hours;
   final bool isActive;
   final bool isEbike;
+  final String ownerJson;
   final DateTime updatedAt;
   const BikeRow(
       {required this.id,
@@ -301,6 +318,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       required this.hours,
       required this.isActive,
       required this.isEbike,
+      this.ownerJson = '{}',
       required this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -336,6 +354,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
     map['hours'] = Variable<double>(hours);
     map['is_active'] = Variable<bool>(isActive);
     map['is_ebike'] = Variable<bool>(isEbike);
+    map['owner_json'] = Variable<String>(ownerJson);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -369,6 +388,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       hours: Value(hours),
       isActive: Value(isActive),
       isEbike: Value(isEbike),
+      ownerJson: Value(ownerJson),
       updatedAt: Value(updatedAt),
     );
   }
@@ -392,6 +412,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       hours: serializer.fromJson<double>(json['hours']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       isEbike: serializer.fromJson<bool>(json['isEbike']),
+      ownerJson: serializer.fromJson<String>(json['ownerJson'] ?? '{}'),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -414,6 +435,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       'hours': serializer.toJson<double>(hours),
       'isActive': serializer.toJson<bool>(isActive),
       'isEbike': serializer.toJson<bool>(isEbike),
+      'ownerJson': serializer.toJson<String>(ownerJson),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -434,6 +456,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           double? hours,
           bool? isActive,
           bool? isEbike,
+          String? ownerJson,
           DateTime? updatedAt}) =>
       BikeRow(
         id: id ?? this.id,
@@ -454,6 +477,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
         hours: hours ?? this.hours,
         isActive: isActive ?? this.isActive,
         isEbike: isEbike ?? this.isEbike,
+        ownerJson: ownerJson ?? this.ownerJson,
         updatedAt: updatedAt ?? this.updatedAt,
       );
   BikeRow copyWithCompanion(BikesCompanion data) {
@@ -480,6 +504,8 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       hours: data.hours.present ? data.hours.value : this.hours,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       isEbike: data.isEbike.present ? data.isEbike.value : this.isEbike,
+      ownerJson:
+          data.ownerJson.present ? data.ownerJson.value : this.ownerJson,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -502,6 +528,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
           ..write('isEbike: $isEbike, ')
+          ..write('ownerJson: $ownerJson, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -524,6 +551,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       hours,
       isActive,
       isEbike,
+      ownerJson,
       updatedAt);
   @override
   bool operator ==(Object other) =>
@@ -544,6 +572,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           other.hours == this.hours &&
           other.isActive == this.isActive &&
           other.isEbike == this.isEbike &&
+          other.ownerJson == this.ownerJson &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -563,6 +592,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
   final Value<double> hours;
   final Value<bool> isActive;
   final Value<bool> isEbike;
+  final Value<String> ownerJson;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const BikesCompanion({
@@ -581,6 +611,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
     this.isEbike = const Value.absent(),
+    this.ownerJson = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -600,6 +631,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
     this.isEbike = const Value.absent(),
+    this.ownerJson = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -622,6 +654,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     Expression<double>? hours,
     Expression<bool>? isActive,
     Expression<bool>? isEbike,
+    Expression<String>? ownerJson,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -641,6 +674,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       if (hours != null) 'hours': hours,
       if (isActive != null) 'is_active': isActive,
       if (isEbike != null) 'is_ebike': isEbike,
+      if (ownerJson != null) 'owner_json': ownerJson,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -662,6 +696,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       Value<double>? hours,
       Value<bool>? isActive,
       Value<bool>? isEbike,
+      Value<String>? ownerJson,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
     return BikesCompanion(
@@ -680,6 +715,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
       isEbike: isEbike ?? this.isEbike,
+      ownerJson: ownerJson ?? this.ownerJson,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -733,6 +769,9 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     if (isEbike.present) {
       map['is_ebike'] = Variable<bool>(isEbike.value);
     }
+    if (ownerJson.present) {
+      map['owner_json'] = Variable<String>(ownerJson.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -760,6 +799,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
           ..write('isEbike: $isEbike, ')
+          ..write('ownerJson: $ownerJson, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))

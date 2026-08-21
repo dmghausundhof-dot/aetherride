@@ -17,12 +17,17 @@ class HudDockMetric {
   final String value;
 }
 
-/// Charcoal island shared by Daten / Fahrwerk — sits in the HUD stack,
-/// never replaces the map.
+/// Charcoal island shared by Daten / Fahrwerk — or a bare body inside the
+/// layer bar so the map stays the primary surface.
 class RideHudLiveDock extends StatelessWidget {
-  const RideHudLiveDock({super.key, required this.child});
+  const RideHudLiveDock({
+    super.key,
+    required this.child,
+    this.embedded = false,
+  });
 
   final Widget child;
+  final bool embedded;
 
   static const dockKey = Key('ride-hud-live-dock');
   static const dataKey = Key('ride-hud-data-dock');
@@ -30,9 +35,13 @@ class RideHudLiveDock extends StatelessWidget {
   static const calibrateKey = Key('ride-lean-calibrate');
   static const resetCalKey = Key('ride-lean-reset-cal');
   static const gaugeKey = Key('ride-lean-gauge');
+  static const maxDataChips = 6;
 
   @override
   Widget build(BuildContext context) {
+    if (embedded) {
+      return KeyedSubtree(key: dockKey, child: child);
+    }
     return RideHudIsland(
       key: dockKey,
       padding: const EdgeInsets.fromLTRB(
@@ -48,17 +57,26 @@ class RideHudLiveDock extends StatelessWidget {
 
 /// Compact live metrics — two-row chips, map stays behind.
 class RideHudDataDock extends StatelessWidget {
-  const RideHudDataDock({super.key, required this.metrics});
+  const RideHudDataDock({
+    super.key,
+    required this.metrics,
+    this.embedded = false,
+  });
 
   final List<HudDockMetric> metrics;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10nOrNull;
+    final shown = metrics.length <= RideHudLiveDock.maxDataChips
+        ? metrics
+        : metrics.sublist(0, RideHudLiveDock.maxDataChips);
     return RideHudLiveDock(
+      embedded: embedded,
       child: KeyedSubtree(
         key: RideHudLiveDock.dataKey,
-        child: metrics.isEmpty
+        child: shown.isEmpty
             ? Text(
                 l10n?.rideWaitingSensors ?? 'Warte auf Sensorik…',
                 textAlign: TextAlign.center,
@@ -68,12 +86,16 @@ class RideHudDataDock extends StatelessWidget {
                   color: AppColors.meta(context),
                 ),
               )
-            : Wrap(
-                spacing: AppSpacing.s,
-                runSpacing: AppSpacing.s,
-                children: [
-                  for (final m in metrics) _metricChip(context, m),
-                ],
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < shown.length; i++) ...[
+                      if (i > 0) const SizedBox(width: AppSpacing.s),
+                      _metricChip(context, shown[i]),
+                    ],
+                  ],
+                ),
               ),
       ),
     );
@@ -81,7 +103,7 @@ class RideHudDataDock extends StatelessWidget {
 
   Widget _metricChip(BuildContext context, HudDockMetric metric) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 72),
+      constraints: const BoxConstraints(minWidth: 64),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -113,7 +135,7 @@ class RideHudDataDock extends StatelessWidget {
   }
 }
 
-/// Compact Fahrwerk dock: lean gauge + G/Flow + mount-zero calibrate.
+/// Compact Fahrwerk: lean gauge + G/Flow + mount-zero in one row.
 class RideHudChassisDock extends StatelessWidget {
   const RideHudChassisDock({
     super.key,
@@ -123,8 +145,10 @@ class RideHudChassisDock extends StatelessWidget {
     this.gPeak,
     this.flow,
     this.calibrated = false,
+    this.calibrateEnabled = true,
     this.onCalibrate,
     this.onResetCal,
+    this.embedded = false,
   });
 
   final MountCheck mount;
@@ -133,169 +157,140 @@ class RideHudChassisDock extends StatelessWidget {
   final double? gPeak;
   final double? flow;
   final bool calibrated;
+  final bool calibrateEnabled;
   final VoidCallback? onCalibrate;
   final VoidCallback? onResetCal;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10nOrNull;
-    if (mount != MountCheck.mounted) {
+    final live = HudLeanCalibration.hasLiveSample(
+      leanDeg: leanDeg,
+      gPeak: gPeak,
+      flow: flow,
+    );
+    final calHint = calibrateEnabled
+        ? (l10n?.rideCalibrateLeanHint ??
+            'Lenker gerade halten — setzt die aktuelle Neigung auf 0°.')
+        : (l10n?.rideCalibrateLeanHold ?? 'Kurz anhalten zum Kalibrieren');
+    final calLabel = l10n?.rideCalibrateLean ?? 'Kalibrieren';
+
+    if (!live) {
+      final prime = mount != MountCheck.mounted;
       return RideHudLiveDock(
+        embedded: embedded,
         child: KeyedSubtree(
           key: RideHudLiveDock.chassisKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Text(
-                l10n?.rideChassisOff ?? 'Fahrwerksanalyse aus',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n?.rideChassisHint ??
-                    'Handy am Lenker befestigen und als montiert markieren.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.25,
-                  color: AppColors.meta(context),
+              Expanded(
+                child: Text(
+                  prime
+                      ? calHint
+                      : (l10n?.rideWaitingSensors ?? 'Warte auf Sensorik…'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.25,
+                    color: AppColors.meta(context),
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.s),
-              FilledButton(
-                onPressed: onMarkMounted,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 40),
-                  visualDensity: VisualDensity.compact,
+              if (prime) ...[
+                const SizedBox(width: AppSpacing.s),
+                _calibrateButton(
+                  label: calLabel,
+                  hint: calHint,
+                  onPressed: () {
+                    onMarkMounted();
+                    onCalibrate?.call();
+                  },
                 ),
-                child: Text(l10n?.rideMarkMounted ?? 'Als montiert markieren'),
-              ),
+              ],
             ],
           ),
         ),
       );
     }
 
-    final waiting = leanDeg == null && gPeak == null && flow == null;
     return RideHudLiveDock(
+      embedded: embedded,
       child: KeyedSubtree(
         key: RideHudLiveDock.chassisKey,
-        child: waiting
-            ? Text(
-                l10n?.rideWaitingSensors ?? 'Warte auf Sensorik…',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.meta(context),
-                ),
-              )
-            : Row(
-                children: [
-                  RideLeanGauge(leanDeg: leanDeg ?? 0),
-                  const SizedBox(width: AppSpacing.m),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _stat(
-                                context,
-                                value: leanDeg == null
-                                    ? NavHudTokens.emptyStat
-                                    : HudLeanCalibration.formatDeg(leanDeg!),
-                                label: l10n?.rideLean ?? 'Neig.',
-                              ),
-                            ),
-                            Expanded(
-                              child: _stat(
-                                context,
-                                value: gPeak == null
-                                    ? NavHudTokens.emptyStat
-                                    : gPeak!.toStringAsFixed(2),
-                                label: l10n?.rideGPeak ?? 'G-Peak',
-                              ),
-                            ),
-                            Expanded(
-                              child: _stat(
-                                context,
-                                value: flow == null
-                                    ? NavHudTokens.emptyStat
-                                    : flow!.toStringAsFixed(2),
-                                label: l10n?.rideFlow ?? 'Flow',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.s),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Tooltip(
-                                message: l10n?.rideCalibrateLeanHint ??
-                                    'Lenker gerade halten — setzt die aktuelle Neigung auf 0°.',
-                                child: OutlinedButton.icon(
-                                  key: RideHudLiveDock.calibrateKey,
-                                  onPressed:
-                                      leanDeg == null ? null : onCalibrate,
-                                  icon: const Icon(
-                                    Icons.horizontal_rule,
-                                    size: 16,
-                                  ),
-                                  label: Text(
-                                    l10n?.rideCalibrateLean ?? 'Kalibrieren',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(0, 36),
-                                    visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.s,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (calibrated && onResetCal != null) ...[
-                              const SizedBox(width: AppSpacing.s),
-                              IconButton(
-                                key: RideHudLiveDock.resetCalKey,
-                                tooltip:
-                                    l10n?.rideResetLeanCal ?? 'Nullung zurück',
-                                onPressed: onResetCal,
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(Icons.restart_alt, size: 20),
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (calibrated)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              l10n?.rideLeanCalibrated ?? 'genullt',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.meta(context),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+        child: Row(
+          children: [
+            RideLeanGauge(leanDeg: leanDeg ?? 0),
+            const SizedBox(width: AppSpacing.s),
+            Expanded(
+              child: _stat(
+                context,
+                value: gPeak == null
+                    ? NavHudTokens.emptyStat
+                    : gPeak!.toStringAsFixed(2),
+                label: l10n?.rideGPeak ?? 'g-Spitze',
               ),
+            ),
+            Expanded(
+              child: _stat(
+                context,
+                value: flow == null
+                    ? NavHudTokens.emptyStat
+                    : flow!.toStringAsFixed(2),
+                label: l10n?.rideFlow ?? 'Flow',
+              ),
+            ),
+            Flexible(
+              child: _calibrateButton(
+                label: calLabel,
+                hint: calHint,
+                onPressed: !calibrateEnabled || leanDeg == null
+                    ? null
+                    : () {
+                        onMarkMounted();
+                        onCalibrate?.call();
+                      },
+              ),
+            ),
+            if (calibrated && onResetCal != null)
+              IconButton(
+                key: RideHudLiveDock.resetCalKey,
+                tooltip: l10n?.rideResetLeanCal ?? 'Nullung zurück',
+                onPressed: onResetCal,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.restart_alt, size: 20),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _stat(BuildContext context, {required String value, required String label}) {
+  Widget _calibrateButton({
+    required String label,
+    required String hint,
+    required VoidCallback? onPressed,
+  }) {
+    return Tooltip(
+      message: hint,
+      child: OutlinedButton(
+        key: RideHudLiveDock.calibrateKey,
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 36),
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    );
+  }
+
+  Widget _stat(
+    BuildContext context, {
+    required String value,
+    required String label,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -325,7 +320,7 @@ class RideHudChassisDock extends StatelessWidget {
   }
 }
 
-/// Glanceable lean: horizon + tilted bike bar, signed degrees.
+/// Glanceable lean: horizon + tilted bar, signed degrees on the face.
 class RideLeanGauge extends StatelessWidget {
   const RideLeanGauge({super.key, required this.leanDeg});
 
@@ -335,15 +330,36 @@ class RideLeanGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = AppColors.chromeFill(context);
     final tick = AppColors.meta(context);
-    return SizedBox(
-      key: RideHudLiveDock.gaugeKey,
-      width: 64,
-      height: 64,
-      child: CustomPaint(
-        painter: _LeanGaugePainter(
-          leanDeg: leanDeg,
-          accent: accent,
-          tick: tick,
+    final ink = AppColors.sheetInk(context);
+    final label = HudLeanCalibration.formatDeg(leanDeg);
+    return Semantics(
+      label: label,
+      child: SizedBox(
+        key: RideHudLiveDock.gaugeKey,
+        width: 56,
+        height: 56,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CustomPaint(
+              size: const Size(56, 56),
+              painter: _LeanGaugePainter(
+                leanDeg: HudLeanCalibration.gaugeVisualDeg(leanDeg),
+                accent: accent,
+                tick: tick,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                height: 1,
+                color: ink,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -386,17 +402,10 @@ class _LeanGaugePainter extends CustomPainter {
     canvas.translate(c.dx, c.dy);
     canvas.rotate(rad);
     final bar = Paint()
-      ..color = accent
-      ..strokeWidth = 4
+      ..color = accent.withValues(alpha: 0.85)
+      ..strokeWidth = 3.2
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(-r + 10, 0), Offset(r - 10, 0), bar);
-    final diamond = Path()
-      ..moveTo(0, -7)
-      ..lineTo(5, 0)
-      ..lineTo(0, 7)
-      ..lineTo(-5, 0)
-      ..close();
-    canvas.drawPath(diamond, Paint()..color = accent);
     canvas.restore();
   }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 24" width="240" height="24" role="img" aria-hidden="true">
+  <title>FlowLine Stand-Schiene</title>
+  <path d="M10 11 H230" fill="none" stroke="#E57532" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M8 16 C40 14 72 18 110 16 C148 14 186 18 232 17 L232 21 C186 22 148 19 110 20 C72 21 40 18 8 20 Z" fill="#818C7B"/>
+  <circle cx="28" cy="11" r="2.2" fill="#E57532"/>
+  <circle cx="212" cy="11" r="2.2" fill="#E57532"/>
+  <path d="M28 11 V18" fill="none" stroke="#9A9C9B" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M212 11 V18" fill="none" stroke="#9A9C9B" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

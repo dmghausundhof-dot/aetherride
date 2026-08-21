@@ -185,7 +185,7 @@ abstract final class MultiSportCopy {
       'Für MTB, Gravel, Rennrad, City & E-Bike — eine App fürs Rad.';
 
   static const navHome = 'Home';
-  static const navGarage = 'Garage';
+  static const navGarage = 'Rad';
   static const navRide = 'Fahren';
   static const navDiscover = 'Touren';
   static const navParts = 'Teile';
@@ -202,7 +202,7 @@ abstract final class MultiSportCopy {
   static const optionalRoute =
       'Optional: unter Touren eine Route wählen und „Losfahren“.';
   static const discoverMenuPhotos = 'Umgebungsfotos';
-  static const discoverMenuOffline = 'Offline-Karten';
+  static const discoverMenuOffline = 'Offline-Routing';
   static const discoverMenuCollections = 'Sammlungen';
   static const discoverMenuPrivacy = 'Heatmap & Privatsphäre';
   static const partsTitle = 'Teile & Zubehör';

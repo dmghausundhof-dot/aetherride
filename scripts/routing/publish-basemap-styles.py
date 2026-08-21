@@ -81,8 +81,8 @@ def main() -> int:
     if not supabase_url or not service_key:
         raise SystemExit("missing SUPABASE url or service role")
     files = sorted(STYLES.glob("*-z11-style.json"))
-    if len(files) != 7:
-        raise SystemExit(f"expected 7 style JSONs in {STYLES}, got {len(files)}")
+    if len(files) < 1:
+        raise SystemExit(f"no style JSONs in {STYLES}")
     for path in files:
         data = json.loads(path.read_text(encoding="utf-8"))
         if data.get("version") != 8:

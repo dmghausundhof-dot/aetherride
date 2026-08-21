@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Cockpit">
+  <title>FlowLine Cockpit</title>
+  <path d="M4.8 12.6 C6.4 8.8 9 6.8 12 6.8 C15 6.8 17.6 8.8 19.2 12.6" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M12 12.2 L15.4 8.6" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="12" cy="12.4" r="1.5" fill="#FF6A00"/>
+</svg>

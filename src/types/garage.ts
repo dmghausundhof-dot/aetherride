@@ -272,6 +272,19 @@ export interface Bike {
   wheelSizeRear?: WheelSize;
   weightKg?: number;
   color?: string;
+  /** Rahmennummer — Diebstahl / Versicherung, nicht öffentlich */
+  serialNumber?: string;
+  notes?: string;
+  /** ISO `yyyy-mm-dd` — gebuchter Werkstatt-Termin, nicht das Pflege-Intervall. */
+  nextServiceAt?: string;
+  /** ISO `yyyy-mm-dd` */
+  purchasedAt?: string;
+  purchasedFrom?: string;
+  purchasePriceEur?: number;
+  insuranceName?: string;
+  insurancePolicy?: string;
+  /** Schloss- oder Akkuschlüssel */
+  keyNumber?: string;
   /** Optionales Bike-Foto (Data-URL oder https) — Garage-Identität */
   photoUrl?: string;
   isActive: boolean;
@@ -296,6 +309,8 @@ export interface MaintenanceLogEntry {
   notes?: string;
   odometerKm?: number;
   hours?: number;
+  /** Local data-URL — not synced. */
+  photoDataUrl?: string;
 }
 
 export interface MaintenanceInterval {

@@ -302,3 +302,197 @@ class CatalogBikeHit {
   String get label =>
       '$manufacturerName $name${year > 0 ? ' ($year)' : ''}';
 }
+
+class CatalogIdentifyResult {
+  const CatalogIdentifyResult({
+    this.matches = const [],
+    this.vision = false,
+    this.reason,
+    this.visionParts = const [],
+    this.queries = const [],
+  });
+
+  final List<CatalogBikeHit> matches;
+  final bool vision;
+  final String? reason;
+
+  /// Am Foto genannte Teile — ohne SKU, nur Slot + sichtbarer Name.
+  final List<CatalogVisionPart> visionParts;
+
+  /// Was Grok als Marke/Modell gelesen hat — auch ohne Katalogtreffer.
+  final List<String> queries;
+
+  bool get hasHits => matches.isNotEmpty;
+
+  /// Text oder Teile vom Foto — Flow darf weiterlaufen, auch ohne Treffer.
+  bool get hasVisionRead => readSummary.isNotEmpty;
+
+  /// Treffer, gelesener Text oder Teile — Abbruch nur wenn wirklich nichts da ist.
+  bool get canContinue =>
+      hasHits || hasVisionRead || visionParts.isNotEmpty;
+
+  /// Kurztext zum Gegenprüfen, z. B. „Canyon Spectral · Fox 36 Grip2“.
+  String get readSummary =>
+      grokReadSummary(queries: queries, parts: visionParts);
+
+  factory CatalogIdentifyResult.fromJson(Map<String, dynamic> m) {
+    final raw = m['matches'];
+    final q = m['queries'];
+    return CatalogIdentifyResult(
+      matches: [
+        if (raw is List)
+          for (final e in raw)
+            if (e is Map)
+              CatalogBikeHit.fromJson(Map<String, dynamic>.from(e)),
+      ],
+      vision: m['vision'] == true || m['source'] == 'vision+catalog',
+      reason: (m['reason'] as String?)?.trim(),
+      visionParts: CatalogVisionPart.listFromJson(m['parts']),
+      queries: [
+        if (q is List)
+          for (final e in q)
+            if (e is String && e.trim().isNotEmpty) e.trim(),
+      ],
+    );
+  }
+}
+
+/// Roh-Text aus Queries + Teilnamen, ohne Duplikate, nichts erfinden.
+String grokReadSummary({
+  List<String> queries = const [],
+  List<CatalogVisionPart> parts = const [],
+}) {
+  final bits = <String>[];
+  void add(String? raw) {
+    final t = (raw ?? '').trim();
+    if (t.isEmpty) return;
+    if (bits.any((b) => b.toLowerCase() == t.toLowerCase())) return;
+    bits.add(t);
+  }
+
+  for (final q in queries) {
+    add(q);
+  }
+  for (final p in parts) {
+    add(
+      [
+        if ((p.manufacturer ?? '').trim().isNotEmpty) p.manufacturer!.trim(),
+        if ((p.model ?? '').trim().isNotEmpty) p.model!.trim(),
+      ].join(' '),
+    );
+  }
+  return bits.join(' · ');
+}
+
+/// Sichtbares Teil vom Foto — kein Katalog-SKU.
+class CatalogVisionPart {
+  const CatalogVisionPart({
+    required this.slotApiId,
+    this.manufacturer,
+    this.model,
+  });
+
+  final String slotApiId;
+  final String? manufacturer;
+  final String? model;
+
+  static List<CatalogVisionPart> listFromJson(Object? raw) {
+    if (raw is! List) return [];
+    final out = <CatalogVisionPart>[];
+    for (final e in raw) {
+      if (e is! Map) continue;
+      final m = Map<String, dynamic>.from(e);
+      final slot = '${m['slot'] ?? ''}'.trim();
+      if (slot.isEmpty) continue;
+      final manufacturer = (m['manufacturer'] as String?)?.trim();
+      final model = (m['model'] as String?)?.trim();
+      if ((manufacturer == null || manufacturer.isEmpty) &&
+          (model == null || model.isEmpty)) {
+        continue;
+      }
+      out.add(CatalogVisionPart(
+        slotApiId: slot,
+        manufacturer: manufacturer,
+        model: model,
+      ));
+    }
+    return out;
+  }
+}
+
+String preferCatalogManufacturerId(String a, [String? b]) {
+  if (b == null || b.isEmpty) return a.startsWith('mfr-') ? a : a;
+  if (a.startsWith('mfr-') && !b.startsWith('mfr-')) return a;
+  if (b.startsWith('mfr-') && !a.startsWith('mfr-')) return b;
+  return a;
+}
+
+/// Postgres hat Marken doppelt (`canyon` + `mfr-canyon`). Ein Eintrag pro Name.
+List<CatalogManufacturer> mergeCatalogManufacturers(
+  List<CatalogManufacturer> raw,
+) {
+  final byName = <String, CatalogManufacturer>{};
+  for (final m in raw) {
+    final key = m.name.trim().toLowerCase();
+    if (key.isEmpty) continue;
+    final existing = byName[key];
+    if (existing == null) {
+      byName[key] = CatalogManufacturer(
+        id: preferCatalogManufacturerId(m.id),
+        name: m.name.trim(),
+        bikes: List<CatalogBikeVariant>.from(m.bikes),
+      );
+      continue;
+    }
+    final bikes = [...existing.bikes];
+    final seen = {for (final b in bikes) b.id};
+    for (final b in m.bikes) {
+      if (b.id.isEmpty || seen.contains(b.id)) continue;
+      bikes.add(b);
+      seen.add(b.id);
+    }
+    byName[key] = CatalogManufacturer(
+      id: preferCatalogManufacturerId(existing.id, m.id),
+      name: existing.name,
+      bikes: bikes,
+    );
+  }
+  final out = byName.values.toList()
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return out;
+}
+
+({CatalogManufacturer mfr, CatalogBikeVariant bike})? findCatalogBikeInList(
+  List<CatalogManufacturer> manufacturers, {
+  String? bikeId,
+  String? manufacturerId,
+  String? manufacturerName,
+}) {
+  if (bikeId != null && bikeId.isNotEmpty) {
+    for (final m in manufacturers) {
+      for (final b in m.bikes) {
+        if (b.id == bikeId) return (mfr: m, bike: b);
+      }
+    }
+  }
+  CatalogManufacturer? mfr;
+  if (manufacturerId != null && manufacturerId.isNotEmpty) {
+    for (final m in manufacturers) {
+      if (m.id == manufacturerId) {
+        mfr = m;
+        break;
+      }
+    }
+  }
+  if (mfr == null && manufacturerName != null && manufacturerName.isNotEmpty) {
+    final n = manufacturerName.trim().toLowerCase();
+    for (final m in manufacturers) {
+      if (m.name.trim().toLowerCase() == n) {
+        mfr = m;
+        break;
+      }
+    }
+  }
+  if (mfr == null || mfr.bikes.isEmpty) return null;
+  return (mfr: mfr, bike: mfr.bikes.first);
+}

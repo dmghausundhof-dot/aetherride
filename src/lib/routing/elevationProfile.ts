@@ -9,6 +9,9 @@ export interface ProfilePoint {
   gradePct: number | null;
   surface?: string | null;
   mtbScale?: string | null;
+  /** Sample location — only when the lookup actually measured that point. */
+  lat?: number;
+  lng?: number;
 }
 
 export interface ElevationProfile {
@@ -68,6 +71,8 @@ export function buildElevationFromTrack(
     gradePct: 0,
     surface: null,
     mtbScale: null,
+    lat: track[0].lat,
+    lng: track[0].lng,
   });
 
   for (let i = 1; i < track.length; i++) {
@@ -90,6 +95,8 @@ export function buildElevationFromTrack(
       gradePct: grade,
       surface: null,
       mtbScale: null,
+      lat: track[i].lat,
+      lng: track[i].lng,
     });
     if (elev != null) prevElev = elev;
   }
@@ -182,4 +189,30 @@ function bandify(
     }
   }
   return bands;
+}
+
+export type SurfaceMixShare = {
+  key: string;
+  km: number;
+  share: number;
+};
+
+/** Honest mix — unknown/null surfaces are dropped, not guessed. */
+export function surfaceMixShares(
+  bands: { fromKm: number; toKm: number; surface: string | null }[]
+): SurfaceMixShare[] {
+  const kmBy = new Map<string, number>();
+  let known = 0;
+  for (const b of bands) {
+    const key = (b.surface ?? "").trim().toLowerCase();
+    if (!key) continue;
+    const km = Math.max(0, b.toKm - b.fromKm);
+    if (km <= 0) continue;
+    kmBy.set(key, (kmBy.get(key) ?? 0) + km);
+    known += km;
+  }
+  if (known <= 0) return [];
+  return [...kmBy.entries()]
+    .map(([key, km]) => ({ key, km, share: km / known }))
+    .sort((a, b) => b.km - a.km);
 }

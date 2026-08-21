@@ -1,44 +1,28 @@
 import { recommendedSagPct } from "@/lib/setup/ranges";
+import { estimateAirPsiFromLoad } from "@/lib/setup/suspensionModel";
 import type { BikeCategory } from "@/types";
 
 /**
- * Grobe PSI-Schätzung aus Magazin-/OEM-Praxis (Richtwert, kein Tuning).
- * Formel-Idee: Ziel-SAG % und Fahrergewicht → Luft-Druck-Spanne.
- * Quellen: Enduro MTB Mag / Dirt / Simplon SAG-Tabellen (gleiche Range-Lib).
+ * Grobe PSI-Schätzung. Massenmodell: rider + gear + Rad über 14 kg.
+ * Quellen: Enduro MTB Mag / Dirt / Simplon SAG-Spannen (Range-Lib).
  */
 export function estimateAirPsi(input: {
   riderWeightKg: number;
   gearWeightKg?: number;
+  bikeWeightKg?: number;
   category: BikeCategory;
   end: "fork" | "shock";
   travelMm?: number;
-}): { sag: ReturnType<typeof recommendedSagPct>; psiMin: number; psiMax: number; psiTarget: number; note: string } {
-  const sag = recommendedSagPct(input.category, input.end);
-  const totalKg = Math.max(40, input.riderWeightKg + (input.gearWeightKg ?? 0));
-
-  // Heuristik: ~0.9–1.1 psi/kg Gabel, ~1.1–1.4 psi/kg Dämpfer, skaliert mit SAG-Ziel
-  const base =
-    input.end === "fork"
-      ? totalKg * (0.95 + (30 - sag.target) * 0.012)
-      : totalKg * (1.15 + (35 - sag.target) * 0.015);
-
-  const travelFactor =
-    input.travelMm && input.travelMm > 0
-      ? Math.min(1.15, Math.max(0.85, 150 / input.travelMm))
-      : 1;
-
-  const psiTarget = Math.round(base * travelFactor);
-  const psiMin = Math.max(30, Math.round(psiTarget * 0.92));
-  const psiMax = Math.round(psiTarget * 1.08);
-
-  return {
-    sag,
-    psiMin,
-    psiMax,
-    psiTarget,
-    note:
-      "Richtwert zum Einstieg — am Bike messen (O-Ring), dann ±5 psi feinjustieren. Keine Hersteller-Garantie.",
-  };
+}): {
+  sag: ReturnType<typeof recommendedSagPct>;
+  psiMin: number;
+  psiMax: number;
+  psiTarget: number;
+  sagMm: number | null;
+  loadKg: number;
+  note: string;
+} {
+  return estimateAirPsiFromLoad(input);
 }
 
 export function sagMeasureSteps(end: "fork" | "shock"): string[] {

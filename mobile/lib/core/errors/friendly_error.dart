@@ -16,6 +16,12 @@ String friendlyErrorMessage(Object error, {String? context}) {
   final prefix = ctx == null ? '' : '$ctx — ';
   final msg = error.toString();
 
+  if (msg.contains('offline-vias-need-network')) {
+    return '$prefix${_copy(lang, de: 'Zwischenziele brauchen Netz.', en: 'Stops need the network.', fr: 'Les arrêts ont besoin du réseau.', it: 'Le tappe richiedono la rete.', nl: 'Tussenstops hebben net nodig.')}';
+  }
+  if (msg.contains('offline-no-route')) {
+    return '$prefix${_copy(lang, de: 'Ohne Netz — das Pack muss Start und Ziel decken.', en: 'No network — the pack must cover start and end.', fr: 'Hors réseau — le pack doit couvrir départ et arrivée.', it: 'Senza rete — il pack deve coprire partenza e arrivo.', nl: 'Geen net — het pack moet start en doel dekken.')}';
+  }
   if (error is TimeoutException) {
     return '$prefix${_copy(lang, de: 'Zeitüberschreitung — Verbindung prüfen und erneut versuchen.', en: 'Timed out — check the connection and try again.', fr: 'Délai dépassé — vérifie la connexion et réessaie.', it: 'Tempo scaduto — controlla la connessione e riprova.', nl: 'Time-out — check de verbinding en probeer opnieuw.')}';
   }
@@ -40,7 +46,8 @@ String friendlyErrorMessage(Object error, {String? context}) {
     return '$prefix${_copy(lang, de: 'Antwort konnte nicht gelesen werden.', en: 'Could not read the response.', fr: 'Impossible de lire la réponse.', it: 'Impossibile leggere la risposta.', nl: 'Antwoord kon niet worden gelezen.')}';
   }
 
-  final generic = '$prefix${_copy(lang, de: 'Etwas ist schiefgelaufen — erneut versuchen.', en: 'Something went wrong — try again.', fr: 'Quelque chose a cloché — réessaie.', it: 'Qualcosa è andato storto — riprova.', nl: 'Er ging iets mis — probeer opnieuw.')}';
+  final generic =
+      '$prefix${_copy(lang, de: 'Etwas ist schiefgelaufen — erneut versuchen.', en: 'Something went wrong — try again.', fr: 'Quelque chose a cloché — réessaie.', it: 'Qualcosa è andato storto — riprova.', nl: 'Er ging iets mis — probeer opnieuw.')}';
   return kDebugMode ? '$generic ($msg)' : generic;
 }
 

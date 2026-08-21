@@ -8,6 +8,7 @@ class SyncPayload {
     this.privacyZones,
     this.familyRiders,
     this.activeFamilyRiderId,
+    this.ownSetupByBikeId,
     this.riderProfile,
     this.subscriptionTier,
     this.commerceMode,
@@ -37,6 +38,7 @@ class SyncPayload {
   final dynamic privacyZones;
   final dynamic familyRiders;
   final String? activeFamilyRiderId;
+  final dynamic ownSetupByBikeId;
   final dynamic riderProfile;
   final String? subscriptionTier;
   final dynamic commerceMode;
@@ -67,6 +69,7 @@ class SyncPayload {
       privacyZones: json['privacyZones'],
       familyRiders: json['familyRiders'],
       activeFamilyRiderId: json['activeFamilyRiderId'] as String?,
+      ownSetupByBikeId: json['ownSetupByBikeId'],
       riderProfile: json['riderProfile'],
       subscriptionTier: json['subscriptionTier'] as String?,
       commerceMode: json['commerceMode'],
@@ -99,6 +102,7 @@ class SyncPayload {
         if (familyRiders != null) 'familyRiders': familyRiders,
         if (activeFamilyRiderId != null)
           'activeFamilyRiderId': activeFamilyRiderId,
+        if (ownSetupByBikeId != null) 'ownSetupByBikeId': ownSetupByBikeId,
         if (riderProfile != null) 'riderProfile': riderProfile,
         if (subscriptionTier != null) 'subscriptionTier': subscriptionTier,
         if (commerceMode != null) 'commerceMode': commerceMode,
@@ -130,6 +134,7 @@ class SyncPayload {
     dynamic privacyZones,
     dynamic familyRiders,
     String? activeFamilyRiderId,
+    dynamic ownSetupByBikeId,
     dynamic riderProfile,
     dynamic savedRoutes,
     dynamic routeCollections,
@@ -159,6 +164,7 @@ class SyncPayload {
       privacyZones: privacyZones ?? this.privacyZones,
       familyRiders: familyRiders ?? this.familyRiders,
       activeFamilyRiderId: activeFamilyRiderId ?? this.activeFamilyRiderId,
+      ownSetupByBikeId: ownSetupByBikeId ?? this.ownSetupByBikeId,
       riderProfile: riderProfile ?? this.riderProfile,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       commerceMode: commerceMode ?? this.commerceMode,

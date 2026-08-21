@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/routing/upcoming_rail.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../library/mappe_glyph.dart';
 
 /// One-line peek under next-turn (N-07) — stays thin in Clean Mode.
 class RideUpcomingRail extends StatelessWidget {
@@ -15,10 +16,10 @@ class RideUpcomingRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (item.kind) {
-      'poi' => Icons.place_outlined,
-      'climb' => Icons.terrain_outlined,
-      _ => Icons.subdirectory_arrow_right,
+    final mark = switch (item.kind) {
+      'poi' => const MappeGlyph('mappe', size: 16),
+      'climb' => const MappeGlyph('elevation', size: 16),
+      _ => const MappeGlyph('distance', size: 16),
     };
 
     return Padding(
@@ -30,7 +31,7 @@ class RideUpcomingRail extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: AppColors.meta(context)),
+              mark,
               const SizedBox(width: 6),
               Text(
                 context.l10nOrNull?.rideThereafter ?? 'Danach',

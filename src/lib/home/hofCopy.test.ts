@@ -24,10 +24,21 @@ function testDeFallback() {
   assert.equal(HOF_COPY.shopKicker, "Über den Hof");
   assert.equal(HOF_COPY.shopPartsForBike, "Teile für dein Rad");
   assert.equal(HOF_COPY.shopLookupInShop, "Im Laden nachschlagen");
-  assert.equal(HOF_COPY.workshopEmpty, "Noch kein Rad hier");
+  assert.equal(HOF_COPY.workshopAdd, "Rad anlegen");
+  assert.equal(HOF_COPY.workshopAddPart, "Teil hinzufügen");
+  assert.equal(
+    HOF_COPY.workshopMoreHint,
+    "Teile, Wartung und Setup — sichtbar unter Die Box",
+  );
+  assert.equal(hofCopy("nl").workshopMore, "Meer op de fiets");
+  assert.equal(HOF_COPY.parkBike, "Rad anlegen");
+  assert.equal(hofCopy("en").parkBike, "Add a bike");
+  assert.ok(HOF_COPY.shopForYourBikeEmpty.includes("Lege ein Rad"));
+  assert.ok(!HOF_COPY.shopForYourBikeEmpty.includes("abstellen"));
+  assert.equal(HOF_COPY.workshopEmpty, "Noch kein Rad am Stand");
   assert.equal(
     HOF_COPY.workshopEmptyHint,
-    "Name und Typ reichen. Der Katalog ist Suche — Serienteile nur wenn du sie übernimmst.",
+    "Name und Typ reichen. Marke und Teile kannst du später ergänzen.",
   );
   assert.notEqual(HOF_COPY.shopKicker, HOF_COPY.shopKicker.toUpperCase());
   assert.equal(HOF_COPY.ridePlannedKicker, "Geplante Tour");
@@ -41,8 +52,15 @@ function testDeFallback() {
   assert.equal(HOF_COPY.togetherOut, "Zusammen raus");
   assert.notEqual(HOF_COPY.togetherOut, HOF_COPY.togetherOut.toUpperCase());
   assert.equal(HOF_COPY.akteStimmen, "Stimmen");
-  assert.equal(HOF_COPY.akteMein, "Freigeben");
-  assert.equal(HOF_COPY.workshopTabBox, "Die Box");
+  assert.equal(HOF_COPY.akteMein, "Akte");
+  assert.equal(hofCopy("en").akteMein, "Akte");
+  assert.equal(hofCopy("fr").akteMein, "Akte");
+  assert.equal(hofCopy("it").akteMein, "Akte");
+  assert.equal(hofCopy("nl").akteMein, "Akte");
+  assert.equal(HOF_COPY.workshopWearTitle, "Verschleißprognose");
+  assert.equal(hofCopy("en").workshopWearTitle, "Wear forecast");
+  assert.equal(HOF_COPY.workshopStandOpen, "Stand setzen");
+  assert.equal(HOF_COPY.workshopTabParts, "Teile");
   assert.equal(HOF_COPY.workshopZoneToday, "Heute");
   assert.equal(HOF_COPY.workshopZoneOnBike, "Am Rad");
   assert.equal(HOF_COPY.workshopBikes, "Deine Räder");

@@ -35,7 +35,7 @@ function HomeInner() {
     <div>
       {isDemoMaintenance && (
         <p className="mx-auto mb-0 mt-3 max-w-2xl rounded-xl border border-warning/30 bg-warning/10 px-5 py-2 text-xs text-warning lg:max-w-3xl">
-          Demo: Bike mit fälliger Wartung geladen (
+          Demo: Rad mit fälliger Wartung geladen (
           <code className="text-[11px]">?demo=maintenance</code>).
         </p>
       )}
@@ -77,7 +77,7 @@ function HomeInner() {
                 }}
                 className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-elevated"
               >
-                Demo: leeres OEM-Bike
+                Demo: leeres OEM-Rad
               </button>
             </div>
           </div>

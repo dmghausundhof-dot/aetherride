@@ -6,6 +6,9 @@ import {
   modelDisplayName,
 } from "@/lib/catalog/components";
 import { slotLabel } from "@/lib/catalog/slots";
+import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import { presentCompat } from "@/lib/i18n/compatCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import {
   aggregateVerdict,
   checkCandidateOnBike,
@@ -26,6 +29,8 @@ export function InstallComponentSheet({
   onClose: () => void;
 }) {
   const installComponent = useAppStore((s) => s.installComponent);
+  const lang = useChromeLang();
+  const tab = garageTabCopy(lang);
   const [slot, setSlot] = useState<ComponentSlot>(initialSlot);
   const [query, setQuery] = useState("");
   const [modelId, setModelId] = useState("");
@@ -76,7 +81,7 @@ export function InstallComponentSheet({
       installComponent({
         bikeId: bike.id,
         slot,
-        freeText: freeText.trim() || "Eingetragen",
+        freeText: freeText.trim() || tab.logged,
       });
     }
     onClose();
@@ -86,11 +91,11 @@ export function InstallComponentSheet({
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 sm:rounded-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Teil eintragen</h2>
+          <h2 className="text-lg font-bold">{tab.installTitle}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={tab.close}
             className="p-2"
           >
             <X className="h-5 w-5" aria-hidden />
@@ -98,7 +103,7 @@ export function InstallComponentSheet({
         </div>
 
         <label className="mb-3 block text-sm">
-          Slot
+          {tab.slot}
           <select
             value={slot}
             onChange={(e) => {
@@ -110,31 +115,31 @@ export function InstallComponentSheet({
           >
             {slotOptions.map((s) => (
               <option key={s} value={s}>
-                {slotLabel(s)}
+                {slotLabel(s, lang)}
               </option>
             ))}
           </select>
         </label>
 
         <label className="mb-2 block text-sm">
-          Hersteller und Modell
+          {tab.makerModel}
           <input
             value={freeText}
             onChange={(e) => {
               setFreeText(e.target.value);
               if (modelId) setModelId("");
             }}
-            placeholder="z. B. Maxxis Assegai"
+            placeholder={tab.makerPlaceholder}
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           />
         </label>
 
         <label className="mb-2 block text-sm">
-          Im Katalog suchen
+          {tab.catalogSearch}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="optional — Treffer zuordnen"
+            placeholder={tab.catalogPlaceholder}
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           />
         </label>
@@ -143,7 +148,7 @@ export function InstallComponentSheet({
           <ul className="mb-3 max-h-40 overflow-y-auto rounded-xl border border-border">
             {hits.length === 0 ? (
               <li className="px-3 py-2 text-xs text-text-secondary">
-                Kein Treffer — einfach merken ohne Katalog.
+                {tab.noHit}
               </li>
             ) : (
               hits.map((m) => (
@@ -170,31 +175,33 @@ export function InstallComponentSheet({
 
         {modelId ? (
           <p className="mb-2 text-xs text-text-secondary">
-            Katalog zugeordnet — Kompat nur wenn Partner-Slots da sind.
+            {tab.catalogLinked}
           </p>
         ) : (
           <p className="mb-2 text-xs text-text-secondary">
-            Ohne Treffer speichern wir den Namen. Kompat kannst du später
-            zuordnen.
+            {tab.saveName}
           </p>
         )}
 
         {modelId && results.length > 0 && (
           <details className="mb-2 rounded-xl border border-border bg-surface-elevated p-2">
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm">
-              <span>Kompat</span>
+              <span>{tab.compatHeading}</span>
               <VerdictPill verdict={verdict} />
             </summary>
             <div className="mt-2 flex max-h-40 flex-col gap-2 overflow-y-auto">
-              {results.map((r) => (
+              {results.map((r) => {
+                const presented = presentCompat(r, lang);
+                return (
                 <div key={r.ruleCode} className="text-xs">
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="font-medium">{r.ruleCode}</span>
+                    <span className="font-medium">{presented.title}</span>
                     <VerdictPill verdict={r.verdict} />
                   </div>
-                  <p className="text-text-secondary">{r.explainDe}</p>
+                  <p className="text-text-secondary">{presented.explain}</p>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </details>
         )}
@@ -205,7 +212,7 @@ export function InstallComponentSheet({
           disabled={!freeText.trim() && !modelId}
           className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-40"
         >
-          {modelId ? "Zuordnen und einbauen" : "Ohne Katalog merken"}
+          {modelId ? tab.assignInstall : tab.rememberWithout}
         </button>
       </div>
     </div>

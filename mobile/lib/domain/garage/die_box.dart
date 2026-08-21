@@ -1,4 +1,5 @@
 import '../bike.dart';
+import '../bike_owner.dart';
 import '../component.dart';
 import '../maintenance/intervals.dart';
 import '../setup.dart';
@@ -21,12 +22,20 @@ enum DieBoxItemId {
   dueCare,
   pairCsc,
   parkTrail,
+  serviceAppointment,
 }
 
 class DieBoxChip {
-  const DieBoxChip({required this.label, this.known = true});
+  const DieBoxChip({
+    required this.label,
+    this.known = true,
+    this.fact = false,
+  });
   final String label;
   final bool known;
+
+  /// km/h/Druckzahl/Termin/Beleg — leben in der Werte-Leiste, nicht als Chip.
+  final bool fact;
 }
 
 class DieBoxTodayItem {
@@ -98,6 +107,22 @@ class DieBoxPlan {
   bool get isReady => readiness == DieBoxReadiness.ready && today.isEmpty;
 }
 
+/// Hof-Zeile: Bereitschaft + km. Keine 0–100-Note.
+String bikeHealthLine({
+  required DieBoxReadiness readiness,
+  required double odometerKm,
+  required String readyLabel,
+  required String almostLabel,
+  required String unknownLabel,
+}) {
+  final label = switch (readiness) {
+    DieBoxReadiness.ready => readyLabel,
+    DieBoxReadiness.almost => almostLabel,
+    DieBoxReadiness.unknown => unknownLabel,
+  };
+  return '$label · ${odometerKm.round()} km';
+}
+
 /// Hof-Tafel: nur fällige Pflege. SAG/Druck/Kette-Heute bleibt in der Box.
 DieBoxTodayItem? tafelCareItem(DieBoxPlan plan) {
   DieBoxTodayItem? soon;
@@ -161,21 +186,53 @@ bool _isTrail(BikeSetup s) {
       blob.contains('mixed');
 }
 
-/// Teile-Tab and Am Rad: addable slots plus rider-typed parts.
-/// Catalog OEM dump (headset, saddle with model id) stays off the stall.
+bool isQuietFitSlot(ComponentSlot slot) =>
+    slot == ComponentSlot.headset ||
+    slot == ComponentSlot.frontHub ||
+    slot == ComponentSlot.frontRim ||
+    slot == ComponentSlot.rotorFront;
+
+bool _quietOemDump(BikeComponent c) {
+  final dump =
+      c.catalogModelId != null && c.catalogModelId!.trim().isNotEmpty;
+  if (!dump) return false;
+  return isQuietFitSlot(c.slot);
+}
+
+/// Ghosts: rider checklist, not fit-engineering slots.
+/// Schema hotspots already invite headset / front wheel.
+List<ComponentSlot> ghostSlotsFor({
+  required List<ComponentSlot> addable,
+  required Set<ComponentSlot> installed,
+  List<ComponentSlot> schemaSlots = const [],
+}) {
+  final onSchema = schemaSlots.toSet();
+  return [
+    for (final s in addable)
+      if (!installed.contains(s) &&
+          !isQuietFitSlot(s) &&
+          !onSchema.contains(s))
+        s,
+  ];
+}
+
+/// Teile-Tab: addable first, then rider-kept parts.
+/// Catalog OEM dump stays off quiet fit-slots (headset, front hub/rim/rotor)
+/// even when those slots are addable for compatibility.
 List<BikeComponent> listedWorkshopParts({
   required List<BikeComponent> installed,
   required List<ComponentSlot> addable,
 }) {
   final listed = <BikeComponent>[
     for (final s in addable)
-      if (installed.any((c) => c.slot == s))
-        installed.firstWhere((c) => c.slot == s),
+      if (installed.any((c) => c.slot == s && !_quietOemDump(c)))
+        installed.firstWhere((c) => c.slot == s && !_quietOemDump(c)),
   ];
   for (final c in installed) {
     if (listed.any((x) => x.id == c.id)) continue;
-    final explicit = c.catalogModelId == null;
-    if (explicit) listed.add(c);
+    final catalogDump =
+        c.catalogModelId != null && c.catalogModelId!.trim().isNotEmpty;
+    if (!catalogDump) listed.add(c);
   }
   return listed;
 }
@@ -188,6 +245,12 @@ List<ComponentSlot> addableSlotsFor(WerkstattSetupPlan plan) {
     ComponentSlot.chain,
     ComponentSlot.brakeFront,
     ComponentSlot.brakeRear,
+    // Vorderrad-Fit: sonst feuern Gabel↔Steuersatz, Gabel↔Achse,
+    // Reifen/Felge vorn, Scheibe vorn↔Nabe nie.
+    ComponentSlot.headset,
+    ComponentSlot.frontHub,
+    ComponentSlot.frontRim,
+    ComponentSlot.rotorFront,
     ...plan.emphasisSlots,
   };
   if (plan.kind == WerkstattKind.urban) {
@@ -224,6 +287,7 @@ DieBoxPlan planDieBox({
   List<Map<String, dynamic>> logs = const [],
   bool cscPaired = false,
   bool driveNeedsWheelSensor = false,
+  int receiptCount = 0,
 }) {
   final setup = planWerkstattSetup(bike: bike, components: components);
   final installed = components.where((c) => c.isInstalled).toList();
@@ -246,6 +310,7 @@ DieBoxPlan planDieBox({
   final gravel = kind == WerkstattKind.gravel;
   final road = kind == WerkstattKind.road;
   final mtb = kind == WerkstattKind.mtb;
+  final hiking = kind == WerkstattKind.hiking;
 
   BikeSetup? park;
   BikeSetup? trail;
@@ -258,7 +323,7 @@ DieBoxPlan planDieBox({
   final hasCockpit = _hasSlot(installed, ComponentSlot.handlebar) ||
       _hasSlot(installed, ComponentSlot.stem);
 
-  // Only known facts on the first surface — gaps live in Heute, not as "offen".
+  // Only known facts on the first surface — km/h/Druck/Termin sitzen auf der Leiste.
   final chips = <DieBoxChip>[];
   if (setup.wheelLabel != null) {
     chips.add(DieBoxChip(label: setup.wheelLabel!));
@@ -268,29 +333,39 @@ DieBoxPlan planDieBox({
     if (hasLock) chips.add(const DieBoxChip(label: 'Schloss'));
     if (hasRack) chips.add(const DieBoxChip(label: 'Träger'));
     if (hasChain || chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
-    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
   }
   if (gravel) {
-    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
     if (hasBags) chips.add(const DieBoxChip(label: 'Taschen'));
     if (hasCockpit) chips.add(const DieBoxChip(label: 'Cockpit'));
     if (hasChain || chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
   }
   if (road) {
-    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
     if (chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
     if (hasCockpit) chips.add(const DieBoxChip(label: 'Cockpit'));
   }
+  if (hiking && (hasChain || chainMeasured)) {
+    chips.add(const DieBoxChip(label: 'Kette'));
+  }
   if (mtb) {
-    if (pressureKnown) chips.add(const DieBoxChip(label: 'Reifen'));
     if (setup.hasDropper) chips.add(const DieBoxChip(label: 'Vario'));
     if (hasBrakes) chips.add(const DieBoxChip(label: 'Bremsen'));
     if (showParkTrail) chips.add(const DieBoxChip(label: 'Park | Trail'));
   }
+  if (bike.owner.hasWorkshop) {
+    chips.add(DieBoxChip(label: bike.owner.workshopLabel!, fact: true));
+  }
+  if (receiptCount > 0) {
+    chips.add(
+      DieBoxChip(
+        label: receiptCount == 1 ? '1 Beleg' : '$receiptCount Belege',
+        fact: true,
+      ),
+    );
+  }
   if (setup.showsFahrwerk &&
       ((bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0)) {
     final t = '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'} mm';
-    chips.add(DieBoxChip(label: t));
+    chips.add(DieBoxChip(label: t, fact: true));
   }
   if (sagKnown) chips.add(const DieBoxChip(label: 'SAG'));
   if (setup.hasElectricAssist && cscPaired) {
@@ -298,6 +373,9 @@ DieBoxPlan planDieBox({
   }
   if (hasLights && !everyday) {
     chips.add(const DieBoxChip(label: 'Licht'));
+  }
+  if (bike.owner.hasSerial) {
+    chips.add(const DieBoxChip(label: 'Ausweis'));
   }
 
   final today = <DieBoxTodayItem>[];
@@ -334,7 +412,7 @@ DieBoxPlan planDieBox({
     );
   }
   // Schloss, Träger, Taschen: addable, not Heute-nags on an empty stall.
-  if ((everyday || gravel || road) && !pressureKnown) {
+  if ((everyday || gravel || road || hiking) && !pressureKnown) {
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.pressureUnknown,
@@ -365,16 +443,20 @@ DieBoxPlan planDieBox({
     );
   }
   if (setup.showsFahrwerk && !sagKnown) {
+    final fully = setup.hasRearShock;
     today.add(
-      const DieBoxTodayItem(
+      DieBoxTodayItem(
         id: DieBoxItemId.sagUnknown,
         title: 'Federung merken',
-        hint: 'Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.',
+        hint: fully
+            ? 'Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.'
+            : 'Eine Zahl an der Gabel, abgelesen am Rad.',
         cta: 'Federung merken',
+        slot: fully ? null : ComponentSlot.fork,
       ),
     );
   }
-  if ((road || gravel || everyday) && !chainMeasured) {
+  if ((road || gravel || everyday || hiking) && !chainMeasured) {
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.chainTeach,
@@ -413,6 +495,27 @@ DieBoxPlan planDieBox({
       ),
     );
   }
+  final days = bike.owner.daysUntilService();
+  if (days != null && days <= 14) {
+    final date = BikeOwner.formatDate(bike.owner.nextServiceAt!);
+    final note = bike.owner.nextServiceNote;
+    today.add(
+      DieBoxTodayItem(
+        id: DieBoxItemId.serviceAppointment,
+        title: days < 0
+            ? 'Wartungstermin überfällig'
+            : days == 0
+                ? 'Wartungstermin heute'
+                : 'Termin am $date',
+        hint: [
+          if (note != null && note.isNotEmpty) note,
+          if (bike.owner.hasWorkshop) bike.owner.workshopLabel!,
+          date,
+        ].join(' · '),
+        cta: 'Öffnen',
+      ),
+    );
+  }
   if (showParkTrail) {
     today.add(
       const DieBoxTodayItem(
@@ -431,7 +534,8 @@ DieBoxPlan planDieBox({
             t.id != DieBoxItemId.setActive &&
             t.id != DieBoxItemId.dueCare &&
             t.id != DieBoxItemId.parkTrail &&
-            t.id != DieBoxItemId.pairCsc,
+            t.id != DieBoxItemId.pairCsc &&
+            t.id != DieBoxItemId.serviceAppointment,
       )
       .length;
   final hasDue = today.any((t) => t.id == DieBoxItemId.dueCare);

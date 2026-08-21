@@ -1,8 +1,7 @@
 import { cn } from "@/lib/utils";
-import {
-  verdictColorClass,
-  verdictLabel,
-} from "@/lib/compatibility/engine";
+import { verdictColorClass } from "@/lib/compatibility/engine";
+import { compatVerdictLabel } from "@/lib/i18n/compatCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import type { CompatibilityVerdict } from "@/types";
 
 export function VerdictPill({
@@ -12,6 +11,7 @@ export function VerdictPill({
   verdict: CompatibilityVerdict;
   className?: string;
 }) {
+  const lang = useChromeLang();
   return (
     <span
       className={cn(
@@ -20,7 +20,7 @@ export function VerdictPill({
         className
       )}
     >
-      {verdictLabel(verdict)}
+      {compatVerdictLabel(verdict, lang)}
     </span>
   );
 }

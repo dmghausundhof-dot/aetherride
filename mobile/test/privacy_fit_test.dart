@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/open.dart';
 
+import 'package:aetherride_mobile/data/export/export_trimmed.dart';
 import 'package:aetherride_mobile/data/export/fit.dart';
 import 'package:aetherride_mobile/domain/privacy/consents.dart';
 import 'package:aetherride_mobile/domain/privacy/track_trim.dart';
@@ -45,6 +46,56 @@ void main() {
       return (dLat * dLat + dLng * dLng) >= 500 * 500;
     }), isTrue);
     expect(out.length, lessThan(track.length));
+  });
+
+  test('rideWithTrimmedTrack does not leak a ride that sat in the zone', () {
+    const zone = PrivacyZone(
+      id: 'z1',
+      label: 'Home',
+      lat: 47.45,
+      lng: 12.15,
+      radiusM: 2000,
+    );
+    final ride = RideRecord(
+      id: 'r-home',
+      bikeId: 'b1',
+      startedAt: DateTime.utc(2026, 1, 1, 10),
+      endedAt: DateTime.utc(2026, 1, 1, 11),
+      distanceKm: 1,
+      movingTimeSec: 600,
+      elevationM: 10,
+      track: [
+        for (var i = 0; i < 8; i++)
+          {'lat': 47.45 + i * 0.0002, 'lng': 12.15 + i * 0.0002, 'time': i * 30},
+      ],
+    );
+    final out = rideWithTrimmedTrack(ride, [zone]);
+    expect(out.track, isEmpty);
+  });
+
+  test('trim keeps elev, time and sensors on remaining points', () {
+    final track = [
+      for (var i = 0; i < 24; i++)
+        {
+          'lat': 48.0 + (i * 50) / 111320,
+          'lng': 8.0,
+          'elev': 200 + i,
+          'time': 1700000000000 + i * 4000,
+          'hr': 130 + i,
+          'cad': 80,
+          'lean': 7,
+          'g': 1.1,
+          'spd': 24,
+        },
+    ];
+    final out = trimTrackForPrivacyZones(track, const []);
+    expect(out.length, greaterThanOrEqualTo(8));
+    for (final p in out) {
+      expect(p['hr'], isNotNull);
+      expect(p['elev'], isNotNull);
+      expect(p['lean'], isNotNull);
+      expect((p['time'] as num) > 1e12, isTrue);
+    }
   });
 
   test('rideToFit produces non-empty FIT with CRC trailer', () {

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Foto">
+  <title>FlowLine Foto</title>
+  <rect x="4" y="7.4" width="16" height="11.2" rx="2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M8.2 7.4 L9.4 5.4 H14.6 L15.8 7.4" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linejoin="round"/>
+  <circle cx="12" cy="13" r="3" fill="none" stroke="#FF6A00" stroke-width="1.6"/>
+</svg>

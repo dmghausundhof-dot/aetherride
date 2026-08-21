@@ -53,9 +53,9 @@ const DE: ProductCopy = {
   ui: {
     kicker: "Produkt",
     title: "Web ist der Hof. Die App fährt.",
-    lead: "Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und teilst du: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad. Auf dem Gerät navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.",
+    lead: "Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und teilst du: Hof, Karte, Touren, Rad. Teile sitzen am Rad. Auf dem Gerät navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.",
     doorsLead:
-      "Ride ist kein Tab. Der Laden ist vorerst aus — die Werkstatt bleibt ohne Kasse.",
+      "Ride ist kein Tab. Der Laden ist vorerst aus — das Rad bleibt ohne Kasse.",
     galleryHeading: "Screens",
     galleryHint:
       "Design-System aus Logo und Bilder, zugeordnet zu den Türen. Ride-HUD bleibt die App.",
@@ -97,11 +97,11 @@ const EN: ProductCopy = {
     },
   ],
   matrix: [
-    { feature: "Home, Map, Platz, workshop", web: "full", app: "full" },
+    { feature: "Home, Map, Tours, Bike", web: "full", app: "full" },
     { feature: "Plan and save a tour", web: "full", app: "full" },
     { feature: "SEO tours & regions", web: "full", app: "Deep Link" },
     { feature: "Live navigation / HUD", web: "Bridge to app", app: "full" },
-    { feature: "Offline maps", web: "—", app: "Packs" },
+    { feature: "Offline routing", web: "—", app: "Graph" },
     { feature: "GPS recording", web: "after sync", app: "native" },
     { feature: "Sensors, watch, BLE", web: "hint", app: "pair" },
     { feature: "Shop / till", web: "paused", app: "paused" },
@@ -129,7 +129,7 @@ const EN: ProductCopy = {
       steps: [
         { label: "Map", href: "/discover" },
         { label: "Plan", href: "/discover?panel=plan" },
-        { label: "Platz / Mappe", href: "/library" },
+        { label: "Tours / Mappe", href: "/library" },
         { label: "App bridge", href: "/ride" },
       ],
     },
@@ -141,15 +141,15 @@ const EN: ProductCopy = {
         { label: "What came in", href: "/activities" },
         { label: "After the ride", href: "/post-ride" },
         { label: "Die Tafel", href: "/home" },
-        { label: "Workshop", href: "/garage" },
+        { label: "Bike", href: "/garage" },
       ],
     },
     {
       id: "garage-shop",
       title: "Care and parts",
-      hint: "The workshop knows the bike. The shop does not charge here.",
+      hint: "The bike knows its stand. The shop does not charge here.",
       steps: [
-        { label: "Park the bike", href: "/garage?wizard=basic" },
+        { label: "Add a bike", href: "/garage?wizard=basic" },
         { label: "Service", href: "/garage?tab=maintenance" },
       ],
     },
@@ -201,13 +201,13 @@ const EN: ProductCopy = {
     },
     {
       title: "Four doors (web app)",
-      hint: "The same IA as in the native app. Ride is not a tab. Parts come from the workshop.",
+      hint: "The same IA as in the native app. Ride is not a tab. Parts sit on the bike.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, sky, gate" },
         { href: "/discover", name: "Map", role: "OSM, loops, filters" },
         { href: "/discover?panel=plan", name: "Plan", role: "Start, via, destination" },
-        { href: "/library", name: "Platz", role: "Mappe, Stimmen, groups" },
-        { href: "/garage", name: "Workshop", role: "Die Box, setup, care, parts" },
+        { href: "/library", name: "Tours", role: "Mappe, Stimmen, groups" },
+        { href: "/garage", name: "Bike", role: "Die Box, setup, care, parts" },
       ],
     },
     {
@@ -244,8 +244,8 @@ const EN: ProductCopy = {
   ui: {
     kicker: "Product",
     title: "Web is Home. The app rides.",
-    lead: "The same app, two surfaces. In the browser you plan, look after the bike and share: Home, Map, Platz, workshop. On the device you navigate, record and pair. There is no feed, no till and no fake GPS in the tab — empty areas stay empty.",
-    doorsLead: "Ride is not a tab. The shop is paused — the workshop stays without a till.",
+    lead: "The same app, two surfaces. In the browser you plan, look after the bike and share: Home, Map, Tours, Bike. Parts sit on the bike. On the device you navigate, record and pair. There is no feed, no till and no fake GPS in the tab — empty areas stay empty.",
+    doorsLead: "Ride is not a tab. The shop is paused — the bike stays without a till.",
     galleryHeading: "Screens",
     galleryHint:
       "Design system from Logo und Bilder, mapped to the doors. Ride HUD stays the app.",
@@ -286,11 +286,11 @@ const FR: ProductCopy = {
     },
   ],
   matrix: [
-    { feature: "Home, Carte, Platz, atelier", web: "complet", app: "complet" },
+    { feature: "Home, Carte, Parcours, Vélo", web: "complet", app: "complet" },
     { feature: "Planifier et enregistrer une sortie", web: "complet", app: "complet" },
     { feature: "Sorties SEO et régions", web: "complet", app: "Deep Link" },
     { feature: "Navigation live / HUD", web: "Pont vers l’appli", app: "complet" },
-    { feature: "Cartes hors ligne", web: "—", app: "Packs" },
+    { feature: "Routage hors ligne", web: "—", app: "Graphe" },
     { feature: "Enregistrement GPS", web: "après sync", app: "natif" },
     { feature: "Capteurs, montre, BLE", web: "indice", app: "coupler" },
     { feature: "Magasin / caisse", web: "en pause", app: "en pause" },
@@ -318,7 +318,7 @@ const FR: ProductCopy = {
       steps: [
         { label: "Carte", href: "/discover" },
         { label: "Planifier", href: "/discover?panel=plan" },
-        { label: "Platz / Mappe", href: "/library" },
+        { label: "Parcours / Mappe", href: "/library" },
         { label: "Pont appli", href: "/ride" },
       ],
     },
@@ -330,15 +330,15 @@ const FR: ProductCopy = {
         { label: "Ce qui est rentré", href: "/activities" },
         { label: "Après la sortie", href: "/post-ride" },
         { label: "Die Tafel", href: "/home" },
-        { label: "Atelier", href: "/garage" },
+        { label: "Vélo", href: "/garage" },
       ],
     },
     {
       id: "garage-shop",
       title: "Entretien et pièces",
-      hint: "L’atelier connaît le vélo. Le magasin n’encaisse pas ici.",
+      hint: "Le vélo connaît son stand. Le magasin n’encaisse pas ici.",
       steps: [
-        { label: "Garer le vélo", href: "/garage?wizard=basic" },
+        { label: "Ajouter un vélo", href: "/garage?wizard=basic" },
         { label: "Entretien", href: "/garage?tab=maintenance" },
       ],
     },
@@ -390,13 +390,13 @@ const FR: ProductCopy = {
     },
     {
       title: "Quatre portes (appli web)",
-      hint: "La même IA que dans l’appli native. Ride n’est pas un onglet. Les pièces viennent de l’atelier.",
+      hint: "La même IA que dans l’appli native. Ride n’est pas un onglet. Les pièces tiennent au vélo.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, ciel, porte" },
         { href: "/discover", name: "Carte", role: "OSM, boucles, filtres" },
         { href: "/discover?panel=plan", name: "Planifier", role: "Départ, via, arrivée" },
-        { href: "/library", name: "Platz", role: "Mappe, Stimmen, groupes" },
-        { href: "/garage", name: "Atelier", role: "Die Box, setup, entretien, pièces" },
+        { href: "/library", name: "Parcours", role: "Mappe, Stimmen, groupes" },
+        { href: "/garage", name: "Vélo", role: "Die Box, setup, entretien, pièces" },
       ],
     },
     {
@@ -433,9 +433,9 @@ const FR: ProductCopy = {
   ui: {
     kicker: "Produit",
     title: "Le web est Home. L’appli roule.",
-    lead: "La même appli, deux surfaces. Dans le navigateur tu planifies, tu soignes et tu partages : Home, Carte, Platz, atelier. Sur l’appareil tu navigues, tu enregistres et tu couples. Pas de fil, pas de caisse, pas de GPS fictif dans l’onglet — les surfaces vides restent vides.",
+    lead: "La même appli, deux surfaces. Dans le navigateur tu planifies, tu soignes et tu partages : Home, Carte, Parcours, Vélo. Les pièces tiennent au vélo. Sur l’appareil tu navigues, tu enregistres et tu couples. Pas de fil, pas de caisse, pas de GPS fictif dans l’onglet — les surfaces vides restent vides.",
     doorsLead:
-      "Ride n’est pas un onglet. Le magasin est en pause — l’atelier reste sans caisse.",
+      "Ride n’est pas un onglet. Le magasin est en pause — le vélo reste sans caisse.",
     galleryHeading: "Écrans",
     galleryHint:
       "Système de design issu de Logo und Bilder, associé aux portes. Le Ride-HUD reste l’appli.",
@@ -477,11 +477,11 @@ const IT: ProductCopy = {
     },
   ],
   matrix: [
-    { feature: "Home, Mappa, Platz, officina", web: "pieno", app: "pieno" },
+    { feature: "Home, Mappa, Percorsi, Bici", web: "pieno", app: "pieno" },
     { feature: "Pianificare e salvare un’uscita", web: "pieno", app: "pieno" },
     { feature: "Uscite SEO e regioni", web: "pieno", app: "Deep Link" },
     { feature: "Navigazione live / HUD", web: "Ponte all’app", app: "pieno" },
-    { feature: "Mappe offline", web: "—", app: "Packs" },
+    { feature: "Routing offline", web: "—", app: "Grafo" },
     { feature: "Registrazione GPS", web: "dopo sync", app: "nativo" },
     { feature: "Sensori, orologio, BLE", web: "hint", app: "accoppia" },
     { feature: "Negozio / cassa", web: "in pausa", app: "in pausa" },
@@ -509,7 +509,7 @@ const IT: ProductCopy = {
       steps: [
         { label: "Mappa", href: "/discover" },
         { label: "Pianifica", href: "/discover?panel=plan" },
-        { label: "Platz / Mappe", href: "/library" },
+        { label: "Percorsi / Mappe", href: "/library" },
         { label: "Ponte app", href: "/ride" },
       ],
     },
@@ -521,15 +521,15 @@ const IT: ProductCopy = {
         { label: "Cosa è rientrato", href: "/activities" },
         { label: "Dopo l’uscita", href: "/post-ride" },
         { label: "Die Tafel", href: "/home" },
-        { label: "Officina", href: "/garage" },
+        { label: "Bici", href: "/garage" },
       ],
     },
     {
       id: "garage-shop",
       title: "Cura e ricambi",
-      hint: "L’officina conosce la bici. Il negozio non incassa qui.",
+      hint: "La bici conosce il suo stand. Il negozio non incassa qui.",
       steps: [
-        { label: "Parcheggia la bici", href: "/garage?wizard=basic" },
+        { label: "Aggiungi una bici", href: "/garage?wizard=basic" },
         { label: "Manutenzione", href: "/garage?tab=maintenance" },
       ],
     },
@@ -581,13 +581,13 @@ const IT: ProductCopy = {
     },
     {
       title: "Quattro porte (app web)",
-      hint: "La stessa IA dell’app nativa. Ride non è una scheda. I pezzi vengono dall’officina.",
+      hint: "La stessa IA dell’app nativa. Ride non è una scheda. I pezzi stanno sulla bici.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, cielo, cancello" },
         { href: "/discover", name: "Mappa", role: "OSM, anelli, filtri" },
         { href: "/discover?panel=plan", name: "Pianifica", role: "Partenza, via, arrivo" },
-        { href: "/library", name: "Platz", role: "Mappe, Stimmen, gruppi" },
-        { href: "/garage", name: "Officina", role: "Die Box, setup, cura, pezzi" },
+        { href: "/library", name: "Percorsi", role: "Mappe, Stimmen, gruppi" },
+        { href: "/garage", name: "Bici", role: "Die Box, setup, cura, pezzi" },
       ],
     },
     {
@@ -624,9 +624,9 @@ const IT: ProductCopy = {
   ui: {
     kicker: "Prodotto",
     title: "Il web è Home. L’app pedala.",
-    lead: "La stessa app, due superfici. Nel browser pianifichi, curi e condividi: Home, Mappa, Platz, officina. Sul dispositivo navighi, registri e accoppi. Niente feed, niente cassa, niente GPS finto nel tab — le superfici vuote restano vuote.",
+    lead: "La stessa app, due superfici. Nel browser pianifichi, curi e condividi: Home, Mappa, Percorsi, Bici. I pezzi stanno sulla bici. Sul dispositivo navighi, registri e accoppi. Niente feed, niente cassa, niente GPS finto nel tab — le superfici vuote restano vuote.",
     doorsLead:
-      "Ride non è una scheda. Il negozio è in pausa — l’officina resta senza cassa.",
+      "Ride non è una scheda. Il negozio è in pausa — la bici resta senza cassa.",
     galleryHeading: "Schermate",
     galleryHint:
       "Design system da Logo und Bilder, assegnato alle porte. Il Ride-HUD resta l’app.",
@@ -668,11 +668,11 @@ const NL: ProductCopy = {
     },
   ],
   matrix: [
-    { feature: "Home, Kaart, Platz, werkplaats", web: "volledig", app: "volledig" },
+    { feature: "Home, Kaart, Tochten, Fiets", web: "volledig", app: "volledig" },
     { feature: "Een tocht plannen en opslaan", web: "volledig", app: "volledig" },
     { feature: "SEO-tochten & regio’s", web: "volledig", app: "Deep Link" },
     { feature: "Live-navigatie / HUD", web: "Brug naar app", app: "volledig" },
-    { feature: "Offline-kaarten", web: "—", app: "Packs" },
+    { feature: "Offline-routing", web: "—", app: "Graaf" },
     { feature: "GPS-registratie", web: "na sync", app: "native" },
     { feature: "Sensoren, horloge, BLE", web: "hint", app: "koppelen" },
     { feature: "Winkel / kassa", web: "gepauzeerd", app: "gepauzeerd" },
@@ -700,7 +700,7 @@ const NL: ProductCopy = {
       steps: [
         { label: "Kaart", href: "/discover" },
         { label: "Plannen", href: "/discover?panel=plan" },
-        { label: "Platz / Mappe", href: "/library" },
+        { label: "Tochten / Mappe", href: "/library" },
         { label: "App-brug", href: "/ride" },
       ],
     },
@@ -712,15 +712,15 @@ const NL: ProductCopy = {
         { label: "Wat er binnenkwam", href: "/activities" },
         { label: "Na de tocht", href: "/post-ride" },
         { label: "Die Tafel", href: "/home" },
-        { label: "Werkplaats", href: "/garage" },
+        { label: "Fiets", href: "/garage" },
       ],
     },
     {
       id: "garage-shop",
       title: "Onderhoud en onderdelen",
-      hint: "De werkplaats kent de fiets. De winkel rekent hier niet af.",
+      hint: "De fiets kent zijn stand. De winkel rekent hier niet af.",
       steps: [
-        { label: "Fiets stallen", href: "/garage?wizard=basic" },
+        { label: "Fiets toevoegen", href: "/garage?wizard=basic" },
         { label: "Onderhoud", href: "/garage?tab=maintenance" },
       ],
     },
@@ -772,13 +772,13 @@ const NL: ProductCopy = {
     },
     {
       title: "Vier deuren (web-app)",
-      hint: "Dezelfde IA als in de native app. Ride is geen tab. Onderdelen komen uit de werkplaats.",
+      hint: "Dezelfde IA als in de native app. Ride is geen tab. Onderdelen zitten aan de fiets.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, lucht, poort" },
         { href: "/discover", name: "Kaart", role: "OSM, ronden, filters" },
         { href: "/discover?panel=plan", name: "Plannen", role: "Start, via, finish" },
-        { href: "/library", name: "Platz", role: "Mappe, Stimmen, groepen" },
-        { href: "/garage", name: "Werkplaats", role: "Die Box, setup, onderhoud, onderdelen" },
+        { href: "/library", name: "Tochten", role: "Mappe, Stimmen, groepen" },
+        { href: "/garage", name: "Fiets", role: "Die Box, setup, onderhoud, onderdelen" },
       ],
     },
     {
@@ -815,9 +815,9 @@ const NL: ProductCopy = {
   ui: {
     kicker: "Product",
     title: "Web is Home. De app rijdt.",
-    lead: "Dezelfde app, twee oppervlakken. In de browser plan je, verzorg je en deel je: Home, Kaart, Platz, werkplaats. Op het apparaat navigeer, registreer en koppel je. Geen feed, geen kassa, geen nep-GPS in de tab — lege vlakken blijven leeg.",
+    lead: "Dezelfde app, twee oppervlakken. In de browser plan je, verzorg je en deel je: Home, Kaart, Tochten, Fiets. Onderdelen zitten aan de fiets. Op het apparaat navigeer, registreer en koppel je. Geen feed, geen kassa, geen nep-GPS in de tab — lege vlakken blijven leeg.",
     doorsLead:
-      "Ride is geen tab. De winkel staat stil — de werkplaats blijft zonder kassa.",
+      "Ride is geen tab. De winkel staat stil — de fiets blijft zonder kassa.",
     galleryHeading: "Schermen",
     galleryHint:
       "Designsysteem uit Logo und Bilder, gekoppeld aan de deuren. Ride-HUD blijft de app.",

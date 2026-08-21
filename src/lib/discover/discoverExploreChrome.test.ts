@@ -6,13 +6,14 @@ import { DEFAULT_ROUTE_FILTERS } from "../routing/routeFilters";
 import {
   DEFAULT_AROUND_KM,
   DEFAULT_FILTER_MINUTES,
-  DISCOVER_LENS_FILTERS,
   aroundFilterActive,
   aroundKmDisplay,
   countActiveRouteFilters,
   matchesExploreQuery,
   resetDiscoverAround,
   resetDiscoverSheetFilters,
+  shouldFlyExploreToPlace,
+  shouldOfferExplorePlaceHits,
 } from "./discoverExploreChrome";
 
 assert.equal(DEFAULT_AROUND_KM, 35);
@@ -20,18 +21,18 @@ assert.equal(aroundKmDisplay(null), 35);
 assert.equal(aroundKmDisplay(40), 40);
 
 assert.equal(
-  countActiveRouteFilters(DISCOVER_LENS_FILTERS, DEFAULT_FILTER_MINUTES),
+  countActiveRouteFilters(DEFAULT_ROUTE_FILTERS, DEFAULT_FILTER_MINUTES),
   0,
-  "60-Min-Rundkurs-Linse ist kein Badge",
+  "Discover-Default ist kein Badge",
 );
 assert.equal(
-  countActiveRouteFilters(DEFAULT_ROUTE_FILTERS, 60),
+  countActiveRouteFilters({ ...DEFAULT_ROUTE_FILTERS, loopOnly: true }, 60),
   1,
-  "Linse ohne Rundkurs zählt",
+  "Rundkurs zählt",
 );
 assert.equal(
   countActiveRouteFilters(
-    { ...DEFAULT_ROUTE_FILTERS, sport: "gravel", maxDistanceKm: 40 },
+    { ...DEFAULT_ROUTE_FILTERS, sport: "gravel", maxAwayKm: 40 },
     90,
   ),
   2,
@@ -39,11 +40,19 @@ assert.equal(
 );
 assert.equal(
   countActiveRouteFilters(
-    { ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 },
+    { ...DEFAULT_ROUTE_FILTERS, maxAwayKm: 40 },
     DEFAULT_FILTER_MINUTES,
   ),
   0,
-  "Nur Distanz: Filter-Badge bleibt leer",
+  "Nur Umkreis: Filter-Badge bleibt leer",
+);
+assert.equal(
+  countActiveRouteFilters(
+    { ...DEFAULT_ROUTE_FILTERS, maxDistanceKm: 40 },
+    DEFAULT_FILTER_MINUTES,
+  ),
+  1,
+  "Tourlänge sitzt im Filter-Badge",
 );
 assert.equal(aroundFilterActive(null), false);
 assert.equal(aroundFilterActive(40), true);
@@ -51,19 +60,19 @@ assert.deepEqual(
   resetDiscoverSheetFilters({
     ...DEFAULT_ROUTE_FILTERS,
     sport: "gravel",
-    maxDistanceKm: 40,
+    maxAwayKm: 40,
   }),
-  { ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 },
+  { ...DEFAULT_ROUTE_FILTERS, maxAwayKm: 40 },
   "Filter-Reset lässt Umkreis",
 );
 assert.deepEqual(
-  resetDiscoverAround({ ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 }),
-  DISCOVER_LENS_FILTERS,
+  resetDiscoverAround({ ...DEFAULT_ROUTE_FILTERS, loopOnly: true, maxAwayKm: 40 }),
+  { ...DEFAULT_ROUTE_FILTERS, loopOnly: true, maxAwayKm: null },
   "Umkreis-Reset lässt Form und Sport",
 );
 assert.equal(
   countActiveRouteFilters(
-    { ...DISCOVER_LENS_FILTERS, visibility: "private" },
+    { ...DEFAULT_ROUTE_FILTERS, visibility: "private" },
     60,
   ),
   1,
@@ -87,5 +96,13 @@ assert.equal(
   ),
   false,
 );
+
+assert.equal(shouldOfferExplorePlaceHits("Be"), false);
+assert.equal(shouldOfferExplorePlaceHits("Ber"), true);
+assert.equal(
+  shouldFlyExploreToPlace("Heidelberg City Loop", ["Heidelberg City Loop"]),
+  false,
+);
+assert.equal(shouldFlyExploreToPlace("Walldorf", ["Heidelberg City Loop"]), true);
 
 console.log("discoverExploreChrome.test.ts OK");

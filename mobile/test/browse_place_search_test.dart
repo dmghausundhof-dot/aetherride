@@ -47,6 +47,11 @@ void main() {
     expect(BrowsePlaceSearch.shouldOfferPlaceHits('Ber'), isTrue);
   });
 
+  test('place names need the network, coordinates do not', () {
+    expect(BrowsePlaceSearch.needsNetwork('Karlsruhe'), isTrue);
+    expect(BrowsePlaceSearch.needsNetwork('49.01, 8.40'), isFalse);
+  });
+
   test('Berlin ranks above Berlingen', () {
     final ranked = rankGeocodeHits('Berlin', const [
       GeocodeHit(
@@ -71,5 +76,34 @@ void main() {
     expect(ranked.first.label.startsWith('Berlin,'), isTrue);
     expect(geocodeNameMatchesQuery('Berlingen', 'Berlin'), isFalse);
     expect(geocodeNameMatchesQuery('Berlin', 'Berlin'), isTrue);
+  });
+
+  test('Walldorf Kino near Wiesloch ranks Luxor over Hessen', () {
+    expect(isCinemaQuery('Walldorf Kino'), isTrue);
+    expect(cinemaPlaceQuery('Walldorf Kino'), 'Walldorf');
+    final ranked = rankGeocodeHits(
+      'Walldorf Kino',
+      const [
+        GeocodeHit(
+          label:
+              'Lichtblick - Walldorfer Kinotreff, Mörfelder Straße, 20, 64546, Walldorf, Hessen, Deutschland',
+          lat: 49.9998755,
+          lng: 8.5708116,
+          kind: 'house',
+          name: 'Lichtblick - Walldorfer Kinotreff',
+        ),
+        GeocodeHit(
+          label:
+              'Luxor Filmpalast Walldorf-Wiesloch, Impexstraße, 1, 69190, Wiesloch, Baden-Württemberg, Deutschland',
+          lat: 49.2927126,
+          lng: 8.664038,
+          kind: 'house',
+          name: 'Luxor Filmpalast Walldorf-Wiesloch',
+        ),
+      ],
+      biasLat: 49.27968,
+      biasLng: 8.67009,
+    );
+    expect(ranked.first.name, contains('Luxor'));
   });
 }

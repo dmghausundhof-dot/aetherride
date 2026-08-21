@@ -4,10 +4,17 @@
 import assert from "node:assert/strict";
 import {
   HONESTY_CYCLEWAY_DE,
+  HONESTY_FARM_MID_DE,
+  HONESTY_FARM_TAIL_DE,
   HONESTY_ROAD_DE,
   cityCyclewaySnapWanted,
   detailShares,
   graphhopperSurfaceWarnings,
+  shouldRetryOrsForFarmGraphhopper,
+  shouldTrimFarmTrackTail,
+  trimFarmTrackHead,
+  trimFarmTrackTail,
+  urbanFarmTrackShareTooHigh,
 } from "./graphhopperHints";
 
 const schauinsland = detailShares([
@@ -97,7 +104,126 @@ const mtbWarn = graphhopperSurfaceWarnings("mtb_allmountain", schauinsland);
 assert.equal(mtbWarn[0], HONESTY_ROAD_DE);
 const cityWarn = graphhopperSurfaceWarnings("urban", cityRoad);
 assert.equal(cityWarn[0], HONESTY_CYCLEWAY_DE);
-for (const line of [...mtbWarn, ...cityWarn, HONESTY_ROAD_DE, HONESTY_CYCLEWAY_DE]) {
+assert.equal(shouldTrimFarmTrackTail("urban"), true);
+assert.equal(shouldTrimFarmTrackTail("road"), true);
+assert.equal(shouldTrimFarmTrackTail("ebike"), true);
+assert.equal(shouldTrimFarmTrackTail("gravel"), false);
+assert.equal(shouldTrimFarmTrackTail("mtb_allmountain"), false);
+
+const farmTail: [number, number][] = [];
+for (let i = 0; i < 10; i++) farmTail.push([8.7, 49.4 + i * 0.002]);
+const trimmedFarm = trimFarmTrackTail({
+  coordinates: farmTail,
+  roadClass: [
+    [0, 6, "residential"],
+    [6, 10, "track"],
+  ],
+  surface: [
+    [0, 6, "asphalt"],
+    [6, 10, "grass"],
+  ],
+});
+assert.equal(trimmedFarm.length, 7, "drop grass TRACK last-mile");
+assert.deepEqual(trimmedFarm[trimmedFarm.length - 1], farmTail[6]);
+
+const pavedTrack = trimFarmTrackTail({
+  coordinates: farmTail,
+  roadClass: [
+    [0, 6, "residential"],
+    [6, 10, "track"],
+  ],
+  surface: [
+    [0, 6, "asphalt"],
+    [6, 10, "paved"],
+  ],
+});
+assert.equal(pavedTrack.length, farmTail.length, "keep paved TRACK");
+
+const noDetails = trimFarmTrackTail({ coordinates: farmTail });
+assert.equal(noDetails.length, farmTail.length, "fail-open without details");
+
+const farmHead = trimFarmTrackHead({
+  coordinates: farmTail,
+  roadClass: [
+    [0, 4, "track"],
+    [4, 10, "residential"],
+  ],
+  surface: [
+    [0, 4, "grass"],
+    [4, 10, "asphalt"],
+  ],
+});
+assert.equal(farmHead.length, 6, "drop grass TRACK first-mile");
+assert.deepEqual(farmHead[0], farmTail[4]);
+
+assert.equal(HONESTY_FARM_TAIL_DE.includes("Pin"), true);
+assert.equal(HONESTY_FARM_TAIL_DE.toLowerCase().includes("graphhopper"), false);
+assert.equal(HONESTY_FARM_MID_DE.includes("Feldwegen"), true);
+assert.equal(HONESTY_FARM_MID_DE.toLowerCase().includes("graphhopper"), false);
+
+assert.equal(
+  urbanFarmTrackShareTooHigh("urban", { track: 0.2, residential: 0.8 }),
+  true,
+);
+assert.equal(
+  urbanFarmTrackShareTooHigh("urban", { TRACK: 0.2, residential: 0.8 }),
+  true,
+  "GH road_class case",
+);
+assert.equal(
+  urbanFarmTrackShareTooHigh("urban", { track: 0.09, residential: 0.91 }),
+  true,
+);
+assert.equal(
+  urbanFarmTrackShareTooHigh("urban", { track: 0.05, residential: 0.95 }),
+  false,
+);
+assert.equal(
+  urbanFarmTrackShareTooHigh("gravel", { track: 0.4 }),
+  false,
+  "gravel may use tracks",
+);
+assert.equal(urbanFarmTrackShareTooHigh("urban", {}), false);
+
+assert.equal(
+  shouldRetryOrsForFarmGraphhopper({
+    profile: "urban",
+    engine: "graphhopper",
+    roadClass: { track: 0.2 },
+    viasEmpty: true,
+    orsConfigured: true,
+  }),
+  true,
+);
+assert.equal(
+  shouldRetryOrsForFarmGraphhopper({
+    profile: "urban",
+    engine: "graphhopper",
+    roadClass: { track: 0.2 },
+    viasEmpty: true,
+    orsConfigured: false,
+  }),
+  false,
+);
+assert.equal(
+  shouldRetryOrsForFarmGraphhopper({
+    profile: "urban",
+    engine: "graphhopper",
+    roadClass: { track: 0.2 },
+    viasEmpty: false,
+    orsConfigured: true,
+  }),
+  false,
+);
+
+for (const line of [
+  ...mtbWarn,
+  ...cityWarn,
+  HONESTY_ROAD_DE,
+  HONESTY_CYCLEWAY_DE,
+  HONESTY_FARM_TAIL_DE,
+  HONESTY_FARM_MID_DE,
+]) {
   const lower = line.toLowerCase();
   assert.ok(!lower.includes("graphhopper"), line);
   assert.ok(!lower.includes("valhalla"), line);

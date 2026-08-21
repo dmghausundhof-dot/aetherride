@@ -48,6 +48,29 @@ function testChrome() {
   };
   assert.equal(localizeDieBoxItem(item, "en").title, "Bring this bike forward");
   assert.equal(localizeDieBoxItem(item, "de").title, item.title);
+  const annual: DieBoxTodayItem = {
+    id: "dueCare",
+    title: "Jährliche Inspektion",
+    hint: "40 Tage",
+    cta: "Erledigt",
+  };
+  assert.equal(localizeDieBoxItem(annual, "en").title, "Annual inspection");
+  assert.equal(localizeDieBoxItem(annual, "en").hint, "40 days");
+  const sagFork: DieBoxTodayItem = {
+    id: "sagUnknown",
+    title: "Federung merken",
+    hint: "Eine Zahl an der Gabel, abgelesen am Rad.",
+    cta: "Federung merken",
+    slot: "fork",
+  };
+  assert.equal(
+    localizeDieBoxItem(sagFork, "de").hint,
+    "Eine Zahl an der Gabel, abgelesen am Rad.",
+  );
+  assert.equal(
+    localizeDieBoxItem({ ...sagFork, slot: undefined }, "de").hint,
+    "Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.",
+  );
 }
 
 function testLastRide() {
@@ -58,6 +81,19 @@ function testLastRide() {
       "de",
     ),
     "Zuletzt 12.4 km",
+  );
+  assert.equal(
+    lastRideHeroUi(
+      {
+        id: "r",
+        bikeId: "b",
+        startTime: "2026-01-01",
+        distanceM: 12400,
+        elevationGainM: 140,
+      } as never,
+      "de",
+    ),
+    "Zuletzt 12.4 km · 140 hm",
   );
   assert.equal(
     lastRideHeroUi(

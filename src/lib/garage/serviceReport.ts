@@ -25,6 +25,17 @@ export function buildServiceReport(input: {
     `Kategorie: ${bikeCategoryLabel(bike.category)}`,
     bike.year ? `Jahr: ${bike.year}` : "",
     bike.frameSize ? `Rahmengröße: ${bike.frameSize}` : "",
+    bike.serialNumber ? `Rahmennummer: ${bike.serialNumber}` : "",
+    bike.color ? `Farbe: ${bike.color}` : "",
+    bike.weightKg != null ? `Gewicht: ${bike.weightKg.toFixed(1)} kg` : "",
+    bike.purchasedAt ? `Gekauft am: ${bike.purchasedAt}` : "",
+    bike.purchasedFrom ? `Gekauft bei: ${bike.purchasedFrom}` : "",
+    bike.purchasePriceEur != null
+      ? `Kaufpreis: ${bike.purchasePriceEur.toFixed(0)} €`
+      : "",
+    bike.insuranceName ? `Versicherung: ${bike.insuranceName}` : "",
+    bike.insurancePolicy ? `Police: ${bike.insurancePolicy}` : "",
+    bike.keyNumber ? `Schlüsselnummer: ${bike.keyNumber}` : "",
     `Kilometerstand: ${bike.totalOdometerKm.toFixed(0)} km`,
     `Stunden: ${bike.totalHours.toFixed(1)} h`,
     `Rides erfasst: ${bikeRides.length}`,

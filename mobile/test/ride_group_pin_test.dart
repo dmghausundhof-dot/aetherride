@@ -318,6 +318,72 @@ void main() {
       ),
       '2/3 teilen · noch 2 h',
     );
+    expect(
+      rideGroupHudStatusLine(
+        snap: RideGroupHudSnap(
+          groupId: 'g',
+          title: 'Zoo',
+          optIn: true,
+          sharing: 2,
+          total: 2,
+          windowEnd: DateTime.utc(2026, 8, 19, 17),
+          mates: const [
+            RideGroupHudMate(
+              userId: 'me',
+              label: 'Du',
+              self: true,
+              sharing: true,
+            ),
+            RideGroupHudMate(
+              userId: 'sam',
+              label: 'Sam',
+              self: false,
+              sharing: true,
+              meters: 400,
+            ),
+          ],
+        ),
+        left: 'noch 2 h',
+        selfOn: (left) => 'Du teilst · $left',
+        selfOff: (left) => 'stumm · $left',
+        ratio: (s, t, left) => '$s/$t teilen · $left',
+        withDetail: (d, left) => '$d · $left',
+        mateDetail: (m) => '${m.label} ${m.meters} m voraus',
+      ),
+      'Sam 400 m voraus · noch 2 h',
+    );
+    expect(
+      rideGroupHudStatusLine(
+        snap: RideGroupHudSnap(
+          groupId: 'g',
+          title: 'Zoo',
+          optIn: true,
+          sharing: 2,
+          total: 2,
+          windowEnd: DateTime.utc(2026, 8, 19, 17),
+          mates: const [
+            RideGroupHudMate(
+              userId: 'me',
+              label: 'Du',
+              self: true,
+              sharing: true,
+            ),
+            RideGroupHudMate(
+              userId: 'sam',
+              label: 'Sam',
+              self: false,
+              sharing: true,
+            ),
+          ],
+        ),
+        left: 'noch 2 h',
+        selfOn: (left) => 'Du teilst · $left',
+        selfOff: (left) => 'stumm · $left',
+        ratio: (s, t, left) => '$s/$t teilen · $left',
+        withDetail: (d, left) => '$d · $left',
+      ),
+      'Sam · noch 2 h',
+    );
   });
 
   test('HUD-Delta nur bei Wechsel', () {

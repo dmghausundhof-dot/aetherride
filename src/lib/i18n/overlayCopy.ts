@@ -21,6 +21,7 @@ export type OverlayCopy = {
   surfaceDirt: string;
   surfaceUnknown: string;
   surfaceNote: string;
+  farmTracks: string;
 };
 
 const DE: OverlayCopy = {
@@ -48,6 +49,7 @@ const DE: OverlayCopy = {
   surfaceUnknown: "ohne Tag",
   surfaceNote:
     "Farbe nach OSM-surface. Fehlt der Tag, bleibt die Klassenfarbe.",
+  farmTracks: "Feldwege",
 };
 
 const EN: OverlayCopy = {
@@ -75,6 +77,7 @@ const EN: OverlayCopy = {
   surfaceUnknown: "no tag",
   surfaceNote:
     "Color follows OSM surface. Untagged ways keep class colors.",
+  farmTracks: "Farm tracks",
 };
 
 const FR: OverlayCopy = {
@@ -102,6 +105,7 @@ const FR: OverlayCopy = {
   surfaceUnknown: "sans tag",
   surfaceNote:
     "Couleur selon OSM surface. Sans tag, la couleur de classe reste.",
+  farmTracks: "Chemins agricoles",
 };
 
 const IT: OverlayCopy = {
@@ -129,6 +133,7 @@ const IT: OverlayCopy = {
   surfaceUnknown: "senza tag",
   surfaceNote:
     "Colore da OSM surface. Senza tag resta il colore di classe.",
+  farmTracks: "Strade poderali",
 };
 
 const NL: OverlayCopy = {
@@ -156,6 +161,7 @@ const NL: OverlayCopy = {
   surfaceUnknown: "zonder tag",
   surfaceNote:
     "Kleur volgens OSM surface. Zonder tag blijft de klassekleur.",
+  farmTracks: "Veldwegen",
 };
 
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {

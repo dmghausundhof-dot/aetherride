@@ -159,7 +159,6 @@ export function pickGroupForRide<T extends {
 }): T | null {
   const freeride = isFreerideRide(input.rideRouteId);
   let newestSession: T | null = null;
-  let newestPlanned: T | null = null;
   let routeHit: T | null = null;
   const rideId = String(input.rideRouteId ?? "").trim();
   const catalogId = String(input.catalogTourId ?? "").trim();
@@ -185,16 +184,9 @@ export function pickGroupForRide<T extends {
       (ids.has(g.savedRouteId) ||
         Boolean(g.catalogTourId && ids.has(g.catalogTourId)));
     if (match && !routeHit) routeHit = g;
-    if (
-      g.onServer &&
-      (!newestPlanned ||
-        Date.parse(g.createdAt) > Date.parse(newestPlanned.createdAt))
-    ) {
-      newestPlanned = g;
-    }
   }
   if (freeride) return newestSession;
-  return routeHit ?? newestPlanned;
+  return routeHit;
 }
 
 export function sessionWindow(now = new Date()): {

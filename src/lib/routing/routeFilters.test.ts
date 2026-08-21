@@ -94,19 +94,25 @@ const roadSport = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,
   sport: "road",
 });
-assert(roadSport.length === 3, "sport is soft preference, not exclusive");
-assert(roadSport[0].id === "c", "road preference sorts matching first");
+assert(roadSport.length === 1 && roadSport[0].id === "c", "sport is exclusive");
 
 const ebikeSport = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,
   sport: "ebike",
 });
-assert(ebikeSport.length === 3, "ebike sport is soft preference");
+assert(ebikeSport.length === 2, "ebike includes MTB family");
 assert(
-  ebikeSport[0].category === "mtb_trail" ||
-    ebikeSport[0].category === "mtb_enduro",
-  "ebike preference soft-boosts MTB family (E-MTB parity)"
+  ebikeSport.every(
+    (r) => r.category === "mtb_trail" || r.category === "mtb_enduro",
+  ),
+  "ebike filter keeps MTB family (E-MTB parity)",
 );
+
+const away = filterRouteSuggestions(
+  sample.map((r, i) => ({ ...r, distanceFromOriginKm: i === 0 ? 12 : 80 })),
+  { ...DEFAULT_ROUTE_FILTERS, maxAwayKm: 20 },
+);
+assert(away.length === 1 && away[0].id === "a", "away km is Umkreis");
 
 const asphalt = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,

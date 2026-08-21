@@ -29,11 +29,25 @@ void main() {
     expect(layers.approach, hasLength(2));
     expect(layers.trail, hasLength(2));
     expect(layers.tour, isEmpty);
+    expect(layers.engine, isNull);
+
+    final withEngine = layersToJson(engine: 'offline_graph');
+    expect(withEngine, isNotNull);
+    expect(layersFromJson(withEngine).engine, 'offline_graph');
+    expect(restoredSavedEngine(null), 'saved');
+    expect(restoredSavedEngine(''), 'saved');
+    expect(restoredSavedEngine('offline_graph'), 'offline_graph');
 
     final geom = coordsToJson(const [
       [8.4, 48.0],
       [8.42, 48.02],
     ]);
     expect(coordsFromJson(geom), hasLength(2));
+
+    final withEle = coordsToJson(const [
+      [8.4, 48.0, 110],
+      [8.42, 48.02, 180],
+    ]);
+    expect(coordsFromJson(withEle).first, [8.4, 48.0, 110]);
   });
 }

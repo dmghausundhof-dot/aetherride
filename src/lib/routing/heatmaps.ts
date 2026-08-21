@@ -95,12 +95,13 @@ function distM(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** Schneidet Start/Ende und Punkte in Privacy-Zonen heraus */
-export function trimTrackForHeatmap(
-  track: { lat: number; lng: number }[],
+/** Schneidet Start/Ende und Punkte in Privacy-Zonen heraus.
+ * Extra-Felder (Höhe, Zeit, Sensoren) bleiben auf den behaltenen Punkten. */
+export function trimTrackForHeatmap<T extends { lat: number; lng: number }>(
+  track: T[],
   privacyZones: { lat: number; lng: number; radiusM: number }[],
   trimEndsM = 200
-): { lat: number; lng: number }[] {
+): T[] {
   if (track.length < 3) return [];
   let start = 0;
   let end = track.length - 1;

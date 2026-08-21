@@ -19,6 +19,28 @@ import { useHofCopy } from "@/hooks/useHofCopy";
 import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { isCommerceOpen } from "@/lib/config/appStage";
+import type { BikeCategory } from "@/types/garage";
+import { rideSportLabel } from "@/lib/i18n/rideSportLabel";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { rideTelemetryCopy } from "@/lib/i18n/rideTelemetryCopy";
+import { buildRideTelemetry } from "@/lib/ride/rideTelemetry";
+import { terrainCaption } from "@/lib/ride/terrainCaption";
+import { RideTerrainPeek } from "@/components/ride/ActivitySparkline";
+
+const PROFILE_DISCIPLINES: BikeCategory[] = [
+  "urban",
+  "cargo",
+  "folding",
+  "kids",
+  "etrekking",
+  "gravel",
+  "road",
+  "emtb",
+  "mtb_trail",
+  "mtb_am",
+  "mtb_enduro",
+];
 
 type AuthUser = {
   id: string;
@@ -31,10 +53,25 @@ type AuthUser = {
 
 export default function ProfilePage() {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const tel = rideTelemetryCopy(lang);
+  const dateLocale = chromeDateLocale(lang);
+  const rides = useAppStore((s) => s.rides);
+  const recentEnded = [...rides]
+    .filter((r) => Boolean(r.endTime))
+    .sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    )
+    .slice(0, 5);
 
   const profile = useAppStore((s) => s.riderProfile);
   const explanations = useAppStore((s) => s.profileExplanations);
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
+  const preferredSport = useAppStore((s) => s.preferredSport);
+  const preferredSports = useAppStore((s) => s.preferredSports);
+  const setPrimarySport = useAppStore((s) => s.setPrimarySport);
+  const togglePreferredSport = useAppStore((s) => s.togglePreferredSport);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const setSubscriptionTier = useAppStore((s) => s.setSubscriptionTier);
   const bikes = useAppStore((s) => s.bikes);
@@ -311,7 +348,7 @@ export default function ProfilePage() {
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
           Free: 1 Rad, Basis. Pro: mehrere Räder, Varianten-Vergleich, Reichweite.
-          Offline-Karten in der App. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
+          Offline-Routing in der App — auf beiden Stufen. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
         </p>
         <p className="mb-3 text-sm font-medium">
           Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
@@ -359,11 +396,57 @@ export default function ProfilePage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">{copy.profileDisciplines}</h3>
+        <p className="mb-3 text-xs text-text-secondary">
+          {copy.profileDisciplinesHint}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {PROFILE_DISCIPLINES.map((d) => {
+            const selected = preferredSports.includes(d);
+            const primary = preferredSport === d;
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => {
+                  if (selected && !primary) {
+                    setPrimarySport(d);
+                    return;
+                  }
+                  togglePreferredSport(d);
+                }}
+                className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                  selected
+                    ? "border-chrome bg-chrome/15 text-chrome"
+                    : "border-border bg-surface-elevated text-text-secondary"
+                }`}
+              >
+                {primary
+                  ? `★ ${rideSportLabel(d, lang)} · ${copy.profilePrimary}`
+                  : rideSportLabel(d, lang)}
+              </button>
+            );
+          })}
+        </div>
+        {preferredSport ? (
+          <p className="mt-2 text-[11px] font-semibold text-text-secondary">
+            {copy.profilePrimary}: {rideSportLabel(preferredSport, lang)}
+            {preferredSports.filter((s) => s !== preferredSport).length
+              ? ` · ${copy.profileAlso} ${preferredSports
+                  .filter((s) => s !== preferredSport)
+                  .map((s) => rideSportLabel(s, lang))
+                  .join(", ")}`
+              : ""}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">
-          <User className="h-4 w-4 text-chrome" /> Fahrstil
+          <User className="h-4 w-4 text-chrome" /> {copy.profileStyle}
         </h3>
         <label className="mb-3 block text-sm">
-          Fahrstil
+          {copy.profileStyle}
           <select
             value={profile.style}
             onChange={(e) =>
@@ -467,7 +550,7 @@ export default function ProfilePage() {
 
       {advanced && (
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-3 font-semibold">Fahrstil-Indikatoren</h3>
+        <h3 className="mb-3 font-semibold">{copy.profileStyleIndicators}</h3>
         <p className="mb-2 text-[11px] text-text-secondary">
           {explanations.styleIndicators}
         </p>
@@ -598,31 +681,74 @@ export default function ProfilePage() {
         </Link>
       </section>
 
+      {recentEnded.length > 0 ? (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="font-semibold">{copy.activitiesTitle}</h3>
+          <p className="mt-1 text-xs text-text-secondary">{copy.activitiesHint}</p>
+          <ul className="mt-3 space-y-3">
+            {recentEnded.map((r) => {
+              const telemetry = buildRideTelemetry(r.track);
+              return (
+                <li key={r.id}>
+                  <Link
+                    href={`/activities/${r.id}`}
+                    className="block rounded-xl border border-border/60 px-3 py-2 hover:border-chrome/40"
+                  >
+                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                      <span className="tabular-nums">
+                        {(r.distanceM / 1000).toFixed(1)} {tel.km}
+                        {telemetry.channels.elev
+                          ? ` · ${telemetry.climbM} ${tel.hm}`
+                          : r.elevationGainM >= 10
+                            ? ` · ${Math.round(r.elevationGainM)} ${tel.hm}`
+                            : ""}
+                      </span>
+                      <span className="text-xs text-text-secondary">
+                        {new Date(r.startTime).toLocaleDateString(dateLocale)}
+                      </span>
+                    </div>
+                    <RideTerrainPeek
+                      telemetry={telemetry}
+                      caption={terrainCaption(telemetry, tel.hm)}
+                      className="mt-2"
+                    />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Link
+            href="/activities"
+            className="mt-3 inline-block text-sm font-semibold text-chrome hover:underline"
+          >
+            {tel.backToList}
+          </Link>
+        </section>
+      ) : null}
+
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="font-semibold">Mehr</h3>
-        <p className="mt-1 text-xs text-text-secondary">
-          Kein fünfter Tab — diese Türen hängen am Profil.
-        </p>
+        <h3 className="font-semibold">{tel.profileMore}</h3>
+        <p className="mt-1 text-xs text-text-secondary">{tel.profileMoreHint}</p>
         <ul className="mt-3 space-y-2 text-sm">
           <li>
             <Link href="/activities" className="font-semibold text-chrome hover:underline">
-              Was reinkam
+              {copy.activitiesTitle}
             </Link>
             <span className="block text-xs text-text-secondary">
-              Fahrten aus der App
+              {copy.activitiesHint}
             </span>
           </li>
           <li>
             <Link href="/library" className="font-semibold text-chrome hover:underline">
-              Platz
+              {copy.libraryKicker}
             </Link>
             <span className="block text-xs text-text-secondary">
-              Touren, Stimmen und Gruppen
+              {copy.libraryHint}
             </span>
           </li>
           <li>
             <Link href="/chat" className="font-semibold text-chrome hover:underline">
-              Assistent
+              {tel.assistant}
             </Link>
             <span className="block text-xs text-text-secondary">
               {copy.chatHint}
@@ -630,10 +756,10 @@ export default function ProfilePage() {
           </li>
           <li>
             <Link href="/privacy" className="font-semibold text-chrome hover:underline">
-              Daten, Privatsphäre, Familie
+              {copy.privacyTitle}
             </Link>
             <span className="block text-xs text-text-secondary">
-              Export, Zonen, Familien-Garage
+              {copy.privacyHint}
             </span>
           </li>
         </ul>

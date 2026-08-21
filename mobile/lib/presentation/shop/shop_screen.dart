@@ -16,6 +16,8 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../../providers/shop_providers.dart';
+import '../garage/rad_nav_mark.dart';
+import '../garage/rad_stand_frame.dart';
 import '../shell/shell_tabs.dart';
 import 'shop_product_sheet.dart';
 
@@ -754,7 +756,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 const SizedBox(height: AppSpacing.xxl),
                 if (doorBike == null)
                   _ShopDoor(
-                    icon: Icons.pedal_bike_outlined,
+                    mark: const RadNavMark(color: AppColors.chrome, size: 22),
                     title: l10n.werkstattForYourBike,
                     hint: l10n.shopForYourBikeEmpty,
                     actionLabel: l10n.garageAddBike,
@@ -771,7 +773,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 else if (catalog == null || !catalog.ok || !catalog.hasParts)
                   _ShopDoor(
                     key: const Key('shop-parts'),
-                    icon: Icons.pedal_bike_outlined,
+                    mark: const RadNavMark(color: AppColors.chrome, size: 22),
                     title: l10n.werkstattForYourBike,
                     hint: l10n.shopForYourBikeHint(doorBike.name),
                     onTap: connected
@@ -834,17 +836,10 @@ class _ShopProductCard extends StatelessWidget {
                           ? Image.network(
                               product.imageUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const ColoredBox(
-                                color: AppColors.overlay,
-                                child: Icon(Icons.pedal_bike_outlined,
-                                    color: AppColors.muted),
-                              ),
+                              errorBuilder: (_, __, ___) =>
+                                  const _ShopImageFallback(),
                             )
-                          : const ColoredBox(
-                              color: AppColors.overlay,
-                              child: Icon(Icons.pedal_bike_outlined,
-                                  color: AppColors.muted),
-                            ),
+                          : const _ShopImageFallback(),
                 ),
               ),
               const SizedBox(width: AppSpacing.m),
@@ -938,14 +933,16 @@ class _ShopProductCard extends StatelessWidget {
 class _ShopDoor extends StatelessWidget {
   const _ShopDoor({
     super.key,
-    required this.icon,
+    this.icon,
+    this.mark,
     required this.title,
     required this.hint,
     this.actionLabel,
     this.onTap,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? mark;
   final String title;
   final String hint;
   final String? actionLabel;
@@ -969,7 +966,12 @@ class _ShopDoor extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: AppColors.chrome, size: 22),
+              mark ??
+                  Icon(
+                    icon ?? Icons.storefront_outlined,
+                    color: AppColors.chrome,
+                    size: 22,
+                  ),
               const SizedBox(width: AppSpacing.m),
               Expanded(
                 child: Column(
@@ -1018,7 +1020,16 @@ class _ShopDoor extends StatelessWidget {
   }
 }
 
-/// Werkstatt → Laden. Push, kein Tab. Fit und Slot sitzen in den Pending-Providern.
+class _ShopImageFallback extends StatelessWidget {
+  const _ShopImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const RadShopStandFallback();
+  }
+}
+
+/// Rad → Laden. Push, kein Tab. Fit und Slot sitzen in den Pending-Providern.
 void openShopGateway(
   BuildContext context,
   WidgetRef ref, {

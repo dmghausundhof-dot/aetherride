@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s · FlowLine",
   },
   description:
-    "Outdoor Cycling, simplified. Hof, Karte, Platz, Werkstatt — Rausfahren in der App.",
+    "Outdoor Cycling, simplified. Hof, Karte, Touren, Rad — Rausfahren in der App.",
   keywords: [
     "FlowLine",
     "Radtouren",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     "Gravel",
     "MTB",
     "E-Bike",
-    "Werkstatt",
+    "Rad",
     "Outdoor Cycling",
   ],
   openGraph: {

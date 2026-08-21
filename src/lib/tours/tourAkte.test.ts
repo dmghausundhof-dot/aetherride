@@ -5,9 +5,15 @@ import assert from "node:assert/strict";
 import {
   buildHofTafel,
   catalogTourIdOf,
+  formatMappeDay,
   formatTourCount,
+  joinMappeCaption,
+  lastRideForSavedRoute,
+  latestConditionTag,
   resolveAkteSavedRoute,
   ridesForSavedRoute,
+  stimmeInboxTitle,
+  stimmeInboxShowsBody,
 } from "./tourAkte";
 import type { Ride } from "../../types";
 import type { SavedRoute } from "../../types/route";
@@ -51,6 +57,12 @@ const rides: Ride[] = [
 ];
 assert.equal(ridesForSavedRoute(rides, saved).length, 1);
 assert.equal(ridesForSavedRoute(rides, { id: "other" }).length, 0);
+assert.equal(lastRideForSavedRoute(rides, saved), null);
+const finished: Ride = { ...rides[0], endTime: new Date().toISOString() };
+assert.equal(lastRideForSavedRoute([finished], saved)?.id, "ride-1");
+assert.equal(joinMappeCaption(["gefahren mit Aeroad", "zuletzt 12.8."]), "gefahren mit Aeroad · zuletzt 12.8.");
+assert.equal(joinMappeCaption([null, "  "]), undefined);
+assert.ok(formatMappeDay("2026-08-12T10:00:00.000Z").includes("."));
 
 const review: TourReview = {
   id: "ur-1",
@@ -62,7 +74,7 @@ const review: TourReview = {
   status: "pending",
 };
 const tafel = buildHofTafel({
-  care: { text: "Kette — in der Werkstatt", href: "/garage?tab=maintenance" },
+  care: { text: "Kette — am Rad", href: "/garage?tab=maintenance" },
   savedRoutes: [saved],
   myReviews: [review],
 });
@@ -83,7 +95,7 @@ assert.equal(
 assert.equal(resolveAkteSavedRoute("missing", [saved]), null);
 
 const tafelOhneStimme = buildHofTafel({
-  care: { text: "Kette — in der Werkstatt", href: "/garage?tab=maintenance" },
+  care: { text: "Kette — am Rad", href: "/garage?tab=maintenance" },
   savedRoutes: [saved],
   myReviews: [],
 });
@@ -118,7 +130,7 @@ assert.equal(tafelGroup[0].kind, "gruppe");
 assert.equal(tafelGroup[1].kind, "mappe");
 
 const tafelListing = buildHofTafel({
-  care: { text: "Kette — in der Werkstatt", href: "/garage?tab=maintenance" },
+  care: { text: "Kette — am Rad", href: "/garage?tab=maintenance" },
   listing: {
     text: "Neckar wartet auf Bestätigung (1/3).",
     href: "/library?akte=gpx-1",
@@ -130,5 +142,44 @@ const tafelListing = buildHofTafel({
 assert.equal(tafelListing[0].kind, "care");
 assert.equal(tafelListing[1].kind, "listing");
 assert.equal(tafelListing[2].kind, "gruppe");
+
+assert.equal(
+  latestConditionTag(
+    [
+      {
+        tourId: saved.id,
+        createdAt: "2026-08-10T00:00:00.000Z",
+        tags: ["top"],
+      },
+      {
+        tourId: saved.id,
+        createdAt: "2026-08-12T00:00:00.000Z",
+        tags: ["nass", "unknown"],
+      },
+    ],
+    saved.id,
+  ),
+  "nass",
+);
+assert.equal(
+  latestConditionTag(
+    [{ tourId: saved.id, createdAt: "2026-08-12T00:00:00.000Z", tags: [] }],
+    saved.id,
+  ),
+  undefined,
+);
+assert.equal(latestConditionTag([review], "other"), undefined);
+
+assert.equal(stimmeInboxTitle("Neckar", "nass am See", "Stimme"), "Neckar");
+assert.equal(
+  stimmeInboxTitle(undefined, "Nasser Belag am See.\nRest", "Stimme"),
+  "Nasser Belag am See.",
+);
+assert.equal(stimmeInboxTitle("  ", "", "Stimme"), "Stimme");
+assert.equal(
+  stimmeInboxShowsBody("Nasser Belag am See.", "Nasser Belag am See.\nRest"),
+  false,
+);
+assert.equal(stimmeInboxShowsBody("Neckar", "nass am See"), true);
 
 console.log("tourAkte.test.ts OK");

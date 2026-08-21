@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +24,7 @@ import '../../data/community/community_places_client.dart';
 import '../../data/community/filmstrip_client.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/weather/weather_client.dart';
+import '../../data/location/safe_position.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/import/gpx_import.dart';
 import '../../data/routing/elevation_client.dart';
@@ -33,14 +35,21 @@ import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/hillshade.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/overview_browse_paint.dart';
+import '../../data/routing/coverage_label.dart';
+import '../../data/routing/coverage_overlay.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/offline_pack_catalog.dart';
+import '../../data/routing/offline_pack_catalog_client.dart';
+import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/routing/coverage_client.dart';
 import '../../domain/community/labeled_via.dart';
 import '../../domain/community/map_place.dart';
 import '../../domain/community/map_place_merge.dart';
 import '../../domain/community/poi_from_vias.dart';
-import '../../domain/community/stimme_pin.dart';
 import '../../domain/community/filmstrip.dart';
-import '../../domain/community/ride_group_policy.dart';
+import '../../domain/community/ride_group.dart';
+import '../../domain/community/ride_group_map.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/browse_map_paint.dart';
@@ -68,12 +77,16 @@ import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/route_shape.dart';
 import '../../domain/routing/route_progress.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
+import '../../domain/routing/plan_session.dart';
 import '../../domain/routing/trail_difficulty.dart';
 import '../../domain/routing/trail_last_mile.dart';
 import '../../domain/routing/trail_access.dart';
 import '../../domain/routing/nav_policy.dart';
 import '../../domain/routing/trail_view.dart';
 import '../../domain/routing/plan_line_points.dart';
+import '../../domain/routing/track_elevation.dart';
+import '../../domain/routing/live_routing_warmup.dart';
+import '../../domain/routing/osm_surface_label.dart';
 import '../../domain/routing/route_variant.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
@@ -81,13 +94,15 @@ import '../../domain/tours/add_route_start.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/saved_ride_start.dart';
 import '../../domain/tours/tour_akte.dart';
+import '../../domain/tours/tour_community_ux.dart';
 import '../../domain/tours/tour_display_name.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
-import '../profile/profile_screen.dart';
+import '../auth/auth_screen.dart';
+import '../privacy/privacy_screen.dart';
 import '../home/hof_watch_card.dart';
 import '../shell/shell_tabs.dart';
 import '../shell/hof_threshold_nav.dart';
@@ -95,7 +110,10 @@ import '../map/map_pin_image.dart';
 import '../map/nav_puck_image.dart';
 import '../map/nav_puck_overlay.dart';
 import '../map/nav_puck_style_sheet.dart';
+import '../map/rider_map_image.dart';
+import '../shared/weather_glyph.dart';
 import '../shared/map_ornaments.dart';
+import '../shared/map_locate_fab.dart';
 import '../shared/map_loading_scrim.dart';
 import '../shared/status_bar_scrim.dart';
 import 'add_to_collection_sheet.dart';
@@ -103,21 +121,67 @@ import 'discover_browse_sheet_snaps.dart';
 import 'discover_explore_chrome.dart';
 import 'discover_shell_mode.dart';
 import 'discover_map_line_style.dart';
-import 'widgets/discover_layer_chips.dart';
+import 'pending_ab_overlay.dart';
+import 'plan_line_grab_layer.dart';
+import 'plan_unpaved_overlay.dart';
+import 'widgets/coverage_edge_pill.dart';
+import 'widgets/discover_map_contents_sheet.dart';
 import 'widgets/discover_peek_actions.dart';
+import 'widgets/group_meet_sheet.dart';
 import 'widgets/ort_sheet.dart';
 import 'widgets/tour_akte_sheet.dart';
+import 'widgets/saved_mappe_tile.dart';
 import 'widgets/tour_community_section.dart';
 import 'widgets/tour_social_proof.dart';
 import 'widgets/route_variant_chips.dart';
 import 'widgets/plan_filmstrip.dart';
+import 'widgets/plan_waypoint_stack.dart';
+import 'widgets/plan_route_stats.dart';
+import 'widgets/plan_adapt_banner.dart';
+import 'widgets/plan_elevation_chart.dart';
+import 'widgets/plan_surface_bar.dart';
 import 'offline_maps_sheet.dart';
+import '../library/mappe_empty.dart';
+import '../garage/rad_nav_mark.dart';
 
 /// MapLibre in Flutter braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
 Set<Factory<OneSequenceGestureRecognizer>> get _mapGestures =>
     <Factory<OneSequenceGestureRecognizer>>{
       Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
     };
+
+class _PlanEditSnap {
+  const _PlanEditSnap({
+    required this.start,
+    required this.end,
+    required this.vias,
+    required this.startLabel,
+    required this.endLabel,
+    this.computed,
+    this.approach,
+  });
+
+  final GeoPoint? start;
+  final GeoPoint? end;
+  final List<LabeledVia> vias;
+  final String startLabel;
+  final String endLabel;
+  final RouteResult? computed;
+  final RouteResult? approach;
+
+  String get key => [
+        start == null
+            ? ''
+            : '${start!.lat.toStringAsFixed(5)},${start!.lng.toStringAsFixed(5)}',
+        end == null
+            ? ''
+            : '${end!.lat.toStringAsFixed(5)},${end!.lng.toStringAsFixed(5)}',
+        for (final v in vias)
+          '${v.lat.toStringAsFixed(5)},${v.lng.toStringAsFixed(5)}',
+        startLabel,
+        endLabel,
+      ].join('|');
+}
 
 class _TfPin {
   const _TfPin({
@@ -318,17 +382,16 @@ String _fmtRideDuration(int minutes, AppLocalizations l10n) {
   return '${h}h ${m.toString().padLeft(2, '0')}m';
 }
 
-/// Icon je POI-Stop-Art (Seeds: trailhead/viewpoint/cafe/culture/water/…).
-IconData _poiKindIcon(String kind) => switch (kind.toLowerCase().trim()) {
-      'trailhead' => Icons.flag,
-      'viewpoint' => Icons.landscape,
-      'cafe' => Icons.local_cafe,
-      'culture' => Icons.museum,
-      'water' => Icons.water_drop,
-      'transit' => Icons.tram,
-      'meetup' => Icons.groups,
-      _ => Icons.place,
-    };
+/// Icon je POI-Stop-Art — 3D-Pin, keine Material-Glyphe.
+Widget _poiKindMark(String kind, {double size = 18}) {
+  return Image.asset(
+    poiPinAssetPath(mapPoiKindFromRaw(kind)),
+    width: size,
+    height: size,
+    fit: BoxFit.contain,
+    excludeFromSemantics: true,
+  );
+}
 
 /// Übersetzt eine rohe Schwierigkeits-Angabe (OSM S-Skala oder Outdooractive-
 /// Klartext wie "mittel") in ein Label ohne Nachschlagen. Der Rohwert bleibt
@@ -403,7 +466,8 @@ class DiscoverScreen extends ConsumerStatefulWidget {
   ConsumerState<DiscoverScreen> createState() => DiscoverScreenState();
 }
 
-class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+class DiscoverScreenState extends ConsumerState<DiscoverScreen>
+    with WidgetsBindingObserver {
   MapLibreMapController? _map;
   bool _styleReady = false;
   bool _pinImagesReady = false;
@@ -418,22 +482,53 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   int _sGradeGen = 0;
   Timer? _sGradeDebounce;
   Timer? _viewportDebounce;
+  Timer? _calcAbDebounce;
+  Timer? _destPulseTimer;
+  int _destPulseTick = 0;
+  Timer? _browseNetTimer;
+  bool _browseOnline = true;
+  DateTime? _browseOnlineAt;
+  int _syncMarkersGen = 0;
+  bool _cameraMoving = false;
+  DateTime? _cameraMovedAt;
+  DateTime? _lastRoutePinAt;
+  Timer? _routeFlowTimer;
+  Symbol? _routeFlowSymbol;
+  List<LatLng> _routeFlowGeom = const [];
+  double _routeFlowT = 0;
+  final List<Symbol> _meetPulseSymbols = [];
+  final List<Symbol> _meetHaloSymbols = [];
+  double _pinPulse = 0;
   LatLng? _ideaPin;
   List<Symbol> _tfSymbols = [];
   final Map<String, _TfPin> _tfBySymbolId = {};
   List<CoveragePlace> _googlePlaces = [];
   List<MapPlace> _communityPlaces = [];
   List<MapPlace> _stimmePlaces = [];
-  MapPlace? _meetPlace;
+  List<RideGroup> _meetGroups = const [];
+  Set<String> _meetMemberIds = {};
   final Map<String, MapPlace> _placeBySymbolId = {};
+  final Map<String, _RouteSuggestion> _tourBySymbolId = {};
+  final Map<String, _SeedPoiStop> _poiBySymbolId = {};
+  final Map<String, Symbol> _poiSymbolByPoiId = {};
+  final Map<String, int> _poiDrawIndexById = {};
+  final List<Symbol> _placeSymbols = [];
+  final List<Symbol> _tourSymbols = [];
+  List<double> _poiFracsOnMap = const [];
+  final Map<String, GlobalKey> _poiTileKeys = {};
+  String? _highlightPoiId;
+  String? _highlightPlaceId;
+  String? _pendingPoiScrollId;
+  Timer? _poiHighlightTimer;
   bool _showToursLayer = true;
   bool _showTrailsLayer = true;
   bool _showBikeWaysLayer = true;
+  bool _showFarmTracksLayer = true;
   bool _showHillshade = BrowseMapPaint.hillshadeOnByDefault;
   bool _showPlacesLayer = true;
   bool _showHeatLayer = true;
   final NavPuckOverlay _navPuck = NavPuckOverlay();
-  NavPuckStyle _navPuckStyle = NavPuckStyle.chevron;
+  NavPuckStyle _navPuckStyle = NavPuckStyle.rider;
   UserLocation? _lastUserLoc;
   double _puckHeadingDeg = 0;
 
@@ -458,7 +553,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Default: alle Dauer. 0 = egal — nicht still ~60 vom Rad.
   int _minutes = DiscoverExploreChromeLogic.defaultDurationMin;
+  int _loopSeed = 1;
+  bool _loopBusy = false;
+  bool _aroundYouApplied = false;
+  String? _aroundYouStats;
   bool _loading = false;
+  bool _routeLineStale = false;
+  GeoPoint? _lastMapPointer;
+  DateTime? _lastMapPointerAt;
   String? _error;
   String? _status;
   bool _statusIsWarm = false;
@@ -467,6 +569,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   bool _trailIsDegraded = false;
 
   GeoPoint? _userPos;
+  String? _liveWarmupCell;
   GeoPoint? _start;
   GeoPoint? _end;
 
@@ -479,17 +582,205 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// GPS-Button: Kamera bleibt beim Standort. Auto-Fit auf Tour-Start/Bounds
   /// (Honesty, POI-Fahne, [_drawAll]) darf das nicht wieder wegziehen.
   bool _skipAutoCameraFit = false;
+  bool _fitPackAfterStyle = false;
   final GlobalKey _exploreChromeKey = GlobalKey();
   double _exploreChromeHeight =
       DiscoverExploreChromeLogic.exploreChromeBodyHeight;
   final List<LabeledVia> _vias = [];
   _PickMode _pick = _PickMode.none;
 
+  /// Explore long-press A–B uses live streets only. Planned editor does not.
+  bool _abFromBrowsePin = false;
+
+  /// km along the live line while a pin is dragged.
+  String? _planDragAlongLabel;
+  Timer? _planLineHoldTimer;
+  bool _planPointerGrabbing = false;
+  bool _planPointerHoldDidDest = false;
+  final List<({Line line, double opacity})> _planRibbonLines = [];
+  final Map<String, List<LatLng>> _planGrabGeom = {};
+  final List<Line> _planGrabLines = [];
+  final Set<String> _planLegendKinds = {};
+  List<({String kind, List<List<double>> coords})> _planRibbonSlices = [];
+  final List<Symbol> _planChevronSymbols = [];
+  final List<Symbol> _planTickSymbols = [];
+  bool _planRibbonDimmed = false;
+  int _planRibbonDimGen = 0;
+  LastPlanDest? _lastPlanDest;
+  bool _lastPlanDestDismissed = false;
+  final List<_PlanEditSnap> _planUndoStack = [];
+  final List<_PlanEditSnap> _planRedoStack = [];
+  static const _kPlanUndoMax = 24;
+  bool _planLineCoach = false;
+  bool _planLineTouched = false;
+  int? _planPulseViaIndex;
+  DateTime? _planBendHighlightUntil;
+  DateTime? _planDestConfirmUntil;
+  Timer? _planPulseTimer;
+  Timer? _planDestPulseTimer;
+
+  _PlanEditSnap _capturePlanSnap() => _PlanEditSnap(
+        start: _start,
+        end: _end,
+        vias: List<LabeledVia>.from(_vias),
+        startLabel: _startAddrCtrl.text,
+        endLabel: _endAddrCtrl.text,
+        computed: _copyRouteResult(_computed),
+        approach: _copyRouteResult(_approach),
+      );
+
+  RouteResult? _copyRouteResult(RouteResult? r) {
+    if (r == null) return null;
+    return RouteResult(
+      coordinates: List<GeoPoint>.from(r.coordinates),
+      distanceM: r.distanceM,
+      durationS: r.durationS,
+      engine: r.engine,
+      steps: r.steps,
+      warnings: r.warnings,
+      variant: r.variant,
+      variantApplied: r.variantApplied,
+    );
+  }
+
+  void _showPlanViaSnack() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(_l10n.planStopSetHint),
+        action: _planUndoStack.isEmpty
+            ? null
+            : SnackBarAction(label: _l10n.planUndo, onPressed: _undoPlan),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _pushPlanUndo() {
+    final snap = _capturePlanSnap();
+    if (_planUndoStack.isNotEmpty && _planUndoStack.last.key == snap.key) {
+      return;
+    }
+    _planUndoStack.add(snap);
+    if (_planUndoStack.length > _kPlanUndoMax) {
+      _planUndoStack.removeAt(0);
+    }
+    _planRedoStack.clear();
+  }
+
+  void _applyPlanSnap(_PlanEditSnap snap) {
+    _abFromBrowsePin = false;
+    setState(() {
+      _start = snap.start;
+      _end = snap.end;
+      _vias
+        ..clear()
+        ..addAll(snap.vias);
+      _startAddrCtrl.text = snap.startLabel;
+      _endAddrCtrl.text = snap.endLabel;
+      _pick = _PickMode.none;
+      _error = null;
+      _computed = snap.computed;
+      _approach = snap.approach;
+      _routeLineStale = false;
+      _planLineTouched = snap.vias.isNotEmpty;
+    });
+    unawaited(HapticFeedback.selectionClick());
+    unawaited(_syncMarkers());
+    if (_start != null &&
+        _end != null &&
+        (snap.computed == null || snap.computed!.coordinates.length < 2)) {
+      _schedulePlanReshape();
+    } else {
+      unawaited(_drawAll());
+    }
+  }
+
+  void _undoPlan() {
+    if (_planUndoStack.isEmpty) return;
+    final snap = _planUndoStack.removeLast();
+    _planRedoStack.add(_capturePlanSnap());
+    _applyPlanSnap(snap);
+  }
+
+  void _redoPlan() {
+    if (_planRedoStack.isEmpty) return;
+    final snap = _planRedoStack.removeLast();
+    _planUndoStack.add(_capturePlanSnap());
+    _applyPlanSnap(snap);
+  }
+
+  bool get _planTypingInField {
+    if (_startAddrFocus.hasFocus || _endAddrFocus.hasFocus) return true;
+    return FocusManager.instance.primaryFocus?.context?.widget is EditableText;
+  }
+
+  void _onPlanUndoShortcut() {
+    if (!_planEditorActive || _planTypingInField) return;
+    _undoPlan();
+  }
+
+  void _onPlanRedoShortcut() {
+    if (!_planEditorActive || _planTypingInField) return;
+    _redoPlan();
+  }
+
+  String _planDestFlagTooltip(AppLocalizations l10n) =>
+      _start != null && _end != null
+          ? l10n.discoverReplaceDest
+          : l10n.discoverSetEndCta;
+
+  /// Returns true when the first-via coach was dismissed — skip the snack.
+  bool _afterPlanViaInserted() {
+    _planLineTouched = true;
+    if (_vias.isEmpty) return false;
+    _pulsePlanVia(_vias.length - 1);
+    if (_planLineCoach && mounted) {
+      setState(() => _planLineCoach = false);
+      unawaited(RidePrefs.setPlanLineCoachDismissed(true));
+      return true;
+    }
+    return false;
+  }
+
+  void _pulsePlanVia(int index) {
+    _planPulseViaIndex = index;
+    _planBendHighlightUntil =
+        DateTime.now().add(const Duration(milliseconds: 2400));
+    _planPulseTimer?.cancel();
+    _planPulseTimer = Timer(const Duration(milliseconds: 2400), () {
+      if (!mounted) return;
+      setState(() {
+        _planPulseViaIndex = null;
+        _planBendHighlightUntil = null;
+      });
+      unawaited(_syncMarkers());
+    });
+  }
+
   List<GeoPoint> get _viaPoints =>
       [for (final v in _vias) GeoPoint(v.lat, v.lng)];
 
+  bool get _planEditorActive => planEditorIsActive(
+        navigateMode: _shellMode == DiscoverShellMode.navigate,
+        planSurface: _surface == _Surface.plan,
+      );
+
+  bool get _hasLivePlanLine =>
+      _computed != null &&
+      isPlanCustomizableLine(
+        engine: _computed!.engine,
+        coordinateCount: _computed!.coordinates.length,
+      );
+
   /// Drops stale A→B results when a newer Ziel/Via wins the race.
   int _calcAbGen = 0;
+
+  /// Drops in-flight seed/catalog preview after a new routing pin.
+  int _previewGen = 0;
 
   RouteResult? _computed;
   RouteResult? _approach;
@@ -507,7 +798,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Browse-Suche / Kameraschwenk — Nähe folgt diesem Punkt statt nur GPS.
   GeoPoint? _browseAnchor;
+  bool _browseAnchorPinned = false;
+  String? _browseAnchorLabel;
+  GeoPoint? _lastMapTap;
+  DateTime? _lastMapTapAt;
+  DateTime? _lastPlanViaAlongAt;
   List<GeocodeHit> _placeHits = const [];
+  bool _placeSearchNeedNet = false;
   Timer? _placeSearchDebounce;
   List<OsmTrailSegment> _trailNetwork = [];
   List<OsmTrailSegment> _sGradeTrails = [];
@@ -527,7 +824,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   TourSurfaceKey? _surfaceFilter;
   TourEffortKey? _effortFilter;
   TourElevationKey? _elevationFilter;
+
+  /// Umkreis: Abstand Tour-Mitte → Standort. Nicht die Tourlänge.
   double? _maxDistanceKm;
+
+  /// Tourlänge in km — Filter-Sheet, nicht Umkreis.
+  double? _maxLengthKm;
   final Set<TourSportKey> _sportFilter = {};
 
   /// Form: Alle / Rundkurs / A→B / Downhill — Default Alle, nicht nur Loops.
@@ -551,6 +853,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Gesetzt, wenn Planen aus einer Tour („Anpassen") kommt — klarerer Titel.
   String? _adaptingTourName;
+  _RouteSuggestion? _adaptingTour;
 
   bool _heatmapConsent = false;
   bool _heatmapContributed = false;
@@ -558,14 +861,44 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Bundled Nähe-Seeds (Berlin) — Fallback ohne GPS / leeres OA·OSM.
   NaeheSeedsBundle? _seedsBundle;
   String? _seedsStatus;
+  bool _seedsOffline = false;
 
   String? _elevationSummary;
   double? _elevationGainM;
+  List<double> _planElevSamples = const [];
+  List<double> _planElevKm = const [];
+  List<Map<String, dynamic>> _planElevPoints = const [];
+  String? _planElevSource;
+  List<({double fromKm, double toKm, String? surface})> _planSurfaceBands =
+      const [];
+  List<SurfaceShare> _planSurfaceMix = const [];
+  double? _planElevScrubT;
+  Symbol? _planElevSymbol;
+  Symbol? _planStartSymbol;
+  Symbol? _planEndSymbol;
+  Symbol? _planEndGlowSymbol;
+  final List<Symbol> _planViaSymbols = [];
+  final List<Symbol> _planBendSymbols = [];
+  final List<Symbol> _planBendDiscSymbols = [];
   WeatherSnapshot? _weatherStart;
   WeatherSnapshot? _weatherSummit;
   List<FilmstripShot> _filmstripShots = const [];
   RouteVariant _routeVariant = RouteVariant.planned;
   bool _valhallaLive = false;
+  bool _showNavigateOfflineHint = false;
+  OfflinePackRow? _navigateOfflinePack;
+  List<OfflinePackRow>? _offlineCatalog;
+  Future<List<OfflinePackRow>>? _offlineCatalogLoad;
+  bool _offlineRoutingReady = false;
+  bool _offlineOverviewReady = false;
+  List<double>? _offlinePackBbox;
+  List<List<double>>? _offlinePackRing;
+  bool _offlinePackRingResolved = false;
+  String? _offlinePackLabel;
+  String? _offlinePackId;
+  bool _activeCoverageLayerReady = false;
+  bool _suggestedCoverageLayerReady = false;
+  int _offlineCoverageRetries = 0;
 
   /// Höhenprofil je Tour fürs Detail-Panel — getrennt vom globalen
   /// [_elevationSummary] (der gehört zur zuletzt berechneten Route und kann
@@ -587,6 +920,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _exploreSearchCtrl = TextEditingController();
   String _exploreQuery = '';
   List<GeocodeHit> _addrHits = const [];
+  List<GeocodeHit> _geocodeRecents = const [];
   bool _addrBusy = false;
   String? _addrTarget; // 'start' | 'end'
   Timer? _addrDebounce;
@@ -614,27 +948,38 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   @override
   void initState() {
     super.initState();
-    _locate();
+    WidgetsBinding.instance.addObserver(this);
+    RideGroupStore.revision.addListener(_onRideGroupRevision);
+    RidePrefs.navPuckRevision.addListener(_onNavPuckPref);
+    OfflineMapsPrefs.revision.addListener(_onPackRevision);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_locate());
+      unawaited(_hydratePlanGeocodeRecents());
+    });
     _prefetchBikeOverlay();
     unawaited(_loadNavPuckStyle());
+    unawaited(_loadFarmTrackPref());
     _loadHeatmapConsent();
     unawaited(_reloadSavedMeta());
-    _fetchOutdooractive();
-    _fetchOsmRoutes();
-    _fetchTrailNetwork();
-    _fetchTrailforks();
-    unawaited(_fetchPublicCatalog());
-    unawaited(_loadNaeheSeeds());
     unawaited(_fetchRoutingStatus());
-    unawaited(
-      AppConfig.resolveBrowseMapStyleUrl().then((s) {
-        if (!mounted || s == _mapStyle) return;
-        setState(() => _mapStyle = s);
-      }),
-    );
+    unawaited(_refreshOfflineChip());
+    unawaited(_syncBrowseMapStyle());
+    _browseNetTimer = Timer.periodic(kBrowseOnlineProbeTtl, (_) {
+      if (!mounted) return;
+      if (ref.read(shellTabIndexProvider) != ShellTabs.karte) return;
+      unawaited(_syncBrowseMapStyle());
+    });
     // Quick auch ohne GPS — sonst bleibt die Liste leer bis Locate ok ist.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Localizations are not safe in initState — fetch after first frame.
+      _fetchOutdooractive();
+      _fetchOsmRoutes();
+      _fetchTrailNetwork();
+      _fetchTrailforks();
+      unawaited(_fetchPublicCatalog());
+      unawaited(_loadNaeheSeeds());
       final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
       final active = bikes.cast<Bike?>().firstWhere(
             (b) => b?.isActive == true,
@@ -668,15 +1013,42 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       } else {
         _applyDiscoverLaunch(launch);
       }
+      unawaited(_refreshMeetPlaces());
     });
+  }
+
+  void _onRideGroupRevision() {
+    unawaited(_refreshMeetPlaces());
+  }
+
+  void _onNavPuckPref() {
+    unawaited(_loadNavPuckStyle());
+  }
+
+  void _onPackRevision() {
+    unawaited(_refreshOfflineChip());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    RidePrefs.navPuckRevision.removeListener(_onNavPuckPref);
+    RideGroupStore.revision.removeListener(_onRideGroupRevision);
+    OfflineMapsPrefs.revision.removeListener(_onPackRevision);
+    _stopRouteFlow();
+    _browseNetTimer?.cancel();
+    _browseNetTimer = null;
     _addrDebounce?.cancel();
     _sGradeDebounce?.cancel();
     _viewportDebounce?.cancel();
+    _calcAbDebounce?.cancel();
+    _stopDestPulse();
     _placeSearchDebounce?.cancel();
+    _poiHighlightTimer?.cancel();
+    _planPulseTimer?.cancel();
+    _planDestPulseTimer?.cancel();
+    _planLineHoldTimer?.cancel();
+    _map?.removeListener(_onMapCameraTick);
     _discoverSheetCtrl.dispose();
     _startAddrCtrl.dispose();
     _startAddrFocus.dispose();
@@ -751,8 +1123,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         msg.contains('minutely');
   }
 
-  String _liveRouteError(Object e) {
+  String _liveRouteError(Object e, {bool browsePin = false}) {
     if (_isLiveRateLimited(e)) return _l10n.discoverGhMinuteLimit;
+    final msg = e.toString().toLowerCase();
+    if (browsePin &&
+        (isOfflineNoRouteError(e) ||
+            msg.contains('browse-needs-network') ||
+            msg.contains('timeout') ||
+            msg.contains('timed out') ||
+            msg.contains('failed host lookup') ||
+            msg.contains('socketexception'))) {
+      return _l10n.discoverBrowseNeedsNetwork;
+    }
+    if (isOfflineViasNeedNetworkError(e)) {
+      return _l10n.discoverViasNeedNet;
+    }
+    if (isOfflineNoRouteError(e)) return _l10n.discoverOfflineNoRoute;
+    if (isLoopProfileError(e)) return _l10n.discoverAroundYouSport;
+    if (isLoopNotClosedError(e) || isLoopGeneratorError(e)) {
+      return _l10n.discoverAroundYouFail;
+    }
     return friendlyErrorMessage(e, context: _l10n.computeRoute);
   }
 
@@ -807,6 +1197,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _selectedTourId = null;
     });
     ref.read(activeRouteProvider.notifier).state = null;
+    ref.read(ridePendingGroupIdProvider.notifier).state = null;
     // Ein Tipp: HUD startet sofort — kein Navi-Symbol / „Ohne Route fahren“.
     ref.read(rideAutostartProvider.notifier).state = true;
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.ride;
@@ -828,6 +1219,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     String? adaptingTourName,
     bool clearAdapting = true,
   }) {
+    if (mode != DiscoverShellMode.navigate) {
+      _clearPlanAsGroupIfUnused();
+    }
     setState(() {
       _shellMode = mode;
       _detailId = null;
@@ -835,6 +1229,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _error = null;
       if (clearAdapting && adaptingTourName == null) {
         _adaptingTourName = null;
+        _adaptingTour = null;
       }
       if (adaptingTourName != null) {
         _adaptingTourName = adaptingTourName;
@@ -873,6 +1268,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (mode == DiscoverShellMode.explore || mode == DiscoverShellMode.mine) {
       unawaited(_snapDiscoverSheet(DiscoverBrowseSheetSnaps.half));
     }
+    if (mode == DiscoverShellMode.navigate) {
+      unawaited(_hydratePlanGeocodeRecents());
+    }
+    unawaited(_syncBikeOverlayVisibility());
   }
 
   /// Navigieren öffnen — A→B ist erster Klasse (nicht nur FAB „Route bauen").
@@ -907,12 +1306,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     unawaited(_loadCommunityHeroes(tourId));
     unawaited(_fetchCommunityPlaces());
     unawaited(_refreshStimmePlaces());
-    unawaited(_refreshMeetPlace());
+    unawaited(_refreshMeetPlaces());
     await _drawAll();
     if (!mounted) return;
     try {
       await _map?.animateCamera(CameraUpdate.newLatLngZoom(center, 12.5));
     } catch (_) {}
+    final poiId = _pendingPoiScrollId;
+    if (poiId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _flashAndScrollToPoi(poiId);
+      });
+    }
   }
 
   Future<void> _loadCommunityHeroes(String tourId) async {
@@ -931,6 +1336,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _detailId = null;
       _surface = _Surface.discover;
       _shellMode = DiscoverShellMode.explore;
+      _highlightPoiId = null;
+      _pendingPoiScrollId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_snapDiscoverSheet(DiscoverBrowseSheetSnaps.peek));
     });
   }
 
@@ -1025,15 +1436,27 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  void _scheduleAddressSearch(String target) {
+  String _queryForAddrTarget(String target) {
+    if (target == 'end') return _endAddrCtrl.text;
+    if (target.startsWith('via:')) {
+      final i = int.tryParse(target.substring(4));
+      if (i != null && i >= 0 && i < _vias.length) {
+        return _vias[i].trimmedLabel ?? '';
+      }
+      return '';
+    }
+    return _startAddrCtrl.text;
+  }
+
+  void _scheduleAddressSearch(String target, {String? query}) {
     _addrDebounce?.cancel();
     _addrDebounce = Timer(const Duration(milliseconds: 350), () {
-      unawaited(_searchAddress(target));
+      unawaited(_searchAddress(target, query: query));
     });
   }
 
-  Future<void> _searchAddress(String target) async {
-    final q = target == 'end' ? _endAddrCtrl.text : _startAddrCtrl.text;
+  Future<void> _searchAddress(String target, {String? query}) async {
+    final q = (query ?? _queryForAddrTarget(target)).trim();
     if (q.trim().length < 2) {
       setState(() {
         _addrHits = const [];
@@ -1046,6 +1469,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _addrBusy = true;
       _addrTarget = target;
     });
+    if (BrowsePlaceSearch.needsNetwork(q) && !await _discoverHasNetwork()) {
+      if (!mounted) return;
+      setState(() {
+        _addrHits = const [];
+        _addrBusy = false;
+        _setStatus(_l10n.discoverSearchNeedNet);
+      });
+      return;
+    }
     try {
       final o = _origin;
       final hits = await _geocode.search(q, biasLat: o.lat, biasLng: o.lng);
@@ -1080,24 +1512,48 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _applyAddressHit(GeocodeHit hit) async {
     final target = _addrTarget ?? 'start';
     final p = GeoPoint(hit.lat, hit.lng);
-    final becameOrigin = target != 'end' && _userPos == null && _start == null;
+    final becameOrigin =
+        target == 'start' && _userPos == null && _start == null;
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
     setState(() {
       if (target == 'end') {
         _end = p;
         _endAddrCtrl.text = hit.label;
         _pick = _PickMode.none;
         _destinationTrail = null;
+      } else if (target.startsWith('via:')) {
+        final i = int.tryParse(target.substring(4));
+        if (i != null && i >= 0 && i < _vias.length) {
+          final old = _vias[i];
+          _vias[i] = LabeledVia(
+            lat: p.lat,
+            lng: p.lng,
+            label: hit.label,
+            placeId: old.placeId,
+            kind: old.kind,
+          );
+        }
+        _pick = _PickMode.none;
       } else {
         _start = p;
         _startAddrCtrl.text = hit.label;
         _pick = _PickMode.end;
       }
       _addrHits = const [];
+      _geocodeRecents = _pushGeocodeRecentList(hit);
       _setStatus(_l10n.discoverStartEndHit(
-        target == 'end' ? _l10n.navigateEndLabel : _l10n.navigateStartLabel,
+        target == 'end'
+            ? _l10n.navigateEndLabel
+            : target.startsWith('via:')
+                ? _l10n.navigateAddVia
+                : _l10n.navigateStartLabel,
         hit.label,
       ));
     });
+    FocusManager.instance.primaryFocus?.unfocus();
+    unawaited(_persistGeocodeRecents(_geocodeRecents));
+    if (target == 'end') unawaited(_rememberLastPlanDest());
     await _syncMarkers();
     if (_map != null) {
       try {
@@ -1106,12 +1562,42 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         );
       } catch (_) {}
     }
-    if (target != 'end' || becameOrigin) {
+    if (target == 'start' || becameOrigin) {
       _refreshNearbyDataSources();
     }
     if (_start != null && _end != null) {
-      await _calcAb();
+      await _calcAb(keepLine: _hasLivePlanLine, refitPins: false);
     }
+  }
+
+  void _addGeocodeHitAsVia(GeocodeHit hit) {
+    if (_start == null || _end == null) {
+      unawaited(_routeToGeocodeHit(hit));
+      return;
+    }
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    final p = GeoPoint(hit.lat, hit.lng);
+    final next = PlanSession.fromParts(
+      start: _start,
+      end: _end,
+      vias: _vias,
+    ).insertViaAlong(
+      p,
+      line: _planComputedLineLngLat(),
+      label: hit.label,
+      kind: hit.kind,
+    );
+    setState(() {
+      _vias
+        ..clear()
+        ..addAll(next.labeledVias);
+      _addrHits = const [];
+      _pick = _PickMode.none;
+      _setStatus(_l10n.planStopSetHint);
+    });
+    unawaited(_syncMarkers());
+    _schedulePlanReshape();
   }
 
   /// Tour-Idee als Plan-Draft: mit Live-Track Start/Ziel aus Polyline;
@@ -1127,11 +1613,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final l10n = _l10n;
 
       if (routed.demo || routed.points.length < 2) {
-        final c = GeoPoint(tour.center.latitude, tour.center.longitude);
-        final end = _suggestedEndNear(tour.center, tour.distanceKm);
+        final pin = GeoPoint(tour.center.latitude, tour.center.longitude);
+        final ab = pinOnlyAbEndpoints(
+          pinLat: pin.lat,
+          pinLng: pin.lng,
+          startLat: _start?.lat,
+          startLng: _start?.lng,
+          userLat: _userPos?.lat,
+          userLng: _userPos?.lng,
+          preferGps: true,
+        );
+        final start = ab != null ? GeoPoint(ab.startLat, ab.startLng) : pin;
+        final fromGps = _userPos != null && ab != null;
         setState(() {
-          _start = c;
-          _end = end;
+          _start = start;
+          _end = ab != null ? pin : null;
+          _destinationTrail = null;
           _vias.clear();
           _computed = null;
           _tourLayer = null;
@@ -1140,23 +1637,34 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _selectedTourId = tour.id;
           _label = l10n.discoverPlanName(tour.name);
           _adaptingTourName = tour.name;
+          _adaptingTour = tour;
           _surface = _Surface.plan;
           _shellMode = DiscoverShellMode.navigate;
           // Verlässt Detail (falls offen), sonst zeigt „Zurück" später eine
           // Tour, die gar nicht mehr gemeint war.
           _detailId = null;
           _pick = _PickMode.none;
-          _startAddrCtrl.text =
-              '${c.lat.toStringAsFixed(4)}, ${c.lng.toStringAsFixed(4)}';
-          _endAddrCtrl.text = l10n.discoverSuggestEnd;
+          _startAddrCtrl.text = ab == null
+              ? l10n.discoverPoiNamed(tour.name)
+              : (fromGps ? l10n.discoverMyPosition : l10n.discoverOnMapPlace);
+          _endAddrCtrl.text = ab != null
+              ? l10n.discoverPoiNamed(tour.name)
+              : l10n.discoverSuggestEnd;
           _setStatus(l10n.discoverIdeaStartSet);
           _loading = false;
         });
         await _drawAll();
         await _syncMarkers();
-        final map = _map;
-        if (map != null) {
-          await map.animateCamera(CameraUpdate.newLatLngZoom(tour.center, 12));
+        unawaited(_reversePlanFieldLabels());
+        if (_start != null && _end != null) {
+          await _fitCameraToAbPins();
+        } else {
+          final map = _map;
+          if (map != null) {
+            await map.animateCamera(
+              CameraUpdate.newLatLngZoom(tour.center, 12),
+            );
+          }
         }
         return;
       }
@@ -1164,7 +1672,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final pts = routed.points;
       final start = pts.first;
       final end = pts.last;
-      final mid = pts[pts.length ~/ 2];
       final result = RouteResult(
         coordinates: pts,
         distanceM: tour.distanceKm * 1000,
@@ -1174,28 +1681,29 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       setState(() {
         _start = start;
         _end = end;
-        _vias
-          ..clear()
-          ..add(LabeledVia(lat: mid.lat, lng: mid.lng));
+        _vias.clear();
         _computed = result;
         _ideaPin = null;
+        _selectedTourId = tour.id;
         _label = l10n.discoverPlanName(tour.name);
         _adaptingTourName = tour.name;
+        _adaptingTour = tour;
         _surface = _Surface.plan;
         _shellMode = DiscoverShellMode.navigate;
         // Verlässt Detail (falls offen), sonst zeigt „Zurück" später eine
         // Tour, die gar nicht mehr gemeint war.
         _detailId = null;
         _pick = _PickMode.none;
-        _startAddrCtrl.text =
-            '${start.lat.toStringAsFixed(4)}, ${start.lng.toStringAsFixed(4)}';
-        _endAddrCtrl.text =
-            '${end.lat.toStringAsFixed(4)}, ${end.lng.toStringAsFixed(4)}';
+        _startAddrCtrl.text = l10n.discoverOnMapPlace;
+        _endAddrCtrl.text = l10n.discoverOnMapPlace;
         _setStatus(_l10n.discoverTourInPlan);
         _loading = false;
       });
       await _drawRoute(result);
       await _syncMarkers();
+      unawaited(_reversePlanFieldLabels());
+      unawaited(_refreshElevation(result));
+      _schedulePlanReshape();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -1260,25 +1768,735 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     });
   }
 
-  Future<void> _openOfflineMaps({GeoPoint? focus}) async {
-    final changed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => OfflineMapsSheet(
-        userLng: focus?.lng ?? _mapCenter.lng,
-        userLat: focus?.lat ?? _mapCenter.lat,
-      ),
+  Future<List<OfflinePackRow>> _ensureOfflineCatalog() {
+    if (_offlineCatalog != null) return Future.value(_offlineCatalog!);
+    return _offlineCatalogLoad ??= _loadOfflineCatalog();
+  }
+
+  Future<List<OfflinePackRow>> _loadOfflineCatalog() async {
+    final merged = await loadOfflinePackCatalog();
+    _offlineCatalog = merged;
+    _offlineCatalogLoad = null;
+    return merged;
+  }
+
+  List<({double lng, double lat})> _offlineViaLngLats() => [
+        for (final v in _vias) (lng: v.lng, lat: v.lat),
+      ];
+
+  List<({double lng, double lat})> _offlineAlongLngLats([
+    List<GeoPoint>? coords,
+  ]) {
+    final c = coords ?? _computed?.coordinates;
+    if (c == null || c.length < 3) return const [];
+    return sampleLngLats([
+      for (final p in c) (lng: p.lng, lat: p.lat),
+    ]);
+  }
+
+  String _navigateOfflineHintLabel(AppLocalizations l10n) {
+    final pack = _navigateOfflinePack;
+    if (pack == null) return l10n.navigateOfflineHint;
+    return l10n.navigateOfflineHintForPack(
+      l10n.overlayRegionNameFor(pack.id, pack.name),
+      formatPackBytes(pack.routingBytes),
+      packId: pack.id,
+    );
+  }
+
+  Future<void> _refreshNavigateOfflineHint() async {
+    final a = _start;
+    final b = _end;
+    if (a == null || b == null) {
+      if ((_showNavigateOfflineHint || _navigateOfflinePack != null) &&
+          mounted) {
+        setState(() {
+          _showNavigateOfflineHint = false;
+          _navigateOfflinePack = null;
+        });
+        unawaited(_syncOfflineCoverageOverlay());
+        unawaited(_syncMarkers(coalesce: true));
+      }
+      return;
+    }
+    final covered = await OfflinePackDirs.legitimateCoversRoute(
+      fromLng: a.lng,
+      fromLat: a.lat,
+      toLng: b.lng,
+      toLat: b.lat,
+      vias: _offlineViaLngLats(),
+      along: _offlineAlongLngLats(),
     );
     if (!mounted) return;
-    if (changed == true) {
-      final s = await AppConfig.resolveMapStyleUrl();
-      if (!mounted) return;
-      setState(() {
-        _mapStyle = s;
-        _styleReady = false;
-        _pinImagesReady = false;
-      });
+    if (covered) {
+      if (_showNavigateOfflineHint || _navigateOfflinePack != null) {
+        setState(() {
+          _showNavigateOfflineHint = false;
+          _navigateOfflinePack = null;
+        });
+        unawaited(_syncOfflineCoverageOverlay());
+        unawaited(_syncMarkers(coalesce: true));
+      }
+      return;
     }
+    if (!_showNavigateOfflineHint) {
+      setState(() => _showNavigateOfflineHint = true);
+    }
+    OfflinePackRow? pack;
+    try {
+      pack = suggestedPackForRoute(
+        packs: await _ensureOfflineCatalog(),
+        fromLng: a.lng,
+        fromLat: a.lat,
+        toLng: b.lng,
+        toLat: b.lat,
+        extra: [
+          ..._offlineViaLngLats(),
+          ..._offlineAlongLngLats(),
+        ],
+      );
+    } catch (_) {}
+    if (!mounted) return;
+    if (_navigateOfflinePack?.id == pack?.id) {
+      if (pack != null && _styleReady && !_suggestedCoverageLayerReady) {
+        unawaited(_syncOfflineCoverageOverlay());
+      }
+      return;
+    }
+    setState(() => _navigateOfflinePack = pack);
+    unawaited(_syncOfflineCoverageOverlay());
+    unawaited(_syncMarkers(coalesce: true));
+  }
+
+  Future<void> _refreshOfflineChip() async {
+    try {
+      final m = await OfflineMapsPrefs.read();
+      final path = (m['activatedPackPath'] as String?)?.trim() ?? '';
+      final routing = await OfflinePackDirs.hasLegitimateActivatedPack();
+      final overview = m['basemapReady'] == true;
+      final bbox =
+          routing ? await OfflinePackDirs.activatedCoverageBbox() : null;
+      final rawName = (m['regionPack'] as String?)?.trim() ?? '';
+      final id = OfflineMapsPrefs.packIdFromActivatedPath(path) ?? '';
+      final packId = routing && id.isNotEmpty ? id : null;
+      final label = !routing
+          ? null
+          : (id.isNotEmpty
+              ? _l10n.overlayRegionNameFor(
+                  id,
+                  rawName.isEmpty ? id : rawName,
+                )
+              : (rawName.isEmpty ? null : rawName));
+      if (!mounted) return;
+      final bboxChanged = !_sameBbox(_offlinePackBbox, bbox);
+      List<List<double>>? ring = _offlinePackRing;
+      var ringResolved = _offlinePackRingResolved;
+      if (!routing) {
+        ring = null;
+        ringResolved = true;
+      } else if (!_offlinePackRingResolved ||
+          bboxChanged ||
+          packId != _offlinePackId) {
+        try {
+          ring = (await OfflinePackDirs.activatedCoverageRingResult())?.outline;
+          ringResolved = true;
+        } catch (_) {
+          ring = null;
+          ringResolved = true;
+        }
+      }
+      if (!mounted) return;
+      if (routing == _offlineRoutingReady &&
+          overview == _offlineOverviewReady &&
+          label == _offlinePackLabel &&
+          packId == _offlinePackId &&
+          !bboxChanged &&
+          ringResolved == _offlinePackRingResolved &&
+          _sameRing(_offlinePackRing, ring)) {
+        if (routing &&
+            bbox != null &&
+            bbox.length >= 4 &&
+            _styleReady &&
+            !_activeCoverageLayerReady) {
+          unawaited(_syncOfflineCoverageOverlay());
+        }
+        return;
+      }
+      setState(() {
+        _offlineRoutingReady = routing;
+        _offlineOverviewReady = overview;
+        _offlinePackBbox = bbox;
+        _offlinePackRing = ring;
+        _offlinePackRingResolved = ringResolved;
+        _offlinePackLabel = label;
+        _offlinePackId = packId;
+      });
+      unawaited(_syncOfflineCoverageOverlay());
+      unawaited(_syncMarkers(coalesce: true));
+    } catch (_) {}
+  }
+
+  bool _sameBbox(List<double>? a, List<double>? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null || a.length < 4 || b.length < 4) {
+      return a == null && b == null;
+    }
+    for (var i = 0; i < 4; i++) {
+      if ((a[i] - b[i]).abs() > 1e-6) return false;
+    }
+    return true;
+  }
+
+  bool _sameRing(List<List<double>>? a, List<List<double>>? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null || a.length != b.length) {
+      return a == null && b == null;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].length < 2 || b[i].length < 2) return false;
+      if ((a[i][0] - b[i][0]).abs() > 1e-7) return false;
+      if ((a[i][1] - b[i][1]).abs() > 1e-7) return false;
+    }
+    return true;
+  }
+
+  bool get _coverageRiderIsOutside => coverageRiderOutside(
+        lng: _userPos?.lng,
+        lat: _userPos?.lat,
+        bbox: _offlinePackBbox,
+        routingReady: _offlineRoutingReady,
+        ring: _offlinePackRing,
+      );
+
+  ({String label, bool outside, bool overview, bool needsNet})?
+      _coverageEdgeInfo(AppLocalizations l10n) {
+    if (_hofChoice || _surface != _Surface.discover) return null;
+    final overviewStyle = !_browseOnline && isLocalOverviewStyleUrl(_mapStyle);
+    final mapNeedsNet = !_browseOnline && !overviewStyle;
+    if (_offlineRoutingReady) {
+      final name = _offlinePackLabel?.trim() ?? '';
+      if (name.isEmpty) return null;
+      final outside = _coverageRiderIsOutside;
+      return (
+        label: l10n.offlineCoverageEdgeFor(
+          name,
+          outside: outside,
+          packId: _offlinePackId,
+          overviewStyle: overviewStyle,
+          mapNeedsNet: mapNeedsNet,
+        ),
+        outside: outside,
+        overview: overviewStyle && !outside,
+        needsNet: mapNeedsNet && !outside && !overviewStyle,
+      );
+    }
+    final sug = _navigateOfflinePack;
+    if (sug == null) return null;
+    final sugName = l10n.overlayRegionNameFor(sug.id, sug.name);
+    return (
+      label: l10n.offlineCoverageSuggested(sugName),
+      outside: false,
+      overview: false,
+      needsNet: false,
+    );
+  }
+
+  Future<void> _syncOfflineCoverageOverlay() async {
+    final c = _map;
+    if (c == null || !_styleReady) return;
+    try {
+      var active = _offlineRoutingReady ? _offlinePackBbox : null;
+      var suggested = _navigateOfflinePack?.bbox;
+      if (_sameBbox(active, suggested)) suggested = null;
+      if (coverageSuggestedOccludesActive(
+        active: active,
+        suggested: suggested,
+      )) {
+        suggested = null;
+      }
+      if (active != null && !_offlinePackRingResolved) {
+        active = null;
+      }
+      if (active != null &&
+          !coverageOverlayVisible(
+            zoom: _mapZoom,
+            bbox: active,
+            packId: _offlinePackId,
+          )) {
+        active = null;
+      }
+      if (suggested != null &&
+          !coverageOverlayVisible(
+            zoom: _mapZoom,
+            bbox: suggested,
+            packId: _navigateOfflinePack?.id,
+          )) {
+        suggested = null;
+      }
+      final outside = _coverageRiderIsOutside;
+      String? below;
+      try {
+        below = coverageSeatBelowLayerId(await c.getLayerIds());
+      } catch (_) {}
+      await syncCoverageWashOverlay(
+        c,
+        kind: CoverageWashKind.suggested,
+        bbox: suggested,
+        dimmed: !outside && active != null,
+        emphasized: outside,
+        belowLayerId: below,
+      );
+      await syncCoverageWashOverlay(
+        c,
+        kind: CoverageWashKind.active,
+        bbox: active,
+        ring: active == null ? null : _offlinePackRing,
+        dimmed: false,
+        emphasized: outside,
+        belowLayerId: below,
+      );
+      _activeCoverageLayerReady = true;
+      _suggestedCoverageLayerReady = true;
+      _offlineCoverageRetries = 0;
+    } catch (_) {
+      _activeCoverageLayerReady = false;
+      _suggestedCoverageLayerReady = false;
+      if (_offlineCoverageRetries >= 3 || !mounted || !_styleReady) return;
+      _offlineCoverageRetries += 1;
+      unawaited(Future<void>.delayed(const Duration(milliseconds: 400), () {
+        if (!mounted) return;
+        unawaited(_syncOfflineCoverageOverlay());
+      }));
+    }
+  }
+
+  Future<bool> _probeBrowseNetwork() async {
+    final online = await OfflineBasemap.hasNetwork();
+    _browseOnline = online;
+    _browseOnlineAt = DateTime.now();
+    return online;
+  }
+
+  /// Reuse a recent *online* poll. Cached offline re-probes so a stale
+  /// airplane-mode flag does not skip ORS.
+  Future<bool> _discoverHasNetwork() async {
+    if (trustCachedOnlineProbe(
+      cachedOnline: _browseOnline,
+      cachedAt: _browseOnlineAt,
+      ttl: kPlanOnlineProbeTtl,
+    )) {
+      return true;
+    }
+    return _probeBrowseNetwork();
+  }
+
+  Future<void> _syncBrowseMapStyle() async {
+    final online = await _probeBrowseNetwork();
+    if (!mounted) return;
+    await OfflineBasemap.applyNetworkMode(online: online);
+    if (!mounted) return;
+    final lng = _map?.cameraPosition?.target.longitude ?? _mapCenter.lng;
+    final lat = _map?.cameraPosition?.target.latitude ?? _mapCenter.lat;
+    final s = online
+        ? AppConfig.browseMapStyleUrlFor(lng, lat)
+        : await AppConfig.resolveBrowseMapStyleUrl(
+            currentStyle: _mapStyle,
+            packBbox: _offlinePackBbox,
+          );
+    if (!mounted || s == _mapStyle) return;
+    final enteringOverview = !online &&
+        isLocalOverviewStyleUrl(s) &&
+        !isLocalOverviewStyleUrl(_mapStyle);
+    setState(() {
+      _mapStyle = s;
+      _styleReady = false;
+      _pinImagesReady = false;
+    });
+    if (enteringOverview) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_l10n.offlineBrowseOverviewSnack)),
+      );
+    }
+  }
+
+  Future<void> _fitOfflinePackBbox() async {
+    final bbox = _offlinePackBbox;
+    if (bbox == null) return;
+    await _fitCameraToBbox(bbox);
+  }
+
+  Future<void> _fitCameraToBbox(List<double> bbox, {bool force = false}) async {
+    final map = _map;
+    if (map == null || !_styleReady) return;
+    if (bbox.length < 4) return;
+    if (!force) {
+      if (skipFitCameraForPackId(_offlinePackId)) return;
+      if (_surface != _Surface.discover) return;
+      if (_computed != null) return;
+      if (_hofPinLoopId != null || _selectedTourId != null) return;
+    }
+    _skipAutoCameraFit = true;
+    await map.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(bbox[1], bbox[0]),
+          northeast: LatLng(bbox[3], bbox[2]),
+        ),
+        left: 36,
+        top: 110,
+        right: 36,
+        bottom: _panelInset + 36,
+      ),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_syncBrowseMapStyle());
+    unawaited(_refreshOfflineChip());
+  }
+
+  Future<void> _openOfflineMaps({GeoPoint? focus, String? focusPackId}) async {
+    var paused = false;
+    final changed = await openOfflineMapsSheet(
+      context,
+      userLng: focus?.lng ?? _mapCenter.lng,
+      userLat: focus?.lat ?? _mapCenter.lat,
+      focusPackId: focusPackId,
+      onDownloadPaused: () => paused = true,
+      onShowOnMap: (bbox) {
+        unawaited(_fitCameraToBbox(bbox, force: true));
+      },
+    );
+    if (!mounted) return;
+    if (paused) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_l10n.offlineDownloadPaused)),
+      );
+    }
+    await _refreshOfflineChip();
+    unawaited(_refreshNavigateOfflineHint());
+    await _syncBrowseMapStyle();
+    if (!mounted) return;
+    unawaited(_syncOfflineCoverageOverlay());
+    unawaited(_syncMarkers(coalesce: true));
+    if (changed == true) {
+      if (!_styleReady) {
+        _fitPackAfterStyle = true;
+      } else {
+        unawaited(_fitOfflinePackBbox());
+      }
+      if (!paused && _offlineRoutingReady) {
+        final name = coverageGlanceName(_offlinePackLabel ?? '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              name.isEmpty
+                  ? _l10n.offlineGraphReadySnack
+                  : _l10n.hofPackReadyRideMap(name),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _browseLoadMapPackButton() {
+    return TextButton(
+      key: const Key('discover-load-map-pack'),
+      onPressed: () => unawaited(
+        _openOfflineMaps(focus: _end ?? _start ?? _userPos),
+      ),
+      child: Text(_l10n.discoverLoadMapPack),
+    );
+  }
+
+  Widget _dropViasAndGoButton() {
+    return TextButton(
+      key: const Key('discover-drop-vias'),
+      onPressed: _dropViasAndReroute,
+      child: Text(_l10n.discoverViasDropAndGo),
+    );
+  }
+
+  void _dropViasAndReroute() {
+    unawaited(HapticFeedback.selectionClick());
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _vias.clear();
+      _error = null;
+    });
+    unawaited(_calcAb(keepLine: true, refitPins: false));
+  }
+
+  double get _resolvedExploreChromeHeight =>
+      DiscoverExploreChromeLogic.resolvedChromeHeight(
+        measured: _exploreChromeHeight,
+        width: MediaQuery.sizeOf(context).width,
+      );
+
+  Future<void> _hydratePlanGeocodeRecents() async {
+    try {
+      final stored = await RidePrefs.planGeocodeRecents();
+      final last = await RidePrefs.lastPlanDest();
+      final lastDismissed =
+          last != null && await RidePrefs.lastPlanDestIsDismissed(last);
+      if (!mounted) return;
+      final merged = mergePlanGeocodeRecents(stored, last);
+      setState(() {
+        _geocodeRecents = [
+          for (final h in merged)
+            GeocodeHit(label: h.label, lat: h.lat, lng: h.lng),
+        ];
+        _lastPlanDest = last;
+        _lastPlanDestDismissed = lastDismissed;
+      });
+      final dismissed = await RidePrefs.planLineCoachDismissed();
+      if (mounted) setState(() => _planLineCoach = !dismissed);
+    } catch (_) {}
+  }
+
+  Future<void> _persistGeocodeRecents(List<GeocodeHit> hits) async {
+    try {
+      await RidePrefs.setPlanGeocodeRecents([
+        for (final h in hits.take(5))
+          PlanGeocodeRecent(label: h.label, lat: h.lat, lng: h.lng),
+      ]);
+    } catch (_) {}
+  }
+
+  List<GeocodeHit> _pushGeocodeRecentList(GeocodeHit hit) {
+    return [
+      hit,
+      ..._geocodeRecents.where((e) => e.label != hit.label),
+    ].take(5).toList();
+  }
+
+  void _rememberGeocodeHit(GeocodeHit hit) {
+    final next = _pushGeocodeRecentList(hit);
+    setState(() => _geocodeRecents = next);
+    unawaited(_persistGeocodeRecents(next));
+  }
+
+  Future<void> _syncBikeOverlayVisibility() async {
+    final c = _map;
+    if (c == null || !_bikeOverlayAttached) return;
+    await applyBikeOverlayVisibility(
+      c,
+      family: _overlayFamily,
+      visible: _bikeOverlayOn,
+      extraOn: _bikeOverlayExtra,
+      hideFarmTracks: _hideFarmTracksOnBrowse,
+    );
+  }
+
+  Future<void> _loadFarmTrackPref() async {
+    final on = await RidePrefs.showFarmTracks();
+    if (!mounted || on == _showFarmTracksLayer) return;
+    setState(() => _showFarmTracksLayer = on);
+    unawaited(_syncBikeOverlayVisibility());
+  }
+
+  Future<void> _rememberLastPlanDest() async {
+    final e = _end;
+    if (e == null) return;
+    if (!lastPlanDestWorthRemembering(
+      destLat: e.lat,
+      destLng: e.lng,
+      originLat: (_start ?? _userPos)?.lat,
+      originLng: (_start ?? _userPos)?.lng,
+    )) {
+      return;
+    }
+    final label = _endAddrCtrl.text.trim();
+    try {
+      final saved = LastPlanDest(
+        lat: e.lat,
+        lng: e.lng,
+        label:
+            label.isEmpty || label == _l10n.discoverOnMapPlace ? null : label,
+      );
+      await RidePrefs.setLastPlanDest(saved);
+      _lastPlanDest = saved;
+      _lastPlanDestDismissed = false;
+      if (label.isNotEmpty && label != _l10n.discoverOnMapPlace) {
+        if (!mounted) return;
+        _rememberGeocodeHit(GeocodeHit(label: label, lat: e.lat, lng: e.lng));
+      }
+    } catch (_) {}
+  }
+
+  bool get _destShouldPulse =>
+      _loading ||
+      (_end != null && _start == null) ||
+      (_planDestConfirmUntil != null &&
+          DateTime.now().isBefore(_planDestConfirmUntil!));
+
+  void _pulsePlanDest() {
+    if (!mounted) return;
+    setState(() {
+      _planDestConfirmUntil =
+          DateTime.now().add(const Duration(milliseconds: 1600));
+    });
+    _startDestPulse();
+    _planDestPulseTimer?.cancel();
+    _planDestPulseTimer = Timer(const Duration(milliseconds: 1650), () {
+      if (!mounted) return;
+      setState(() => _planDestConfirmUntil = null);
+      if (!_destShouldPulse) _stopDestPulse();
+      unawaited(_syncMarkers());
+    });
+  }
+
+  bool get _showPlanDestConfirm =>
+      _surface == _Surface.plan &&
+      _planDestConfirmUntil != null &&
+      DateTime.now().isBefore(_planDestConfirmUntil!);
+
+  bool get _showPlanRoutingWait =>
+      planMapShowsRoutingWait(
+        editorActive: _surface == _Surface.plan,
+        routingBusy: _loading,
+        hasStart: _start != null,
+        hasEnd: _end != null,
+      ) ||
+      _showPlanDestConfirm;
+
+  bool get _offerLastPlanDest {
+    final last = _lastPlanDest;
+    if (last == null) return false;
+    final cam = _map?.cameraPosition?.target;
+    return planLastDestShouldOffer(
+      hasEnd: _end != null,
+      dismissed: _lastPlanDestDismissed,
+      nearby: lastPlanDestIsNearby(
+        destLat: last.lat,
+        destLng: last.lng,
+        gpsLat: _userPos?.lat,
+        gpsLng: _userPos?.lng,
+        viewLat: cam?.latitude ?? _mapCenter.lat,
+        viewLng: cam?.longitude ?? _mapCenter.lng,
+      ),
+    );
+  }
+
+  String _lastPlanDestChipText() {
+    final last = _lastPlanDest;
+    if (last == null) return _l10n.discoverLastDestChipGeneric;
+    final name = lastPlanDestChipLabel(
+      savedLabel: last.label,
+      generic: '',
+    );
+    if (name.isEmpty) return _l10n.discoverLastDestChipGeneric;
+    return _l10n.discoverLastDestChip(name);
+  }
+
+  void _dismissLastPlanDestChip() {
+    final last = _lastPlanDest;
+    if (last == null) return;
+    setState(() => _lastPlanDestDismissed = true);
+    unawaited(RidePrefs.dismissLastPlanDest(last));
+  }
+
+  void _applyLastPlanDest() {
+    final last = _lastPlanDest;
+    if (last == null) return;
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _end = GeoPoint(last.lat, last.lng);
+      final name = last.label?.trim() ?? '';
+      _endAddrCtrl.text = name.isEmpty ? _l10n.discoverOnMapPlace : name;
+      if (_start == null) {
+        final o = _riderOrigin ?? _userPos;
+        if (o != null) {
+          _start = o;
+          _startAddrCtrl.text = _l10n.discoverMyPosition;
+        }
+      }
+      _pick = _PickMode.none;
+    });
+    _pulsePlanDest();
+    unawaited(_syncMarkers());
+    if (_start != null) unawaited(_calcAb());
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(_l10n.discoverLastDestApplied),
+        action: SnackBarAction(
+          label: _l10n.discoverLastDestUndo,
+          onPressed: _undoPlan,
+        ),
+      ),
+    );
+  }
+
+  double get _destPinPulseT => (math.sin(_destPulseTick * 0.9) + 1) / 2;
+
+  void _startDestPulse() {
+    if (_destPulseTimer != null) return;
+    _destPulseTick = 0;
+    _destPulseTimer = Timer.periodic(const Duration(milliseconds: 420), (_) {
+      unawaited(_tickDestPulse());
+    });
+  }
+
+  void _stopDestPulse({bool reset = true}) {
+    _destPulseTimer?.cancel();
+    _destPulseTimer = null;
+    _destPulseTick = 0;
+    if (reset) unawaited(_applyDestPulseSize(reset: true));
+  }
+
+  Future<void> _tickDestPulse() async {
+    if (!mounted || !_destShouldPulse) {
+      _stopDestPulse();
+      return;
+    }
+    _destPulseTick++;
+    await _applyDestPulseSize();
+  }
+
+  Future<void> _applyDestPulseSize({bool reset = false}) async {
+    final sym = _planEndSymbol;
+    final glow = _planEndGlowSymbol;
+    final c = _map;
+    if (c == null) return;
+    final pulsing = !reset && _destPulseTimer != null;
+    final t = _destPinPulseT;
+    final destBusy = _planningAb || _loading || _destShouldPulse;
+    final size = destPinPulseIconSize(
+      busy: destBusy,
+      pulsing: pulsing,
+      t: t,
+    );
+    try {
+      if (sym != null) {
+        await c.updateSymbol(
+          sym,
+          SymbolOptions(
+            iconSize: size,
+            textHaloWidth: pulsing ? (1.4 + t * 0.8) : 1.2,
+          ),
+        );
+      }
+      if (glow != null) {
+        await c.updateSymbol(
+          glow,
+          SymbolOptions(
+            iconSize: pulsing
+                ? mapPinSdfIconSize(0.78 + t * 0.32)
+                : mapPinSdfIconSize(0.88),
+            iconOpacity: pulsing ? (0.35 + t * 0.28) : 0.5,
+            iconColor: kPlanHaloTintHex,
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   List<OsmTrailSegment> get _visibleTrailNetwork {
@@ -1298,6 +2516,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         if (mounted) {
           setState(() {
             _trailNetworkStatus = _l10n.discoverNeedLocationTrails;
+            _trailIsDegraded = true;
+          });
+        }
+        return;
+      }
+      if (_browseOnlineAt == null) {
+        await _probeBrowseNetwork();
+        if (!mounted) return;
+      }
+      if (!_browseOnline) {
+        if (mounted) {
+          setState(() {
+            _trailNetworkStatus = _l10n.discoverTrailOffline;
             _trailIsDegraded = true;
           });
         }
@@ -1336,7 +2567,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Trail-Einstieg: Gravity nach Höhe (oben = Start), sonst nächstes Ende.
   Future<OrientedTrail> _orientTrail(OsmTrailSegment trail) async {
-    final from = _origin;
+    final from = _riderOrigin ?? _origin;
     double? startElev;
     double? endElev;
     if (_navPolicy.orientByElevation && trail.geometry.length >= 2) {
@@ -1369,6 +2600,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _fetchCoverage() async {
     if (!_hasRealOrigin) return;
+    if (_browseOnlineAt == null) {
+      await _probeBrowseNetwork();
+      if (!mounted) return;
+    }
+    if (!_browseOnline) return;
     final o = _origin;
     final bike = switch (_overlayFamily) {
       BikeOverlayFamily.mtb => 'mtb',
@@ -1390,7 +2626,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     });
     unawaited(_fetchCommunityPlaces());
     unawaited(_refreshStimmePlaces());
-    unawaited(_refreshMeetPlace());
+    unawaited(_refreshMeetPlaces());
     await _drawAll();
   }
 
@@ -1411,9 +2647,33 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       coverage: coverage,
       community: _communityPlaces,
       stimme: _stimmePlaces,
-      meet: _meetPlace,
+      meets: _meetPlaces,
     );
   }
+
+  List<GroupMeetPin> get _meetPins => groupMeetPinsOnExplore(
+        groups: _meetGroups,
+        memberGroupIds: _meetMemberIds,
+        now: DateTime.now(),
+        centerFor: (g) {
+          final tour = _tourById(g.catalogTourId) ?? _tourById(g.savedRouteId);
+          if (tour == null) return null;
+          return (lat: tour.center.latitude, lng: tour.center.longitude);
+        },
+      );
+
+  List<MapPlace> get _meetPlaces => [
+        for (final p in _meetPins)
+          MapPlace(
+            id: p.placeId,
+            name: p.label,
+            kind: MapPlaceKind.meet,
+            lat: p.lat,
+            lng: p.lng,
+            source: MapPlaceSource.meet,
+            tourId: p.group.catalogTourId ?? p.group.savedRouteId,
+          ),
+      ];
 
   Future<void> _fetchCommunityPlaces() async {
     if (!_hasRealOrigin) return;
@@ -1460,34 +2720,910 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     unawaited(_syncMarkers());
   }
 
-  Future<void> _refreshMeetPlace() async {
-    final tourId = _selectedTourId ?? _detailId;
-    if (tourId == null || tourId.isEmpty) {
-      if (_meetPlace != null && mounted) setState(() => _meetPlace = null);
-      return;
-    }
+  Future<void> _refreshMeetPlaces() async {
     try {
-      final groups = await RideGroupStore().activeGroups();
-      MapPlace? meet;
-      for (final g in groups) {
-        final onTour = g.catalogTourId == tourId || g.savedRouteId == tourId;
-        if (!onTour) continue;
-        final parsed = parseMeetingLatLng(g.meetingPoint);
-        if (parsed == null) continue;
-        meet = MapPlace(
-          id: 'meet-${g.id}',
-          name: parsed.label,
-          kind: MapPlaceKind.meet,
-          lat: parsed.lat,
-          lng: parsed.lng,
-          source: MapPlaceSource.meet,
-        );
-        break;
-      }
+      final store = RideGroupStore();
+      final mine = await store.activeGroups();
+      final pub = await store.publicGroups();
+      final byId = <String, RideGroup>{
+        for (final g in mine) g.id: g,
+        for (final g in pub) g.id: g,
+      };
       if (!mounted) return;
-      setState(() => _meetPlace = meet);
+      setState(() {
+        _meetGroups = byId.values.toList();
+        _meetMemberIds = {for (final g in mine) g.id};
+      });
       unawaited(_syncMarkers());
     } catch (_) {}
+  }
+
+  void _onMapCameraTick() {
+    final moving = _map?.isCameraMoving ?? false;
+    if (moving == _cameraMoving) return;
+    _cameraMoving = moving;
+    _cameraMovedAt = DateTime.now();
+  }
+
+  void _clearLeftoverRouteForNewPin() {
+    _calcAbGen++;
+    _previewGen++;
+    _calcAbDebounce?.cancel();
+    _skipAutoCameraFit = false;
+    _selectedTourId = null;
+    _hofPinLoopId = null;
+    _ideaPin = null;
+    _tourLayer = null;
+    _trailOverlay = null;
+    _destinationTrail = null;
+    _computed = null;
+    _approach = null;
+    _label = null;
+    _vias.clear();
+    _planLineTouched = false;
+    _planPulseViaIndex = null;
+    _planBendHighlightUntil = null;
+  }
+
+  /// Drop leftover tour when the rider places a new routing pin.
+  /// Live street A–B stays until the engine returns. Returns true if a via
+  /// was inserted (Komoot line-tap).
+  bool _placePlanMapPoint(GeoPoint p, {OsmTrailSegment? trailHit}) {
+    _lastRoutePinAt = DateTime.now();
+    _lastMapTap = p;
+    _lastMapTapAt = _lastRoutePinAt;
+    final viaBefore = _vias.length;
+    final leftover = planLeftoverTourWipesOnTap(
+      leftover: mapPinClearsTourPreview(
+        computedEngine: _computed?.engine,
+        selectedTourId: _selectedTourId,
+      ),
+      hasStart: _start != null,
+      hasEnd: _end != null,
+      pickingVia: _pick == _PickMode.via,
+    );
+    final pinIsDest = mapPinIsGpsDestination(
+      tourPreviewOnMap: leftover,
+      leftoverRoute: leftover,
+      hasGps: _userPos != null,
+      startSet: _start != null,
+      endSet: _end != null,
+      pickingStart: _pick == _PickMode.start,
+    );
+    if (planDestPinKeepsSession(
+      editorActive: _planEditorActive,
+      startSet: _start != null,
+      leftoverTour: leftover,
+      pickingStart: _pick == _PickMode.start,
+    )) {
+      final line = _planComputedLineLngLat();
+      final along = line == null
+          ? null
+          : projectOntoRoute(coordinates: line, lat: p.lat, lng: p.lng);
+      if (planMapTapInsertsViaAlong(
+        startSet: true,
+        endSet: _end != null,
+        pickingVia: _pick == _PickMode.via,
+        pickingStart: false,
+        pickingEnd: _pick == _PickMode.end,
+        crossTrackM: along?.crossTrackM,
+      )) {
+        _insertPlanViaAlong(p);
+        return true;
+      }
+      if (planFarTapInsertsVia(
+        startSet: true,
+        endSet: _end != null,
+        hasLiveLine: line != null && line.length >= 2,
+        pickingStart: false,
+        pickingEnd: _pick == _PickMode.end,
+      )) {
+        _insertPlanViaAlong(p);
+        return true;
+      }
+      if (planBusyBlocksDestReplace(
+        routingBusy: _loading,
+        hasStart: true,
+        hasEnd: _end != null,
+        pickingEnd: _pick == _PickMode.end,
+      )) {
+        return false;
+      }
+      _abFromBrowsePin = false;
+      _pushPlanUndo();
+      setState(() {
+        _end = p;
+        _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+        _pick = _PickMode.none;
+        _destinationTrail = trailHit;
+      });
+      unawaited(HapticFeedback.lightImpact());
+      unawaited(_rememberLastPlanDest());
+      unawaited(_reversePlanFieldLabels());
+      return false;
+    }
+    final line = _planComputedLineLngLat();
+    final along = line == null
+        ? null
+        : projectOntoRoute(coordinates: line, lat: p.lat, lng: p.lng);
+    final shapeVia = planMapTapInsertsViaAlong(
+      startSet: _start != null,
+      endSet: _end != null,
+      pickingVia: _pick == _PickMode.via,
+      pickingStart: _pick == _PickMode.start,
+      pickingEnd: _pick == _PickMode.end,
+      crossTrackM: along?.crossTrackM,
+    );
+    if (shapeVia) {
+      _insertPlanViaAlong(p);
+      return true;
+    }
+    if (planFarTapInsertsVia(
+      startSet: _start != null,
+      endSet: _end != null,
+      hasLiveLine: line != null && line.length >= 2,
+      pickingStart: _pick == _PickMode.start,
+      pickingEnd: _pick == _PickMode.end,
+    )) {
+      _insertPlanViaAlong(p);
+      return true;
+    }
+    if (planBusyBlocksDestReplace(
+      routingBusy: _loading,
+      hasStart: _start != null,
+      hasEnd: _end != null,
+      pickingStart: _pick == _PickMode.start,
+      pickingEnd: _pick == _PickMode.end,
+    )) {
+      return false;
+    }
+    _pushPlanUndo();
+    setState(() {
+      if (leftover) _clearLeftoverRouteForNewPin();
+      if (pinIsDest || leftover) _skipAutoCameraFit = false;
+      if (pinIsDest) {
+        if (_userPos != null) {
+          _start = _userPos;
+          _startAddrCtrl.text = _l10n.discoverMyPosition;
+        } else {
+          _start = null;
+          _startAddrCtrl.clear();
+        }
+        _end = p;
+        _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+        _pick = _PickMode.none;
+        _vias.clear();
+        _destinationTrail = trailHit;
+        return;
+      }
+      switch (_pick) {
+        case _PickMode.via:
+          _insertPlanViaAlongInState(p);
+          break;
+        case _PickMode.end:
+          _end = p;
+          _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+          _pick = _PickMode.none;
+          _destinationTrail = trailHit;
+          break;
+        case _PickMode.start:
+          _start = p;
+          _startAddrCtrl.text = _l10n.discoverOnMapPlace;
+          _pick = _PickMode.end;
+          break;
+        case _PickMode.none:
+          if (_start == null) {
+            _start = p;
+            _startAddrCtrl.text = _l10n.discoverOnMapPlace;
+            _pick = _PickMode.end;
+          } else if (_end == null) {
+            _end = p;
+            _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+            _destinationTrail = trailHit;
+          } else {
+            _insertPlanViaAlongInState(p);
+          }
+          break;
+      }
+    });
+    if (pinIsDest) {
+      unawaited(HapticFeedback.lightImpact());
+      unawaited(_rememberLastPlanDest());
+      unawaited(_syncBikeOverlayVisibility());
+      if (_destShouldPulse) _startDestPulse();
+    }
+    if (_vias.length > viaBefore) _afterPlanViaInserted();
+    unawaited(_reversePlanFieldLabels());
+    return false;
+  }
+
+  List<List<double>>? _planComputedLineLngLat() {
+    final coords = _computed?.coordinates;
+    if (coords == null || coords.length < 2) return null;
+    return [
+      for (final c in coords) [c.lng, c.lat]
+    ];
+  }
+
+  void _insertPlanViaAlongInState(GeoPoint raw, {String? label}) {
+    final line = _planComputedLineLngLat();
+    final p = _snapViaPoint(raw);
+    if (plannedRouteViaIsDuplicate(
+      vias: [
+        for (final v in _vias) (lat: v.lat, lng: v.lng),
+      ],
+      lat: p.lat,
+      lng: p.lng,
+    )) {
+      _pick = _PickMode.none;
+      return;
+    }
+    final next = PlanSession.fromParts(
+      start: _start,
+      end: _end,
+      vias: _vias,
+    ).insertViaAlong(p, line: line, label: label ?? _l10n.discoverOnMapPlace);
+    _vias
+      ..clear()
+      ..addAll(next.labeledVias);
+    _pick = _PickMode.none;
+  }
+
+  void _insertPlanViaAlong(GeoPoint raw, {String? label}) {
+    final now = DateTime.now();
+    if (_lastPlanViaAlongAt != null &&
+        now.difference(_lastPlanViaAlongAt!) <
+            const Duration(milliseconds: 400)) {
+      return;
+    }
+    _lastPlanViaAlongAt = now;
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _insertPlanViaAlongInState(raw, label: label);
+      _setStatus(_l10n.planStopSetHint);
+    });
+    unawaited(HapticFeedback.selectionClick());
+    unawaited(_reversePlanFieldLabels());
+    _schedulePlanReshape();
+    if (!_afterPlanViaInserted()) _showPlanViaSnack();
+  }
+
+  void _clearBrowseAnchorToGps() {
+    final gps = _userPos;
+    setState(() {
+      _browseAnchor = null;
+      _browseAnchorPinned = false;
+      _browseAnchorLabel = null;
+    });
+    if (gps != null) {
+      unawaited(
+        _map?.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(gps.lat, gps.lng), 13),
+        ),
+      );
+    }
+    _mergeCatalogNearOrigin();
+  }
+
+  bool _isPlanPlaceholderLabel(String text) {
+    final t = text.trim();
+    if (t.isEmpty) return true;
+    if (t == _l10n.discoverMyPosition) return false;
+    if (t == _l10n.discoverOnMapPlace) return true;
+    return geocodeHitFromCoordinates(t) != null;
+  }
+
+  Future<void> _reversePlanFieldLabels() async {
+    Future<void> one(GeoPoint? p, TextEditingController ctrl) async {
+      if (p == null) return;
+      if (ctrl.text == _l10n.discoverMyPosition) return;
+      if (!_isPlanPlaceholderLabel(ctrl.text)) return;
+      final hit = await _geocode.reverse(p.lat, p.lng);
+      if (!mounted || hit == null) return;
+      if (ctrl.text == _l10n.discoverMyPosition) return;
+      setState(() => ctrl.text = hit.label);
+    }
+
+    await one(_start, _startAddrCtrl);
+    await one(_end, _endAddrCtrl);
+    if (mounted) unawaited(_rememberLastPlanDest());
+    for (var i = 0; i < _vias.length; i++) {
+      final v = _vias[i];
+      final cur = v.trimmedLabel ?? '';
+      if (!_isPlanPlaceholderLabel(cur)) continue;
+      final hit = await _geocode.reverse(v.lat, v.lng);
+      if (!mounted || hit == null) continue;
+      if (i >= _vias.length) continue;
+      setState(() {
+        _vias[i] = _vias[i].copyWith(label: hit.label);
+      });
+    }
+    if (mounted) unawaited(_syncMarkers());
+  }
+
+  Future<void> _fitCameraToAbPins() async {
+    final map = _map;
+    if (map == null || !_styleReady) return;
+    final from = _start ?? _userPos;
+    final to = _end;
+    if (from == null || to == null) return;
+    _skipAutoCameraFit = false;
+    final swLat = math.min(from.lat, to.lat);
+    final swLng = math.min(from.lng, to.lng);
+    final neLat = math.max(from.lat, to.lat);
+    final neLng = math.max(from.lng, to.lng);
+    try {
+      if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
+        await map.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(swLat, swLng), 14),
+        );
+      } else {
+        await map.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(swLat, swLng),
+              northeast: LatLng(neLat, neLng),
+            ),
+            left: 40,
+            top: 110,
+            right: 40,
+            bottom: _panelInset + 40,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _rememberMapPointer(GeoPoint p) {
+    _lastMapPointer = p;
+    _lastMapPointerAt = DateTime.now();
+    _lastMapTap = p;
+    _lastMapTapAt = DateTime.now();
+  }
+
+  GeoPoint? _recentMapPointer({
+    Duration maxAge = const Duration(milliseconds: 800),
+  }) {
+    final at = _lastMapPointerAt;
+    final p = _lastMapPointer;
+    if (p == null || at == null) return null;
+    if (DateTime.now().difference(at) > maxAge) return null;
+    return p;
+  }
+
+  void _onMapFeatureTapped(
+    dynamic id,
+    math.Point<double> point,
+    LatLng latLng,
+    String layerId,
+  ) {
+    _rememberMapPointer(GeoPoint(latLng.latitude, latLng.longitude));
+  }
+
+  void _scheduleCalcAbFromMap({
+    bool keepLine = false,
+    bool refitPins = true,
+  }) {
+    if (_start == null || _end == null) return;
+    if (refitPins) unawaited(_fitCameraToAbPins());
+    unawaited(_drawAll());
+    _calcAbDebounce?.cancel();
+    _calcAbDebounce = Timer(kMapPinRouteCommitDelay, () {
+      if (!mounted || _start == null || _end == null) return;
+      unawaited(_calcAb(keepLine: keepLine, refitPins: refitPins));
+    });
+  }
+
+  void _schedulePlanReshape({bool refitPins = false}) {
+    _scheduleCalcAbFromMap(
+      keepLine: _hasLivePlanLine,
+      refitPins: refitPins,
+    );
+  }
+
+  bool _tryInsertViaFromMapTap(GeoPoint tap, {bool onLine = false}) {
+    if (_surface == _Surface.detail) return false;
+    final computed = _computed;
+    if (!planLineTapInsertsVia(
+      editorActive: _planEditorActive,
+      hasStart: _start != null,
+      hasEnd: _end != null,
+      hasLiveLine: _hasLivePlanLine,
+      pickingStartOrEnd: _pick == _PickMode.start || _pick == _PickMode.end,
+    )) {
+      return false;
+    }
+    final line = [
+      for (final p in computed!.coordinates) [p.lng, p.lat],
+    ];
+    final radius = plannedRouteTapRadiusM(_mapZoom);
+    final snap = plannedRouteTapSnap(
+      lineLngLat: line,
+      tapLat: tap.lat,
+      tapLng: tap.lng,
+      maxOffsetM: onLine ? math.max(radius, 220) : radius,
+    );
+    if (snap == null) return false;
+    if (plannedRouteViaIsDuplicate(
+      vias: [
+        for (final v in _vias) (lat: v.lat, lng: v.lng),
+      ],
+      lat: snap.lat,
+      lng: snap.lng,
+    )) {
+      unawaited(HapticFeedback.selectionClick());
+      return true;
+    }
+    final session = PlanSession.fromParts(
+      start: _start,
+      end: _end,
+      vias: _vias,
+    ).insertViaAlong(
+      GeoPoint(snap.lat, snap.lng),
+      line: line,
+      label: _l10n.discoverOnMapPlace,
+    );
+    _abFromBrowsePin = false;
+    _lastRoutePinAt = DateTime.now();
+    _pushPlanUndo();
+    setState(() {
+      _vias
+        ..clear()
+        ..addAll(session.labeledVias);
+      _pick = _PickMode.none;
+      _setStatus(_l10n.planStopSetHint);
+    });
+    unawaited(HapticFeedback.selectionClick());
+    final taught = _afterPlanViaInserted();
+    unawaited(_syncMarkers());
+    _schedulePlanReshape();
+    if (!taught) _showPlanViaSnack();
+    return true;
+  }
+
+  void _previewPlanDragAlong(
+    LatLng current, {
+    bool draggingStart = false,
+    bool draggingEnd = false,
+    int? draggingViaIndex,
+  }) {
+    final computed = _computed;
+    final from = _start;
+    final to = _end;
+    if (computed == null ||
+        computed.coordinates.length < 2 ||
+        from == null ||
+        to == null) {
+      return;
+    }
+    if (!isPlanCustomizableLine(
+      engine: computed.engine,
+      coordinateCount: computed.coordinates.length,
+    )) {
+      return;
+    }
+    var finger = current;
+    if (!draggingStart && !draggingEnd) {
+      final snapped = _snapViaPoint(
+        GeoPoint(current.latitude, current.longitude),
+      );
+      finger = LatLng(snapped.lat, snapped.lng);
+    }
+    final line = [
+      for (final p in computed.coordinates) [p.lng, p.lat],
+    ];
+    final prog = projectOntoRoute(
+      coordinates: line,
+      lat: finger.latitude,
+      lng: finger.longitude,
+    );
+    final km = planDragAlongLabelKm(prog.distanceAlongM);
+    final label = _l10n.planAlongKm(km);
+    final scrub = planElevScrubT(
+      alongM: prog.distanceAlongM,
+      lineLenM: routeLengthM(line),
+    );
+    if ((label != _planDragAlongLabel || scrub != _planElevScrubT) && mounted) {
+      setState(() {
+        _planDragAlongLabel = label;
+        if (scrub != null) _planElevScrubT = scrub;
+      });
+    }
+    if (scrub != null) _movePlanElevCursor(scrub);
+    final band = planRubberBandLngLat(
+      startLat: from.lat,
+      startLng: from.lng,
+      endLat: to.lat,
+      endLng: to.lng,
+      vias: [
+        for (final v in _vias) (lat: v.lat, lng: v.lng),
+      ],
+      fingerLat: finger.latitude,
+      fingerLng: finger.longitude,
+      lineLngLat: line,
+      draggingStart: draggingStart,
+      draggingEnd: draggingEnd,
+      draggingViaIndex: draggingViaIndex,
+    );
+    final map = _map;
+    if (map != null) {
+      final first = !_planRibbonDimmed;
+      unawaited(
+        syncPendingAbOverlay(
+          map,
+          line: [for (final p in band) LatLng(p[1], p[0])],
+          kind: PendingAbKind.rubber,
+          alongLabel: _l10n.planTickKm(km),
+          labelAt: finger,
+          raise: first,
+        ),
+      );
+    }
+    unawaited(_setPlanRibbonDim(true));
+  }
+
+  Future<void> _setPlanRibbonDim(bool dim) async {
+    if (_planRibbonDimmed == dim) return;
+    _planRibbonDimmed = dim;
+    final gen = ++_planRibbonDimGen;
+    final c = _map;
+    if (c == null) return;
+    try {
+      await syncPlanRibbonOverlay(
+        c,
+        slices: dim ? const [] : _planRibbonSlices,
+      );
+    } catch (_) {}
+    final lines = List<({Line line, double opacity})>.of(_planRibbonLines);
+    for (final e in lines) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateLine(
+          e.line,
+          LineOptions(
+            lineOpacity: planRibbonDimOpacity(e.opacity, dimmed: dim),
+          ),
+        );
+      } catch (_) {}
+    }
+    final chevrons = List<Symbol>.of(_planChevronSymbols);
+    for (final s in chevrons) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateSymbol(
+          s,
+          SymbolOptions(iconOpacity: dim ? 0 : 0.88),
+        );
+      } catch (_) {}
+    }
+    final ticks = List<Symbol>.of(_planTickSymbols);
+    for (final s in ticks) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateSymbol(
+          s,
+          SymbolOptions(textOpacity: dim ? 0 : 1),
+        );
+      } catch (_) {}
+    }
+    final elev = _planElevSymbol;
+    if (elev != null) {
+      try {
+        await c.updateSymbol(
+          elev,
+          SymbolOptions(iconOpacity: dim ? 0 : 0.95),
+        );
+      } catch (_) {}
+    }
+    final discs = List<Symbol>.of(_planBendDiscSymbols);
+    for (final s in discs) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateSymbol(
+          s,
+          SymbolOptions(
+            iconOpacity: planGrabHandleOpacity(0.95, dimmed: dim),
+          ),
+        );
+      } catch (_) {}
+    }
+    final bends = List<Symbol>.of(_planBendSymbols);
+    for (final s in bends) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateSymbol(
+          s,
+          SymbolOptions(
+            iconOpacity: planGrabHandleOpacity(0.58, dimmed: dim),
+          ),
+        );
+      } catch (_) {}
+    }
+    final grabs = List<Line>.of(_planGrabLines);
+    for (final line in grabs) {
+      if (gen != _planRibbonDimGen) return;
+      try {
+        await c.updateLine(
+          line,
+          LineOptions(
+            lineOpacity: dim ? 0 : DiscoverMapLineStyle.planGrabHaloOpacity,
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _clearPlanDragPreview() async {
+    final map = _map;
+    if (map != null) {
+      unawaited(syncPendingAbOverlay(map, line: null));
+    }
+    if (mounted && _planDragAlongLabel != null) {
+      setState(() => _planDragAlongLabel = null);
+    }
+    await _setPlanRibbonDim(false);
+  }
+
+  bool _isPlanLineGrab(String? sid) =>
+      sid != null && _planGrabGeom.containsKey(sid);
+
+  void _restorePlanGrabLine(String sid) {
+    final geom = _planGrabGeom[sid];
+    final c = _map;
+    if (geom == null || c == null) return;
+    for (final line in _planGrabLines) {
+      if (line.id != sid) continue;
+      unawaited(
+        c.updateLine(
+          line,
+          LineOptions(
+            geometry: geom,
+            lineOpacity: 0,
+          ),
+        ),
+      );
+      return;
+    }
+  }
+
+  bool _insertViaFromRibbonDrop(GeoPoint at) {
+    final line = _planComputedLineLngLat();
+    final snapped = _snapViaPoint(at);
+    if (plannedRouteViaIsDuplicate(
+      vias: [
+        for (final v in _vias) (lat: v.lat, lng: v.lng),
+      ],
+      lat: snapped.lat,
+      lng: snapped.lng,
+    )) {
+      return false;
+    }
+    final next = PlanSession.fromParts(
+      start: _start,
+      end: _end,
+      vias: _vias,
+    ).insertViaAlong(
+      snapped,
+      line: line,
+      label: _l10n.discoverOnMapPlace,
+    );
+    setState(() {
+      _vias
+        ..clear()
+        ..addAll(next.labeledVias);
+      _planDragAlongLabel = null;
+    });
+    unawaited(HapticFeedback.selectionClick());
+    _afterPlanViaInserted();
+    return true;
+  }
+
+  Widget _planLineGrabOverlay() {
+    return PlanLineGrabLayer(
+      camera: () => _map?.cameraPosition,
+      lineLngLat: () => _planComputedLineLngLat() ?? const [],
+      pinLngLat: _planGrabAvoidPins,
+      onDown: _onPlanLinePointerDown,
+      onMove: _onPlanLinePointerMove,
+      onUp: _onPlanLinePointerUp,
+      onCancel: _onPlanLinePointerCancel,
+    );
+  }
+
+  List<List<double>> _planGrabAvoidPins() {
+    final line = _planComputedLineLngLat();
+    final pins = <List<double>>[
+      if (_start != null) [_start!.lng, _start!.lat],
+      if (_end != null) [_end!.lng, _end!.lat],
+      for (final v in _vias) [v.lng, v.lat],
+    ];
+    if (line != null &&
+        planReshapeHandlesReady(
+          hasVia: _vias.isNotEmpty || _planLineTouched,
+          coachVisible: _planLineCoach,
+        )) {
+      for (final h in planReshapeHandles(
+        lineLngLat: line,
+        vias: [
+          for (final v in _vias) (lat: v.lat, lng: v.lng),
+        ],
+        zoom: _map?.cameraPosition?.zoom ?? _mapZoom,
+      )) {
+        pins.add([h.lng, h.lat]);
+      }
+    }
+    return pins;
+  }
+
+  void _onPlanLinePointerDown(double lat, double lng) {
+    _planPointerGrabbing = true;
+    _planPointerHoldDidDest = false;
+    _planLineHoldTimer?.cancel();
+    final at = GeoPoint(lat, lng);
+    _planLineHoldTimer = Timer(kPlanLineHold, () {
+      if (!mounted || !_planPointerGrabbing || _planDragAlongLabel != null) {
+        return;
+      }
+      _planPointerHoldDidDest = true;
+      _planPointerGrabbing = false;
+      unawaited(_clearPlanDragPreview());
+      _replacePlanDestFromMap(at);
+    });
+  }
+
+  void _onPlanLinePointerMove(double lat, double lng) {
+    if (!_planPointerGrabbing || _planPointerHoldDidDest) return;
+    _planLineHoldTimer?.cancel();
+    _previewPlanDragAlong(LatLng(lat, lng));
+  }
+
+  void _onPlanLinePointerUp(
+    double lat,
+    double lng, {
+    required bool dragged,
+  }) {
+    _planLineHoldTimer?.cancel();
+    if (_planPointerHoldDidDest) {
+      _planPointerHoldDidDest = false;
+      _planPointerGrabbing = false;
+      return;
+    }
+    _planPointerGrabbing = false;
+    final p = GeoPoint(lat, lng);
+    if (dragged) {
+      unawaited(_clearPlanDragPreview());
+      final undoLen = _planUndoStack.length;
+      final redoLen = _planRedoStack.length;
+      _pushPlanUndo();
+      if (_insertViaFromRibbonDrop(p) && _start != null && _end != null) {
+        _abFromBrowsePin = false;
+        unawaited(_reversePlanFieldLabels());
+        _scheduleCalcAbFromMap(keepLine: true, refitPins: false);
+      } else {
+        while (_planUndoStack.length > undoLen) {
+          _planUndoStack.removeLast();
+        }
+        while (_planRedoStack.length > redoLen) {
+          _planRedoStack.removeLast();
+        }
+      }
+      return;
+    }
+    unawaited(_clearPlanDragPreview());
+    _tryInsertViaFromMapTap(p, onLine: true);
+  }
+
+  void _onPlanLinePointerCancel() {
+    _planLineHoldTimer?.cancel();
+    _planPointerGrabbing = false;
+    _planPointerHoldDidDest = false;
+    unawaited(_clearPlanDragPreview());
+  }
+
+  void _replacePlanDestFromMap(GeoPoint p) {
+    if (!planLongPressSetsDest(
+      editorActive: true,
+      hasStart: _start != null,
+      hasEnd: _end != null,
+      pickingVia: _pick == _PickMode.via,
+      pickingStart: _pick == _PickMode.start,
+      tapHitsLine: true,
+    )) {
+      return;
+    }
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _end = p;
+      _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+      _pick = _PickMode.none;
+    });
+    _pulsePlanDest();
+    unawaited(HapticFeedback.lightImpact());
+    unawaited(_rememberLastPlanDest());
+    unawaited(_reversePlanFieldLabels());
+    _scheduleCalcAbFromMap(keepLine: true);
+  }
+
+  Future<void> _routeToGeocodeHit(GeocodeHit hit) async {
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _end = GeoPoint(hit.lat, hit.lng);
+      _endAddrCtrl.text = hit.label;
+      if (_start == null) {
+        final o = _riderOrigin;
+        if (o != null) {
+          _start = o;
+          _startAddrCtrl.text = _l10n.discoverMyPosition;
+        }
+      }
+      _surface = _Surface.plan;
+      _shellMode = DiscoverShellMode.navigate;
+      _pick = _PickMode.none;
+      _placeHits = const [];
+      _exploreQuery = '';
+    });
+    await _syncMarkers();
+    if (_start != null) await _calcAb();
+  }
+
+  Future<void> _routeToGeocodeHitAsStart(GeocodeHit hit) async {
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _start = GeoPoint(hit.lat, hit.lng);
+      _startAddrCtrl.text = hit.label;
+      _surface = _Surface.plan;
+      _shellMode = DiscoverShellMode.navigate;
+      _pick = _end == null ? _PickMode.end : _PickMode.none;
+      _placeHits = const [];
+      _exploreQuery = '';
+    });
+    await _syncMarkers();
+    if (_end != null) await _calcAb();
+  }
+
+  Future<void> _refinePlanEndWithOverlay(
+    math.Point<double> point,
+    GeoPoint raw,
+  ) async {
+    final trailHit = await _hitTestBikeOverlay(point);
+    if (!mounted || trailHit == null) return;
+    var resolved = trailHit;
+    for (final t in _trailsForLastMile) {
+      if (t.id == trailHit.id) {
+        resolved = t;
+        break;
+      }
+    }
+    final mile = clipTrailLastMile(
+      trailLngLat: resolved.geometry,
+      fromLat: (_start ?? _riderOrigin)?.lat ?? _origin.lat,
+      fromLng: (_start ?? _riderOrigin)?.lng ?? _origin.lng,
+      toLat: raw.lat,
+      toLng: raw.lng,
+    );
+    if (mile == null) return;
+    if (!trailIsCorridorEligible(
+      highway: resolved.highway,
+      difficulty: resolved.difficulty,
+    )) {
+      return;
+    }
+    final snapped = GeoPoint(mile.destLat, mile.destLng);
+    if ((snapped.lat - raw.lat).abs() < 1e-6 &&
+        (snapped.lng - raw.lng).abs() < 1e-6) {
+      return;
+    }
+    setState(() {
+      _end = snapped;
+      _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+      _destinationTrail = resolved;
+    });
+    await _syncMarkers();
+    _schedulePlanReshape();
   }
 
   Future<OsmTrailSegment?> _hitTestBikeOverlay(math.Point<double> point) async {
@@ -1496,8 +3632,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       final rect = Rect.fromCenter(
         center: Offset(point.x, point.y),
-        width: 28,
-        height: 28,
+        width: 18,
+        height: 18,
       );
       final features = await c.queryRenderedFeaturesInRect(
         rect,
@@ -1506,7 +3642,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       );
       for (final raw in features) {
         final trail = overlayFeatureToTrail(raw);
-        if (trail != null) return trail;
+        if (trail == null) continue;
+        if (!trailIsCorridorEligible(
+          highway: trail.highway,
+          difficulty: trail.difficulty,
+        )) {
+          continue;
+        }
+        return trail;
       }
     } catch (_) {}
     return null;
@@ -1538,7 +3681,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       _setStatus(
           '${resolved.name} · ${resolved.difficultyLabel} · ${resolved.lengthKm.toStringAsFixed(1)} km');
-      _destinationTrail = resolved;
     });
     await _showTrailSheet(resolved, at: at);
   }
@@ -1621,7 +3763,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     GeoPoint? at,
   ) {
     final policy = _navPolicy;
-    final from = _origin;
+    final from = _riderOrigin ?? _origin;
     var distKm = 0.0;
     if (trail.geometry.length >= 2) {
       final a = trail.geometry.first;
@@ -1764,6 +3906,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       return;
     }
+    final from = _riderOrigin;
+    if (from == null) {
+      if (mounted) {
+        setState(() => _error = _l10n.discoverNeedLocationTrails);
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -1775,8 +3924,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (at != null) {
         final mile = clipTrailLastMile(
           trailLngLat: trail.geometry,
-          fromLat: _origin.lat,
-          fromLng: _origin.lng,
+          fromLat: from.lat,
+          fromLng: from.lng,
           toLat: at.lat,
           toLng: at.lng,
         );
@@ -1786,13 +3935,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             : nudgeJoinTowardRider(
                 joinLat: mile.joinLat,
                 joinLng: mile.joinLng,
-                fromLat: _origin.lat,
-                fromLng: _origin.lng,
+                fromLat: from.lat,
+                fromLng: from.lng,
               );
         final join = GeoPoint(nudged.lat, nudged.lng);
         final distKm = trailAccessHaversineKm(
-          _origin.lat,
-          _origin.lng,
+          from.lat,
+          from.lng,
           join.lat,
           join.lng,
         );
@@ -1839,7 +3988,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           chosen,
         );
         var approach = await _planRouteMaybeRetry(
-          from: _origin,
+          from: from,
           to: join,
           profile: costing,
           accessLeg: _navPolicy.isGravity,
@@ -1861,7 +4010,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _joinAlongM = approach.distanceM;
           _gravityComputed = _navPolicy.isGravity;
           _label = trail.name;
-          _start = _origin;
+          _start = from;
           _end = dest;
           _ideaPin = null;
           _surface = _Surface.plan;
@@ -1882,8 +4031,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final entry = GeoPoint(oriented.entryLat, oriented.entryLng);
       final exit = GeoPoint(oriented.exitLat, oriented.exitLng);
       final distKm = trailAccessHaversineKm(
-        _origin.lat,
-        _origin.lng,
+        from.lat,
+        from.lng,
         entry.lat,
         entry.lng,
       );
@@ -1900,7 +4049,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         chosen,
       );
       final approach = await _planRouteMaybeRetry(
-        from: _origin,
+        from: from,
         to: entry,
         profile: costing,
         accessLeg: _navPolicy.isGravity,
@@ -1929,7 +4078,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _joinAlongM = approach.distanceM;
         _gravityComputed = _navPolicy.isGravity;
         _label = trail.name;
-        _start = _origin;
+        _start = from;
         _end = exit;
         _ideaPin = null;
         _surface = _Surface.plan;
@@ -1998,6 +4147,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         if (mounted) {
           setState(() {
             _oaStatus = _l10n.discoverNeedLocationTours;
+            _oaIsDegraded = true;
+          });
+        }
+        return;
+      }
+      if (_browseOnlineAt == null) {
+        await _probeBrowseNetwork();
+        if (!mounted) return;
+      }
+      if (!_browseOnline) {
+        if (mounted) {
+          setState(() {
+            _oaStatus = _l10n.discoverOaOffline;
             _oaIsDegraded = true;
           });
         }
@@ -2220,6 +4382,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
         _tours = _catalogEnrichedWithSeeds(byId.values.toList());
         final loops = parsed.where((t) => t.isLoopHint == true).length;
+        _seedsOffline = false;
         _seedsStatus =
             'Seeds ${parsed.length} ($loops Rundkurse) · ${bundle.labelWithoutLocation}';
       });
@@ -2248,7 +4411,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _seedsStatus = 'Seeds offline');
+        setState(() {
+          _seedsOffline = true;
+          _seedsStatus = 'Seeds offline';
+        });
       }
       debugPrint('NaeheSeeds: $e');
     }
@@ -2408,6 +4574,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             })
             .take(40)
             .toList();
+    final before = _tours.map((t) => t.id).toSet();
     setState(() {
       final byId = <String, _RouteSuggestion>{
         for (final t in _tours) t.id: t,
@@ -2424,12 +4591,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       _tours = _catalogEnrichedWithSeeds(byId.values.toList());
     });
-    unawaited(_drawAll());
+    final after = _tours.map((t) => t.id).toSet();
+    if (before.length != after.length || !before.containsAll(after)) {
+      unawaited(_drawAll());
+    }
   }
 
   Future<void> _flyBrowsePlace(GeocodeHit hit) async {
     setState(() {
       _browseAnchor = GeoPoint(hit.lat, hit.lng);
+      _browseAnchorPinned = true;
+      _browseAnchorLabel = hit.label;
       _hofPinLoopId = null;
       _selectedTourId = null;
       _computed = null;
@@ -2442,7 +4614,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         selection: TextSelection.collapsed(offset: hit.label.length),
       );
       _placeHits = const [];
+      _geocodeRecents = _pushGeocodeRecentList(hit);
     });
+    unawaited(_persistGeocodeRecents(_geocodeRecents));
     final map = _map;
     if (map != null) {
       try {
@@ -2460,7 +4634,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   void _schedulePlaceHits(String query) {
     _placeSearchDebounce?.cancel();
     if (!BrowsePlaceSearch.shouldOfferPlaceHits(query)) {
-      if (_placeHits.isNotEmpty) setState(() => _placeHits = const []);
+      if (_placeHits.isNotEmpty || _placeSearchNeedNet) {
+        setState(() {
+          _placeHits = const [];
+          _placeSearchNeedNet = false;
+        });
+      }
       return;
     }
     _placeSearchDebounce = Timer(const Duration(milliseconds: 420), () {
@@ -2469,23 +4648,46 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _loadPlaceHits(String query) async {
+    if (BrowsePlaceSearch.needsNetwork(query)) {
+      if (_browseOnlineAt == null) {
+        await _probeBrowseNetwork();
+        if (!mounted) return;
+      }
+      if (!_browseOnline) {
+        if (mounted) {
+          setState(() {
+            _placeHits = const [];
+            _placeSearchNeedNet = true;
+          });
+        }
+        return;
+      }
+    }
     final o = _origin;
     try {
       final hits = await _geocode.search(
         query,
         biasLat: o.lat,
         biasLng: o.lng,
-        preferPlaces: true,
+        limit: 5,
       );
       if (!mounted) return;
       if (_exploreSearchCtrl.text.trim() != query.trim()) return;
-      setState(() => _placeHits = hits.take(5).toList());
+      setState(() {
+        _placeHits = hits.take(5).toList();
+        _placeSearchNeedNet = false;
+      });
     } catch (_) {}
   }
 
   Future<void> _submitBrowseSearch(String query) async {
     final q = query.trim();
     if (q.length < 2) return;
+    if (BrowsePlaceSearch.needsNetwork(q) && !await _discoverHasNetwork()) {
+      if (!mounted) return;
+      setState(() => _setStatus(_l10n.discoverSearchNeedNet));
+      return;
+    }
     final names = _filtered.map((t) => t.name);
     final o = _origin;
     try {
@@ -2493,7 +4695,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         q,
         biasLat: o.lat,
         biasLng: o.lng,
-        preferPlaces: true,
+        limit: 5,
       );
       if (!mounted) return;
       if (hits.isEmpty) {
@@ -2522,6 +4724,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final l10n = _l10n;
     try {
       if (!_hasRealOrigin) return;
+      if (_browseOnlineAt == null) {
+        await _probeBrowseNetwork();
+        if (!mounted) return;
+      }
+      if (!_browseOnline) return;
       final o = _origin;
       final hits = await OsmRoutesClient().fetchNearby(
         lat: o.lat,
@@ -2611,11 +4818,24 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _refreshElevation(RouteResult? result) async {
     final l10n = _l10n;
-    if (result == null || result.coordinates.length < 2) {
+    if (result == null ||
+        !shouldShowLiveRouteStats(
+          hasLiveLine: result.coordinates.length >= 2,
+          engine: result.engine,
+          coordinateCount: result.coordinates.length,
+        )) {
       if (!mounted) return;
       setState(() {
         _elevationSummary = null;
         _elevationGainM = null;
+        _planElevSamples = const [];
+        _planElevKm = const [];
+        _planElevPoints = const [];
+        _planElevSource = null;
+        _planSurfaceBands = const [];
+        _planSurfaceMix = const [];
+        _planLegendKinds.clear();
+        _planElevScrubT = null;
         _weatherStart = null;
         _weatherSummit = null;
         _filmstripShots = const [];
@@ -2625,17 +4845,46 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final profile = await _elevationClient.fetchForTrack(result.coordinates);
     if (!mounted) return;
     if (profile == null) {
-      final approx = (result.distanceM * 0.03).round();
       setState(() {
-        _elevationGainM = result.distanceM * 0.03;
-        _elevationSummary = l10n.discoverElevationApprox('$approx');
+        _elevationGainM = null;
+        _planElevSamples = const [];
+        _planElevKm = const [];
+        _planElevPoints = const [];
+        _planElevSource = null;
+        _planSurfaceBands = const [];
+        _planSurfaceMix = const [];
+        _planLegendKinds.clear();
+        _elevationSummary = null;
       });
       await _refreshPlanExtras(result, null);
       return;
     }
+    final samples = elevationSamplesOf(profile);
+    final km = elevationDistKmOf(profile);
+    final bands = elevationSurfaceBandsOf(profile.points);
+    final track = [
+      for (final p in result.coordinates) [p.lng, p.lat],
+    ];
+    final legend = planRibbonLegendKinds(
+      bands: bands,
+      hasSteep: planSteepLineSlices(
+        lineLngLat: track,
+        elevM: samples,
+        distKm: km.isEmpty ? null : km,
+      ).isNotEmpty,
+    );
     setState(() {
       _elevationGainM = profile.gainM;
-      _elevationSummary = profile.source != null
+      _planElevSamples = samples;
+      _planElevKm = km;
+      _planElevPoints = profile.points;
+      _planElevSource = profile.source;
+      _planSurfaceBands = bands;
+      _planSurfaceMix = surfaceSharesFromElevPoints(profile.points);
+      _planLegendKinds
+        ..clear()
+        ..addAll(legend);
+      _elevationSummary = elevationSourceIsUserFacing(profile.source)
           ? l10n.discoverElevationGainLossSource(
               '${profile.gainM.round()}',
               '${profile.lossM.round()}',
@@ -2647,6 +4896,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             );
     });
     await _refreshPlanExtras(result, profile);
+    if (_planEditorActive &&
+        _planElevSamples.length >= 2 &&
+        _hasLivePlanLine &&
+        mounted) {
+      unawaited(_drawAll());
+    }
   }
 
   Future<void> _refreshPlanExtras(
@@ -2663,6 +4918,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       startW = await ref.read(weatherClientProvider).fetch(
             lat: start.lat,
             lon: start.lng,
+            profile: _profile.apiId,
+            lang: Localizations.localeOf(context).languageCode,
           );
       final summit = profile == null
           ? null
@@ -2673,6 +4930,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           summitW = await ref.read(weatherClientProvider).fetch(
                 lat: summit.lat,
                 lon: summit.lng,
+                profile: _profile.apiId,
+                lang: Localizations.localeOf(context).languageCode,
               );
         }
       }
@@ -2771,8 +5030,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _onQuickLineTapped(Line line) async {
     final data = line.data;
+    final kind = data?['kind'];
+    if (planShapeLineKind(kind?.toString()) || kind == 'active') {
+      var tap = _recentMapPointer() ?? _lastMapTap;
+      if (tap == null) {
+        final geom = line.options.geometry;
+        if (geom != null && geom.length >= 2) {
+          final mid = geom[geom.length ~/ 2];
+          tap = GeoPoint(mid.latitude, mid.longitude);
+        }
+      }
+      if (tap != null && _tryInsertViaFromMapTap(tap, onLine: true)) return;
+    }
     if (data == null) return;
-    final kind = data['kind'];
 
     if (kind == 'trail') {
       final id = data['id'] as String?;
@@ -2833,6 +5103,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _onTfSymbolTapped(Symbol symbol) async {
+    final poi = _poiBySymbolId[symbol.id];
+    if (poi != null) {
+      await _onTourPoiTapped(poi);
+      return;
+    }
+    final tour = _tourBySymbolId[symbol.id];
+    if (tour != null) {
+      await _onTourPinTapped(tour);
+      return;
+    }
     final place = _placeBySymbolId[symbol.id];
     if (place != null) {
       await _onMapPlaceTapped(place);
@@ -2854,13 +5134,114 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  Future<void> _onTourPinTapped(_RouteSuggestion tour) async {
+    _pendingPoiScrollId = null;
+    if (tour.id == _selectedTourId) {
+      await _openDetail(tour.id, tour.center);
+      return;
+    }
+    await _previewTourOnMap(tour);
+  }
+
+  Future<void> _onTourPoiTapped(_SeedPoiStop poi) async {
+    final tour = _tourById(_selectedTourId);
+    if (tour == null) return;
+    _pendingPoiScrollId = poi.id;
+    if (_surface != _Surface.detail || _detailId != tour.id) {
+      await _openDetail(tour.id, tour.center);
+      return;
+    }
+    _flashAndScrollToPoi(poi.id);
+  }
+
+  GlobalKey _keyForPoi(String id) =>
+      _poiTileKeys.putIfAbsent(id, GlobalKey.new);
+
+  void _flashAndScrollToPoi(String id) {
+    _pendingPoiScrollId = null;
+    _poiHighlightTimer?.cancel();
+    if (mounted) setState(() => _highlightPoiId = id);
+    unawaited(_applyPoiHighlightSizes());
+    _poiHighlightTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _highlightPoiId = null);
+      unawaited(_applyPoiHighlightSizes());
+    });
+    _scrollToPoiTile(id);
+  }
+
+  Future<void> _applyPoiHighlightSizes() async {
+    final c = _map;
+    if (c == null) return;
+    for (final entry in _poiSymbolByPoiId.entries) {
+      try {
+        await c.updateSymbol(
+          entry.value,
+          SymbolOptions(
+            iconSize: poiStopIconSize(
+              selected: entry.key == _highlightPoiId,
+            ),
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _applyPlaceHighlightSizes() async {
+    final c = _map;
+    if (c == null) return;
+    for (final sym in _placeSymbols) {
+      final place = _placeBySymbolId[sym.id];
+      if (place == null || coverageMapPoiKind(place) == null) continue;
+      try {
+        await c.updateSymbol(
+          sym,
+          SymbolOptions(
+            iconSize: poiStopIconSize(
+              selected: place.id == _highlightPlaceId,
+            ),
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
+  void _scrollToPoiTile(String id, {int attempt = 0}) {
+    final ctx = _poiTileKeys[id]?.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 320),
+        alignment: 0.12,
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    if (attempt >= 8) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToPoiTile(id, attempt: attempt + 1);
+    });
+  }
+
   Future<void> _onMapPlaceTapped(MapPlace mapped) async {
     if (!mounted) return;
+    if (mapped.source == MapPlaceSource.meet || mapped.id.startsWith('meet-')) {
+      await _onMeetPlaceTapped(mapped);
+      return;
+    }
+    if (coverageMapPoiKind(mapped) != null) {
+      _highlightPlaceId = mapped.id;
+      unawaited(_applyPlaceHighlightSizes());
+    }
     final action = await showOrtSheet(
       context,
       place: mapped,
       canAddVia: true,
+      onLiveRoute: _hasLivePlanLine,
     );
+    if (mounted) {
+      _highlightPlaceId = null;
+      unawaited(_applyPlaceHighlightSizes());
+    }
     if (!mounted || action == null) return;
     switch (action) {
       case OrtSheetAction.addVia:
@@ -2874,11 +5255,88 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  Future<void> _onMeetPlaceTapped(MapPlace mapped) async {
+    GroupMeetPin? pin;
+    for (final p in _meetPins) {
+      if (p.placeId == mapped.id) {
+        pin = p;
+        break;
+      }
+    }
+    if (pin == null) return;
+    final isMember = _meetMemberIds.contains(pin.group.id);
+    final action = await showGroupMeetSheet(
+      context,
+      group: pin.group,
+      isMember: isMember,
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case GroupMeetSheetAction.join:
+        await _joinMeetGroup(pin.group);
+        break;
+      case GroupMeetSheetAction.ride:
+        await _startRideFromMeetGroup(pin.group);
+        break;
+      case GroupMeetSheetAction.dismiss:
+        break;
+    }
+  }
+
+  Future<void> _joinMeetGroup(RideGroup group) async {
+    final out = await RideGroupStore().tryJoin(
+      groupId: group.id,
+      displayLabel: _l10n.platzYou,
+    );
+    if (!mounted) return;
+    if (out.fail == RideGroupJoinFail.needLogin) {
+      openAuthScreen(context);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(out.message)),
+    );
+    unawaited(_refreshMeetPlaces());
+  }
+
+  Future<void> _startRideFromMeetGroup(RideGroup group) async {
+    final saved =
+        ref.read(savedRoutesProvider).valueOrNull ?? const <SavedRouteEntry>[];
+    final pending = startRidePendingIdForGroup(
+      savedRouteId: group.savedRouteId,
+      catalogTourId: group.catalogTourId,
+      saved: saved,
+      metas: _savedMeta,
+    );
+    if (pending == null || pending.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_l10n.platzTourNotInMappeHint)),
+      );
+      return;
+    }
+    ref.read(ridePendingGroupIdProvider.notifier).state = group.id;
+    ref.read(discoverPendingStartRideRouteIdProvider.notifier).state = pending;
+  }
+
   void _addPlaceAsVia(MapPlace place) {
+    _abFromBrowsePin = false;
     var p = GeoPoint(place.lat, place.lng);
     if (viaMaySnapOntoTrail(label: place.name)) {
       p = _snapViaPoint(p);
     }
+    if (_hasLivePlanLine) {
+      _insertPlanViaAlong(p, label: place.name);
+      setState(() {
+        if (_surface != _Surface.plan) {
+          _surface = _Surface.plan;
+          _shellMode = DiscoverShellMode.navigate;
+        }
+        _setStatus('${_l10n.discoverPlaceOnRoute}: ${place.name}');
+      });
+      return;
+    }
+    _pushPlanUndo();
     setState(() {
       _vias.add(
         LabeledVia(
@@ -2896,17 +5354,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _pick = _PickMode.none;
     });
     unawaited(_syncMarkers());
-    if (_start != null && _end != null) unawaited(_calcAb());
+    _afterPlanViaInserted();
+    if (_start != null && _end != null) {
+      unawaited(_calcAb(keepLine: true, refitPins: false));
+    }
   }
 
   Future<void> _routeToPlace(MapPlace place) async {
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
     final dest = GeoPoint(place.lat, place.lng);
     setState(() {
       _end = dest;
       _endAddrCtrl.text = place.name;
-      if (_start == null && _hasRealOrigin) {
-        _start = _origin;
-        _startAddrCtrl.text = _l10n.discoverMyPosition;
+      if (_start == null) {
+        final o = _riderOrigin;
+        if (o != null) {
+          _start = o;
+          _startAddrCtrl.text = _l10n.discoverMyPosition;
+        }
       }
       _surface = _Surface.plan;
       _shellMode = DiscoverShellMode.navigate;
@@ -2916,11 +5382,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (_start != null) await _calcAb();
   }
 
-  Future<void> _locate() async {
+  /// [fresh] nur vom Locate-FAB / „Mein Standort“. Mount: lastKnown, kein Dialog.
+  Future<void> _locate({bool fresh = false}) async {
+    if (fresh && _browseAnchor != null) {
+      _clearBrowseAnchorToGps();
+    }
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
       if (!enabled) {
-        if (mounted) {
+        if (fresh && mounted) {
           setState(
             () => _setStatus(_l10n.discoverLocationOff),
           );
@@ -2928,36 +5398,29 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return;
       }
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
+      if (fresh && perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
-        if (mounted) {
+        if (fresh && mounted) {
           setState(
             () => _setStatus(_l10n.discoverLocationDenied),
           );
         }
         return;
       }
-      // Frische Position zuerst — lastKnown kann alte Demo-/Test-Orte sein.
-      Position? pos;
-      try {
-        pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            timeLimit: Duration(seconds: 12),
-          ),
-        );
-      } catch (_) {
-        pos = await Geolocator.getLastKnownPosition();
-        if (pos != null) {
-          final age = DateTime.now().difference(pos.timestamp);
-          if (age > const Duration(minutes: 5)) pos = null;
-        }
+      // Nie getCurrentPosition auf dem ersten Karten-Frame — ANR auf
+      // Android (NmeaClient.stop auf dem UI-Thread). MapLibre füllt
+      // [_userPos] über onUserLocationUpdated nach.
+      var pos = await readCachedPosition(
+        maxAge: fresh ? const Duration(hours: 24) : const Duration(minutes: 8),
+      );
+      if (fresh) {
+        pos = await readFreshPosition() ?? pos;
       }
       if (pos == null) {
-        if (mounted) {
+        if (fresh && mounted) {
           setState(
             () => _setStatus(_l10n.discoverNoGpsFix),
           );
@@ -2971,10 +5434,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       setState(() {
         _userPos = p;
         _browseAnchor = null;
+        _browseAnchorPinned = false;
+        _browseAnchorLabel = null;
         _start = p;
         _startAddrCtrl.text = _l10n.discoverMyPosition;
         _setStatus(_l10n.discoverLocationReady);
       });
+      _maybeWarmLiveRouting(p);
+      unawaited(_syncOfflineCoverageOverlay());
       unawaited(_fetchOutdooractive());
       unawaited(_fetchOsmRoutes());
       unawaited(_fetchTrailNetwork());
@@ -2987,7 +5454,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_loopOnlyActive) {
         unawaited(_ensureLoopMapHonesty());
       }
-      if (DiscoverExploreChromeLogic.gpsMayRecenterOnUser(
+      if (_end != null) {
+        _skipAutoCameraFit = false;
+        _scheduleCalcAbFromMap();
+      } else if (DiscoverExploreChromeLogic.gpsMayRecenterOnUser(
         hofPinLoopId: _hofPinLoopId,
         selectedTourId: _selectedTourId,
       )) {
@@ -2996,14 +5466,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
           );
         } catch (_) {}
-      } else {
+      } else if (!_planningAb) {
         final pin = _hofPinLoopId ?? _selectedTourId;
         final tour = _tourById(pin);
         if (tour != null) unawaited(_focusCameraOnTour(tour));
       }
       unawaited(_syncNavPuck());
     } catch (e) {
-      if (mounted) {
+      if (fresh && mounted) {
         setState(
           () => _setStatus(_l10n.discoverLocationUnavailable),
         );
@@ -3016,8 +5486,43 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   GeoPoint get _origin => _originOrNull ?? _regionOverview;
 
-  bool get _hasRealOrigin =>
-      _browseAnchor != null || _userPos != null || _start != null;
+  bool get _planningAb => shouldHideDiscoverTourRibbons(
+        navigateMode: _shellMode == DiscoverShellMode.navigate,
+        hasStart: _start != null,
+        hasEnd: _end != null,
+      );
+
+  bool get _hideFarmTracksOnBrowse {
+    return !_showFarmTracksLayer ||
+        shouldHideFarmTracksOnBrowse(
+          navigateMode: _shellMode == DiscoverShellMode.navigate,
+          loading: _loading,
+          hasPendingAbHint: waitingForLiveDiscoverAb(
+            hasFrom: (_start ?? _userPos) != null,
+            hasEnd: _end != null,
+            hasLiveLine: _hasLivePlanLine,
+          ),
+        );
+  }
+
+  /// A–B / Approach start: GPS or an explicit start pin, never the panned map.
+  GeoPoint? get _riderOrigin {
+    final o = routingOriginPreferGps(
+      userLat: _userPos?.lat,
+      userLng: _userPos?.lng,
+      startLat: _start?.lat,
+      startLng: _start?.lng,
+    );
+    if (o == null) return null;
+    return GeoPoint(o.lat, o.lng);
+  }
+
+  bool get _hasRealOrigin => DiscoverExploreChromeLogic.aroundOriginIsUsable(
+        hasGpsOrStart: _userPos != null || _start != null,
+        browseLat: _browseAnchor?.lat,
+        browseLng: _browseAnchor?.lng,
+        mapZoom: _mapZoom,
+      );
 
   /// Start-A liegt auf dem GPS-Fix — dann nur der Puck, kein grüner A-Kreis.
   bool _startOverlapsUser() {
@@ -3075,7 +5580,27 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           loc.heading?.magneticHeading ??
           _puckHeadingDeg;
     }
-    _userPos ??= GeoPoint(loc.position.latitude, loc.position.longitude);
+    final next = GeoPoint(loc.position.latitude, loc.position.longitude);
+    final firstFix = _userPos == null;
+    final prevOutside = _coverageRiderIsOutside;
+    _userPos = next;
+    final nowOutside = _coverageRiderIsOutside;
+    if (firstFix && mounted) {
+      var adoptStart = false;
+      if (_end != null && _start == null && _pick != _PickMode.start) {
+        _start = next;
+        _startAddrCtrl.text = _l10n.discoverMyPosition;
+        adoptStart = true;
+      }
+      setState(() {});
+      _refreshNearbyDataSources();
+      if (adoptStart) _scheduleCalcAbFromMap();
+      unawaited(_syncOfflineCoverageOverlay());
+      _maybeWarmLiveRouting(next);
+    } else if (prevOutside != nowOutside && mounted) {
+      setState(() {});
+      unawaited(_syncOfflineCoverageOverlay());
+    }
     final map = _map;
     if (map != null) unawaited(_navPuck.hideNativePuck(map));
     unawaited(_syncNavPuck());
@@ -3224,8 +5749,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           !TourFilters.elevationMatches(r.elevationM, _elevationFilter!)) {
         return false;
       }
-      if (!TourFilters.distanceMatches(r.distanceKm, _maxDistanceKm)) {
+      if (!TourFilters.distanceMatches(r.distanceKm, _maxLengthKm)) {
         return false;
+      }
+      if (_maxDistanceKm != null && _hasRealOrigin) {
+        final o = _origin;
+        final away =
+            _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
+        if (!TourFilters.awayMatches(away, _maxDistanceKm)) {
+          return false;
+        }
       }
       if (!TourFilters.formMatches(
         form: _formFilter,
@@ -3384,7 +5917,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _ensureLoopMapHonesty() async {
     if (!mounted || !_loopOnlyActive) return;
     // Navigieren A–B darf nicht von Rundkurs-Auswahl überschrieben werden.
-    if (_shellMode == DiscoverShellMode.navigate) return;
+    if (_shellMode == DiscoverShellMode.navigate || _planningAb) return;
     _clearAbDemoOverlayForLoopFilter();
     const seedRadiusKm = TourCoverage.nearbyRadiusKm;
     final o = _origin;
@@ -3446,6 +5979,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _drawSeedLoopPreview(_RouteSuggestion r) async {
+    if (_shellMode == DiscoverShellMode.navigate || _planningAb) return;
+    final gen = _previewGen;
     // Echte Wege statt synthetischem Kreis, sobald das Routing sie kennt.
     final routed = _routedLoopCache[r.id];
     final track = routed != null
@@ -3477,7 +6012,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       engine: routed != null ? 'seed-loop-routed' : 'seed-loop',
       steps: const [],
     );
-    if (!mounted) return;
+    if (!mounted || gen != _previewGen) return;
+    if (_shellMode == DiscoverShellMode.navigate || _planningAb) return;
     setState(() {
       _computed = preview;
       _label = r.name;
@@ -3487,6 +6023,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _setStatus(null);
     });
     await _drawAll();
+    if (!mounted || gen != _previewGen || _planningAb) return;
     await _focusCameraOnTour(r);
     // Live-Upgrade nur wenn noch keine gebackene/routed Geometrie da ist.
     if (routed == null) {
@@ -3496,99 +6033,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Lädt im Hintergrund echte Routen-Geometrie für einen Seed-Loop und
   /// ersetzt den synthetischen Kreis sofort in Cache + Tour-Track.
-  Future<void> _upgradeSeedLoopGeometry(_RouteSuggestion r) async {
-    if (_routedLoopPending.contains(r.id) ||
-        _routedLoopCache.containsKey(r.id)) {
-      return;
-    }
-    _routedLoopPending.add(r.id);
-    try {
-      final routed = await _routedTourGeometry(r.center, r.distanceKm)
-          .timeout(const Duration(seconds: 18));
-      if (routed.demo || routed.points.length < 4) return;
-      final pts = routed.points;
-      final lngLat = [
-        for (final p in pts) [p.lng, p.lat]
-      ];
-      if (!isUsableMapTrack(lngLat)) return;
-      if (_isLoop(r) &&
-          !isAcceptableLiveLoop(
-            trackLngLat: lngLat,
-            expectedDistanceKm: r.distanceKm,
-          )) {
-        return;
-      }
-      _routedLoopCache[r.id] = pts;
-      if (!mounted) return;
-      setState(() {
-        _tours = [
-          for (final t in _tours)
-            if (t.id == r.id) t.copyWith(trackLngLat: lngLat) else t,
-        ];
-      });
-      if (_selectedTourId == r.id) {
-        await _drawSeedLoopPreview(
-          _tourById(r.id) ?? r.copyWith(trackLngLat: lngLat),
-        );
-      } else {
-        await _drawAll();
-      }
-    } catch (e) {
-      // Organische Seed-Näherung bleibt — Live-Routing optional.
-      if (mounted &&
-          _isLiveRateLimited(e) &&
-          (_status == null || _status!.isEmpty || _statusIsWarm)) {
-        setState(() => _setStatus(_l10n.discoverGhMinuteLimit));
-      }
-    } finally {
-      _routedLoopPending.remove(r.id);
-    }
+  Future<void> _upgradeSeedLoopGeometry(_RouteSuggestion _) async {
+    // Keep baked / catalog tracks. Do not invent geometric vias
+    // around the pin — they cut through fields.
   }
 
-  /// Komoot/AllTrails: sichtbare Karten-Touren ohne brauchbare Polyline
-  /// sofort nachrouten — Pins / Lineale werden nicht dauerhaft belassen.
+  /// Background pentagon routing is disabled — vias land in fields.
   Future<void> _warmVisibleMapTourGeometries(
-    List<_RouteSuggestion> visible,
-  ) async {
-    final need = <_RouteSuggestion>[];
-    for (final t in visible) {
-      final cached = _routedLoopCache[t.id];
-      final cacheOk = cached != null &&
-          isUsableMapTrack([
-            for (final p in cached) [p.lng, p.lat]
-          ]);
-      if (t.hasUsableTrack || cacheOk) continue;
-      if (_routedLoopPending.contains(t.id)) continue;
-      // Lineare Tip-/Idee-Karten ohne Loop bleiben Pin-Ideen (A→B CTA).
-      if (_isPinOnlyIdea(t) && !_isLoop(t)) continue;
-      need.add(t);
-    }
-    if (need.isEmpty) return;
-    if (mounted && (_status == null || _status!.isEmpty || _statusIsWarm)) {
-      setState(() {
-        _setStatus(
-          need.length == 1
-              ? _l10n.discoverComputing
-              : _l10n.discoverComputingN(need.length),
-          warm: true,
-        );
-      });
-    }
-    // Parallelität begrenzen — OSRM/Backend nicht überlasten.
-    const batch = DiscoverMapLineStyle.warmBatchSize;
-    for (var i = 0; i < need.length; i += batch) {
-      if (!mounted) return;
-      final chunk = need.skip(i).take(batch);
-      await Future.wait([
-        for (final t in chunk) _upgradeSeedLoopGeometry(t),
-      ]);
-    }
-    if (!mounted) return;
-    // Status nur während laufender Warm-Jobs — Fehlschläge nicht ewig anzeigen.
-    if (_routedLoopPending.isEmpty && _statusIsWarm) {
-      setState(() => _setStatus(null));
-    }
-  }
+    List<_RouteSuggestion> _,
+  ) async {}
 
   double _distKm(double lat1, double lng1, double lat2, double lng2) {
     const r = 6371.0;
@@ -3603,23 +6056,29 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Iterable<OsmTrailSegment> get _trailsForLastMile sync* {
-    final seen = <String>{};
     final dest = _destinationTrail;
-    if (dest != null) {
-      seen.add(dest.id);
+    if (dest != null &&
+        trailIsCorridorEligible(
+          highway: dest.highway,
+          difficulty: dest.difficulty,
+        )) {
       yield dest;
-    }
-    for (final t in _sGradeTrails) {
-      if (seen.add(t.id)) yield t;
-    }
-    for (final t in _trailNetwork) {
-      if (seen.add(t.id)) yield t;
     }
   }
 
   TrailLastMile? _lastMileForDest(GeoPoint from, GeoPoint to) {
-    return lastMileTowardDestination(
-      trails: [for (final t in _trailsForLastMile) t.geometry],
+    // Only when the rider tapped a trail — not every OSM farm track
+    // within 90 m of a map pin (that sends the line through a field).
+    final dest = _destinationTrail;
+    if (dest == null) return null;
+    if (!trailIsCorridorEligible(
+      highway: dest.highway,
+      difficulty: dest.difficulty,
+    )) {
+      return null;
+    }
+    return clipTrailLastMile(
+      trailLngLat: dest.geometry,
       fromLat: from.lat,
       fromLng: from.lng,
       toLat: to.lat,
@@ -3628,8 +6087,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   GeoPoint _snapViaPoint(GeoPoint p) {
+    final trails = <List<List<double>>>[
+      if (_destinationTrail != null &&
+          trailIsCorridorEligible(
+            highway: _destinationTrail!.highway,
+            difficulty: _destinationTrail!.difficulty,
+          ))
+        _destinationTrail!.geometry,
+      for (final t in _sGradeTrails)
+        if (trailIsCorridorEligible(
+          highway: t.highway,
+          difficulty: t.difficulty,
+        ))
+          t.geometry,
+    ];
     final hit = snapPointOntoTrails(
-      trails: [for (final t in _trailsForLastMile) t.geometry],
+      trails: trails,
       lat: p.lat,
       lng: p.lng,
     );
@@ -3650,36 +6123,33 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Future<RouteResult> _planRouteMaybeRetry({
+  /// Live ORS with net. Local Dijkstra only without net, A–B, covering pack.
+  /// Browse pin A–B sets [liveStreetOnly] so the pack graph cannot draw
+  /// field-scale lines after a miss or a stale offline probe.
+  Future<RouteResult> _discoverPlanRoute({
     required GeoPoint from,
     required GeoPoint to,
     List<GeoPoint> vias = const [],
     RoutingProfile? profile,
     bool accessLeg = false,
     RouteVariant variant = RouteVariant.planned,
+    bool liveStreetOnly = false,
   }) async {
     final p = profile ?? _abCosting;
     final access = accessLeg || p == RoutingProfile.driving;
-    var result = await _routes.planRoute(
-      from: from,
-      to: to,
-      profile: p,
-      vias: vias,
-      accessLeg: access,
-      variant: variant,
-    );
-    if (p == RoutingProfile.driving || p == RoutingProfile.hiking) {
-      return result;
+    final online = await _discoverHasNetwork();
+    final flags = liveStreetOnly
+        ? discoverBrowseAbEngineChoice(online: online)
+        : discoverAbEngineChoice(
+            online: online,
+            viasEmpty: vias.isEmpty,
+          );
+    if (liveStreetOnly && !online) {
+      throw StateError('browse-needs-network');
     }
-    if (!_isAbDetour(result, from, to)) return result;
-    await _routes.invalidateRoute(
-      from: from,
-      to: to,
-      profile: p,
-      vias: vias,
-      accessLeg: access,
-      variant: variant,
-    );
+    if (!online && vias.isNotEmpty) {
+      throw StateError('offline-vias-need-network');
+    }
     return _routes.planRoute(
       from: from,
       to: to,
@@ -3687,7 +6157,59 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       vias: vias,
       accessLeg: access,
       variant: variant,
+      preferOffline: flags.preferOffline,
+      allowOfflineFirst: flags.allowOfflineFirst,
+      allowOnline: flags.allowOnline,
+      allowOfflineFallback: flags.allowOfflineFallback,
     );
+  }
+
+  Future<RouteResult> _planRouteMaybeRetry({
+    required GeoPoint from,
+    required GeoPoint to,
+    List<GeoPoint> vias = const [],
+    RoutingProfile? profile,
+    bool accessLeg = false,
+    RouteVariant variant = RouteVariant.planned,
+    bool liveStreetOnly = false,
+  }) async {
+    final p = profile ?? _abCosting;
+    var result = await _discoverPlanRoute(
+      from: from,
+      to: to,
+      profile: p,
+      vias: vias,
+      accessLeg: accessLeg,
+      variant: variant,
+      liveStreetOnly: liveStreetOnly,
+    );
+    if (p == RoutingProfile.driving || p == RoutingProfile.hiking) {
+      unawaited(_refreshOfflineChip());
+      return result;
+    }
+    if (!_isAbDetour(result, from, to)) {
+      unawaited(_refreshOfflineChip());
+      return result;
+    }
+    await _routes.invalidateRoute(
+      from: from,
+      to: to,
+      profile: p,
+      vias: vias,
+      accessLeg: accessLeg || p == RoutingProfile.driving,
+      variant: variant,
+    );
+    result = await _discoverPlanRoute(
+      from: from,
+      to: to,
+      profile: p,
+      vias: vias,
+      accessLeg: accessLeg,
+      variant: variant,
+      liveStreetOnly: liveStreetOnly,
+    );
+    unawaited(_refreshOfflineChip());
+    return result;
   }
 
   RouteResult _stitchApproachLastMile(
@@ -3714,7 +6236,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Future<void> _calcAb() async {
+  Future<void> _calcAb({
+    bool keepLine = false,
+    bool refitPins = true,
+  }) async {
     final from = _start;
     final to = _end;
     if (from == null || to == null) {
@@ -3722,14 +6247,33 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           () => _error = AppLocalizations.of(context).navigateNeedStartEnd);
       return;
     }
+    final keep = keepLine &&
+        shouldKeepStaleDiscoverLine(
+          hasLiveStreetLine: _hasLivePlanLine,
+          leftoverTourOnMap: false,
+        );
     setState(() {
       _loading = true;
       _error = null;
       _weatherStart = null;
       _weatherSummit = null;
       _filmstripShots = const [];
+      _routeLineStale = keep;
+      if (!keep) {
+        _computed = null;
+        _approach = null;
+        _trailOverlay = null;
+      }
+      _ideaPin = null;
+      _selectedTourId = null;
+      _skipAutoCameraFit = keep && !refitPins;
+      _planDragAlongLabel = null;
+      if (keep) _setStatus(_l10n.discoverRoutingAdapts);
     });
+    _previewGen++;
     final gen = ++_calcAbGen;
+    if (!keep) _startDestPulse();
+    unawaited(_drawAll());
     try {
       final vias = List<GeoPoint>.from(_viaPoints);
       final namedDest = namedPlaceHudTitle(
@@ -3761,6 +6305,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           to: join,
           profile: _abCosting,
           accessLeg: _navPolicy.isGravity,
+          liveStreetOnly: true,
         );
         if (!mounted || gen != _calcAbGen) return;
         var merged = _stitchApproachLastMile(approach, mile);
@@ -3770,6 +6315,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             to: dest,
             profile: _abCosting,
             accessLeg: _navPolicy.isGravity,
+            liveStreetOnly: true,
           );
           if (!mounted || gen != _calcAbGen) return;
           if (!_isAbDetour(direct, from, dest) &&
@@ -3799,23 +6345,55 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           profile: _profile,
           accessLeg: false,
           variant: _routeVariant,
+          liveStreetOnly: planCalcUsesLiveStreetsOnly(
+            fromBrowsePin: _abFromBrowsePin,
+            viasEmpty: vias.isEmpty,
+          ),
         );
         if (!mounted || gen != _calcAbGen) return;
         if (_isAbDetour(result, from, to)) {
           setState(() {
             _loading = false;
-            _computed = null;
+            _routeLineStale = false;
+            if (!keep) _computed = null;
             _error = _l10n.discoverUnplausibleDropped;
           });
           return;
         }
       }
       if (!mounted || gen != _calcAbGen) return;
+      await _refreshOfflineChip();
+      if (!mounted || gen != _calcAbGen) return;
+      final lineLngLat = [
+        for (final p in result.coordinates) [p.lng, p.lat],
+      ];
+      final startIsGps = _userPos != null &&
+          haversineM(from.lat, from.lng, _userPos!.lat, _userPos!.lng) < 40;
+      var startOut = from;
+      if (trailOverlay == null) {
+        final snap = applyFarmTrimPinSnap(
+          startLat: from.lat,
+          startLng: from.lng,
+          endLat: dest.lat,
+          endLng: dest.lng,
+          lineLngLat: lineLngLat,
+          warnings: result.warnings,
+          startIsGps: startIsGps,
+        );
+        if (snap.snappedStart) {
+          startOut = GeoPoint(snap.startLat, snap.startLng);
+        }
+        if (snap.snappedEnd) {
+          dest = GeoPoint(snap.endLat, snap.endLng);
+        }
+      }
       setState(() {
+        _start = startOut;
         _end = dest;
         _computed = result;
         _approach = approach;
         _trailOverlay = trailOverlay;
+        _routeLineStale = false;
         _gravityComputed = mile != null && _navPolicy.isGravity;
         _label = plannedRouteHudLabel(
           destinationField: _endAddrCtrl.text,
@@ -3826,25 +6404,56 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _selectedTourId = null;
         if (result.engine == 'fallback-line') {
           _setStatus(_l10n.discoverStraightFallback, approx: true);
-        } else if (result.riderWarning != null) {
+        } else if (result.riderWarning != null &&
+            !result.riderWarning!.contains('in die Navi übernommen')) {
           _setStatus(_l10n.discoverRiderHonestyFor(result.riderWarning!));
+        } else if (isOfflineRoutingEngine(result.engine)) {
+          final packName = _offlinePackLabel?.trim() ?? '';
+          _setStatus(
+            packName.isEmpty
+                ? _l10n.discoverOfflineRouteReady
+                : _l10n.discoverOfflineRouteReadyNamed(packName),
+          );
         }
       });
       await _drawAll();
       if (!mounted || gen != _calcAbGen) return;
       await _refreshElevation(result);
+      if (!mounted || gen != _calcAbGen) return;
+      await _refreshNavigateOfflineHint();
+      unawaited(_rememberLastPlanDest());
     } catch (e) {
       if (mounted && gen == _calcAbGen) {
         setState(
-          () => _error = _liveRouteError(e),
+          () => _error = _liveRouteError(
+            e,
+            browsePin: planCalcUsesLiveStreetsOnly(
+              fromBrowsePin: _abFromBrowsePin,
+              viasEmpty: _vias.isEmpty,
+            ),
+          ),
         );
       }
     } finally {
-      if (mounted && gen == _calcAbGen) setState(() => _loading = false);
+      if (gen == _calcAbGen) {
+        if (mounted) setState(() => _loading = false);
+        if (_end != null && _start == null) {
+          _startDestPulse();
+        } else {
+          _stopDestPulse();
+        }
+      }
     }
   }
 
   Future<void> _hybridSnap(_RouteSuggestion tour) async {
+    final from = _riderOrigin;
+    if (from == null) {
+      if (mounted) {
+        setState(() => _error = _l10n.discoverNeedLocationTrails);
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -3853,8 +6462,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       final entry = GeoPoint(tour.center.latitude, tour.center.longitude);
       final dKm = trailAccessHaversineKm(
-        _origin.lat,
-        _origin.lng,
+        from.lat,
+        from.lng,
         entry.lat,
         entry.lng,
       );
@@ -3865,12 +6474,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               kind == ApproachKind.atStart ? ApproachKind.walk : kind,
             )
           : _profile;
-      final approach = await _routes.planRoute(
-        from: _origin,
+      final approach = await _discoverPlanRoute(
+        from: from,
         to: entry,
         profile: costing,
         accessLeg: _navPolicy.isGravity,
       );
+      unawaited(_refreshOfflineChip());
       final routed = await _geometryForTour(tour);
       if (!mounted) return;
 
@@ -3881,7 +6491,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _computed = approach;
           _ideaPin = tour.center;
           _label = _l10n.discoverApproachName(tour.name);
-          _start = _origin;
+          _start = from;
           _end = entry;
           _selectedTourId = tour.id;
           _setStatus(_l10n.discoverPoiIdeaHint);
@@ -3917,7 +6527,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _computed = merged;
         _ideaPin = null;
         _label = _l10n.discoverFromHereName(tour.name);
-        _start = _origin;
+        _start = from;
         _end = tourEnd;
         _selectedTourId = tour.id;
         _setStatus(_l10n
@@ -3943,6 +6553,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Prefer one `/api/route` call with vias (street-continuous). Per-leg fallback
   /// aborts on `fallback-line` / `approx` so polygonal rulers never become a
   /// “finished” loop on the map.
+  // Unused: live pentagon vias land in fields. Kept for a future street-loop path.
+  // ignore: unused_element
   Future<({List<GeoPoint> points, bool demo})> _routedTourGeometry(
     LatLng center,
     double distanceKm,
@@ -3974,19 +6586,24 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         (eng?.contains('demo') ?? false);
 
     // Single request: from → vias → back to start (closed street loop).
+    // Dijkstra is A–B only — skip the via shot without net.
     try {
-      final oneShot = await _routes.planRoute(
-        from: ring.first,
-        to: ring.first,
-        vias: ring.sublist(1),
-        profile: _profile,
-      );
-      if (!isRulerEngine(oneShot.engine) &&
-          oneShot.coordinates.length >= 8 &&
-          isUsableMapTrack([
-            for (final p in oneShot.coordinates) [p.lng, p.lat],
-          ])) {
-        return (points: oneShot.coordinates, demo: false);
+      if (await _discoverHasNetwork()) {
+        final oneShot = await _routes.planRoute(
+          from: ring.first,
+          to: ring.first,
+          vias: ring.sublist(1),
+          profile: _profile,
+          allowOnline: true,
+          allowOfflineFirst: false,
+        );
+        if (!isRulerEngine(oneShot.engine) &&
+            oneShot.coordinates.length >= 8 &&
+            isUsableMapTrack([
+              for (final p in oneShot.coordinates) [p.lng, p.lat],
+            ])) {
+          return (points: oneShot.coordinates, demo: false);
+        }
       }
     } catch (_) {
       // Fall through to per-leg.
@@ -3996,7 +6613,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final coords = <GeoPoint>[];
     try {
       for (var i = 0; i < waypoints.length - 1; i++) {
-        final leg = await _routes.planRoute(
+        final leg = await _discoverPlanRoute(
           from: waypoints[i],
           to: waypoints[i + 1],
           profile: _profile,
@@ -4110,6 +6727,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       );
     }
 
+    // Pin-only idea without a baked track: do not wait on catalog/live
+    // pentagon vias that land in fields.
+    if (_isPinOnlyIdea(tour) && !loop) {
+      return (points: const <GeoPoint>[], demo: true);
+    }
+
     if (tour.isCatalog) {
       try {
         final api = await _fetchCatalogTourGeometry(tour)
@@ -4118,29 +6741,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       } catch (_) {}
     }
 
-    try {
-      final live = await _routedTourGeometry(tour.center, tour.distanceKm)
-          .timeout(const Duration(seconds: 18));
-      if (!live.demo && live.points.length >= 4) {
-        final lngLat = [
-          for (final p in live.points) [p.lng, p.lat]
-        ];
-        if (isAcceptableLiveLoop(
-          trackLngLat: lngLat,
-          expectedDistanceKm: tour.distanceKm,
-        )) {
-          _routedLoopCache[tour.id] = live.points;
-          return (points: live.points, demo: false);
-        }
-      }
-    } catch (_) {
-      // Caller may fall back to plan A→B for pin-only ideas.
-    }
-    // Loop without usable closed geometry → demo (do not return open legs).
-    if (loop) {
-      return (points: const <GeoPoint>[], demo: true);
-    }
-    return _routedTourGeometry(tour.center, tour.distanceKm);
+    // Never invent geometric vias around the pin — they land in fields.
+    return (points: const <GeoPoint>[], demo: true);
   }
 
   bool _isPinOnlyIdea(_RouteSuggestion r) {
@@ -4255,65 +6857,101 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Komoot-ähnliche Route: dunkles Casing + helle Hauptlinie.
   /// Selected = dickes Casing; Unselected routed = dünneres Casing, gedämpft.
-  Future<void> _addKomootLine(
+  Future<List<({Line line, double opacity})>> _addKomootLine(
     MapLibreMapController c,
     List<LatLng> geometry, {
     required bool active,
     String lineColor = '#2ECC71',
     Map<String, dynamic>? data,
     bool casing = true,
+    bool skipCore = false,
+    double opacityMul = 1,
+    bool grab = false,
   }) async {
-    if (geometry.length < 2) return;
+    final out = <({Line line, double opacity})>[];
+    if (geometry.length < 2) return out;
+    final mul = opacityMul.clamp(0.2, 1.0);
     if (casing && active) {
-      await c.addLine(
-        LineOptions(
-          geometry: geometry,
-          lineColor: DiscoverMapLineStyle.activeCasing,
-          lineWidth: DiscoverMapLineStyle.activeCasingWidth,
-          lineOpacity: DiscoverMapLineStyle.activeCasingOpacity,
-          lineJoin: 'round',
+      final glowOp = DiscoverMapLineStyle.selectedGlowOpacity * mul;
+      out.add((
+        line: await c.addLine(
+          LineOptions(
+            geometry: geometry,
+            lineColor: DiscoverMapLineStyle.selectedGlow,
+            lineWidth: DiscoverMapLineStyle.selectedGlowWidth,
+            lineOpacity: glowOp,
+            lineJoin: 'round',
+          ),
+          data,
         ),
-        data, // same data so tap on casing still selects trail/route
-      );
+        opacity: glowOp,
+      ));
+      final caseOp = DiscoverMapLineStyle.activeCasingOpacity * mul;
+      out.add((
+        line: await c.addLine(
+          LineOptions(
+            geometry: geometry,
+            lineColor: DiscoverMapLineStyle.activeCasing,
+            lineWidth: DiscoverMapLineStyle.activeCasingWidth,
+            lineOpacity: caseOp,
+            lineJoin: 'round',
+          ),
+          data, // same data so tap on casing still selects trail/route
+        ),
+        opacity: caseOp,
+      ));
     } else if (casing && !active) {
-      await c.addLine(
-        LineOptions(
-          geometry: geometry,
-          lineColor: DiscoverMapLineStyle.mutedCasing,
-          lineWidth: DiscoverMapLineStyle.mutedCasingWidth,
-          lineOpacity: DiscoverMapLineStyle.mutedCasingOpacity,
-          lineJoin: 'round',
+      final muteOp = DiscoverMapLineStyle.mutedCasingOpacity * mul;
+      out.add((
+        line: await c.addLine(
+          LineOptions(
+            geometry: geometry,
+            lineColor: DiscoverMapLineStyle.mutedCasing,
+            lineWidth: DiscoverMapLineStyle.mutedCasingWidth,
+            lineOpacity: muteOp,
+            lineJoin: 'round',
+          ),
+          data,
         ),
-        data,
-      );
+        opacity: muteOp,
+      ));
     }
-    await c.addLine(
+    if (skipCore) return out;
+    final coreOp = (active
+            ? DiscoverMapLineStyle.activeOpacity
+            : DiscoverMapLineStyle.inactiveOpacity) *
+        mul;
+    final core = await c.addLine(
       LineOptions(
         geometry: geometry,
         lineColor: lineColor,
         lineWidth: active
             ? DiscoverMapLineStyle.activeWidth
             : DiscoverMapLineStyle.inactiveWidth,
-        lineOpacity: active
-            ? DiscoverMapLineStyle.activeOpacity
-            : DiscoverMapLineStyle.inactiveOpacity,
+        lineOpacity: coreOp,
         lineJoin: 'round',
       ),
       data,
     );
-  }
-
-  /// Ziel-Vorschlag ~¼ der Ideendistanz NE vom Pin (A→B, editierbar).
-  GeoPoint _suggestedEndNear(LatLng center, double distanceKm) {
-    final legKm = (distanceKm * 0.25).clamp(3.0, 12.0);
-    final dLat = legKm / 111.0;
-    final cosLat =
-        math.cos(center.latitude * math.pi / 180).abs().clamp(0.2, 1.0);
-    final dLng = legKm / (111.0 * cosLat);
-    return GeoPoint(
-      center.latitude + dLat * 0.75,
-      center.longitude + dLng * 0.75,
-    );
+    out.add((line: core, opacity: coreOp));
+    if (grab) {
+      final halo = await c.addLine(
+        LineOptions(
+          geometry: geometry,
+          lineColor: DiscoverMapLineStyle.planGrabHalo,
+          lineWidth: DiscoverMapLineStyle.planGrabHaloWidth,
+          lineOpacity: DiscoverMapLineStyle.planGrabHaloOpacity,
+          lineJoin: 'round',
+          draggable: false,
+        ),
+        data,
+      );
+      _planGrabGeom[halo.id] = [
+        for (final p in geometry) LatLng(p.latitude, p.longitude),
+      ];
+      _planGrabLines.add(halo);
+    }
+    return out;
   }
 
   /// Hof-/Deep-Link: Loop-ID merken, Provider erst löschen wenn die Tour da ist.
@@ -4381,7 +7019,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return null;
   }
 
-  /// Primär-CTA für Pin-Ideen: erst Live-Runde, sonst A→B mit Ziel-Vorschlag.
+  /// Primär-CTA für Pin-Ideen: vorhandener Track, sonst A→B zum Pin.
+  /// Keine geometrische Runde und kein Ziel irgendwo im Feld.
   Future<void> _computeIdeaRoute(_RouteSuggestion tour) async {
     setState(() {
       _loading = true;
@@ -4392,47 +7031,86 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _label = tour.name;
     });
     try {
-      final routed = await _geometryForTour(tour);
-      if (!mounted) return;
+      final cached = _routedLoopCache[tour.id];
+      final cacheOk = cached != null &&
+          isUsableMapTrack([
+            for (final p in cached) [p.lng, p.lat]
+          ]);
+      final useExisting = tour.hasUsableTrack || cacheOk;
+      if (useExisting) {
+        final routed = await _geometryForTour(tour);
+        if (!mounted) return;
+        if (!routed.demo && routed.points.length >= 2) {
+          final preview = RouteResult(
+            coordinates: routed.points,
+            distanceM: tour.distanceKm * 1000,
+            durationS: tour.durationMin * 60.0,
+            engine: 'tour-routed',
+          );
+          setState(() {
+            _computed = preview;
+            _ideaPin = null;
+            _start = routed.points.first;
+            _end = routed.points.last;
+            _destinationTrail = null;
+            _vias.clear();
+            _surface = _Surface.plan;
+            _shellMode = DiscoverShellMode.navigate;
+            _detailId = null;
+            _pick = _PickMode.none;
+            _startAddrCtrl.text = _l10n.discoverOnMapPlace;
+            _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+            _setStatus(_l10n.discoverLiveRouteReady(
+                (preview.distanceM / 1000).toStringAsFixed(1)));
+            _loading = false;
+          });
+          await _drawRoute(preview);
+          await _syncMarkers();
+          unawaited(_reversePlanFieldLabels());
+          await _refreshElevation(preview);
+          return;
+        }
+      }
 
-      if (!routed.demo && routed.points.length >= 2) {
-        final preview = RouteResult(
-          coordinates: routed.points,
-          distanceM: tour.distanceKm * 1000,
-          durationS: tour.durationMin * 60.0,
-          engine: 'tour-routed',
-        );
+      final pin = GeoPoint(tour.center.latitude, tour.center.longitude);
+      final ab = pinOnlyAbEndpoints(
+        pinLat: pin.lat,
+        pinLng: pin.lng,
+        startLat: _start?.lat,
+        startLng: _start?.lng,
+        userLat: _userPos?.lat,
+        userLng: _userPos?.lng,
+        preferGps: true,
+      );
+      if (ab == null) {
         setState(() {
-          _computed = preview;
-          _ideaPin = null;
-          _start = routed.points.first;
-          _end = routed.points.last;
+          _start = pin;
+          _end = null;
+          _destinationTrail = null;
           _vias.clear();
+          _computed = null;
+          _tourLayer = null;
+          _approach = null;
+          _ideaPin = tour.center;
           _surface = _Surface.plan;
           _shellMode = DiscoverShellMode.navigate;
-          // Verlässt Detail (falls offen), sonst zeigt „Zurück" später eine
-          // Tour, die gar nicht mehr gemeint war.
           _detailId = null;
-          _pick = _PickMode.none;
-          _startAddrCtrl.text =
-              '${_start!.lat.toStringAsFixed(4)}, ${_start!.lng.toStringAsFixed(4)}';
-          _endAddrCtrl.text =
-              '${_end!.lat.toStringAsFixed(4)}, ${_end!.lng.toStringAsFixed(4)}';
-          _setStatus(_l10n.discoverLiveRouteReady(
-              (preview.distanceM / 1000).toStringAsFixed(1)));
+          _pick = _PickMode.end;
+          _startAddrCtrl.text = _l10n.discoverPoiNamed(tour.name);
+          _endAddrCtrl.text = _l10n.discoverSuggestEnd;
+          _setStatus(_l10n.discoverIdeaStartSet);
           _loading = false;
         });
-        await _drawRoute(preview);
+        await _drawAll();
         await _syncMarkers();
-        await _refreshElevation(preview);
         return;
       }
 
-      final start = GeoPoint(tour.center.latitude, tour.center.longitude);
-      final end = _suggestedEndNear(tour.center, tour.distanceKm);
+      final fromGps = _userPos != null;
       setState(() {
-        _start = start;
-        _end = end;
+        _start = GeoPoint(ab.startLat, ab.startLng);
+        _end = pin;
+        _destinationTrail = null;
         _vias.clear();
         _computed = null;
         _tourLayer = null;
@@ -4440,21 +7118,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _ideaPin = tour.center;
         _surface = _Surface.plan;
         _shellMode = DiscoverShellMode.navigate;
-        // Verlässt Detail (falls offen), sonst zeigt „Zurück" später eine
-        // Tour, die gar nicht mehr gemeint war.
         _detailId = null;
         _pick = _PickMode.none;
-        _startAddrCtrl.text = _l10n.discoverPoiNamed(tour.name);
-        _endAddrCtrl.text = _l10n.discoverSuggestEnd;
+        _startAddrCtrl.text =
+            fromGps ? _l10n.discoverMyPosition : _l10n.discoverOnMapPlace;
+        _endAddrCtrl.text = _l10n.discoverPoiNamed(tour.name);
         _setStatus(_l10n.discoverNotLoopAb);
         _loading = false;
       });
       await _drawAll();
       await _syncMarkers();
+      unawaited(_reversePlanFieldLabels());
       await _calcAb();
       if (mounted && _computed != null) {
         setState(() {
-          _setStatus(_l10n.discoverApproxAb);
+          _setStatus(_l10n.discoverLiveRouteReady(
+              (_computed!.distanceM / 1000).toStringAsFixed(1)));
           _ideaPin = null;
         });
         await _syncMarkers();
@@ -4467,8 +7146,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _setStatus(_l10n.discoverRoutingFailedRetry);
           _surface = _Surface.plan;
           _shellMode = DiscoverShellMode.navigate;
-          // Verlässt Detail (falls offen), sonst zeigt „Zurück" später eine
-          // Tour, die gar nicht mehr gemeint war.
           _detailId = null;
           _pick = _PickMode.end;
         });
@@ -4498,6 +7175,24 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   RoutingProfile get _abCosting =>
       _navPolicy.isGravity ? RoutingProfile.driving : _profile;
 
+  void _maybeWarmLiveRouting(GeoPoint? near) {
+    if (near == null) return;
+    if (!shouldWarmLiveRouting(
+      hasStart: _start != null,
+      hasEnd: _end != null,
+    )) {
+      return;
+    }
+    final cell = liveRoutingWarmupCell(
+      profile: _abCosting.apiId,
+      lat: near.lat,
+      lng: near.lng,
+    );
+    if (_liveWarmupCell == cell) return;
+    _liveWarmupCell = cell;
+    unawaited(_routes.warmupLiveRouting(near: near, profile: _abCosting));
+  }
+
   bool _trailFitsGarage(OsmTrailSegment trail) => trailFitsBike(
         bike: _garageCategory ?? BikeCategory.urban,
         scale: trail.difficulty,
@@ -4519,18 +7214,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
       );
     _bikeOverlayOn = _showTrailsLayer || _showBikeWaysLayer;
+    _showTrailNetwork = _bikeOverlayOn;
   }
 
   Future<void> _refreshExploreOverlay() async {
     _applyExploreOverlayLayers();
     final c = _map;
     if (c != null && _bikeOverlayAttached) {
-      await applyBikeOverlayVisibility(
-        c,
-        family: _overlayFamily,
-        visible: _bikeOverlayOn,
-        extraOn: _bikeOverlayExtra,
-      );
+      await _syncBikeOverlayVisibility();
     }
     unawaited(_refreshSGradeLive());
   }
@@ -4549,7 +7240,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _applyHillshadeNow() async {
     final c = _map;
     if (c == null || !_styleReady) return;
-    if (!styleUsesCatalogHillshade(_mapStyle)) return;
     await setHillshadeVisible(c, _showHillshade);
   }
 
@@ -4560,6 +7250,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final lng = cam?.target.longitude ?? _mapCenter.lng;
     final lat = cam?.target.latitude ?? _mapCenter.lat;
     final zoom = cam?.zoom ?? (_hasRealOrigin ? 12.0 : 5.5);
+    _applyExploreOverlayLayers();
     final data = await resolveBikeOverlayData(
       lng: lng,
       lat: lat,
@@ -4568,13 +7259,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (!mounted) return;
     final key = data?.toString();
     if (key != null && key == _bikeOverlayKey && _bikeOverlayAttached) {
-      await applyBikeOverlayVisibility(
-        c,
-        family: _overlayFamily,
-        visible: _bikeOverlayOn,
-        extraOn: _bikeOverlayExtra,
-      );
+      await _syncBikeOverlayVisibility();
       unawaited(_refreshSGradeLive());
+      unawaited(raisePendingAbLayer(c));
       return;
     }
     if (_bikeOverlayAttached) {
@@ -4595,15 +7282,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         sGradeOnly: false,
       );
     } else if (mounted) {
-      await applyBikeOverlayVisibility(
-        c,
-        family: _overlayFamily,
-        visible: _bikeOverlayOn,
-        extraOn: _bikeOverlayExtra,
-      );
+      await _syncBikeOverlayVisibility();
     }
     if (mounted) setState(() => _bikeOverlayAttached = true);
+    unawaited(_syncBikeOverlayVisibility());
     unawaited(_refreshSGradeLive());
+    unawaited(raisePendingAbLayer(c));
   }
 
   Future<void> _refreshSGradeLive() async {
@@ -4644,9 +7328,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final c = _map;
     if (c == null || !_styleReady) return;
     final gen = ++_drawGen;
+    // Kurze Pause: mehrere _drawAll in Folge (Katalog + Overlay + Zoom)
+    // räumen die Linien nicht mehr nacheinander leer.
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    if (!mounted || gen != _drawGen) return;
     try {
       await c.clearLines();
       if (gen != _drawGen) return;
+      _planRibbonLines.clear();
+      _planGrabGeom.clear();
+      _planGrabLines.clear();
+      final keepDim = _planDragAlongLabel != null;
+      if (!keepDim) _planRibbonDimmed = false;
+      var ribbonSlices = <({String kind, List<List<double>> coords})>[];
       if (_heatmapConsent && _showHeatLayer) {
         try {
           final rides =
@@ -4823,7 +7517,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         if (asel != bsel) return asel.compareTo(bsel);
         return 0;
       });
-      if (_showToursLayer) {
+      final hideTourRibbons = _planningAb;
+      if (_showToursLayer && !hideTourRibbons) {
         for (final tour in trackTours) {
           if (gen != _drawGen) return;
           final cached = _routedLoopCache[tour.id];
@@ -4859,7 +7554,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
       }
       // Sichtbare Pins ohne Track → Background-Routing (ehrlicher Loading-Status).
-      unawaited(_warmVisibleMapTourGeometries(visible));
+      // Nicht während A–B: Pentagon-Vias landen im Feld und die alte Tour
+      // bleibt als „halbe Route“ sichtbar.
+      if (!hideTourRibbons) {
+        unawaited(_warmVisibleMapTourGeometries(visible));
+      }
       if (_approach != null && _approach!.coordinates.length >= 2) {
         await _addKomootLine(
           c,
@@ -4870,6 +7569,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (_tourLayer != null &&
           !_hofChoice &&
+          !hideTourRibbons &&
           shouldPaintDiscoverRibbon([
             for (final p in _tourLayer!.coordinates) [p.lng, p.lat]
           ])) {
@@ -4891,17 +7591,41 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           lineColor: '#FF6A00',
         );
       }
+      final fromHint = _start ?? _userPos;
+      if (!keepDim) {
+        await syncPendingAbOverlay(
+          c,
+          line: shouldPaintPendingAbHint(
+            hasFrom: fromHint != null,
+            hasEnd: _end != null,
+            hasLiveLine: _hasLivePlanLine,
+          )
+              ? [
+                  LatLng(fromHint!.lat, fromHint.lng),
+                  LatLng(_end!.lat, _end!.lng),
+                ]
+              : null,
+        );
+      }
       // Compass-/Heading-A→B nicht als mintgrüne Tour-Leine auf Discover.
       // Navigieren darf die geplante Linie zeigen; HUD sowieso.
-      if (_computed != null && _computed!.coordinates.length >= 2) {
+      // Tour-Preview-Linien bleiben weg, sobald ein Ziel-Pin die Story ist.
+      if (_hasLivePlanLine) {
         final eng = _computed!.engine ?? '';
         final approx = eng.contains('demo') ||
             eng.contains('fallback') ||
             eng.contains('approx');
-        final line =
-            _computed!.coordinates.map((p) => LatLng(p.lat, p.lng)).toList();
-        final computedTrack = [
-          for (final p in _computed!.coordinates) [p.lng, p.lat]
+        final computedTrack = joinPlanLineToPins(
+          lineLngLat: [
+            for (final p in _computed!.coordinates) [p.lng, p.lat]
+          ],
+          startLat: _start?.lat,
+          startLng: _start?.lng,
+          endLat: _end?.lat,
+          endLng: _end?.lng,
+        );
+        final line = [
+          for (final p in computedTrack) LatLng(p[1], p[0]),
         ];
         if (shouldPaintActiveComputedRibbon(
           trackLngLat: computedTrack,
@@ -4923,17 +7647,96 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       routed: true,
                     )
                   : DiscoverMapLineStyle.selectedRouted);
-          await _addKomootLine(
-            c,
-            line,
-            active: true,
-            lineColor: activeColor,
-            data: {
-              'kind': 'active',
-              'approx': approx,
-              if (_label != null) 'label': _label,
-            },
+          final canGrab = planRibbonAllowsGrab(
+            editorActive: _planEditorActive,
+            hasLiveStreetLine: true,
+            approx: approx,
           );
+          final canTint = canGrab && !_routeLineStale;
+          final packRuns = coverageSplitLineByBbox(
+            lineLngLat: computedTrack,
+            bbox: _offlinePackBbox,
+            routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+          );
+          for (final run in packRuns) {
+            final geom = [
+              for (final p in run.coords) LatLng(p[1], p[0]),
+            ];
+            if (geom.length < 2) continue;
+            if (run.outside) {
+              // Sage, no orange glow / grab — graph cannot reshape this.
+              // GeoJSON dash sits on the muted casing (annotation has no dash).
+              final ribbon = await _addKomootLine(
+                c,
+                geom,
+                active: false,
+                lineColor: DiscoverMapLineStyle.packOutside,
+                skipCore: true,
+                opacityMul: _routeLineStale ? 0.42 : 0.90,
+                grab: false,
+                data: {
+                  'kind': 'active-outside',
+                  'approx': approx,
+                  if (_label != null) 'label': _label,
+                },
+              );
+              if (gen != _drawGen) return;
+              _planRibbonLines.addAll(ribbon);
+              ribbonSlices.add((kind: kPlanPackOutKind, coords: run.coords));
+              continue;
+            }
+            final ribbon = await _addKomootLine(
+              c,
+              geom,
+              active: true,
+              lineColor: activeColor,
+              opacityMul: _routeLineStale ? 0.48 : 1,
+              grab: canGrab,
+              data: {
+                'kind': 'active',
+                'approx': approx,
+                if (_label != null) 'label': _label,
+              },
+            );
+            if (gen != _drawGen) return;
+            _planRibbonLines.addAll(ribbon);
+          }
+          if (canTint && _planSurfaceBands.isNotEmpty) {
+            for (final s in planSurfaceLineSlices(
+              lineLngLat: computedTrack,
+              bands: _planSurfaceBands,
+            )) {
+              for (final coords in coverageLinePartsInside(
+                lineLngLat: s.coords,
+                bbox: _offlinePackBbox,
+                routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+              )) {
+                if (coords.length < 2) continue;
+                ribbonSlices.add((kind: s.kind.name, coords: coords));
+                _planLegendKinds.add(s.kind.name);
+              }
+            }
+          }
+          if (canTint && _planElevSamples.length >= 2) {
+            for (final slice in planSteepLineSlices(
+              lineLngLat: computedTrack,
+              elevM: _planElevSamples,
+              distKm: _planElevKm.isEmpty ? null : _planElevKm,
+            )) {
+              for (final coords in coverageLinePartsInside(
+                lineLngLat: slice,
+                bbox: _offlinePackBbox,
+                routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+              )) {
+                if (coords.length < 2) continue;
+                ribbonSlices.add((kind: 'steep', coords: coords));
+                _planLegendKinds.add('steep');
+              }
+            }
+          }
           if (gen != _drawGen) return;
           // Nicht während Detail: [_openDetail] hat die Kamera bewusst auf die
           // gerade betrachtete Tour zentriert. Läuft [_drawAll] währenddessen
@@ -4977,7 +7780,34 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
       }
       if (gen != _drawGen) return;
-      await _syncMarkers();
+      _planRibbonSlices = ribbonSlices;
+      if (ribbonSlices.isNotEmpty) {
+        final next = {
+          for (final s in ribbonSlices)
+            if (s.kind != kPlanPackOutKind) s.kind,
+        };
+        if (_planLegendKinds.length != next.length ||
+            !_planLegendKinds.containsAll(next)) {
+          _planLegendKinds
+            ..clear()
+            ..addAll(next);
+          if (mounted) setState(() {});
+        }
+      } else if (_surface != _Surface.plan && _planLegendKinds.isNotEmpty) {
+        _planLegendKinds.clear();
+        if (mounted) setState(() {});
+      }
+      if (keepDim) {
+        _planRibbonDimmed = false;
+        await _setPlanRibbonDim(true);
+      } else {
+        await syncPlanRibbonOverlay(c, slices: ribbonSlices);
+      }
+      if (gen != _drawGen) return;
+      await _syncMarkers(coalesce: true);
+      if (gen != _drawGen) return;
+      await _syncOfflineCoverageOverlay();
+      await raisePendingAbLayer(c, force: true);
     } catch (_) {}
   }
 
@@ -4993,17 +7823,213 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _ensurePinImages(MapLibreMapController c) async {
     if (_pinImagesReady) return;
     try {
-      final green = await buildMapPinPng(fill: const Color(0xFF00C853));
-      final orange = await buildMapPinPng(fill: AppColors.accent);
-      final blue = await buildMapPinPng(fill: const Color(0xFF29B6F6));
-      final poi = await buildMapPinPng(fill: const Color(0xFF1B5E20));
+      final green = await buildMapMarkerPng(
+        fill: const Color(0xFF2E7D32),
+        kind: MapPinKind.drop,
+      );
+      final orange = await buildMapMarkerPng(
+        fill: AppColors.accent,
+        kind: MapPinKind.drop,
+      );
+      final blue = await buildMapMarkerPng(
+        fill: const Color(0xFF29B6F6),
+        kind: MapPinKind.drop,
+      );
+      final poi = await loadPoiPinPng(MapPoiKind.place);
+      final meet = await buildMapMarkerPng(
+        fill: AppColors.accent,
+        kind: MapPinKind.meet,
+      );
+      final stimme = await buildMapMarkerPng(
+        fill: const Color(0xFF6D4C41),
+        kind: MapPinKind.stimme,
+      );
+      final riderLive = await buildRiderMapPng(live: true);
+      final riderStale = await buildRiderMapPng(live: false);
       await c.addImage('aether-pin', green);
       await c.addImage('aether-pin-b', orange);
       await c.addImage('aether-pin-idea', blue);
       await c.addImage('aether-poi', poi);
+      for (final kind in MapPoiKind.values) {
+        if (kind == MapPoiKind.place) continue;
+        await c.addImage(poiPinImageId(kind), await loadPoiPinPng(kind));
+      }
+      await c.addImage(kRiderNavImageId, riderLive);
+      await c.addImage(kRiderTourLiveImageId, riderLive);
+      await c.addImage(kRiderTourStaleImageId, riderStale);
+      await c.addImage(kRiderFlowImageId, riderLive);
+      await c.addImage('aether-pin-meet', meet);
+      await c.addImage('aether-pin-stimme', stimme);
+      await c.addImage('aether-pin-flow', riderLive);
+      const tourIdleFill = Color(0xFF2A2E32);
+      await c.addImage(
+        'aether-pin-tour',
+        await buildMapMarkerPng(fill: tourIdleFill, kind: MapPinKind.tour),
+      );
+      await c.addImage(
+        'aether-pin-tour-on',
+        await buildMapMarkerPng(fill: AppColors.accent, kind: MapPinKind.tour),
+      );
+      for (final g in MapPinGlyph.values) {
+        if (g == MapPinGlyph.mark) continue;
+        await c.addImage(
+          'aether-pin-tour-${g.name}',
+          await buildMapMarkerPng(
+            fill: tourIdleFill,
+            kind: MapPinKind.tour,
+            glyph: g,
+          ),
+        );
+        await c.addImage(
+          'aether-pin-tour-on-${g.name}',
+          await buildMapMarkerPng(
+            fill: AppColors.accent,
+            kind: MapPinKind.tour,
+            glyph: g,
+          ),
+        );
+      }
+      final chevron = await buildRouteChevronPng();
+      await c.addImage('aether-chevron', chevron);
+      final startPin = await buildMapMarkerPng(
+        fill: const Color(0xFF2E7D32),
+        kind: MapPinKind.start,
+      );
+      final startOutPin = await buildMapMarkerPng(
+        fill: AppColors.sage,
+        kind: MapPinKind.start,
+      );
+      final finishPin = await buildMapMarkerPng(
+        fill: AppColors.accent,
+        kind: MapPinKind.finish,
+      );
+      final finishOutPin = await buildMapMarkerPng(
+        fill: AppColors.sage,
+        kind: MapPinKind.finish,
+      );
+      final viaPin = await loadRoutePinPng(MapPinKind.via);
+      final viaOutPin = await loadRoutePinPng(MapPinKind.via, outside: true);
+      final sdfRing = await buildMapSdfDiscPng(ring: true);
+      await c.addImage('aether-pin-start', startPin);
+      await c.addImage('aether-pin-start-out', startOutPin);
+      await c.addImage('aether-pin-finish', finishPin);
+      await c.addImage('aether-pin-finish-out', finishOutPin);
+      await c.addImage('aether-pin-via', viaPin);
+      await c.addImage('aether-pin-via-out', viaOutPin);
+      await c.addImage('aether-pin-halo', sdfRing, true);
       _pinImagesReady = true;
     } catch (_) {
       // Style without custom images — text-only symbols still work.
+    }
+  }
+
+  String? _tourPinOf(_RouteSuggestion tour, {required bool selected}) {
+    if (!_pinImagesReady) return null;
+    return tourPinImageId(
+      TourFilters.sportOf(tour.categories),
+      selected: selected,
+    );
+  }
+
+  Future<void> _addTourBrowsePin(
+    MapLibreMapController c, {
+    required _RouteSuggestion tour,
+    required LatLng at,
+    required bool selected,
+    required double iconSize,
+  }) async {
+    final text = TourFilters.browseTourPinText(
+      durationMin: tour.durationMin,
+      selected: selected,
+      zoom: _mapZoom,
+      name: tour.name,
+    );
+    final sym = await c.addSymbol(
+      SymbolOptions(
+        fontNames: _symbolFonts,
+        geometry: at,
+        iconImage: _tourPinOf(tour, selected: selected),
+        iconSize: iconSize,
+        iconAnchor: 'bottom',
+        textField: text,
+        textSize: selected ? 12 : 10,
+        textColor: '#FFFFFF',
+        textHaloColor: selected ? '#BF360C' : '#1A120C',
+        textHaloWidth: selected ? 1.4 : 1.1,
+        textOffset: Offset(0, selected ? 1.52 : 1.42),
+        textMaxWidth: selected ? 10 : 6,
+      ),
+    );
+    _tourBySymbolId[sym.id] = tour;
+    _tourSymbols.add(sym);
+  }
+
+  String _coveragePlaceLabel(MapPlace place) {
+    final named = place.source == MapPlaceSource.stimme ||
+        place.source == MapPlaceSource.meet;
+    final plateKind = coverageMapPoiKind(place);
+    var label = named
+        ? (place.name.length > 14
+            ? '${place.name.substring(0, 13)}…'
+            : place.name)
+        : '';
+    if (plateKind != null && _mapZoom >= 12 && place.name.isNotEmpty) {
+      label = place.name.length > 14
+          ? '${place.name.substring(0, 13)}…'
+          : place.name;
+    }
+    return label;
+  }
+
+  Future<void> _relabelBrowsePins() async {
+    final c = _map;
+    if (c == null || !_styleReady) return;
+    for (final e in _poiBySymbolId.entries) {
+      final poi = e.value;
+      final index = _poiDrawIndexById[poi.id];
+      final sym = _poiSymbolByPoiId[poi.id];
+      if (index == null || sym == null) continue;
+      try {
+        await c.updateSymbol(
+          sym,
+          SymbolOptions(
+            textField: poiPinLabel(
+              index: index,
+              title: poi.title,
+              zoom: _mapZoom,
+            ),
+          ),
+        );
+      } catch (_) {}
+    }
+    for (final sym in _tourSymbols) {
+      final tour = _tourBySymbolId[sym.id];
+      if (tour == null) continue;
+      final selected = tour.id == _selectedTourId;
+      try {
+        await c.updateSymbol(
+          sym,
+          SymbolOptions(
+            textField: TourFilters.browseTourPinText(
+              durationMin: tour.durationMin,
+              selected: selected,
+              zoom: _mapZoom,
+              name: tour.name,
+            ),
+            textSize: selected ? 12 : 10,
+          ),
+        );
+      } catch (_) {}
+    }
+    for (final sym in _placeSymbols) {
+      final place = _placeBySymbolId[sym.id];
+      if (place == null) continue;
+      try {
+        await c.updateSymbol(
+          sym,
+          SymbolOptions(textField: _coveragePlaceLabel(place)),
+        );
+      } catch (_) {}
     }
   }
 
@@ -5040,6 +8066,53 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return LatLng(track.last[1], track.last[0]);
   }
 
+  void _onPlanElevScrub(double t) {
+    setState(() => _planElevScrubT = t);
+    _movePlanElevCursor(t);
+  }
+
+  void _onPlanElevTap(double t) {
+    if (t <= 0.02 || t >= 0.98) return;
+    final line = _planComputedLineLngLat();
+    if (line == null || line.length < 2) return;
+    final ll = _pointAlongTrack(line, t);
+    _insertPlanViaAlong(GeoPoint(ll.latitude, ll.longitude));
+  }
+
+  void _movePlanElevCursor(double t) {
+    final c = _map;
+    final line = _computed?.coordinates;
+    if (c == null || line == null || line.length < 2) return;
+    final ll = _pointAlongTrack(
+      [
+        for (final p in line) [p.lng, p.lat]
+      ],
+      t,
+    );
+    unawaited(() async {
+      final sym = _planElevSymbol;
+      if (sym == null) {
+        unawaited(_syncMarkers(coalesce: true));
+        return;
+      }
+      try {
+        await c.updateSymbol(sym, SymbolOptions(geometry: ll));
+      } catch (_) {
+        unawaited(_syncMarkers(coalesce: true));
+      }
+    }());
+  }
+
+  double _bearingDeg(LatLng from, LatLng to) {
+    final lat1 = from.latitude * math.pi / 180;
+    final lat2 = to.latitude * math.pi / 180;
+    final dLng = (to.longitude - from.longitude) * math.pi / 180;
+    final y = math.sin(dLng) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
+
   /// OpenFreeMap/Liberty-Fontstack: Die Mapbox-Default-Fonts („Open Sans
   /// Semibold") existieren dort nicht — ein fehlender Fontstack lässt
   /// MapLibre das GANZE Symbol (inkl. Icon) verwerfen. Deshalb waren
@@ -5070,9 +8143,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  Future<void> _syncMarkers() async {
+  Future<void> _syncMarkers({bool coalesce = false}) async {
     final c = _map;
     if (c == null || !_styleReady) return;
+    final gen = ++_syncMarkersGen;
+    if (coalesce) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (!mounted || gen != _syncMarkersGen) return;
+    }
     try {
       await _ensureSymbolTextFont(c);
       await _ensurePinImages(c);
@@ -5091,18 +8169,40 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       try {
         await c.clearSymbols();
       } catch (_) {}
+      if (gen != _syncMarkersGen) return;
+      _routeFlowSymbol = null;
+      _meetPulseSymbols.clear();
+      _meetHaloSymbols.clear();
       _navPuck.forgetSymbol();
       _tfSymbols = [];
       _tfBySymbolId.clear();
       _placeBySymbolId.clear();
+      _tourBySymbolId.clear();
+      _poiBySymbolId.clear();
+      _poiSymbolByPoiId.clear();
+      _poiDrawIndexById.clear();
+      _placeSymbols.clear();
+      _tourSymbols.clear();
+      _planStartSymbol = null;
+      _planEndSymbol = null;
+      _planEndGlowSymbol = null;
+      _planViaSymbols.clear();
+      _planBendSymbols.clear();
+      _planBendDiscSymbols.clear();
+      _planChevronSymbols.clear();
+      _planTickSymbols.clear();
+      _planElevSymbol = null;
       const pin = 'aether-pin';
-      if (_ideaPin != null) {
+      final planDrag =
+          _shellMode == DiscoverShellMode.navigate || _surface == _Surface.plan;
+      if (_ideaPin != null && !_planningAb) {
         await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
             geometry: _ideaPin!,
             iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-            iconSize: 1.2,
+            iconSize: 0.88,
+            iconAnchor: 'bottom',
             textField: 'Idee',
             textSize: 12,
             textOffset: const Offset(0, 1.3),
@@ -5110,54 +8210,281 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         );
       }
       if (_start != null && !_startOverlapsUser()) {
-        await c.addSymbol(
+        final startOut = coverageRiderOutside(
+          lng: _start!.lng,
+          lat: _start!.lat,
+          bbox: _offlinePackBbox,
+          routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+        );
+        _planStartSymbol = await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
             geometry: LatLng(_start!.lat, _start!.lng),
-            iconImage: _pinImagesReady ? pin : null,
-            iconSize: 1.35,
-            textField: 'A',
-            textSize: 14,
-            textColor: '#FFFFFF',
-            textHaloColor: '#1B5E20',
-            textHaloWidth: 1.4,
-            textOffset: const Offset(0, 1.35),
+            iconImage: _pinImagesReady
+                ? (startOut ? 'aether-pin-start-out' : 'aether-pin-start')
+                : null,
+            iconSize: routeSpriteIconSize(selected: false),
+            iconAnchor: 'bottom',
+            textField: '',
+            textSize: 12,
+            draggable: planDrag,
           ),
         );
       }
       if (_end != null) {
-        await c.addSymbol(
+        final destBusy = _planningAb || _loading || _destShouldPulse;
+        final endOut = coverageRiderOutside(
+          lng: _end!.lng,
+          lat: _end!.lat,
+          bbox: _offlinePackBbox,
+          routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+        );
+        if (destBusy && _pinImagesReady) {
+          _planEndGlowSymbol = await c.addSymbol(
+            SymbolOptions(
+              geometry: LatLng(_end!.lat, _end!.lng),
+              iconImage: 'aether-pin-halo',
+              iconSize: mapPinSdfIconSize(0.88),
+              iconOpacity: 0.5,
+              iconAnchor: 'center',
+              iconColor: endOut ? kPlanViaOutStrokeHex : kPlanHaloTintHex,
+            ),
+          );
+        }
+        _planEndSymbol = await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
             geometry: LatLng(_end!.lat, _end!.lng),
-            iconImage: _pinImagesReady ? 'aether-pin-b' : null,
-            iconSize: 1.35,
-            textField: 'B',
-            textSize: 14,
-            textColor: '#FFFFFF',
-            textHaloColor: '#BF360C',
-            textHaloWidth: 1.4,
-            textOffset: const Offset(0, 1.35),
+            iconImage: _pinImagesReady
+                ? (endOut ? 'aether-pin-finish-out' : 'aether-pin-finish')
+                : null,
+            iconSize: destBusy
+                ? routeSpriteIconSize(selected: true)
+                : routeSpriteIconSize(selected: false),
+            iconAnchor: 'bottom',
+            textField:
+                (_planEditorActive || destBusy) ? _l10n.navigateEndLabel : '',
+            textSize: 11,
+            textColor: endOut ? '#5E6F58' : '#E65100',
+            textHaloColor: '#FFFFFF',
+            textHaloWidth: 1.2,
+            textOffset: const Offset(0, 1.85),
+            draggable: planDrag,
           ),
         );
       }
       for (var i = 0; i < _vias.length; i++) {
         final v = _vias[i];
-        final raw = v.trimmedLabel ?? '${i + 1}';
-        final pinText = raw.length > 14 ? '${raw.substring(0, 13)}…' : raw;
-        await c.addSymbol(
+        final pulse = _planPulseViaIndex == i;
+        final outsidePack = coverageRiderOutside(
+          lng: v.lng,
+          lat: v.lat,
+          bbox: _offlinePackBbox,
+          routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+        );
+        final caption = planViaMapCaption(
+          v.trimmedLabel,
+          placeholders: [
+            _l10n.discoverOnMapPlace,
+            _l10n.discoverViaN(i + 1),
+          ],
+        );
+        _planViaSymbols.add(
+          await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: LatLng(v.lat, v.lng),
+              iconImage: _pinImagesReady
+                  ? (outsidePack ? 'aether-pin-via-out' : 'aether-pin-via')
+                  : null,
+              iconSize: viaDiscIconSize(pulse: pulse),
+              iconAnchor: 'center',
+              textField: '${i + 1}',
+              textSize: 12,
+              textColor: '#1F1F1F',
+              textHaloColor: '#FFFFFF',
+              textHaloWidth: 1.1,
+              textOffset: const Offset(0, 0),
+              draggable: planDrag,
+            ),
+          ),
+        );
+        if (caption != null) {
+          await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: LatLng(v.lat, v.lng),
+              textField: caption,
+              textSize: 10,
+              textColor: '#1A120C',
+              textHaloColor: '#F4F1EC',
+              textHaloWidth: 1.6,
+              textOffset: const Offset(0, 1.45),
+            ),
+          );
+        }
+      }
+      if (planDrag && _hasLivePlanLine) {
+        final liveLine = [
+          for (final p in _computed!.coordinates) [p.lng, p.lat],
+        ];
+        final showHandles = planReshapeHandlesReady(
+          hasVia: _vias.isNotEmpty || _planLineTouched,
+          coachVisible: _planLineCoach,
+        );
+        final handles = showHandles
+            ? planReshapeHandles(
+                lineLngLat: liveLine,
+                vias: [
+                  for (final v in _vias) (lat: v.lat, lng: v.lng),
+                ],
+                zoom: _mapZoom,
+                avoidAlongM: [
+                  if (_planElevScrubT != null)
+                    routeLengthM(liveLine) * _planElevScrubT!,
+                ],
+              )
+            : const <({double lat, double lng, double alongM})>[];
+        final highlightBend = _planBendHighlightUntil != null &&
+            DateTime.now().isBefore(_planBendHighlightUntil!);
+        for (final h in handles) {
+          final handleOut = coverageRiderOutside(
+            lng: h.lng,
+            lat: h.lat,
+            bbox: _offlinePackBbox,
+            routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+          );
+          if (_pinImagesReady) {
+            _planBendDiscSymbols.add(
+              await c.addSymbol(
+                SymbolOptions(
+                  geometry: LatLng(h.lat, h.lng),
+                  iconImage:
+                      handleOut ? 'aether-pin-via-out' : 'aether-pin-via',
+                  iconSize: viaHandleIconSize(),
+                  iconOpacity: planGrabHandleOpacity(
+                    handleOut ? 0.72 : 0.95,
+                    dimmed: _planRibbonDimmed,
+                  ),
+                  iconAnchor: 'center',
+                ),
+              ),
+            );
+          }
+          _planBendSymbols.add(
+            await c.addSymbol(
+              SymbolOptions(
+                geometry: LatLng(h.lat, h.lng),
+                iconImage: _pinImagesReady ? 'aether-pin-halo' : null,
+                iconSize: mapPinSdfIconSize(highlightBend ? 1.12 : 1.02),
+                iconColor: handleOut ? kPlanViaOutStrokeHex : kPlanHaloTintHex,
+                iconOpacity: planGrabHandleOpacity(
+                  highlightBend ? 0.78 : 0.58,
+                  dimmed: _planRibbonDimmed,
+                ),
+                iconAnchor: 'center',
+                iconHaloColor: '#FFFFFF',
+                iconHaloWidth: highlightBend ? 1.8 : 1.2,
+                draggable: true,
+              ),
+            ),
+          );
+        }
+        final hideOrnament = _planRibbonDimmed || _planDragAlongLabel != null;
+        final viaAlong = planPinAlongMeters(
+          lineLngLat: liveLine,
+          pins: [
+            for (final v in _vias) (lat: v.lat, lng: v.lng),
+          ],
+        );
+        final tickAvoid = <double>[
+          ...viaAlong,
+          for (final h in handles) h.alongM,
+          if (_planElevScrubT != null)
+            routeLengthM(liveLine) * _planElevScrubT!,
+        ];
+        final ticks = hideOrnament
+            ? const <({double lat, double lng, String km, double alongM})>[]
+            : planDistanceTicks(
+                lineLngLat: liveLine,
+                zoom: _mapZoom,
+                minZoom: planDistanceTicksMinZoom(routeLengthM(liveLine)),
+                avoidAlongM: tickAvoid,
+              );
+        if (!hideOrnament) {
+          for (final t in ticks) {
+            _planTickSymbols.add(
+              await c.addSymbol(
+                SymbolOptions(
+                  fontNames: _symbolFonts,
+                  geometry: LatLng(t.lat, t.lng),
+                  textField: _l10n.planTickKm(t.km),
+                  textSize: 11,
+                  textColor: '#E65100',
+                  textHaloColor: '#FFFFFF',
+                  textHaloWidth: 1.5,
+                  textOffset: const Offset(0, 0.95),
+                ),
+              ),
+            );
+          }
+          final chevrons = planDirectionChevrons(
+            lineLngLat: liveLine,
+            zoom: _mapZoom,
+            minZoom: planDistanceTicksMinZoom(routeLengthM(liveLine)),
+            avoidAlongM: [
+              ...tickAvoid,
+              for (final t in ticks) t.alongM,
+            ],
+          );
+          if (_pinImagesReady) {
+            for (final ch in chevrons) {
+              _planChevronSymbols.add(
+                await c.addSymbol(
+                  SymbolOptions(
+                    geometry: LatLng(ch.lat, ch.lng),
+                    iconImage: 'aether-chevron',
+                    iconSize: mapChevronIconSize(_mapZoom >= 15 ? 0.42 : 0.32),
+                    iconOpacity: 0.88,
+                    iconRotate: ch.bearingDeg,
+                    iconAnchor: 'center',
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+      if (_planElevScrubT != null &&
+          _computed != null &&
+          _computed!.coordinates.length >= 2 &&
+          _planDragAlongLabel == null &&
+          !_planRibbonDimmed) {
+        final at = _pointAlongTrack(
+          [
+            for (final p in _computed!.coordinates) [p.lng, p.lat]
+          ],
+          _planElevScrubT!,
+        );
+        _planElevSymbol = await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
-            geometry: LatLng(v.lat, v.lng),
-            iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-            iconSize: 0.9,
-            textField: pinText,
+            geometry: at,
+            iconImage: _pinImagesReady ? 'aether-pin-halo' : null,
+            iconSize: mapPinSdfIconSize(0.72),
+            iconAnchor: 'center',
+            iconColor: kPlanHaloTintHex,
+            iconOpacity: 0.95,
+            textField: '',
             textSize: 11,
-            textOffset: const Offset(0, 1.2),
           ),
         );
       }
-      if (_showToursLayer) {
+      if (_showToursLayer && !_planningAb) {
         for (final pinTf in _tfPins.take(12)) {
           if (!shouldDrawTrailforksMapPin()) continue;
           final sym = await c.addSymbol(
@@ -5175,29 +8502,93 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _tfBySymbolId[sym.id] = pinTf;
         }
       }
-      for (final place in _visibleMapPlaces.take(24)) {
-        final label = place.source == MapPlaceSource.stimme
-            ? (place.name.length > 14
-                ? '${place.name.substring(0, 13)}…'
-                : place.name)
-            : '';
+      final visible = _visibleMapPlaces;
+      final meetDraw = [
+        for (final p in visible)
+          if (p.source == MapPlaceSource.meet) p,
+      ];
+      final otherDraw = [
+        for (final p in visible)
+          if (p.source != MapPlaceSource.meet) p,
+      ];
+      final drawPlaces = [
+        ...meetDraw,
+        ...otherDraw.take((24 - meetDraw.length).clamp(0, 24)),
+      ];
+      for (final place in drawPlaces) {
+        final plateKind = coverageMapPoiKind(place);
+        final label = _coveragePlaceLabel(place);
+        final at = LatLng(place.lat, place.lng);
+        if (place.source == MapPlaceSource.meet && _pinImagesReady) {
+          final halo = await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: at,
+              iconImage: 'aether-pin-halo',
+              iconSize: mapPinSdfIconSize(0.78),
+              iconOpacity: 0.55,
+              iconColor: kPlanHaloTintHex,
+            ),
+          );
+          _meetHaloSymbols.add(halo);
+        }
+        final icon = place.source == MapPlaceSource.meet
+            ? 'aether-pin-meet'
+            : place.source == MapPlaceSource.stimme
+                ? 'aether-pin-stimme'
+                : plateKind != null
+                    ? poiPinImageId(plateKind)
+                    : 'aether-pin-idea';
+        final isPlate = plateKind != null;
+        final isDrop = !isPlate &&
+            place.source != MapPlaceSource.meet &&
+            place.source != MapPlaceSource.stimme;
         final sym = await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
-            geometry: LatLng(place.lat, place.lng),
-            iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-            iconSize: place.source == MapPlaceSource.meet ? 1.05 : 0.95,
+            geometry: at,
+            iconImage: _pinImagesReady ? icon : null,
+            iconSize: isPlate
+                ? poiStopIconSize(
+                    selected: _highlightPlaceId == place.id,
+                  )
+                : place.source == MapPlaceSource.meet ||
+                        place.source == MapPlaceSource.stimme
+                    ? routeSpriteIconSize(
+                        selected: _highlightPlaceId == place.id,
+                      )
+                    : 0.7,
+            iconAnchor: isDrop ||
+                    isPlate ||
+                    place.source == MapPlaceSource.meet ||
+                    place.source == MapPlaceSource.stimme
+                ? 'bottom'
+                : 'center',
             textField: label,
-            textSize: 10,
-            textOffset: const Offset(0, 1.2),
+            textSize: 11,
+            textColor: isPlate ? '#1A120C' : '#FFFFFF',
+            textHaloColor: isPlate ? '#F4F1EC' : '#121215',
+            textHaloWidth: isPlate ? 1.6 : 1.2,
+            textOffset: Offset(
+              0,
+              isPlate ||
+                      place.source == MapPlaceSource.meet ||
+                      place.source == MapPlaceSource.stimme
+                  ? 1.85
+                  : 1.25,
+            ),
           ),
         );
+        if (place.source == MapPlaceSource.meet) {
+          _meetPulseSymbols.add(sym);
+        }
         _placeBySymbolId[sym.id] = place;
+        _placeSymbols.add(sym);
       }
       // Nur Touren OHNE zeichbare Polyline als Pin — und nur kurz, während
       // Background-Routing läuft. Fertige Tracks haben bereits eine Line in
       // [_drawAll] (keine blinden T-Pins à la leere Ideen-Punkte).
-      if (_showToursLayer) {
+      if (_showToursLayer && !_planningAb) {
         for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
           final cached = _routedLoopCache[tour.id];
           final hasLine =
@@ -5213,49 +8604,50 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         tour.trackLngLat!.first[0],
                       )
                     : tour.center);
-            await c.addSymbol(
-              SymbolOptions(
-                fontNames: _symbolFonts,
-                geometry: start,
-                iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-                iconSize: 0.62,
-                textField: '',
-                textSize: 10,
-              ),
+            await _addTourBrowsePin(
+              c,
+              tour: tour,
+              at: start,
+              selected: false,
+              iconSize: tourPinIconSize(selected: false),
             );
             continue;
           }
           if (_isPinOnlyIdea(tour) && !_isLoop(tour)) {
-            await c.addSymbol(
-              SymbolOptions(
-                fontNames: _symbolFonts,
-                geometry: tour.center,
-                iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-                iconSize: 0.7,
-                textField: '',
-                textSize: 10,
-              ),
+            await _addTourBrowsePin(
+              c,
+              tour: tour,
+              at: tour.center,
+              selected: false,
+              iconSize: tourPinIconSize(selected: false),
             );
             continue;
           }
-          await c.addSymbol(
-            SymbolOptions(
-              fontNames: _symbolFonts,
-              geometry: tour.center,
-              iconImage: _pinImagesReady ? pin : null,
-              iconSize: 0.62,
-              textField: '',
-              textSize: 10,
-            ),
+          await _addTourBrowsePin(
+            c,
+            tour: tour,
+            at: tour.center,
+            selected: selected,
+            iconSize: tourPinIconSize(selected: selected),
           );
         }
       }
-      if (_showToursLayer) await _syncPoiStopMarkers(c);
+      if (_showToursLayer &&
+          shouldShowDiscoverTourPois(
+            hideRibbons: _planningAb,
+            hasSelectedTour: _selectedTourId != null,
+            computedEngine: _computed?.engine,
+          )) {
+        await _syncPoiStopMarkers(c);
+      }
+      await _ensureRouteFlow(c);
+      if (_meetPulseSymbols.isNotEmpty) _ensurePinAnim();
       await _ensureSymbolTextFont(c);
     } catch (e) {
       debugPrint('syncMarkers: $e');
     } finally {
       await _syncNavPuck();
+      if (_destShouldPulse) unawaited(_applyDestPulseSize());
     }
   }
 
@@ -5264,56 +8656,198 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Symbole wurden vorab via [MapLibreMapController.clearSymbols] entfernt.
   Future<void> _syncPoiStopMarkers(MapLibreMapController c) async {
     final sel = _tourById(_selectedTourId);
-    if (sel == null) return;
+    if (sel == null) {
+      _poiFracsOnMap = const [];
+      return;
+    }
     final track = _routedLoopCache[sel.id] != null
         ? [
             for (final p in _routedLoopCache[sel.id]!) [p.lng, p.lat]
           ]
         : sel.trackLngLat;
-    if (track == null || track.length < 4) return;
-    // Start-Fahne (A wie Komoot) am Anfang des Loops.
+    if (track == null || track.length < 4) {
+      _poiFracsOnMap = const [];
+      return;
+    }
     final startLl = LatLng(track.first[1], track.first[0]);
     debugPrint(
       'PoiMarkers start=$startLl pinsReady=$_pinImagesReady stops=${sel.poiStops.length}',
     );
-    await c.addSymbol(
-      SymbolOptions(
-        fontNames: _symbolFonts,
-        geometry: startLl,
-        iconImage: _pinImagesReady ? 'aether-pin' : null,
-        iconSize: 1.2,
-        textField: TourFilters.browseTourTimeLabel(sel.durationMin),
-        textSize: 12,
-        textColor: '#FFFFFF',
-        textHaloColor: '#1B5E20',
-        textHaloWidth: 1.4,
-        textOffset: const Offset(0, 1.3),
-      ),
-    );
-    if (sel.poiStops.isEmpty || sel.durationMin <= 0) return;
+    // POIs first so start/finish symbols stack above (global overlap is on).
+    final placed = <double>[];
     var i = 0;
-    for (final poi in sel.poiStops.take(8)) {
-      i++;
-      if (poi.atMin <= 0) continue; // Trailhead == Start-Fahne
-      final frac = (poi.atMin / sel.durationMin).clamp(0.02, 0.98);
-      final pos = _pointAlongTrack(track, frac);
-      await c.addSymbol(
+    if (sel.poiStops.isNotEmpty && sel.durationMin > 0) {
+      for (final poi in sel.poiStops) {
+        if (placed.length >= 8) break;
+        i++;
+        if (poi.atMin <= 0) continue; // Trailhead == Start-Fahne
+        final frac = poi.atMin / sel.durationMin;
+        if (!poiFracFitsAlong(frac, placed)) continue;
+        placed.add(frac);
+        final pos = _pointAlongTrack(track, frac);
+        final highlighted = _highlightPoiId == poi.id;
+        _poiDrawIndexById[poi.id] = i;
+        final sym = await c.addSymbol(
+          SymbolOptions(
+            fontNames: _symbolFonts,
+            geometry: pos,
+            iconImage: _pinImagesReady
+                ? poiPinImageId(mapPoiKindFromRaw(poi.kind))
+                : null,
+            iconSize: poiStopIconSize(selected: highlighted),
+            iconAnchor: 'bottom',
+            textField: poiPinLabel(
+              index: i,
+              title: poi.title,
+              zoom: _mapZoom,
+            ),
+            textSize: 11,
+            textColor: '#1A120C',
+            textHaloColor: '#F4F1EC',
+            textHaloWidth: 1.6,
+            textOffset: const Offset(0, 1.85),
+            textMaxWidth: 12,
+          ),
+        );
+        _poiBySymbolId[sym.id] = poi;
+        _poiSymbolByPoiId[poi.id] = sym;
+      }
+    }
+    _poiFracsOnMap = placed;
+    await _addTourBrowsePin(
+      c,
+      tour: sel,
+      at: startLl,
+      selected: true,
+      iconSize: tourPinIconSize(selected: true, atStart: true),
+    );
+    debugPrint('PoiMarkers drawn=$i tour=${sel.id}');
+  }
+
+  void _stopRouteFlow() {
+    _routeFlowTimer?.cancel();
+    _routeFlowTimer = null;
+    _routeFlowSymbol = null;
+    _routeFlowGeom = const [];
+  }
+
+  void _ensurePinAnim() {
+    _routeFlowTimer ??= Timer.periodic(const Duration(milliseconds: 50), (_) {
+      unawaited(_tickPinAnim());
+    });
+  }
+
+  Future<void> _ensureRouteFlow(MapLibreMapController c) async {
+    final sel = _tourById(_selectedTourId);
+    List<LatLng> geom = const [];
+    if (sel != null) {
+      final cached = _routedLoopCache[sel.id];
+      if (cached != null && cached.length >= 4) {
+        geom = [for (final p in cached) LatLng(p.lat, p.lng)];
+      } else if (sel.trackLngLat != null && sel.trackLngLat!.length >= 4) {
+        geom = [
+          for (final p in sel.trackLngLat!) LatLng(p[1], p[0]),
+        ];
+      }
+    }
+    if (geom.length < 4) {
+      _stopRouteFlow();
+      return;
+    }
+    _routeFlowGeom = geom;
+    try {
+      _routeFlowSymbol = await c.addSymbol(
         SymbolOptions(
           fontNames: _symbolFonts,
-          geometry: pos,
-          iconImage: _pinImagesReady ? 'aether-poi' : null,
-          iconSize: 1.05,
-          textField: '$i · ${poi.title}',
-          textSize: 11,
-          textColor: '#FFFFFF',
-          textHaloColor: '#123A28',
-          textHaloWidth: 1.6,
-          textOffset: const Offset(0, 1.25),
-          textMaxWidth: 12,
+          geometry: geom.first,
+          iconImage: _pinImagesReady ? kRiderFlowImageId : null,
+          iconSize: RiderMapIconSize.flow,
         ),
       );
+    } catch (_) {
+      _routeFlowSymbol = null;
+      return;
     }
-    debugPrint('PoiMarkers drawn=$i tour=${sel.id}');
+    if (_pinImagesReady && _mapZoom >= 11) {
+      final track = [
+        for (final p in geom) [p.longitude, p.latitude],
+      ];
+      const count = 7;
+      for (var i = 1; i <= count; i++) {
+        final frac = i / (count + 1);
+        if (_poiFracsOnMap.any((p) => (p - frac).abs() < kPoiFracGap)) {
+          continue;
+        }
+        final at = _pointAlongTrack(track, frac);
+        final ahead = _pointAlongTrack(track, (frac + 0.012).clamp(0.0, 1.0));
+        try {
+          await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: at,
+              iconImage: kRiderFlowImageId,
+              iconSize: RiderMapIconSize.flowBead,
+              iconAnchor: 'center',
+              iconRotate: _bearingDeg(at, ahead),
+              textField: '',
+              textSize: 10,
+            ),
+          );
+        } catch (_) {}
+      }
+    }
+    _ensurePinAnim();
+  }
+
+  Future<void> _tickPinAnim() async {
+    final c = _map;
+    if (c == null) return;
+    _pinPulse += 0.11;
+    final wave = (math.sin(_pinPulse) + 1) / 2;
+    final flow = _routeFlowSymbol;
+    if (flow != null && _routeFlowGeom.length >= 4) {
+      _routeFlowT = (_routeFlowT + 0.0055) % 1.0;
+      final track = [
+        for (final p in _routeFlowGeom) [p.longitude, p.latitude],
+      ];
+      final at = _pointAlongTrack(track, _routeFlowT);
+      try {
+        await c.updateSymbol(
+          flow,
+          SymbolOptions(
+            geometry: at,
+            iconSize: RiderMapIconSize.flow + 0.08 * wave,
+          ),
+        );
+      } catch (_) {
+        _routeFlowSymbol = null;
+      }
+    }
+    for (var i = 0; i < _meetHaloSymbols.length; i++) {
+      try {
+        await c.updateSymbol(
+          _meetHaloSymbols[i],
+          SymbolOptions(
+            iconSize: 0.68 + 0.22 * wave,
+            iconOpacity: 0.22 + 0.38 * (1 - wave),
+          ),
+        );
+      } catch (_) {}
+    }
+    for (final s in _meetPulseSymbols) {
+      try {
+        await c.updateSymbol(
+          s,
+          SymbolOptions(iconSize: meetPinPulseIconSize(wave)),
+        );
+      } catch (_) {}
+    }
+    if (_routeFlowSymbol == null &&
+        _meetPulseSymbols.isEmpty &&
+        _meetHaloSymbols.isEmpty) {
+      _routeFlowTimer?.cancel();
+      _routeFlowTimer = null;
+    }
   }
 
   /// Meine-Play: gleicher HUD-Start wie Losfahren (Autostart + Ride-Tab).
@@ -5347,6 +8881,23 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ref.read(activeRouteProvider.notifier).state = route;
     ref.read(rideAutostartProvider.notifier).state = true;
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.ride;
+    unawaited(_bindPendingGroupForRide(route.id));
+  }
+
+  /// Let's ride an dieser Tour: nur die passende Gruppe, nie eine andere.
+  Future<void> _bindPendingGroupForRide(String routeId) async {
+    final prefer = ref.read(ridePendingGroupIdProvider);
+    final catalog = catalogTourIdOf(
+      routeId,
+      _savedMeta[routeId] ?? SavedRouteMeta.empty,
+    );
+    final g = await RideGroupStore().groupForRide(
+      routeId,
+      preferGroupId: prefer,
+      catalogTourId: catalog,
+    );
+    if (!mounted) return;
+    ref.read(ridePendingGroupIdProvider.notifier).state = g?.id;
   }
 
   Future<void> _startRide({_RouteSuggestion? suggestion}) async {
@@ -5464,14 +9015,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         kind,
                       )
                     : _profile;
-                final approach = await _routes
-                    .planRoute(
-                      from: gps,
-                      to: GeoPoint(join[1], join[0]),
-                      profile: costing,
-                      accessLeg: _navPolicy.isGravity,
-                    )
-                    .timeout(const Duration(seconds: 15));
+                final approach = await _discoverPlanRoute(
+                  from: gps,
+                  to: GeoPoint(join[1], join[0]),
+                  profile: costing,
+                  accessLeg: _navPolicy.isGravity,
+                ).timeout(const Duration(seconds: 15));
+                unawaited(_refreshOfflineChip());
                 final eng = approach.engine ?? '';
                 final approx = eng.contains('demo') ||
                     eng == 'fallback-line' ||
@@ -5609,10 +9159,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
         return;
       }
-      final elevMatch = RegExp(r'\+(\d+)').firstMatch(_elevationSummary ?? '');
-      final elevM = elevMatch != null
-          ? double.tryParse(elevMatch.group(1)!) ?? engine.distanceM * 0.03
-          : engine.distanceM * 0.03;
+      final elevM = _elevationGainM ?? 0;
       final coords = engine.coordinates.map((p) => [p.lng, p.lat]).toList();
       final durationMin = (engine.durationS / 60).round();
       final catalogId = _selectedTourId;
@@ -5660,6 +9207,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  bool _continuePlanAsGroup(String routeId) {
+    if (!ref.read(platzPendingPlanAsGroupProvider)) return false;
+    ref.read(platzPendingPlanAsGroupProvider.notifier).state = false;
+    ref.read(platzPendingCreateGroupRouteIdProvider.notifier).state = routeId;
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.platz;
+    return true;
+  }
+
+  void _clearPlanAsGroupIfUnused() {
+    ref.read(platzPendingPlanAsGroupProvider.notifier).state = false;
+  }
+
   Future<void> _saveCurrent() async {
     final r = _computed;
     if (r == null) return;
@@ -5686,7 +9245,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           label: _l10n.navigateEndLabel,
         ),
     ];
-    await _routes.saveComputed(
+    final entry = await _routes.saveComputed(
       name: _label ?? _l10n.discoverSavedRoute,
       result: r,
       waypoints: waypoints,
@@ -5697,17 +9256,57 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ? 'import'
           : 'engine',
       elevationGainM: _elevationGainM,
+      elevationPoints: _planElevPoints,
+      elevationSource: _planElevSource,
     );
     ref.invalidate(savedRoutesProvider);
+    if (_continuePlanAsGroup(entry.id)) return;
     if (!mounted) return;
     setState(() => _setStatus(_l10n.discoverSaved));
+    final a = _start;
+    final b = _end;
+    if (a == null || b == null) return;
+    final covered = await OfflinePackDirs.legitimateCoversRoute(
+      fromLng: a.lng,
+      fromLat: a.lat,
+      toLng: b.lng,
+      toLat: b.lat,
+      vias: _offlineViaLngLats(),
+      along: _offlineAlongLngLats(r.coordinates),
+    );
+    if (!mounted || covered) return;
+    var snack = _l10n.discoverOfflineAfterSave;
+    OfflinePackRow? pack;
+    try {
+      pack = suggestedPackForRoute(
+        packs: await _ensureOfflineCatalog(),
+        fromLng: a.lng,
+        fromLat: a.lat,
+        toLng: b.lng,
+        toLat: b.lat,
+        extra: [
+          ..._offlineViaLngLats(),
+          ..._offlineAlongLngLats(r.coordinates),
+        ],
+      );
+      if (pack != null) {
+        snack = _l10n.discoverOfflineAfterSaveForPack(
+          _l10n.overlayRegionNameFor(pack.id, pack.name),
+          formatPackBytes(pack.routingBytes),
+          packId: pack.id,
+        );
+      }
+    } catch (_) {}
+    if (!mounted) return;
     final mid = r.coordinates[r.coordinates.length ~/ 2];
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_l10n.discoverOfflineAfterSave),
+        content: Text(snack),
         action: SnackBarAction(
           label: _l10n.discoverOfflineAfterSaveAction,
-          onPressed: () => unawaited(_openOfflineMaps(focus: mid)),
+          onPressed: () => unawaited(
+            _openOfflineMaps(focus: mid, focusPackId: pack?.id),
+          ),
         ),
       ),
     );
@@ -5792,6 +9391,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final saved =
         ref.read(savedRoutesProvider).valueOrNull ?? const <SavedRouteEntry>[];
     if (saved.any((e) => e.id == r.id)) {
+      if (_continuePlanAsGroup(r.id)) return;
       if (!mounted || quiet) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_l10n.discoverAlreadyInMappe)),
@@ -5799,11 +9399,34 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return;
     }
     final routed = _routedLoopCache[r.id];
-    final coords = routed != null && routed.length >= 2
+    var coords = routed != null && routed.length >= 2
         ? [
             for (final p in routed) [p.lng, p.lat]
           ]
         : (r.trackLngLat ?? const <List<double>>[]);
+    if (coords.length >= 2 && !trackHasRealElev(coords)) {
+      if (_selectedTourId == r.id &&
+          _planElevPoints.isNotEmpty &&
+          !elevationSourceIsDemo(_planElevSource)) {
+        coords = attachRealElevToTrack(
+          trackLngLat: coords,
+          samples: trackElevSamplesFromMaps(_planElevPoints),
+          source: _planElevSource,
+        );
+      } else {
+        final geo = [
+          for (final p in coords) GeoPoint(p[1], p[0]),
+        ];
+        final profile = await _elevationClient.fetchForTrack(geo);
+        if (profile != null && !elevationSourceIsDemo(profile.source)) {
+          coords = attachRealElevToTrack(
+            trackLngLat: coords,
+            samples: trackElevSamplesFromMaps(profile.points),
+            source: profile.source,
+          );
+        }
+      }
+    }
     await _routes.saveEntry(
       SimpleAddRoute.fromExistingTour(
         id: r.id,
@@ -5823,9 +9446,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       cur.copyWith(
         catalogTourId: r.id,
         preferredBikeId: bike?.id,
+        mtbScale: mappeFaceTag(r.mtbScale),
+        surface: mappeFaceTag(r.surface),
       ),
     );
     ref.invalidate(savedRoutesProvider);
+    if (_continuePlanAsGroup(r.id)) return;
     if (!mounted || quiet) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_l10n.discoverInMappeNamed(r.name))),
@@ -5943,6 +9569,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (saved == null) return;
     await _routes.saveEntry(saved);
     ref.invalidate(savedRoutesProvider);
+    if (_continuePlanAsGroup(saved.id)) return;
     if (!mounted) return;
     setState(() {
       _hofChoice = false;
@@ -6055,6 +9682,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
     await _routes.saveEntry(entry);
     ref.invalidate(savedRoutesProvider);
+    if (_continuePlanAsGroup(entry.id)) return;
     if (!mounted) return;
     setState(() {
       _setStatus(_l10n.discoverGpxImported(
@@ -6381,7 +10009,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       coordinates: coords,
       distanceM: s.distanceKm * 1000,
       durationS: s.durationMin * 60.0,
-      engine: 'saved',
+      engine: restoredSavedEngine(s.engine),
     );
     setState(() {
       _computed = result;
@@ -6454,6 +10082,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (next == null) return;
       _applyDiscoverLaunch(next);
     });
+    ref.listen(shellTabIndexProvider, (prev, next) {
+      if (next != ShellTabs.karte) {
+        _clearPlanAsGroupIfUnused();
+        return;
+      }
+      unawaited(_syncBrowseMapStyle());
+      unawaited(_refreshOfflineChip());
+    });
     ref.listen(discoverPendingMineProvider, (prev, next) {
       if (next != true) return;
       ref.read(discoverPendingMineProvider.notifier).state = false;
@@ -6484,14 +10120,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ref.listen(bikesProvider, (prev, next) {
       final c = _map;
       if (c == null || !_bikeOverlayAttached) return;
-      unawaited(
-        applyBikeOverlayVisibility(
-          c,
-          family: _overlayFamily,
-          visible: _bikeOverlayOn,
-          extraOn: _bikeOverlayExtra,
-        ),
-      );
+      unawaited(_syncBikeOverlayVisibility());
     });
     _syncOriginDrift();
     final style = _mapStyle;
@@ -6504,7 +10133,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     // Plan/Detail/Navigate: feste Höhen. Entdecken/Meine: Draggable Sheet.
     final desiredPanelHeight = switch (_surface) {
-      _Surface.plan => size.height * (_ideaPin != null ? 0.58 : 0.52),
+      _Surface.plan => size.height *
+          planEditorSheetHeightFraction(
+            shaping: _planDragAlongLabel != null,
+            ideaPin: _ideaPin != null,
+          ),
       _Surface.detail => size.height * 0.52,
       _Surface.discover => size.height * _discoverSheetExtent,
     };
@@ -6523,12 +10156,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       220.0,
       math.min(560.0, size.height - keyboardInset - mapPeekHeight),
     );
+    final shapingSheet = _planDragAlongLabel != null;
+    final sheetMinPx = planEditorSheetMinPx(shaping: shapingSheet);
     final panelHeight = _surface == _Surface.discover
-        ? desiredPanelHeight.clamp(
-            size.height * DiscoverBrowseSheetSnaps.peek,
-            size.height * DiscoverBrowseSheetSnaps.full,
-          )
-        : desiredPanelHeight.clamp(220.0, maxPanelHeight);
+        ? desiredPanelHeight
+            .clamp(
+              size.height * DiscoverBrowseSheetSnaps.peek,
+              size.height * DiscoverBrowseSheetSnaps.full,
+            )
+            .toDouble()
+        : desiredPanelHeight
+            .clamp(
+              sheetMinPx,
+              math.max(sheetMinPx, maxPanelHeight),
+            )
+            .toDouble();
     if (_hofChoice) {
       _panelInset = 248;
     } else if (_surface != _Surface.discover) {
@@ -6537,194 +10179,445 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _panelInset = panelHeight;
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Karte füllt den Screen. Discover ist Karte + Liste — nicht
-          // Kopfzeile, Kartenfenster und Schubfach übereinander.
-          Positioned.fill(child: _buildMap(style)),
-          const StatusBarScrim(),
-          if (!_hofChoice &&
-              _shellMode == DiscoverShellMode.explore &&
-              _surface == _Surface.discover)
-            Positioned(
-              top: MapOrnaments.compassMargins(
-                context,
-                extraBelowSafe:
-                    DiscoverExploreChromeLogic.ornamentExtraBelowSafe(
-                  _exploreChromeHeight,
-                ),
-              ).y.toDouble(),
-              right: MapOrnaments.compassMargins(context).x.toDouble(),
-              child: _discoverLocateFab(),
-            ),
-          if (_surface == _Surface.discover &&
-              DiscoverExploreChromeLogic.showExploreLayerRow(
-                hasSelection: DiscoverExploreChromeLogic.showIdlePeek(
-                  _hofPinLoopId ?? _selectedTourId,
-                ),
-                planning: _shellMode == DiscoverShellMode.navigate,
-              ))
-            Positioned(
-              left: AppSpacing.m,
-              right: AppSpacing.m,
-              top: DiscoverExploreChromeLogic.layerRowTop(
-                statusTop: MediaQuery.paddingOf(context).top,
-                chromeHeight: _exploreChromeHeight,
-              ),
-              child: DiscoverLayerChips(
-                toursOn: _showToursLayer,
-                trailsOn: _showTrailsLayer,
-                waysOn: _showBikeWaysLayer,
-                hillshadeOn: _showHillshade,
-                onTours: (v) {
-                  setState(() => _showToursLayer = v);
-                  unawaited(_drawAll());
-                  unawaited(_syncMarkers());
-                },
-                onTrails: (v) {
-                  setState(() => _showTrailsLayer = v);
-                  unawaited(_refreshExploreOverlay());
-                },
-                onWays: (v) {
-                  setState(() => _showBikeWaysLayer = v);
-                  unawaited(_refreshExploreOverlay());
-                },
-                onHillshade: (v) {
-                  setState(() => _showHillshade = v);
-                  unawaited(_applyHillshadeNow());
-                },
-              ),
-            ),
-          if (!_hofChoice)
-            Positioned(
-                top: 0, left: 0, right: 0, child: _buildFloatingHeader()),
-          // FAB und Los-Leiste stapeln in EINER bodenverankerten Spalte.
-          // Getrennt positioniert bräuchte der FAB die Höhe der Leiste als
-          // Konstante — die aber wächst, sobald der Routenname zweizeilig
-          // umbricht, und beide würden sich überlappen.
-          if (!_hofChoice)
-            ListenableBuilder(
-              listenable: _discoverSheetCtrl,
-              builder: (context, _) {
-                final extent = _surface == _Surface.discover
-                    ? _discoverSheetExtent
-                    : panelHeight / size.height;
-                final bottom = extent * size.height + AppSpacing.s;
-                // Während Drag: Inset live für Kamera-Padding.
-                if (_surface == _Surface.discover &&
-                    _discoverSheetCtrl.isAttached) {
-                  _panelInset = extent * size.height;
-                }
-                return Positioned(
-                  left: AppSpacing.m,
-                  right: AppSpacing.m,
-                  bottom: bottom,
+    final coverageEdge = _coverageEdgeInfo(AppLocalizations.of(context));
+    final coverageLegendOn = DiscoverExploreChromeLogic.showExploreLayerRow(
+          hasSelection: DiscoverExploreChromeLogic.showIdlePeek(
+            _hofPinLoopId ?? _selectedTourId,
+          ),
+          planning: _shellMode == DiscoverShellMode.navigate,
+        ) &&
+        (_showTrailsLayer || _showBikeWaysLayer);
+    final planCoachOn = _planLineCoach &&
+        _hasLivePlanLine &&
+        _surface == _Surface.plan;
+    final showLocateFab = !_hofChoice &&
+        !planCoachOn &&
+        ((_shellMode == DiscoverShellMode.explore &&
+                _surface == _Surface.discover) ||
+            _surface == _Surface.plan);
+    final showPlanHistoryFabs = _surface == _Surface.plan &&
+        !planCoachOn &&
+        !_showPlanRoutingWait &&
+        _planDragAlongLabel == null &&
+        (_planUndoStack.isNotEmpty || _planRedoStack.isNotEmpty);
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyZ, control: true):
+            _onPlanUndoShortcut,
+        const SingleActivator(LogicalKeyboardKey.keyZ, meta: true):
+            _onPlanUndoShortcut,
+        const SingleActivator(
+          LogicalKeyboardKey.keyZ,
+          control: true,
+          shift: true,
+        ): _onPlanRedoShortcut,
+        const SingleActivator(
+          LogicalKeyboardKey.keyZ,
+          meta: true,
+          shift: true,
+        ): _onPlanRedoShortcut,
+        const SingleActivator(LogicalKeyboardKey.keyY, control: true):
+            _onPlanRedoShortcut,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: Stack(
+            children: [
+              // Karte füllt den Screen. Discover ist Karte + Liste — nicht
+              // Kopfzeile, Kartenfenster und Schubfach übereinander.
+              Positioned.fill(child: _buildMap(style)),
+              const StatusBarScrim(),
+              if (showLocateFab || showPlanHistoryFabs)
+                Positioned(
+                  top: MapOrnaments.compassMargins(
+                    context,
+                    extraBelowSafe:
+                        DiscoverExploreChromeLogic.ornamentExtraBelowSafe(
+                      _resolvedExploreChromeHeight,
+                    ),
+                  ).y.toDouble(),
+                  right: MapOrnaments.compassMargins(context).x.toDouble(),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (DiscoverBrowseSheetSnaps.isFull(extent) &&
-                          _shellMode == DiscoverShellMode.explore &&
-                          _surface == _Surface.discover) ...[
-                        Center(
-                          child: FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.charcoal,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 10,
+                      if (showLocateFab) _discoverLocateFab(),
+                      if (showLocateFab && showPlanHistoryFabs)
+                        const SizedBox(height: 8),
+                      if (showPlanHistoryFabs && _planUndoStack.isNotEmpty)
+                        _discoverMapFab(
+                          key: const Key('plan-map-undo'),
+                          tooltip: AppLocalizations.of(context).planUndo,
+                          icon: Icons.undo,
+                          onTap: _undoPlan,
+                          size: 40,
+                        ),
+                      if (showPlanHistoryFabs &&
+                          _planUndoStack.isNotEmpty &&
+                          _planRedoStack.isNotEmpty)
+                        const SizedBox(height: 8),
+                      if (showPlanHistoryFabs && _planRedoStack.isNotEmpty)
+                        _discoverMapFab(
+                          key: const Key('plan-map-redo'),
+                          tooltip: AppLocalizations.of(context).planRedo,
+                          icon: Icons.redo,
+                          onTap: _redoPlan,
+                          size: 40,
+                        ),
+                    ],
+                  ),
+                ),
+              if (_showPlanRoutingWait)
+                Positioned(
+                  left: AppSpacing.m,
+                  right: 64,
+                  bottom: _panelInset + AppSpacing.s,
+                  child: Material(
+                    key: const Key('plan-routing-wait'),
+                    color: const Color(0xF21A120C),
+                    elevation: 6,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          if (_loading)
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Color(0xFFFFB080),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
+                            )
+                          else
+                            const Icon(
+                              Icons.flag,
+                              size: 18,
+                              color: Color(0xFFFFB080),
+                            ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _hasLivePlanLine
+                                  ? AppLocalizations.of(context)
+                                      .discoverRoutingAdapts
+                                  : AppLocalizations.of(context)
+                                      .discoverEndSetComputing,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
                             ),
-                            onPressed: () => unawaited(
-                              _snapDiscoverSheet(
-                                DiscoverBrowseSheetSnaps.mapTarget(
-                                  hasSelection: _hasExploreSelection,
+                          ),
+                          if (_planUndoStack.isNotEmpty)
+                            TextButton(
+                              onPressed: _undoPlan,
+                              child: Text(
+                                AppLocalizations.of(context)
+                                    .discoverLastDestUndo,
+                                style:
+                                    const TextStyle(color: Color(0xFFFFB080)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (_planLineCoach &&
+                  _hasLivePlanLine &&
+                  _surface == _Surface.plan &&
+                  _planDragAlongLabel == null)
+                Positioned(
+                  left: AppSpacing.m,
+                  right: AppSpacing.m,
+                  top: MapOrnaments.compassMargins(
+                    context,
+                    extraBelowSafe:
+                        DiscoverExploreChromeLogic.ornamentExtraBelowSafe(
+                      _resolvedExploreChromeHeight,
+                    ),
+                  ).y.toDouble(),
+                  child: Material(
+                    color: const Color(0xF21A120C),
+                    elevation: 6,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: Padding(
+                      padding: size.height < 700
+                          ? const EdgeInsets.fromLTRB(10, 6, 4, 6)
+                          : const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          if (size.height >= 700) ...[
+                            const Icon(Icons.gesture,
+                                size: 18, color: Color(0xFFFFB080)),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context).planLineCoach,
+                              style: TextStyle(
+                                fontSize: size.height < 700 ? 11 : 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() => _planLineCoach = false);
+                              unawaited(
+                                  RidePrefs.setPlanLineCoachDismissed(true));
+                            },
+                            child: Text(
+                              AppLocalizations.of(context).planLineCoachOk,
+                              style: const TextStyle(color: Color(0xFFFFB080)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              if (_surface == _Surface.plan &&
+                  _planLegendKinds.isNotEmpty &&
+                  !_showPlanRoutingWait &&
+                  !_planRibbonDimmed &&
+                  _planDragAlongLabel == null &&
+                  !_planLineCoach)
+                Positioned(
+                  left: AppSpacing.m,
+                  right: 72,
+                  bottom: _panelInset + AppSpacing.s,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _planRibbonLegend(AppLocalizations.of(context)),
+                  ),
+                ),
+              if (_surface == _Surface.discover &&
+                  DiscoverExploreChromeLogic.showExploreLayerRow(
+                    hasSelection: DiscoverExploreChromeLogic.showIdlePeek(
+                      _hofPinLoopId ?? _selectedTourId,
+                    ),
+                    planning: _shellMode == DiscoverShellMode.navigate,
+                  ))
+                Positioned(
+                  left: AppSpacing.m,
+                  right: AppSpacing.m,
+                  top: DiscoverExploreChromeLogic.layerRowTop(
+                    statusTop: MediaQuery.paddingOf(context).top,
+                    chromeHeight: _resolvedExploreChromeHeight,
+                  ),
+                  child: (_showTrailsLayer || _showBikeWaysLayer)
+                      ? DiscoverMapLegend(
+                          trailsOn: _showTrailsLayer,
+                          waysOn: _showBikeWaysLayer,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              if (!_hofChoice &&
+                  _surface == _Surface.discover &&
+                  coverageEdge != null)
+                Positioned(
+                  left: AppSpacing.m,
+                  top: DiscoverExploreChromeLogic.layerRowTop(
+                        statusTop: MediaQuery.paddingOf(context).top,
+                        chromeHeight: _resolvedExploreChromeHeight,
+                      ) +
+                      (coverageLegendOn
+                          ? DiscoverExploreChromeLogic.exploreLegendHeight + 16
+                          : 0),
+                  child: CoverageEdgePill(
+                    label: coverageEdge.label,
+                    outside: coverageEdge.outside,
+                    overview: coverageEdge.overview,
+                    needsNet: coverageEdge.needsNet,
+                    onTap: () => unawaited(_openOfflineMaps()),
+                  ),
+                ),
+              if (!_hofChoice)
+                Positioned(
+                    top: 0, left: 0, right: 0, child: _buildFloatingHeader()),
+              // FAB und Los-Leiste stapeln in EINER bodenverankerten Spalte.
+              // Getrennt positioniert bräuchte der FAB die Höhe der Leiste als
+              // Konstante — die aber wächst, sobald der Routenname zweizeilig
+              // umbricht, und beide würden sich überlappen.
+              if (!_hofChoice)
+                ListenableBuilder(
+                  listenable: _discoverSheetCtrl,
+                  builder: (context, _) {
+                    final extent = _surface == _Surface.discover
+                        ? _discoverSheetExtent
+                        : panelHeight / size.height;
+                    final bottom = extent * size.height + AppSpacing.s;
+                    // Während Drag: Inset live für Kamera-Padding.
+                    if (_surface == _Surface.discover &&
+                        _discoverSheetCtrl.isAttached) {
+                      _panelInset = extent * size.height;
+                    }
+                    return Positioned(
+                      left: AppSpacing.m,
+                      right: AppSpacing.m,
+                      bottom: bottom,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (DiscoverBrowseSheetSnaps.isFull(extent) &&
+                              _shellMode == DiscoverShellMode.explore &&
+                              _surface == _Surface.discover) ...[
+                            Center(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.charcoal,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                ),
+                                onPressed: () => unawaited(
+                                  _snapDiscoverSheet(
+                                    DiscoverBrowseSheetSnaps.mapTarget(
+                                      hasSelection: _hasExploreSelection,
+                                    ),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.map, size: 18),
+                                label: Text(
+                                  AppLocalizations.of(context).mapToggleFab,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800),
                                 ),
                               ),
                             ),
-                            icon: const Icon(Icons.map, size: 18),
-                            label: Text(
-                              AppLocalizations.of(context).mapToggleFab,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800),
+                            const SizedBox(height: 8),
+                          ],
+                          if (_error ==
+                                  AppLocalizations.of(context)
+                                      .discoverViasNeedNet &&
+                              _vias.isNotEmpty &&
+                              (_surface == _Surface.plan ||
+                                  _shellMode ==
+                                      DiscoverShellMode.navigate)) ...[
+                            Material(
+                              color: const Color(0xE61F1F1F),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.chip),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.wifi_off,
+                                      size: 18,
+                                      color: Color(0xFFFF6A00),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context)
+                                            .discoverViasNeedNet,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      key: const Key('discover-drop-vias-map'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: _dropViasAndReroute,
+                                      child: Text(
+                                        AppLocalizations.of(context)
+                                            .discoverViasDropAndGo,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      if (_showRideBar && _surface != _Surface.detail) ...[
-                        _buildRideBar(),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
-          if (_hofChoice)
-            Positioned(
-              left: AppSpacing.m,
-              right: AppSpacing.m,
-              bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.m,
-              child: _buildHofRideOutChoice(),
-            )
-          else if (_surface == _Surface.discover)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: NotificationListener<DraggableScrollableNotification>(
-                onNotification: (n) {
-                  _syncDiscoverSheetExtent(n.extent);
-                  return false;
-                },
-                child: DraggableScrollableSheet(
-                  // expand:false → Hit-Test nur Sheet-Höhe, Map darüber pannbar.
-                  key: ValueKey(
-                    _hasExploreSelection ? 'sheet-sel' : 'sheet-idle',
-                  ),
-                  expand: false,
-                  controller: _discoverSheetCtrl,
-                  initialChildSize: _hasExploreSelection
-                      ? DiscoverBrowseSheetSnaps.peek
-                      : (_listBrowseMode
-                          ? DiscoverBrowseSheetSnaps.half
-                          : DiscoverBrowseSheetSnaps.closed),
-                  minChildSize: DiscoverBrowseSheetSnaps.minSize(
-                    hasSelection: _hasExploreSelection,
-                  ),
-                  maxChildSize: DiscoverBrowseSheetSnaps.full,
-                  snap: true,
-                  snapSizes: DiscoverBrowseSheetSnaps.sheetSnapSizes(
-                    hasSelection: _hasExploreSelection,
-                  ),
-                  builder: (context, scrollController) {
-                    return _buildBottomPanel(
-                      scrollController: scrollController,
+                            const SizedBox(height: 8),
+                          ],
+                          if (_showRideBar && _surface != _Surface.detail) ...[
+                            _buildRideBar(),
+                          ],
+                        ],
+                      ),
                     );
                   },
                 ),
-              ),
-            )
-          else
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                  height: panelHeight,
-                  child: _buildBottomPanel(),
+              if (_hofChoice)
+                Positioned(
+                  left: AppSpacing.m,
+                  right: AppSpacing.m,
+                  bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.m,
+                  child: _buildHofRideOutChoice(),
+                )
+              else if (_surface == _Surface.discover)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: NotificationListener<DraggableScrollableNotification>(
+                    onNotification: (n) {
+                      _syncDiscoverSheetExtent(n.extent);
+                      return false;
+                    },
+                    child: DraggableScrollableSheet(
+                      // expand:false → Hit-Test nur Sheet-Höhe, Map darüber pannbar.
+                      // No selection key: recreating the sheet while the same
+                      // controller is still attached throws FlutterError
+                      // ("controller is already attached") on tour tap.
+                      expand: false,
+                      controller: _discoverSheetCtrl,
+                      initialChildSize: _hasExploreSelection
+                          ? DiscoverBrowseSheetSnaps.peek
+                          : (_listBrowseMode
+                              ? DiscoverBrowseSheetSnaps.half
+                              : DiscoverBrowseSheetSnaps.closed),
+                      minChildSize: DiscoverBrowseSheetSnaps.minSize(
+                        hasSelection: _hasExploreSelection,
+                      ),
+                      maxChildSize: DiscoverBrowseSheetSnaps.full,
+                      snap: true,
+                      snapSizes: DiscoverBrowseSheetSnaps.sheetSnapSizes(
+                        hasSelection: _hasExploreSelection,
+                      ),
+                      builder: (context, scrollController) {
+                        return _buildBottomPanel(
+                          scrollController: scrollController,
+                        );
+                      },
+                    ),
+                  ),
+                )
+              else
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      height: panelHeight,
+                      child: _buildBottomPanel(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -6741,6 +10634,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             zoom: _hasRealOrigin ? 13.5 : 5.5,
           ),
           compassEnabled: false,
+          attributionButtonPosition: AttributionButtonPosition.bottomRight,
+          attributionButtonMargins: MapOrnaments.attributionMargins(context),
+          logoViewMargins: MapOrnaments.logoMargins(context),
           myLocationEnabled: true,
           myLocationTrackingMode: MyLocationTrackingMode.none,
           trackCameraPosition: true,
@@ -6750,11 +10646,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           tiltGesturesEnabled: true,
           gestureRecognizers: _mapGestures,
           onMapCreated: (c) {
+            _map?.removeListener(_onMapCameraTick);
             _map = c;
+            c.addListener(_onMapCameraTick);
             _pinImagesReady = false;
+            _activeCoverageLayerReady = false;
+            _suggestedCoverageLayerReady = false;
             _navPuck.reset();
             c.onSymbolTapped.add(_onTfSymbolTapped);
             c.onLineTapped.add(_onQuickLineTapped);
+            c.onFeatureTapped.add(_onMapFeatureTapped);
+            c.onFeatureDrag.add(_onPlanPinDrag);
             if (_styleReady && mounted) {
               setState(() => _styleReady = false);
             } else {
@@ -6766,6 +10668,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             // Style-Reload verwirft addImage-Registrierungen — Pins sonst
             // unsichtbar (Symbol mit fehlendem iconImage rendert gar nicht).
             _pinImagesReady = false;
+            _activeCoverageLayerReady = false;
+            _suggestedCoverageLayerReady = false;
             _bikeOverlayAttached = false;
             _navPuck.reset();
             _bikeOverlayKey = null;
@@ -6773,111 +10677,93 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             unawaited(() async {
               final map = _map;
               if (map == null) return;
+              await fixBasemapWaterLayers(
+                map,
+                coarseOverview: styleHasCoarseWaterPolygons(_mapStyle),
+              );
               if (styleNeedsGrayStreetBoost(_mapStyle)) {
                 await boostBasemapStreetContrast(map);
+              } else if (styleSkipsNatureFillBoost(_mapStyle)) {
+                await applyOverviewBrowsePaint(map);
               } else {
                 await warmBasemapNatureFills(map);
               }
-              if (styleUsesCatalogHillshade(_mapStyle) && _showHillshade) {
+              if (_showHillshade) {
                 await applyHillshade(map);
               }
               await _ensureBikeOverlay();
             }());
             unawaited(_attachNavPuck());
             unawaited(_drawAll());
+            unawaited(_syncOfflineCoverageOverlay());
+            if (_fitPackAfterStyle) {
+              _fitPackAfterStyle = false;
+              unawaited(_fitOfflinePackBbox());
+            }
             final pin = _hofPinLoopId ?? _selectedTourId;
             final tour = pin == null ? null : _tourById(pin);
-            if (tour != null) unawaited(_focusCameraOnTour(tour));
+            if (tour != null && !_planningAb) {
+              unawaited(_focusCameraOnTour(tour));
+            }
           },
           onUserLocationUpdated: _onUserLocationUpdated,
-          // Kurzer Tipp setzt Punkte nur, wenn Planen offen ist — sonst bleiben
-          // Tipps für Trails/Touren/Routen auf der Karte reserviert.
+          // Kurzer Tipp: Tour/Trail/Ort ansehen. A/B nur in Pick-Modus
+          // („Start auf Karte“ / „Ziel auf Karte“). Route-Pins: Long-Press.
           onMapClick: (point, latLng) async {
+            final now = DateTime.now();
+            _lastMapTap = GeoPoint(latLng.latitude, latLng.longitude);
+            _lastMapTapAt = now;
+            final cameraBusy = mapTapLooksLikeCameraGesture(
+              now: now,
+              cameraMoving: _map?.isCameraMoving ?? _cameraMoving,
+              cameraMovedAt: _cameraMovedAt,
+            );
             if (_surface != _Surface.plan) {
+              if (cameraBusy) return;
+              final tap = GeoPoint(latLng.latitude, latLng.longitude);
+              _rememberMapPointer(tap);
+              if (_tryInsertViaFromMapTap(tap)) return;
               final trail = await _hitTestBikeOverlay(point);
               if (trail != null) {
                 await _openOverlayTrail(
                   trail,
-                  at: GeoPoint(latLng.latitude, latLng.longitude),
+                  at: tap,
                 );
               }
               return;
             }
-            // Typing a destination: a map tap must not steal B (16 km Umweg).
-            if (!mapTapMaySetAbPoint(
+            if (!mapPlanEditorTapPlacesPin(
+              editorActive: true,
               addressFieldFocused:
                   _startAddrFocus.hasFocus || _endAddrFocus.hasFocus,
-              startSet: _start != null,
-              endSet: _end != null,
-              explicitlyPicking: _pick != _PickMode.none,
+              cameraMoving: _map?.isCameraMoving ?? _cameraMoving,
+              cameraMovedAt: _cameraMovedAt,
+              lastPinAt: _lastRoutePinAt,
+              now: now,
             )) {
               return;
             }
             var p = GeoPoint(latLng.latitude, latLng.longitude);
-            OsmTrailSegment? trailHit;
-            if (_pick == _PickMode.end ||
-                (_pick == _PickMode.none && _start != null)) {
-              trailHit = await _hitTestBikeOverlay(point);
-              if (trailHit != null) {
-                var resolved = trailHit;
-                for (final t in _trailsForLastMile) {
-                  if (t.id == trailHit.id) {
-                    resolved = t;
-                    break;
-                  }
-                }
-                final mile = clipTrailLastMile(
-                  trailLngLat: resolved.geometry,
-                  fromLat: (_start ?? _origin).lat,
-                  fromLng: (_start ?? _origin).lng,
-                  toLat: p.lat,
-                  toLng: p.lng,
-                );
-                if (mile != null) {
-                  p = GeoPoint(mile.destLat, mile.destLng);
-                  trailHit = resolved;
-                }
-              }
-            }
+            _rememberMapPointer(p);
+            if (_tryInsertViaFromMapTap(p)) return;
             if (_pick == _PickMode.via) {
               p = _snapViaPoint(p);
             }
             final wasWithoutOrigin = !_hasRealOrigin;
-            setState(() {
-              switch (_pick) {
-                case _PickMode.via:
-                  _vias.add(LabeledVia(lat: p.lat, lng: p.lng));
-                  break;
-                case _PickMode.end:
-                  _end = p;
-                  _endAddrCtrl.text = _fmtPoint(p);
-                  _pick = _PickMode.none;
-                  _destinationTrail = trailHit;
-                  break;
-                case _PickMode.start:
-                  _start = p;
-                  _startAddrCtrl.text = _fmtPoint(p);
-                  _pick = _PickMode.end;
-                  break;
-                case _PickMode.none:
-                  if (_start == null) {
-                    _start = p;
-                    _startAddrCtrl.text = _fmtPoint(p);
-                    _pick = _PickMode.end;
-                  } else {
-                    _end = p;
-                    _endAddrCtrl.text = _fmtPoint(p);
-                    _destinationTrail = trailHit;
-                  }
-                  break;
-              }
-            });
+            final shapedVia = _placePlanMapPoint(p);
+            await _drawAll();
             await _syncMarkers();
             if (wasWithoutOrigin && _hasRealOrigin) {
               _refreshNearbyDataSources();
             }
-            if (_start != null && _end != null) {
-              await _calcAb();
+            if (!shapedVia) {
+              _scheduleCalcAbFromMap(keepLine: true);
+            }
+            if (_end != null &&
+                _pick != _PickMode.via &&
+                (_end!.lat - p.lat).abs() < 1e-4 &&
+                (_end!.lng - p.lng).abs() < 1e-4) {
+              unawaited(_refinePlanEndWithOverlay(point, p));
             }
           },
           onCameraIdle: () {
@@ -6897,9 +10783,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             final z = cam?.zoom ?? _mapZoom;
             final crossed = (z > kBikeOverlayVectorMaxZoom) !=
                 (_mapZoom > kBikeOverlayVectorMaxZoom);
+            final prevPinBand = TourFilters.browsePinZoomBand(_mapZoom);
+            final nextPinBand = TourFilters.browsePinZoomBand(z);
+            final pinBandChanged = prevPinBand != nextPinBand;
+            final coverBandChanged =
+                coverageNameZoomBand(z) != coverageNameZoomBand(_mapZoom);
             _mapZoom = z;
             if (crossed && _bikeOverlayAttached && _showTrailNetwork) {
               unawaited(_drawAll());
+            } else if (coverBandChanged) {
+              unawaited(_syncMarkers(coalesce: true));
+              unawaited(_syncOfflineCoverageOverlay());
+            } else if (pinBandChanged) {
+              if (TourFilters.browsePinZoomBandNeedsFullResync(
+                prevPinBand,
+                nextPinBand,
+              )) {
+                unawaited(_syncMarkers(coalesce: true));
+              } else {
+                unawaited(_relabelBrowsePins());
+              }
             }
             _sGradeDebounce?.cancel();
             _sGradeDebounce = Timer(const Duration(milliseconds: 450), () {
@@ -6908,79 +10811,155 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             _viewportDebounce?.cancel();
             _viewportDebounce = Timer(const Duration(milliseconds: 800), () {
               _persistDiscoverViewport();
+              if (!mounted) return;
               final cam = _map?.cameraPosition?.target;
-              if (cam == null || !mounted) return;
               final gps = _userPos;
-              if (gps != null) {
+              if (gps != null && cam != null) {
                 final d =
                     _distKm(gps.lat, gps.lng, cam.latitude, cam.longitude);
                 if (d < 25) {
-                  if (_browseAnchor != null) {
-                    setState(() => _browseAnchor = null);
+                  if (_browseAnchor != null && !_browseAnchorPinned) {
+                    setState(() {
+                      _browseAnchor = null;
+                      _browseAnchorLabel = null;
+                    });
                     _mergeCatalogNearOrigin();
                   }
                   return;
                 }
               }
-              final next = GeoPoint(cam.latitude, cam.longitude);
+              final next = _usableDiscoverMapCenter;
+              if (next == null) {
+                final prev = _browseAnchor;
+                if (prev != null &&
+                    !_browseAnchorPinned &&
+                    (isPlaceholderDiscoverCenter(prev.lat, prev.lng) ||
+                        !isLocalDiscoverZoom(_mapZoom))) {
+                  setState(() {
+                    _browseAnchor = null;
+                    _browseAnchorLabel = null;
+                  });
+                  _mergeCatalogNearOrigin();
+                }
+                return;
+              }
+              if (_browseAnchorPinned) return;
               final prev = _browseAnchor;
               if (prev != null &&
                   _distKm(prev.lat, prev.lng, next.lat, next.lng) < 8) {
                 return;
               }
-              setState(() => _browseAnchor = next);
+              setState(() {
+                _browseAnchor = next;
+                _browseAnchorLabel = null;
+              });
               _mergeCatalogNearOrigin();
             });
             unawaited(_syncNavPuck());
           },
-          // Langer Druck → Navigieren (A→B). Im Detail unberührt; im Navigieren
-          // fügt Langdruck einen Via-Punkt hinzu.
+          // Langer Druck → Ziel (A→B). Via nur über „Via auf Karte“.
           onMapLongClick: (point, latLng) async {
             if (_surface == _Surface.detail) return;
+            final now = DateTime.now();
+            _lastMapTap = GeoPoint(latLng.latitude, latLng.longitude);
+            if (mapTapLooksLikeCameraGesture(
+              now: now,
+              cameraMoving: _map?.isCameraMoving ?? _cameraMoving,
+              cameraMovedAt: _cameraMovedAt,
+            )) {
+              return;
+            }
             final p = GeoPoint(latLng.latitude, latLng.longitude);
+            _rememberMapPointer(p);
             final wasWithoutOrigin = !_hasRealOrigin;
             if (_surface == _Surface.plan ||
                 _shellMode == DiscoverShellMode.navigate) {
-              setState(() {
-                final snapped = _snapViaPoint(p);
-                _vias.add(LabeledVia(lat: snapped.lat, lng: snapped.lng));
-              });
+              if (mapLongPressAddsVia(
+                explicitlyPickingVia: _pick == _PickMode.via,
+              )) {
+                _insertPlanViaAlong(_snapViaPoint(p));
+                _lastRoutePinAt = now;
+                await _syncMarkers();
+                return;
+              }
+              if (planLongPressSetsDest(
+                editorActive: true,
+                hasStart: _start != null,
+                hasEnd: _end != null,
+                pickingVia: _pick == _PickMode.via,
+                pickingStart: _pick == _PickMode.start,
+                tapHitsLine: false,
+              )) {
+                _abFromBrowsePin = false;
+                _pushPlanUndo();
+                setState(() {
+                  _end = p;
+                  _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+                  _pick = _PickMode.none;
+                });
+                _pulsePlanDest();
+                unawaited(HapticFeedback.lightImpact());
+                unawaited(_rememberLastPlanDest());
+                unawaited(_reversePlanFieldLabels());
+                await _drawAll();
+                await _syncMarkers();
+                _scheduleCalcAbFromMap(keepLine: true);
+                if (_end != null &&
+                    (_end!.lat - p.lat).abs() < 1e-4 &&
+                    (_end!.lng - p.lng).abs() < 1e-4) {
+                  unawaited(_refinePlanEndWithOverlay(point, p));
+                }
+                return;
+              }
+              final shapedVia = _placePlanMapPoint(p);
+              await _drawAll();
               await _syncMarkers();
-              if (_start != null && _end != null) await _calcAb();
+              if (!shapedVia) {
+                _scheduleCalcAbFromMap(keepLine: true);
+              }
+              if (_end != null &&
+                  (_end!.lat - p.lat).abs() < 1e-4 &&
+                  (_end!.lng - p.lng).abs() < 1e-4) {
+                unawaited(_refinePlanEndWithOverlay(point, p));
+              }
               return;
             }
-            final asStart = _start == null;
-            setState(() {
-              if (asStart) {
-                _start = p;
-                _startAddrCtrl.text = _fmtPoint(p);
-              } else {
-                _end = p;
-                _endAddrCtrl.text = _fmtPoint(p);
-              }
-            });
-            _openPlan(
-              status: asStart
-                  ? _l10n.discoverStartSetPickEnd
-                  : _l10n.discoverEndSetComputing,
-              pick: asStart ? _PickMode.end : _PickMode.none,
+            _abFromBrowsePin = true;
+            final shapedBrowse = _placePlanMapPoint(p);
+            final cue = discoverBrowsePinCue(
+              hasStart: _start != null,
+              hasEnd: _end != null,
+              hasGps: _userPos != null,
             );
+            _openPlan(
+              status: switch (cue) {
+                DiscoverBrowsePinCue.computing => _l10n.discoverEndSetComputing,
+                DiscoverBrowsePinCue.waitingGpsForStart =>
+                  _l10n.discoverDestSetWaitingGps,
+                DiscoverBrowsePinCue.pickStart => _l10n.discoverStartSetPickEnd,
+              },
+              pick: _PickMode.none,
+            );
+            if (cue == DiscoverBrowsePinCue.computing ||
+                cue == DiscoverBrowsePinCue.waitingGpsForStart) {
+              _pulsePlanDest();
+            }
+            await _drawAll();
             await _syncMarkers();
             if (wasWithoutOrigin && _hasRealOrigin) {
               _refreshNearbyDataSources();
             }
-            if (_start != null && _end != null) {
-              await _calcAb();
+            if (!shapedBrowse) {
+              _scheduleCalcAbFromMap(keepLine: true);
             }
           },
         ),
+        if (_planEditorActive && _hasLivePlanLine && !_showPlanRoutingWait)
+          Positioned.fill(child: _planLineGrabOverlay()),
         if (!_styleReady) const Positioned.fill(child: MapLoadingScrim()),
       ],
     );
   }
-
-  String _fmtPoint(GeoPoint p) =>
-      '${p.lat.toStringAsFixed(4)}, ${p.lng.toStringAsFixed(4)}';
 
   Widget _buildHofRideOutChoice() {
     final l10n = AppLocalizations.of(context);
@@ -7038,34 +11017,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Widget _buildFloatingHeader() {
     final onMap = Theme.of(context).scaffoldBackgroundColor;
     final l10n = AppLocalizations.of(context);
-    // Tour-Detail: volle Discover-Leiste + Status-Pills ausblenden — nur
-    // Zurück (Schließen im Sheet bleibt). Map zeigt die Strecke.
+    // Tour-Detail: Discover-Leiste aus. Zurück sitzt nur im Sheet —
+    // kein zweiter Pfeil über der Karte.
     if (_tourMapFocus) {
-      return SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.m,
-            AppSpacing.s,
-            AppSpacing.m,
-            0,
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Material(
-              color: onMap.withValues(alpha: 0.94),
-              shape: const CircleBorder(),
-              elevation: 3,
-              child: IconButton(
-                tooltip: l10n.navigateBackToExplore,
-                onPressed: _closeDetail,
-                icon: const Icon(Icons.arrow_back, size: 20),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
     return SafeArea(
       bottom: false,
@@ -7119,7 +11074,147 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     });
   }
 
-  /// Komoot-Chrome: Suche + „Route planen“, darunter Umkreis · Filter.
+  Widget _planHitOverflow(GeocodeHit hit, AppLocalizations l10n) {
+    return PopupMenuButton<String>(
+      tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+      padding: EdgeInsets.zero,
+      iconSize: 18,
+      splashRadius: 18,
+      icon: const Icon(Icons.more_horiz),
+      onSelected: (v) {
+        if (v == 'start') unawaited(_routeToGeocodeHitAsStart(hit));
+        if (v == 'via') _addGeocodeHitAsVia(hit);
+      },
+      itemBuilder: (_) => [
+        if (_start != null)
+          PopupMenuItem(
+            value: 'start',
+            child: Text(l10n.discoverReplaceStart),
+          ),
+        if (_start != null && _end != null)
+          PopupMenuItem(
+            value: 'via',
+            child: Text(l10n.discoverPlaceOnRoute),
+          ),
+      ],
+    );
+  }
+
+  Widget _explorePlaceHitChip(GeocodeHit hit, {bool recent = false}) {
+    final l10n = _l10n;
+    final extra = _start != null;
+    return Row(
+      children: [
+        Flexible(
+          child: ActionChip(
+            visualDensity: VisualDensity.compact,
+            avatar: recent ? const Icon(Icons.history, size: 16) : null,
+            label: Text(
+              hit.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onPressed: () => unawaited(_flyBrowsePlace(hit)),
+          ),
+        ),
+        IconButton(
+          tooltip: _planDestFlagTooltip(l10n),
+          visualDensity: VisualDensity.compact,
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: () => unawaited(_routeToGeocodeHit(hit)),
+          icon: const Icon(Icons.flag_outlined),
+        ),
+        if (extra) _planHitOverflow(hit, l10n),
+      ],
+    );
+  }
+
+  Widget _exploreSearchField(AppLocalizations l10n) {
+    return Semantics(
+      label: l10n.discoverSearchHint,
+      textField: true,
+      child: TextField(
+        controller: _exploreSearchCtrl,
+        textInputAction: TextInputAction.search,
+        maxLines: 1,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        onSubmitted: _submitBrowseSearch,
+        onChanged: (v) {
+          setState(() {
+            _exploreQuery = v;
+            if (v.trim().isNotEmpty &&
+                DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent)) {
+              unawaited(_snapDiscoverSheet(DiscoverBrowseSheetSnaps.half));
+            }
+          });
+          _schedulePlaceHits(v);
+        },
+        style: const TextStyle(overflow: TextOverflow.ellipsis),
+        decoration: InputDecoration(
+          isDense: true,
+          filled: true,
+          fillColor: AppColors.chipIdle.withValues(alpha: 0.55),
+          prefixIcon: const Icon(Icons.search, size: 20),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
+          ),
+          hintText: l10n.discoverSearchHint,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 8,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _explorePlanCta(AppLocalizations l10n) {
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.chrome,
+        foregroundColor: AppColors.onAccent,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: const Size(0, 40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+      ),
+      onPressed: () {
+        setState(() {
+          _vias.clear();
+          _abFromBrowsePin = false;
+          if (_start == null) {
+            final o = _riderOrigin;
+            if (o != null) {
+              _start = o;
+              _startAddrCtrl.text = _l10n.discoverMyPosition;
+            }
+          }
+        });
+        _setShellMode(
+          DiscoverShellMode.navigate,
+          pick: _PickMode.end,
+        );
+      },
+      child: Text(
+        l10n.planRouteCta,
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 12.5,
+        ),
+      ),
+    );
+  }
+
+  /// Komoot-Chrome: Suche + „Route planen“, darunter Umkreis · Filter · Karteninhalt.
   Widget _komootExploreChrome(Color onMap) {
     _rememberExploreChromeHeight();
     final l10n = AppLocalizations.of(context);
@@ -7147,6 +11242,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       compact: compact,
       aroundUsesAway: aroundUsesAway,
     );
+    final stackSearch = DiscoverExploreChromeLogic.stackSearchOnOwnRow(
+      MediaQuery.sizeOf(context).width,
+    );
+    final showsPlan = DiscoverExploreChromeLogic.chromeShowsPlanCta(
+      hasSelection,
+    );
     return Material(
       key: _exploreChromeKey,
       color: onMap.withValues(alpha: 0.96),
@@ -7157,107 +11258,88 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _exploreSearchCtrl,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: _submitBrowseSearch,
-                    onChanged: (v) {
-                      setState(() {
-                        _exploreQuery = v;
-                        if (v.trim().isNotEmpty &&
-                            DiscoverBrowseSheetSnaps.isPeek(
-                              _discoverSheetExtent,
-                            )) {
-                          unawaited(
-                            _snapDiscoverSheet(DiscoverBrowseSheetSnaps.half),
-                          );
-                        }
-                      });
-                      _schedulePlaceHits(v);
-                    },
-                    decoration: InputDecoration(
-                      isDense: true,
-                      filled: true,
-                      fillColor: AppColors.chipIdle.withValues(alpha: 0.55),
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 36,
-                        minHeight: 36,
-                      ),
-                      hintText: l10n.discoverSearchHint,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                    ),
-                  ),
+            if (stackSearch) ...[
+              _exploreSearchField(l10n),
+              if (showsPlan) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _explorePlanCta(l10n),
                 ),
-                if (DiscoverExploreChromeLogic.chromeShowsPlanCta(
-                  hasSelection,
-                )) ...[
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.chrome,
-                      foregroundColor: AppColors.onAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      minimumSize: const Size(0, 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _vias.clear();
-                        if (_start == null && _hasRealOrigin) {
-                          _start = _origin;
-                          _startAddrCtrl.text = _l10n.discoverMyPosition;
-                        }
-                      });
-                      _setShellMode(
-                        DiscoverShellMode.navigate,
-                        pick: _PickMode.end,
-                      );
-                    },
-                    child: Text(
-                      l10n.planRouteCta,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
-                ],
               ],
-            ),
+            ] else
+              Row(
+                children: [
+                  Expanded(child: _exploreSearchField(l10n)),
+                  if (showsPlan) ...[
+                    const SizedBox(width: 8),
+                    _explorePlanCta(l10n),
+                  ],
+                ],
+              ),
+            if (_placeSearchNeedNet) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.discoverSearchNeedNet,
+                key: const Key('discover-search-need-net'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.3,
+                  color: AppColors.muted,
+                ),
+              ),
+            ],
             if (_placeHits.isNotEmpty) ...[
               const SizedBox(height: 6),
               SizedBox(
-                height: 36,
+                height: 40,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _placeHits.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 6),
-                  itemBuilder: (ctx, i) {
-                    final hit = _placeHits[i];
-                    return ActionChip(
-                      visualDensity: VisualDensity.compact,
-                      label: Text(
-                        hit.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onPressed: () => unawaited(_flyBrowsePlace(hit)),
-                    );
-                  },
+                  itemBuilder: (ctx, i) => _explorePlaceHitChip(_placeHits[i]),
+                ),
+              ),
+            ] else if (_exploreQuery.trim().length < 2 &&
+                _geocodeRecents.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.discoverRecently,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.muted,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _geocodeRecents.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (ctx, i) => _explorePlaceHitChip(
+                    _geocodeRecents[i],
+                    recent: true,
+                  ),
+                ),
+              ),
+            ],
+            if (_browseAnchor != null) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  key: const Key('discover-back-to-gps'),
+                  avatar: const Icon(Icons.place, size: 16),
+                  label: Text(
+                    _browseAnchorLabel ?? l10n.discoverMapArea,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  visualDensity:
+                      const VisualDensity(horizontal: -1, vertical: -2),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
             ],
@@ -7361,88 +11443,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        ActionChip(
-                          key: const Key('discover-mine-chip'),
-                          tooltip: l10n.discoverModeMine,
-                          avatar: const Icon(Icons.bookmark_outline, size: 15),
-                          label: const SizedBox.shrink(),
-                          labelPadding: EdgeInsets.zero,
-                          onPressed: () =>
-                              _setShellMode(DiscoverShellMode.mine),
-                          visualDensity:
-                              const VisualDensity(horizontal: -1, vertical: -2),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          side: BorderSide(
-                            color: AppColors.border.withValues(alpha: 0.9),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                        ),
                       ],
                     ),
                   ),
                 ),
-                PopupMenuButton<String>(
-                  tooltip: l10n.moreActions,
-                  onSelected: (v) {
-                    switch (v) {
-                      case 'places':
-                        setState(() => _showPlacesLayer = !_showPlacesLayer);
-                        unawaited(_syncMarkers());
-                      case 'heat':
-                        unawaited(_onHeatLayerTapped());
-                      case 'collections':
-                        _collectionsSheet();
-                      case 'trailview':
-                        _openTrailView();
-                      case 'offline':
-                        unawaited(_openOfflineMaps());
-                      case 'privacy':
-                        unawaited(() async {
-                          await openPrivacyScreen(context);
-                          if (mounted) await _loadHeatmapConsent();
-                        }());
-                    }
-                  },
-                  itemBuilder: (menuCtx) {
-                    final m = AppLocalizations.of(menuCtx);
-                    return [
-                      CheckedPopupMenuItem(
-                        value: 'places',
-                        checked: _showPlacesLayer,
-                        child: Text(m.discoverLayerPlaces),
-                      ),
-                      CheckedPopupMenuItem(
-                        value: 'heat',
-                        checked: _heatmapConsent && _showHeatLayer,
-                        child: Text(
-                          _heatmapConsent
-                              ? m.discoverLayerHeat
-                              : m.discoverLayerHeatOff,
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'collections',
-                        child: Text(m.discoverMenuCollections),
-                      ),
-                      PopupMenuItem(
-                        value: 'trailview',
-                        child: Text(m.discoverMenuPhotos),
-                      ),
-                      PopupMenuItem(
-                        value: 'offline',
-                        child: Text(m.discoverMenuOffline),
-                      ),
-                      PopupMenuItem(
-                        value: 'privacy',
-                        child: Text(m.discoverMenuPrivacy),
-                      ),
-                    ];
-                  },
-                ),
+                _mapContentsChip(l10n),
               ],
             ),
           ],
@@ -7756,23 +11761,55 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _panelHandle({String? semanticsLabel}) {
     final l10n = AppLocalizations.of(context);
+    final closed = DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent);
+    final full = DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent);
+    final label = closed
+        ? '${l10n.mappeKicker}. ${semanticsLabel ?? l10n.sheetDragHandle}'
+        : (semanticsLabel ?? l10n.sheetDragHandle);
     return Semantics(
-      label: semanticsLabel ?? l10n.sheetDragHandle,
+      label: label,
       button: true,
-      child: Center(
-        child: Container(
-          width: 36,
-          height: 4,
-          margin: EdgeInsets.only(
-            top: DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent)
-                ? 6
-                : AppSpacing.s,
-            bottom:
-                DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent) ? 6 : 2,
+      child: GestureDetector(
+        key: const Key('discover-sheet-handle'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => unawaited(
+          _snapDiscoverSheet(
+            DiscoverBrowseSheetSnaps.handleTapTarget(_discoverSheetExtent),
           ),
-          decoration: BoxDecoration(
-            color: AppColors.muted.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
+        ),
+        child: SizedBox(
+          height: closed ? 48 : 36,
+          width: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.muted.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (closed) ...[
+                const SizedBox(height: 6),
+                Text(
+                  l10n.mappeKicker,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ] else ...[
+                Icon(
+                  full ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                  size: 16,
+                  color: AppColors.muted.withValues(alpha: 0.7),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -7803,12 +11840,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         status == _l10n.discoverLocationReady && _tours.isNotEmpty;
     final hideStatus = hideStaleNearby ||
         (status != null && _suppressDemoGeometryBanner(status));
-    if (_error == null && (status == null || hideStatus)) {
+    if (_error == null &&
+        (status == null || hideStatus) &&
+        _planDragAlongLabel == null) {
       return const SizedBox.shrink();
     }
     // Warm-Routing ist Hintergrund — das Panel-Subtitle reicht.
     final hideWarm = _statusIsWarm;
-    if (_error == null && hideWarm) {
+    if (_error == null && hideWarm && _planDragAlongLabel == null) {
       return const SizedBox.shrink();
     }
     return Padding(
@@ -7826,9 +11865,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               _error!,
               style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
+          if (_error == _l10n.discoverBrowseNeedsNetwork)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _browseLoadMapPackButton(),
+            ),
+          if (_error == _l10n.discoverViasNeedNet && _vias.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _dropViasAndGoButton(),
+            ),
           if (status != null && !hideStatus)
             Text(
               status,
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+            ),
+          if (_planDragAlongLabel != null)
+            Text(
+              _planDragAlongLabel!,
+              key: const Key('plan-drag-along'),
               style: const TextStyle(color: AppColors.muted, fontSize: 12),
             ),
         ],
@@ -7846,6 +11901,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _surfaceFilter == null &&
       _effortFilter == null &&
       _elevationFilter == null &&
+      _maxLengthKm == null &&
       _trailScaleFilter.isEmpty;
 
   bool get _filtersAtDefaults =>
@@ -7862,6 +11918,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (_surfaceFilter != null) n++;
     if (_effortFilter != null) n++;
     if (_elevationFilter != null) n++;
+    if (_maxLengthKm != null) n++;
     if (_trailScaleFilter.isNotEmpty) n++;
     return n;
   }
@@ -7875,6 +11932,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _surfaceFilter = null;
       _effortFilter = null;
       _elevationFilter = null;
+      _maxLengthKm = null;
       _trailScaleFilter.clear();
     });
     unawaited(_drawAll());
@@ -7895,6 +11953,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _effortFilter = null;
       _elevationFilter = null;
       _maxDistanceKm = null;
+      _maxLengthKm = null;
       _trailScaleFilter.clear();
     });
     unawaited(_drawAll());
@@ -7931,7 +11990,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            l10n.filterDistance,
+                            l10n.discoverAroundIdle,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -8014,6 +12073,200 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (mounted) {
       setState(() {});
       unawaited(_drawAll());
+    }
+  }
+
+  bool get _mapContentsCustomized =>
+      DiscoverExploreChromeLogic.mapContentsCustomized(
+        toursOn: _showToursLayer,
+        trailsOn: _showTrailsLayer,
+        waysOn: _showBikeWaysLayer,
+        hillshadeOn: _showHillshade,
+        placesOn: _showPlacesLayer,
+        heatOn: _showHeatLayer,
+        heatConsent: _heatmapConsent,
+      );
+
+  Widget _mapContentsChip(AppLocalizations l10n) {
+    final customized = _mapContentsCustomized;
+    final routingOn = _offlineRoutingReady;
+    final pack = _offlinePackLabel?.trim() ?? '';
+    final narrow = MediaQuery.sizeOf(context).width < 360;
+    final caption = routingOn && pack.isNotEmpty && !narrow
+        ? coverageChipCaption(pack)
+        : null;
+    final tooltip = routingOn && pack.isNotEmpty
+        ? l10n.offlineCoverageLabelFor(pack, packId: _offlinePackId)
+        : routingOn
+            ? l10n.offlineRoutingOn
+            : l10n.discoverMapContentsTitle;
+    final fill = customized
+        ? AppColors.accent
+        : routingOn
+            ? AppColors.sage.withValues(alpha: 0.35)
+            : AppColors.chipIdle.withValues(alpha: 0.55);
+    final ink = customized
+        ? AppColors.onAccent
+        : routingOn
+            ? AppColors.sageOnDark
+            : AppColors.chipIdleText;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: fill,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            side: BorderSide(
+              color: customized
+                  ? AppColors.accent
+                  : routingOn
+                      ? AppColors.sageOnDark
+                      : AppColors.border.withValues(alpha: 0.9),
+            ),
+          ),
+          child: InkWell(
+            key: const Key('discover-map-contents'),
+            onTap: () => unawaited(_openMapContentsSheet()),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 40,
+                maxWidth: caption == null
+                    ? 40
+                    : (MediaQuery.sizeOf(context).width < 380 ? 100 : 128),
+                minHeight: 40,
+                maxHeight: 40,
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: caption == null ? 0 : 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      routingOn && !customized
+                          ? Icons.check_circle_outline
+                          : Icons.layers_outlined,
+                      size: 20,
+                      color: ink,
+                    ),
+                    if (caption != null) ...[
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMapContentsSheet() async {
+    final tool = await showModalBottomSheet<DiscoverMapContentsTool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            void sync(VoidCallback fn) {
+              setState(fn);
+              setModal(() {});
+            }
+
+            return DiscoverMapContentsSheet(
+              toursOn: _showToursLayer,
+              trailsOn: _showTrailsLayer,
+              waysOn: _showBikeWaysLayer,
+              farmTracksOn: _showFarmTracksLayer,
+              hillshadeOn: _showHillshade,
+              placesOn: _showPlacesLayer,
+              heatOn: _heatmapConsent && _showHeatLayer,
+              heatLocked: !_heatmapConsent,
+              offlineReady: _offlineRoutingReady,
+              offlinePackLabel: _offlinePackLabel,
+              offlinePackId: _offlinePackId,
+              offlineOverviewReady: _offlineOverviewReady,
+              browseOnline: _browseOnline,
+              onTours: (v) {
+                sync(() => _showToursLayer = v);
+                unawaited(_drawAll());
+                unawaited(_syncMarkers());
+              },
+              onTrails: (v) {
+                sync(() {
+                  _showTrailsLayer = v;
+                  _showTrailNetwork = v || _showBikeWaysLayer;
+                });
+                unawaited(_refreshExploreOverlay());
+                unawaited(_drawAll());
+              },
+              onWays: (v) {
+                sync(() {
+                  _showBikeWaysLayer = v;
+                  _showTrailNetwork = _showTrailsLayer || v;
+                });
+                unawaited(_refreshExploreOverlay());
+                unawaited(_drawAll());
+              },
+              onFarmTracks: (v) {
+                sync(() => _showFarmTracksLayer = v);
+                unawaited(RidePrefs.setShowFarmTracks(v));
+                unawaited(_syncBikeOverlayVisibility());
+              },
+              onHillshade: (v) {
+                sync(() => _showHillshade = v);
+                unawaited(_applyHillshadeNow());
+              },
+              onPlaces: (v) {
+                sync(() => _showPlacesLayer = v);
+                unawaited(_syncMarkers());
+              },
+              onHeat: () {
+                if (!_heatmapConsent) {
+                  Navigator.pop(ctx);
+                  unawaited(_onHeatLayerTapped());
+                  return;
+                }
+                sync(() => _showHeatLayer = !_showHeatLayer);
+                unawaited(_drawAll());
+              },
+              onTool: (tool) => Navigator.pop(ctx, tool),
+            );
+          },
+        );
+      },
+    );
+    if (!mounted || tool == null) return;
+    switch (tool) {
+      case DiscoverMapContentsTool.collections:
+        _collectionsSheet();
+      case DiscoverMapContentsTool.photos:
+        _openTrailView();
+      case DiscoverMapContentsTool.offline:
+        unawaited(
+          _openOfflineMaps(
+            focusPackId: _navigateOfflinePack?.id ?? _offlinePackId,
+          ),
+        );
     }
   }
 
@@ -8137,7 +12390,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             group(l10n.filterBikeType, [
                               for (final s in TourFilters.sportFilterChips)
                                 FilterChip(
-                                  label: Text(l10n.tourSportChip(s)),
+                                  label: Text(
+                                    s == TourSportKey.dh
+                                        ? l10n.filterSportDh
+                                        : l10n.tourSportChip(s),
+                                  ),
                                   selected: _sportFilter.contains(s),
                                   avatar: CircleAvatar(
                                     backgroundColor: Color(
@@ -8208,6 +12465,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                     ),
                                   ),
                               ]),
+                            group(l10n.filterTourLength, [
+                              for (final d in TourFilters.distanceMaxChips)
+                                FilterChip(
+                                  label: Text(l10n.tourDistanceMaxChip(d.id)),
+                                  selected: _maxLengthKm == d.id,
+                                  onSelected: (sel) => update(
+                                    () => _maxLengthKm = sel ? d.id : null,
+                                  ),
+                                ),
+                            ]),
                             group(l10n.filterSurfaceGroup, [
                               for (final s in TourFilters.availableSurfaces(
                                 _tours.map((t) => t.surface),
@@ -8251,7 +12518,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                 label: Text(l10n.filterNetworkOn),
                                 selected: _showTrailNetwork,
                                 onSelected: (v) {
-                                  update(() => _showTrailNetwork = v);
+                                  update(() {
+                                    _showTrailNetwork = v;
+                                    _showTrailsLayer = v;
+                                    _showBikeWaysLayer = v;
+                                  });
+                                  unawaited(_refreshExploreOverlay());
                                   unawaited(_drawAll());
                                 },
                               ),
@@ -8345,6 +12617,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     required IconData icon,
     required VoidCallback onTap,
     VoidCallback? onLongPress,
+    double size = 48,
   }) {
     return Material(
       color: AppColors.charcoal,
@@ -8358,26 +12631,75 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: Tooltip(
           message: tooltip,
           child: Container(
-            width: 48,
-            height: 48,
+            width: size,
+            height: size,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.accent, width: 1.5),
             ),
-            child: Icon(icon, size: 22, color: AppColors.accent),
+            child: Icon(icon, size: size < 48 ? 18 : 22, color: AppColors.accent),
           ),
         ),
       ),
     );
   }
 
+  Widget _planRibbonLegend(AppLocalizations l10n) {
+    Widget swatch(Color color, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A120C),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Material(
+      color: const Color(0xE6F4F1EC),
+      elevation: 3,
+      borderRadius: BorderRadius.circular(999),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 4,
+          children: [
+            if (_planLegendKinds.contains('asphalt'))
+              swatch(const Color(0xFF5C8FBF), l10n.filterSurfaceAsphalt),
+            if (_planLegendKinds.contains('gravel'))
+              swatch(const Color(0xFFE0B04A), l10n.filterSurfaceGravel),
+            if (_planLegendKinds.contains('trail'))
+              swatch(const Color(0xFFC47B3A), l10n.filterSurfaceTrail),
+            if (_planLegendKinds.contains('unknown'))
+              swatch(const Color(0xFFFF6A00), l10n.planMapUnknown),
+            if (_planLegendKinds.contains('steep'))
+              swatch(const Color(0xFFC2410C), l10n.planMapSteep),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _discoverLocateFab() {
-    return _discoverMapFab(
+    return MapLocateFab(
       key: const Key('nav-puck-discover-locate'),
       tooltip: AppLocalizations.of(context).discoverLocateLongPress,
-      icon: Icons.my_location,
-      onTap: _locate,
+      active: true,
+      onTap: () => unawaited(_locate(fresh: true)),
       onLongPress: () => unawaited(_openNavPuckPicker()),
     );
   }
@@ -8405,18 +12727,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         });
         final c = _map;
         if (c != null && _bikeOverlayAttached) {
-          unawaited(
-            applyBikeOverlayVisibility(
-              c,
-              family: _overlayFamily,
-              visible: _bikeOverlayOn,
-              extraOn: _bikeOverlayExtra,
-            ),
-          );
+          unawaited(_syncBikeOverlayVisibility());
         }
         if (_surface == _Surface.plan ||
             _shellMode == DiscoverShellMode.navigate) {
-          if (_start != null && _end != null) unawaited(_calcAb());
+          if (_start != null && _end != null) {
+            unawaited(_calcAb(keepLine: true, refitPins: false));
+          } else {
+            _maybeWarmLiveRouting(_userPos ?? _start);
+          }
         } else {
           unawaited(_fetchPublicCatalog());
         }
@@ -8438,10 +12757,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
       ],
       child: Chip(
-        avatar: const Icon(
-          Icons.pedal_bike,
-          size: 15,
+        avatar: const RadNavMark(
           color: AppColors.chipIdleText,
+          size: 15,
         ),
         label: Text(
           _l10n.discoverChipLabel(_profile),
@@ -8480,7 +12798,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         );
       } catch (_) {}
     } else {
-      // Pin-only: Detail erklärt „Route berechnen" klarer als leere Karte.
+      // Pin-only: drop leftover preview from the previous tour.
+      if (isTourPreviewLine(_computed?.engine)) {
+        setState(() {
+          _computed = null;
+          _approach = null;
+          _tourLayer = null;
+          _label = null;
+        });
+        await _drawAll();
+      }
       await _openDetail(r.id, r.center);
     }
   }
@@ -8733,6 +13060,194 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  String? _planOfflineSurfaceLine(AppLocalizations l10n) {
+    if (!isOfflineRoutingEngine(_computed?.engine)) return null;
+    final pack = _offlinePackLabel?.trim() ?? '';
+    if (pack.isNotEmpty) {
+      return l10n.offlineCoverageLabelFor(pack, packId: _offlinePackId);
+    }
+    return l10n.discoverMenuOffline;
+  }
+
+  String? _planSurfaceCell(AppLocalizations l10n) {
+    if (_planSurfaceMix.isNotEmpty) {
+      final s = _planSurfaceMix.first;
+      return '${osmSurfaceDisplay(s.key, l10n)} ${(s.share * 100).round()}%';
+    }
+    return _planOfflineSurfaceLine(l10n);
+  }
+
+  String _planRouteStatsLine() {
+    final r = _computed;
+    if (r == null) return '';
+    final km = (r.distanceM / 1000).toStringAsFixed(1);
+    final mins = (r.durationS / 60).round();
+    final elev = _elevationSummary;
+    var line = (elev == null || elev.isEmpty)
+        ? '$km km · $mins min'
+        : '$km km · $mins min · $elev';
+    final surface = _planOfflineSurfaceLine(_l10n);
+    if (surface != null) line = '$line · $surface';
+    if (_aroundYouApplied) {
+      line = '$line · ${_l10n.discoverAroundYouUncertainShort}';
+    }
+    return line;
+  }
+
+  List<String> _loopJustificationReasons(AppLocalizations l10n) {
+    final got =
+        _computed == null ? 0 : (_computed!.durationS / 60).round();
+    final surface = _surfaceFromLoopWarnings(_computed?.warnings ?? const []);
+    return [
+      l10n.discoverLoopReasonDuration('$got', '$_minutes'),
+      surface != null
+          ? l10n.discoverLoopReasonSurface(surface)
+          : l10n.discoverLoopReasonOsmTags,
+      l10n.discoverAroundYouHint,
+    ];
+  }
+
+  String? _surfaceFromLoopWarnings(List<String> warnings) {
+    final re = RegExp(r'überwiegend\s+(.+)$', caseSensitive: false);
+    for (final w in warnings) {
+      final m = re.firstMatch(w);
+      final s = m?.group(1)?.trim();
+      if (s != null && s.length >= 3) return s;
+    }
+    return null;
+  }
+
+  String _planStickyKmMin() {
+    final r = _computed;
+    if (r == null) return '';
+    final km = r.distanceM / 1000;
+    return '${km.toStringAsFixed(km < 10 ? 1 : 0)} km · ${(r.durationS / 60).round()} min';
+  }
+
+  Widget _planStickyCta(AppLocalizations l10n) {
+    if (_computed != null && _start != null && _end != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.m,
+          0,
+          AppSpacing.m,
+          AppSpacing.s,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _planStickyKmMin(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
+                      ),
+                    ),
+                    onPressed: () => unawaited(_saveCurrent()),
+                    icon: const Icon(Icons.bookmark_outline),
+                    label: Text(l10n.save),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.onAccent,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
+                      ),
+                    ),
+                    onPressed: () => unawaited(_startRide()),
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(l10n.goRide),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    if (_start != null && _end == null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.m,
+          0,
+          AppSpacing.m,
+          AppSpacing.s,
+        ),
+        child: FilledButton(
+          key: const Key('discover-set-end-sticky'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.accent,
+            foregroundColor: AppColors.onAccent,
+            minimumSize: const Size.fromHeight(52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+            ),
+          ),
+          onPressed: () {
+            setState(() => _pick = _PickMode.end);
+            _endAddrFocus.requestFocus();
+          },
+          child: Text(l10n.discoverSetEndCta),
+        ),
+      );
+    }
+    if (_start == null) {
+      final hasGps = _userPos != null;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.m,
+          0,
+          AppSpacing.m,
+          AppSpacing.s,
+        ),
+        child: FilledButton.icon(
+          key: const Key('discover-tap-start-sticky'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.accent,
+            foregroundColor: AppColors.onAccent,
+            minimumSize: const Size.fromHeight(52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+            ),
+          ),
+          onPressed: () {
+            if (hasGps) {
+              unawaited(_useMyLocationAsStart());
+              return;
+            }
+            setState(() => _pick = _PickMode.start);
+            _startAddrFocus.requestFocus();
+          },
+          icon: Icon(hasGps ? Icons.my_location : Icons.touch_app),
+          label: Text(
+            hasGps ? l10n.navigateMyLocation : l10n.discoverTapStart,
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   /// Navigieren — A→B als erster Klasse-Modus (Komoot-ähnlich).
   /// Bei Tour-Anpassen bleibt ein Zurück; sonst steuert der Shell-Toggle.
   Widget _buildPlanPanel() {
@@ -8764,14 +13279,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     Text(
                       adapting != null
                           ? l10n.adaptTourTitle
-                          : l10n.navigateTitle,
+                          : l10n.planRouteTitle,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      adapting != null ? adapting : l10n.navigateSubtitle,
+                      adapting != null
+                          ? l10n.discoverAdjustStops
+                          : _planDragAlongLabel ??
+                              (_pick == _PickMode.via
+                                  ? l10n.navigateSubtitleVia
+                                  : (_end != null && _start == null)
+                                      ? l10n.discoverDestSetWaitingGps
+                                      : _start == null
+                                          ? l10n.discoverTapStart
+                                          : (_computed != null
+                                              ? l10n.navigateSubtitleShape
+                                              : l10n.navigateSubtitle)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -8787,7 +13313,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
           ),
         ),
-        if (adapting != null)
+        _panelMessages(),
+        Expanded(child: _withLoadingVeil(_buildPlanSheet())),
+        if (_computed != null &&
+            _start != null &&
+            _end != null &&
+            _showNavigateOfflineHint)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.m,
@@ -8795,13 +13326,31 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               AppSpacing.m,
               AppSpacing.xs,
             ),
-            child: Text(
-              l10n.adaptTourHint,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            child: Material(
+              color: AppColors.sage.withValues(alpha: 0.16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+                side: BorderSide(
+                  color: AppColors.sageOnDark.withValues(alpha: 0.55),
+                ),
+              ),
+              child: TextButton.icon(
+                key: const Key('navigate-offline-hint'),
+                onPressed: () => unawaited(
+                  _openOfflineMaps(
+                    focus: GeoPoint(
+                      (_start!.lat + _end!.lat) / 2,
+                      (_start!.lng + _end!.lng) / 2,
+                    ),
+                    focusPackId: _navigateOfflinePack?.id,
+                  ),
+                ),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: Text(_navigateOfflineHintLabel(l10n)),
+              ),
             ),
           ),
-        _panelMessages(),
-        Expanded(child: _withLoadingVeil(_buildPlanSheet())),
+        _planStickyCta(l10n),
       ],
     );
   }
@@ -9147,75 +13696,105 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Ein Stop im Tourverlauf: Punkt + Linie links (Komoot-Timeline),
   /// Minuten-Marke, Titel, whyGood.
   Widget _poiTimelineTile(_SeedPoiStop p, {required bool isLast}) {
-    return IntrinsicHeight(
-      key: ValueKey(p.id),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 32,
-            child: Column(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.chipIdle,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Icon(
-                    _poiKindIcon(p.kind),
-                    size: 15,
-                    color: AppColors.chrome,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(width: 2, color: AppColors.border),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.m),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.l),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p.atMin > 0
-                        ? _l10n.discoverElevMin(p.atMin)
-                        : _l10n.navigateStartLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                  Text(
-                    p.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
-                    ),
-                  ),
-                  if (p.whyGood case final why?)
-                    Text(
-                      why,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
-                        height: 1.35,
+    final highlighted = _highlightPoiId == p.id;
+    return GestureDetector(
+      onTap: () => _flashAndScrollToPoi(p.id),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        key: _keyForPoi(p.id),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.only(bottom: 2),
+        padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+        decoration: BoxDecoration(
+          color: highlighted
+              ? AppColors.sage.withValues(alpha: 0.18)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 36,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFF4F1EC),
+                        border: Border.all(
+                          color: highlighted
+                              ? AppColors.accent
+                              : AppColors.accent.withValues(alpha: 0.55),
+                          width: highlighted ? 2.2 : 1.6,
+                        ),
+                      ),
+                      child: Center(
+                        child: _poiDrawIndexById[p.id] != null
+                            ? Text(
+                                '${_poiDrawIndexById[p.id]}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1A120C),
+                                  height: 1,
+                                ),
+                              )
+                            : _poiKindMark(p.kind, size: 18),
                       ),
                     ),
-                ],
+                    if (!isLast)
+                      Expanded(
+                        child: Container(width: 2, color: AppColors.border),
+                      ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.l),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.atMin > 0
+                            ? _l10n.discoverElevMin(p.atMin)
+                            : _l10n.navigateStartLabel,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      Text(
+                        p.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (p.whyGood case final why?)
+                        Text(
+                          why,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                            height: 1.35,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -9403,11 +13982,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               onPressed: _loading
                   ? null
                   : pinOnly
-                      ? () => unawaited(_computeIdeaRoute(detail))
+                      ? () => unawaited(_adoptTourIntoPlan(detail))
                       : () => unawaited(_startRide(suggestion: detail)),
-              icon: Icon(pinOnly ? Icons.route : Icons.play_arrow, size: 22),
+              icon: Icon(pinOnly ? Icons.flag_outlined : Icons.play_arrow,
+                  size: 22),
               label: Text(
-                pinOnly ? l10n.computeRoute : l10n.goRide,
+                pinOnly ? l10n.discoverSetEndCta : l10n.goRide,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
@@ -9452,10 +14032,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _withLoadingVeil(Widget body) {
     if (!_loading) return body;
-    return Stack(
+    return Column(
       children: [
-        Opacity(opacity: 0.45, child: IgnorePointer(child: body)),
-        const Center(child: CircularProgressIndicator()),
+        const LinearProgressIndicator(minHeight: 2),
+        if (_surface == _Surface.plan)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.m,
+              6,
+              AppSpacing.m,
+              0,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppLocalizations.of(context).discoverRoutingAdapts,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ),
+          ),
+        Expanded(child: body),
       ],
     );
   }
@@ -9496,9 +14092,120 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  void _onPlanPinDrag(
+    dynamic id, {
+    required math.Point<double> point,
+    required LatLng origin,
+    required LatLng current,
+    required LatLng delta,
+    required DragEventType eventType,
+  }) {
+    if (_shellMode != DiscoverShellMode.navigate && _surface != _Surface.plan) {
+      return;
+    }
+    if (eventType != DragEventType.end) {
+      final sid = id?.toString();
+      if (_isPlanLineGrab(sid)) {
+        _restorePlanGrabLine(sid!);
+        _previewPlanDragAlong(current);
+        return;
+      }
+      final draggingStart = sid != null && _planStartSymbol?.id == sid;
+      final draggingEnd = sid != null && _planEndSymbol?.id == sid;
+      int? viaIndex;
+      if (!draggingStart && !draggingEnd && sid != null) {
+        final i = _planViaSymbols.indexWhere((s) => s.id == sid);
+        if (i >= 0 && i < _vias.length) viaIndex = i;
+      }
+      _previewPlanDragAlong(
+        current,
+        draggingStart: draggingStart,
+        draggingEnd: draggingEnd,
+        draggingViaIndex: viaIndex,
+      );
+      return;
+    }
+    unawaited(_clearPlanDragPreview());
+    final sid = id?.toString();
+    if (sid == null) return;
+    final undoLen = _planUndoStack.length;
+    final redoLen = _planRedoStack.length;
+    _pushPlanUndo();
+    final p = GeoPoint(current.latitude, current.longitude);
+    var changed = false;
+    if (_planStartSymbol?.id == sid) {
+      setState(() {
+        _start = p;
+        _startAddrCtrl.text = _l10n.discoverOnMapPlace;
+        _planDragAlongLabel = null;
+      });
+      changed = true;
+    } else if (_planEndSymbol?.id == sid) {
+      setState(() {
+        _end = p;
+        _endAddrCtrl.text = _l10n.discoverOnMapPlace;
+        _planDragAlongLabel = null;
+      });
+      changed = true;
+    } else {
+      final i = _planViaSymbols.indexWhere((s) => s.id == sid);
+      if (i >= 0 && i < _vias.length) {
+        final old = _vias[i];
+        final at =
+            viaMaySnapOntoTrail(label: old.trimmedLabel) ? _snapViaPoint(p) : p;
+        setState(() {
+          _vias[i] = LabeledVia(
+            lat: at.lat,
+            lng: at.lng,
+            label: _l10n.discoverOnMapPlace,
+            placeId: old.placeId,
+            kind: old.kind,
+          );
+          _planDragAlongLabel = null;
+        });
+        changed = true;
+      } else if (_planBendSymbols.any((s) => s.id == sid) ||
+          _isPlanLineGrab(sid)) {
+        if (_isPlanLineGrab(sid)) _restorePlanGrabLine(sid);
+        changed = _insertViaFromRibbonDrop(p);
+      }
+    }
+    if (changed) {
+      _abFromBrowsePin = false;
+      unawaited(_reversePlanFieldLabels());
+      if (_start != null && _end != null) {
+        _scheduleCalcAbFromMap(keepLine: true, refitPins: false);
+      }
+    } else {
+      while (_planUndoStack.length > undoLen) {
+        _planUndoStack.removeLast();
+      }
+      while (_planRedoStack.length > redoLen) {
+        _planRedoStack.removeLast();
+      }
+    }
+  }
+
+  void _closeLoop() {
+    final s = _start;
+    if (s == null) return;
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
+    setState(() {
+      _end = s;
+      _endAddrCtrl.text = _startAddrCtrl.text.isEmpty
+          ? AppLocalizations.of(context).navigateStartLabel
+          : _startAddrCtrl.text;
+    });
+    unawaited(_syncMarkers());
+    unawaited(_calcAb(keepLine: true, refitPins: false));
+  }
+
   void _swapStartEnd() {
     final s = _start;
     final e = _end;
+    _abFromBrowsePin = false;
+    _pushPlanUndo();
     final st = _startAddrCtrl.text;
     final et = _endAddrCtrl.text;
     setState(() {
@@ -9509,16 +14216,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _addrHits = const [];
     });
     unawaited(_syncMarkers());
-    if (_start != null && _end != null) unawaited(_calcAb());
+    if (_start != null && _end != null) {
+      unawaited(_calcAb(keepLine: true, refitPins: false));
+    }
   }
 
   Future<void> _useMyLocationAsStart() async {
     var u = _userPos;
     if (u == null) {
-      await _locate();
+      await _locate(fresh: true);
       u = _userPos;
     }
     if (!mounted || u == null) return;
+    _pushPlanUndo();
     setState(() {
       _start = u;
       _startAddrCtrl.text = AppLocalizations.of(context).navigateMyLocation;
@@ -9535,127 +14245,160 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.m),
       children: [
-        if (_ideaPin != null) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.m),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.chip),
-              border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.35),
-              ),
+        if (_adaptingTour != null) ...[
+          PlanAdaptBanner(
+            name: _adaptingTour!.name,
+            photoUrl: _adaptingTour!.heroPhotoUrls.isNotEmpty
+                ? _adaptingTour!.heroPhotoUrls.first
+                : _adaptingTour!.thumbnailUrl,
+            distanceKm: _adaptingTour!.distanceKm,
+            durationMin: _adaptingTour!.durationMin,
+            elevationM: _adaptingTour!.elevationM,
+            surface: (_adaptingTour!.surfaceMixLabel ?? _adaptingTour!.surface)
+                .trim(),
+            looped: _isLoop(_adaptingTour!),
+            compact: _computed != null,
+          ),
+          const SizedBox(height: AppSpacing.s),
+        ],
+        if (_ideaPin != null && _adaptingTour == null && ideaTour != null) ...[
+          PlanAdaptBanner(
+            name: ideaTour.name,
+            photoUrl: ideaTour.heroPhotoUrls.isNotEmpty
+                ? ideaTour.heroPhotoUrls.first
+                : ideaTour.thumbnailUrl,
+            distanceKm: ideaTour.distanceKm,
+            durationMin: ideaTour.durationMin,
+            elevationM: ideaTour.elevationM,
+            surface: (ideaTour.surfaceMixLabel ?? ideaTour.surface).trim(),
+            looped: _isLoop(ideaTour),
+            compact: true,
+          ),
+          const SizedBox(height: AppSpacing.s),
+        ],
+        if (_planDragAlongLabel != null) ...[
+          Text(
+            _planDragAlongLabel!,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  ideaTour != null
-                      ? _l10n.discoverPinIdeaNamed(ideaTour.name)
-                      : _l10n.discoverPinIdea,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _end == null
-                      ? _l10n.discoverTapEndCompute
-                      : _l10n.discoverStartEndReady,
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-              ],
+          ),
+          Text(
+            l10n.discoverRoutingAdapts,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
             ),
           ),
           const SizedBox(height: AppSpacing.s),
         ],
-        // Komoot: A/B in einem Block, Map-Tippen statt Chip-Leiste.
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-          decoration: BoxDecoration(
-            color: AppColors.charcoal.withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(AppRadius.card),
+        if (_offerLastPlanDest) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InputChip(
+              key: const Key('last-plan-dest-chip'),
+              avatar: const Icon(Icons.history, size: 16),
+              label: Text(_lastPlanDestChipText()),
+              onPressed: _applyLastPlanDest,
+              onDeleted: _dismissLastPlanDestChip,
+            ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    Semantics(
-                      label: l10n.navigateStartLabel,
-                      textField: true,
-                      child: TextField(
-                        controller: _startAddrCtrl,
-                        focusNode: _startAddrFocus,
-                        autofillHints: const [AutofillHints.addressCity],
-                        decoration: InputDecoration(
-                          labelText: 'A  ${l10n.navigateStartLabel}',
-                          hintText: l10n.navigateStartHint,
-                          prefixIcon: const Icon(Icons.trip_origin, size: 18),
-                          suffixIcon: IconButton(
-                            tooltip: l10n.navigateMyLocation,
-                            onPressed: () => unawaited(_useMyLocationAsStart()),
-                            icon: const Icon(Icons.my_location, size: 18),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.surfaceDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.chip),
-                            borderSide: BorderSide.none,
-                          ),
-                          isDense: true,
-                        ),
-                        textInputAction: TextInputAction.next,
-                        onChanged: (_) => _scheduleAddressSearch('start'),
-                        onSubmitted: (_) {
-                          unawaited(_searchAddress('start'));
-                          _endAddrFocus.requestFocus();
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    Semantics(
-                      label: l10n.navigateEndLabel,
-                      textField: true,
-                      child: TextField(
-                        controller: _endAddrCtrl,
-                        focusNode: _endAddrFocus,
-                        autofillHints: const [AutofillHints.addressCity],
-                        decoration: InputDecoration(
-                          labelText: 'B  ${l10n.navigateEndLabel}',
-                          hintText: l10n.navigateEndHint,
-                          prefixIcon: const Icon(Icons.flag_outlined, size: 18),
-                          filled: true,
-                          fillColor: AppColors.surfaceDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.chip),
-                            borderSide: BorderSide.none,
-                          ),
-                          isDense: true,
-                        ),
-                        textInputAction: TextInputAction.search,
-                        onChanged: (_) => _scheduleAddressSearch('end'),
-                        onSubmitted: (_) => _searchAddress('end'),
-                      ),
-                    ),
-                  ],
-                ),
+          const SizedBox(height: AppSpacing.s),
+        ],
+        PlanWaypointStack(
+          startController: _startAddrCtrl,
+          endController: _endAddrCtrl,
+          startFocus: _startAddrFocus,
+          endFocus: _endAddrFocus,
+          vias: List<LabeledVia>.from(_vias),
+          hasStart: _start != null,
+          hasEnd: _end != null,
+          startOutside: coverageRiderOutside(
+            lng: _start?.lng,
+            lat: _start?.lat,
+            bbox: _offlinePackBbox,
+            routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+          ),
+          endOutside: coverageRiderOutside(
+            lng: _end?.lng,
+            lat: _end?.lat,
+            bbox: _offlinePackBbox,
+            routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
+          ),
+          viaOutside: [
+            for (final v in _vias)
+              coverageRiderOutside(
+                lng: v.lng,
+                lat: v.lat,
+                bbox: _offlinePackBbox,
+                routingReady: _offlineRoutingReady,
+          ring: _offlinePackRing,
               ),
-              IconButton(
-                tooltip: l10n.navigateSwap,
-                onPressed: _swapStartEnd,
-                icon: const Icon(Icons.swap_vert),
-              ),
-            ],
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _pick = _PickMode.via),
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(l10n.navigateAddVia),
-          ),
+          ],
+          loopClosed: PlanSession.fromParts(
+            start: _start,
+            end: _end,
+          ).isClosedLoop(),
+          onMyLocation: () => unawaited(_useMyLocationAsStart()),
+          onSwap: _swapStartEnd,
+          pickingVia: _pick == _PickMode.via,
+          viaHint: _pick == _PickMode.via ? l10n.navigateViaHint : null,
+          lineHint: _hasLivePlanLine && _start != null && _end != null
+              ? l10n.planEditLineHint
+              : null,
+          onUndo: _planUndoStack.isEmpty ? null : _undoPlan,
+          onRedo: _planRedoStack.isEmpty ? null : _redoPlan,
+          onAddVia: () => setState(() {
+            _pick = _PickMode.via;
+            _setStatus(l10n.navigateViaHint);
+          }),
+          onCloseLoop: _closeLoop,
+          onStartChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+            _scheduleAddressSearch('start');
+          },
+          onEndChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+            _scheduleAddressSearch('end');
+          },
+          onStartSubmitted: () {
+            unawaited(_searchAddress('start'));
+            _endAddrFocus.requestFocus();
+          },
+          onEndSubmitted: () => unawaited(_searchAddress('end')),
+          onViaReorder: (from, to) {
+            final snapshot = List<LabeledVia>.from(_vias);
+            _pushPlanUndo();
+            setState(() {
+              _abFromBrowsePin = false;
+              _vias
+                ..clear()
+                ..addAll(moveLabeledViaTo(snapshot, from, to));
+            });
+            unawaited(_syncMarkers());
+            if (_start != null && _end != null) {
+              unawaited(_calcAb(keepLine: true, refitPins: false));
+            }
+          },
+          onViaRemove: (index) {
+            _pushPlanUndo();
+            setState(() => _vias.removeAt(index));
+            unawaited(_syncMarkers());
+            if (_start != null && _end != null) {
+              unawaited(_calcAb(keepLine: true, refitPins: false));
+            }
+          },
+          onViaChanged: (i, q) {
+            if (_error != null) setState(() => _error = null);
+            _scheduleAddressSearch('via:$i', query: q);
+          },
+          onViaSubmitted: (i, q) =>
+              unawaited(_searchAddress('via:$i', query: q)),
         ),
         if (_addrBusy)
           const Padding(
@@ -9669,169 +14412,232 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             leading: const Icon(Icons.place_outlined, size: 18),
             title: Text(h.label, style: const TextStyle(fontSize: 13)),
             onTap: () => _applyAddressHit(h),
+            onLongPress: () => _addGeocodeHitAsVia(h),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: _planDestFlagTooltip(l10n),
+                  icon: const Icon(Icons.flag_outlined, size: 18),
+                  onPressed: () => unawaited(_routeToGeocodeHit(h)),
+                ),
+                if (_start != null) _planHitOverflow(h, l10n),
+              ],
+            ),
           ),
-        if (_vias.isNotEmpty) ...[
-          ..._vias.asMap().entries.map(
-                (e) => Row(
+        if (_addrHits.isEmpty && _geocodeRecents.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 2),
+            child: Text(
+              l10n.discoverRecently,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+          for (final h in _geocodeRecents)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.history, size: 18),
+              title: Text(h.label, style: const TextStyle(fontSize: 13)),
+              onTap: () => unawaited(_applyAddressHit(h)),
+            ),
+        ],
+        if (_error != null && _start != null && _end != null)
+          Wrap(
+            spacing: 4,
+            children: [
+              TextButton(
+                onPressed: () => unawaited(
+                  _calcAb(keepLine: true, refitPins: false),
+                ),
+                child: Text(l10n.retry),
+              ),
+              if (_error == l10n.discoverBrowseNeedsNetwork)
+                _browseLoadMapPackButton(),
+              if (_error == l10n.discoverViasNeedNet && _vias.isNotEmpty)
+                _dropViasAndGoButton(),
+            ],
+          ),
+        if (_computed != null && _start != null && _end != null) ...[
+          if (shouldShowLiveRouteStats(
+            hasLiveLine: true,
+            engine: _computed!.engine,
+            coordinateCount: _computed!.coordinates.length,
+          )) ...[
+            const SizedBox(height: AppSpacing.s),
+            Semantics(
+              key: const Key('navigate-route-stats'),
+              label: _planRouteStatsLine(),
+              child: Opacity(
+                opacity: _planDragAlongLabel != null ? 0.45 : 1,
+                child: PlanRouteStats(
+                  distanceKm: _computed!.distanceM / 1000,
+                  durationMin: (_computed!.durationS / 60).round(),
+                  ascentM: _elevationGainM,
+                  surfaceLine: _planSurfaceCell(l10n),
+                  looped: PlanSession.fromParts(
+                    start: _start,
+                    end: _end,
+                  ).isClosedLoop(),
+                  uncertainShort: _aroundYouApplied
+                      ? l10n.discoverAroundYouUncertainShort
+                      : null,
+                  reasons: _aroundYouApplied
+                      ? _loopJustificationReasons(l10n)
+                      : const [],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            PlanSurfaceBar(mix: _planSurfaceMix),
+            if (_planElevSamples.length >= 2) ...[
+              const SizedBox(height: AppSpacing.s),
+              Row(
+                children: [
+                  Text(
+                    l10n.discoverElevationProfile,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    l10n.planElevSteepHint,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFC2410C),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              PlanElevationChart(
+                samples: _planElevSamples,
+                sampleKm: _planElevKm.isEmpty ? null : _planElevKm,
+                scrubT: _planElevScrubT,
+                totalKm: _computed!.distanceM / 1000,
+                surfaceBands:
+                    _planSurfaceBands.isEmpty ? null : _planSurfaceBands,
+                onScrub: _onPlanElevScrub,
+                onTap: _onPlanElevTap,
+              ),
+            ],
+          ],
+          const SizedBox(height: AppSpacing.s),
+          RouteVariantChips(
+            value: _routeVariant,
+            enabled: _valhallaLive,
+            onChanged: (v) {
+              setState(() => _routeVariant = v);
+              if (_start != null && _end != null) {
+                unawaited(_calcAb(keepLine: true, refitPins: false));
+              }
+            },
+          ),
+          if (_weatherStart != null || _weatherSummit != null)
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                dense: true,
+                title: Row(
                   children: [
+                    WeatherGlyph(
+                      _weatherStart?.trailHint ?? _weatherSummit?.trailHint,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        e.value.trimmedLabel ?? l10n.discoverViaN(e.key + 1),
-                        style: const TextStyle(fontSize: 12),
+                        l10n.discoverWeatherAlong,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: l10n.viaMoveUp,
-                      icon: const Icon(Icons.keyboard_arrow_up, size: 18),
-                      onPressed: e.key == 0
-                          ? null
-                          : () {
-                              final snapshot = List<LabeledVia>.from(_vias);
-                              setState(() {
-                                _vias
-                                  ..clear()
-                                  ..addAll(
-                                    moveLabeledVia(snapshot, e.key, -1),
-                                  );
-                              });
-                              unawaited(_syncMarkers());
-                              if (_start != null && _end != null) {
-                                unawaited(_calcAb());
-                              }
-                            },
-                    ),
-                    IconButton(
-                      tooltip: l10n.viaMoveDown,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                      onPressed: e.key >= _vias.length - 1
-                          ? null
-                          : () {
-                              final snapshot = List<LabeledVia>.from(_vias);
-                              setState(() {
-                                _vias
-                                  ..clear()
-                                  ..addAll(
-                                    moveLabeledVia(snapshot, e.key, 1),
-                                  );
-                              });
-                              unawaited(_syncMarkers());
-                              if (_start != null && _end != null) {
-                                unawaited(_calcAb());
-                              }
-                            },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 16),
-                      onPressed: () {
-                        setState(() => _vias.removeAt(e.key));
-                        unawaited(_syncMarkers());
-                        if (_start != null && _end != null) {
-                          unawaited(_calcAb());
-                        }
-                      },
                     ),
                   ],
                 ),
-              ),
-        ],
-        const SizedBox(height: AppSpacing.s),
-        FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.chrome,
-            foregroundColor: AppColors.onAccent,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.chip),
-            ),
-          ),
-          onPressed: _loading
-              ? null
-              : () {
-                  final idea = _tourById(_selectedTourId);
-                  if (_ideaPin != null &&
-                      idea != null &&
-                      (_end == null || _computed == null)) {
-                    unawaited(_computeIdeaRoute(idea));
-                  } else {
-                    unawaited(_calcAb());
-                  }
-                },
-          icon: const Icon(Icons.route),
-          label: Text(
-            _start == null || _end == null
-                ? l10n.navigateComputeNeedBoth
-                : (ideaTour != null
-                    ? _l10n.discoverComputeAndSave
-                    : l10n.computeRoute),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        RouteVariantChips(
-          value: _routeVariant,
-          enabled: _valhallaLive,
-          onChanged: (v) {
-            setState(() => _routeVariant = v);
-            if (_start != null && _end != null) unawaited(_calcAb());
-          },
-        ),
-        if (_computed != null && _start != null && _end != null) ...[
-          const SizedBox(height: AppSpacing.s),
-          Text(
-            '${(_computed!.distanceM / 1000).toStringAsFixed(1)} km · '
-            '${(_computed!.durationS / 60).round()} min'
-            '${_elevationSummary != null ? ' · $_elevationSummary' : ''}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.muted,
-            ),
-          ),
-          if (_weatherStart != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              l10n.discoverWeatherStart(
-                '${_weatherStart!.tempC.round()}',
-                l10n.weatherTrailHintLabel(_weatherStart!.trailHint),
-              ),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-          ],
-          if (_weatherSummit != null)
-            Text(
-              l10n.discoverWeatherSummit(
-                '${_weatherSummit!.tempC.round()}',
-                l10n.weatherTrailHintLabel(_weatherSummit!.trailHint),
-              ),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-          const SizedBox(height: AppSpacing.s),
-          PlanFilmstrip(
-            shots: _filmstripShots,
-            onTap: (s) {
-              final map = _map;
-              if (map == null) return;
-              map.animateCamera(
-                CameraUpdate.newLatLngZoom(LatLng(s.lat, s.lng), 15),
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.s),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.onAccent,
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.chip),
+                children: [
+                  if (_weatherStart != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l10n.discoverWeatherStart(
+                          '${_weatherStart!.tempC.round()}',
+                          l10n.weatherTrailHintLabel(_weatherStart!.trailHint),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  if (_weatherStart?.rideWindowLabel != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _weatherStart!.rideWindowLabel!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  if (_weatherSummit != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l10n.discoverWeatherSummit(
+                          '${_weatherSummit!.tempC.round()}',
+                          l10n.weatherTrailHintLabel(_weatherSummit!.trailHint),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.s),
+                ],
               ),
             ),
-            onPressed: () => unawaited(_startRide()),
-            icon: const Icon(Icons.play_arrow),
-            label: Text(l10n.goRide),
-          ),
+          if (_filmstripShots.isNotEmpty)
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  l10n.discoverPhotosAlong,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                children: [
+                  PlanFilmstrip(
+                    shots: _filmstripShots,
+                    onTap: (s) {
+                      final map = _map;
+                      if (map == null) return;
+                      map.animateCamera(
+                        CameraUpdate.newLatLngZoom(LatLng(s.lat, s.lng), 15),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
         ],
       ],
     );
@@ -9928,11 +14734,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                hasFilters
-                    ? l10n.emptyToursFiltersBody
-                    : l10n.emptyToursNearbyBody,
+                !_browseOnline
+                    ? l10n.discoverOaOffline
+                    : hasFilters
+                        ? l10n.emptyToursFiltersBody
+                        : l10n.emptyToursNearbyBody,
                 style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
+              if (_loopOnlyActive) ...[
+                const SizedBox(height: AppSpacing.m),
+                _aroundYouCta(),
+              ],
               const SizedBox(height: AppSpacing.m),
               if (hasFilters) ...[
                 SizedBox(
@@ -10042,6 +14854,152 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  Future<void> _generateAroundYou({bool next = false}) async {
+    final l10n = _l10n;
+    if (!profileAllowsOsmRoundTrip(_profile)) {
+      setState(() => _error = l10n.discoverAroundYouSport);
+      return;
+    }
+    if (!_browseOnline) {
+      setState(() => _error = l10n.discoverAroundYouOffline);
+      return;
+    }
+    final origin = _riderOrigin ?? _userPos ?? _mapCenter;
+    if (next) _loopSeed += 1;
+    setState(() {
+      _loopBusy = true;
+      _error = null;
+      _loading = true;
+    });
+    try {
+      final minutes = _minutes > 0 ? _minutes : 60;
+      final result = await _routes.planLoop(
+        from: origin,
+        profile: _profile,
+        minutes: minutes,
+        seed: _loopSeed,
+      );
+      if (!mounted) return;
+      final start = result.coordinates.first;
+      final end = result.coordinates.last;
+      setState(() {
+        _start = start;
+        _end = end;
+        _vias.clear();
+        _computed = result;
+        _ideaPin = null;
+        _selectedTourId = null;
+        _adaptingTour = null;
+        _adaptingTourName = null;
+        _label = l10n.discoverAroundYouLoop;
+        _surface = _Surface.plan;
+        _shellMode = DiscoverShellMode.navigate;
+        _detailId = null;
+        _pick = _PickMode.none;
+        _startAddrCtrl.text = l10n.discoverMyPosition;
+        _endAddrCtrl.text = l10n.discoverMyPosition;
+        _aroundYouApplied = true;
+        _loopBusy = false;
+        _loading = false;
+        _aroundYouStats = l10n.discoverAroundYouStats(
+          (result.distanceM / 1000).toStringAsFixed(1),
+          (result.durationS / 60).round(),
+        );
+        _setStatus(
+          '${l10n.discoverAroundYouHint} · $_aroundYouStats · ${l10n.discoverAroundYouUncertainShort}',
+        );
+      });
+      await _drawRoute(result);
+      await _syncMarkers();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loopBusy = false;
+        _loading = false;
+        _error = _liveRouteError(e);
+      });
+    }
+  }
+
+  Widget _aroundYouCta({bool compact = false}) {
+    final l10n = AppLocalizations.of(context);
+    if (!profileAllowsOsmRoundTrip(_profile)) return const SizedBox.shrink();
+    final label = _loopBusy
+        ? l10n.discoverAroundYouBusy
+        : _aroundYouApplied
+            ? l10n.discoverAroundYouAnother
+            : l10n.discoverAroundYouCta;
+    final icon = _loopBusy
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.loop);
+    void onPressed() => unawaited(_generateAroundYou(next: _aroundYouApplied));
+    final button = compact
+        ? OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.chrome,
+              minimumSize: const Size(0, 40),
+            ),
+            onPressed: _loopBusy ? null : onPressed,
+            icon: icon,
+            label: Text(label),
+          )
+        : FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.chrome,
+              minimumSize: const Size(0, 48),
+            ),
+            onPressed: _loopBusy ? null : onPressed,
+            icon: icon,
+            label: Text(label),
+          );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          button,
+          if (!compact) ...[
+            const SizedBox(height: 6),
+            Text(
+              l10n.discoverAroundYouHint,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+            if (_aroundYouStats != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                '$_aroundYouStats · ${l10n.discoverAroundYouUncertainShort}',
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ],
+            if (_aroundYouApplied)
+              for (final r in _loopJustificationReasons(l10n))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    r,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+          ] else if (_aroundYouStats != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '$_aroundYouStats · ${l10n.discoverAroundYouUncertainShort}',
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   /// Filter-Empty: ein Tap setzt zurück — kein toter Hinweistext.
   Widget _emptyFilterState() {
     final l10n = AppLocalizations.of(context);
@@ -10138,10 +15096,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }).length;
 
     final refresh = TextButton(
-      onPressed: _loading
+      onPressed: _loading || !_browseOnline
           ? null
           : () {
               unawaited(_fetchPublicCatalog());
+              unawaited(_fetchOutdooractive());
               unawaited(_fetchOsmRoutes());
               unawaited(_fetchTrailNetwork());
               unawaited(_loadNaeheSeeds());
@@ -10168,6 +15127,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           VoidCallback? onTap;
           if (!_hasRealOrigin) {
             line = _l10n.discoverGrantLocationNearby;
+          } else if (!_browseOnline) {
+            line = _l10n.discoverOaOffline;
+            style = const TextStyle(fontSize: 11, color: AppColors.muted);
           } else if (showSeeds) {
             line = null;
           } else if (_oaIsDegraded) {
@@ -10252,10 +15214,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           loopCount > 0 &&
           !showSeeds)
         _emptyOrtPicker(),
+      if (_loopOnlyActive &&
+          profileAllowsOsmRoundTrip(_profile) &&
+          loopCount > 0 &&
+          (showSeeds || nearbyLoopCount > 0))
+        _aroundYouCta(compact: true),
       if (showSeeds) ...[
         _sectionTitle(
-          _seedsStatus != null
-              ? '$seedLabel (${nearbyCards.length}) · offline'
+          _seedsOffline
+              ? '$seedLabel (${nearbyCards.length}) · ${_l10n.rideGroupOffline}'
               : '$seedLabel (${nearbyCards.length})',
           hint: _hasRealOrigin
               ? (nearbyLoopCount > 0
@@ -10534,9 +15501,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ],
               const SizedBox(height: 8),
               DiscoverPeekActions(
+                navigateLabel:
+                    _isPinOnlyIdea(r) ? l10n.discoverSetEndCta : null,
                 onNavigate: () {
                   if (_isPinOnlyIdea(r)) {
-                    unawaited(_computeIdeaRoute(r));
+                    unawaited(_adoptTourIntoPlan(r));
                   } else {
                     unawaited(_startRide(suggestion: r));
                   }
@@ -10564,11 +15533,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (r.elevationM > 0) '↑ ${r.elevationM} m',
       if (loop) l10n.loopLabel,
     ];
-    final nearLabel = distKm < 1
-        ? '<1 km'
-        : distKm < 10
-            ? '${distKm.toStringAsFixed(1)} km'
-            : '${distKm.round()} km';
+    final awayKm = DiscoverExploreChromeLogic.formatAwayKm(distKm);
+    final nearLabel = awayKm == 0
+        ? l10n.discoverPeekAwayNear
+        : l10n.discoverPeekAwayKm(awayKm);
     final sport = TourFilters.honestSportLabel(
       sportLabel: r.sportLabel,
       surface: r.surface,
@@ -10646,8 +15614,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           const SizedBox(height: 4),
                           Text(
                             sport == null
-                                ? '$nearLabel entfernt'
-                                : '$nearLabel entfernt · ${_l10n.sportTagLabel(sport)}',
+                                ? nearLabel
+                                : '$nearLabel · ${_l10n.sportTagLabel(sport)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -10676,15 +15644,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             onPressed: _loading
                                 ? null
                                 : pinOnly
-                                    ? () => unawaited(_computeIdeaRoute(r))
+                                    ? () => unawaited(_adoptTourIntoPlan(r))
                                     : () =>
                                         unawaited(_startRide(suggestion: r)),
                             icon: Icon(
-                              pinOnly ? Icons.route : Icons.play_arrow,
+                              pinOnly ? Icons.flag_outlined : Icons.play_arrow,
                               size: 20,
                             ),
                             label: Text(
-                              pinOnly ? l10n.computeRoute : l10n.goRide,
+                              pinOnly ? l10n.discoverSetEndCta : l10n.goRide,
                             ),
                           ),
                         ),
@@ -10732,68 +15700,52 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               fontWeight: FontWeight.w700, color: AppColors.muted),
         ),
       ],
-      if (savedList.isEmpty)
+      if (savedList.isEmpty && allSaved.isEmpty)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            allSaved.isEmpty ? l10n.myRoutesEmpty : _l10n.discoverNoSavedFilter,
-            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          child: MappeEmptyBlock(
+            compact: true,
+            title: l10n.mappeEmptyTitle,
+            hint: l10n.myRoutesEmpty,
+          ),
+        )
+      else if (savedList.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Text(
+                _l10n.discoverNoSavedFilter,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(tourVisibilityProvider.notifier).state =
+                      TourVisibilityKey.allMine;
+                },
+                child: Text(l10n.mappeShowAll),
+              ),
+            ],
           ),
         )
       else
         for (final s in savedList)
-          ListTile(
-            dense: true,
-            leading: Icon(
-              s.source == 'recorded'
-                  ? Icons.fiber_manual_record
-                  : (s.source == 'import' ? Icons.upload_file : Icons.route),
-              color: Color(
-                int.parse(
-                  'FF${DiscoverMapLineStyle.ownTrack.substring(1)}',
-                  radix: 16,
-                ),
-              ),
-            ),
-            title: Text(s.name),
-            subtitle: Text(
-              s.coordinates.length < 2
-                  ? '${_sourceBadge(l10n, s.source)} · Startpunkt — noch keine Strecke'
-                      '${RouteVisibility.isShared(_savedMeta[s.id]) ? ' · freigegeben' : ' · privat'}'
-                  : '${_sourceBadge(l10n, s.source)} · '
-                      '${s.distanceKm.toStringAsFixed(1)} km · ${s.durationMin} min'
-                      '${RouteVisibility.isShared(_savedMeta[s.id]) ? ' · freigegeben' : ' · privat'}',
-            ),
-            onTap: () => _loadSaved(s),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: l10n.myRouteOpenDetail,
-                  icon: const Icon(Icons.info_outline),
-                  onPressed: () => unawaited(_openMyRouteDetail(s)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    await _routes.deleteSaved(s.id);
-                    await SavedRouteMetaStore.delete(s.id);
-                    ref.invalidate(savedRoutesProvider);
-                    unawaited(_drawAll());
-                  },
-                ),
-                Semantics(
-                  button: true,
-                  label: _l10n.goRide,
-                  excludeSemantics: true,
-                  child: IconButton(
-                    tooltip: _l10n.goRide,
-                    icon: const Icon(Icons.play_arrow),
-                    onPressed: () => unawaited(_startRideFromSaved(s)),
-                  ),
-                ),
-              ],
-            ),
+          SavedMappeTile(
+            route: s,
+            meta: _savedMeta[s.id],
+            sourceBadge: _sourceBadge(l10n, s.source),
+            onOpen: () => _loadSaved(s),
+            onDetail: () => unawaited(_openMyRouteDetail(s)),
+            onDelete: () async {
+              await _routes.deleteSaved(s.id);
+              await SavedRouteMetaStore.delete(s.id);
+              ref.invalidate(savedRoutesProvider);
+              unawaited(_drawAll());
+            },
+            onGoRide: savedRouteHasTrack(s)
+                ? () => unawaited(_startRideFromSaved(s))
+                : null,
           ),
     ];
   }
@@ -10961,12 +15913,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             unawaited(_startRideFromSaved(s));
           },
           onCreateGroup: () {
-            if (!RideGroupPolicy.canAttachSaved(s, _savedMeta[s.id])) {
-              ScaffoldMessenger.of(ctx).showSnackBar(
-                SnackBar(content: Text(l10n.platzNeedSharedTour)),
-              );
-              return;
-            }
             Navigator.pop(ctx);
             ref.read(platzPendingCreateGroupRouteIdProvider.notifier).state =
                 s.id;

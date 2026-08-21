@@ -26,6 +26,8 @@ class Bikes extends Table {
   /// Explizites Assist-Flag (Web-Parität). Ermöglicht E-City/E-Gravel/E-Road
   /// ohne Kategorie-Kollaps auf `etrekking`.
   BoolColumn get isEbike => boolean().withDefault(const Constant(false))();
+  /// Owner card (Rahmennummer, Kauf, Versicherung) — JSON, lokal.
+  TextColumn get ownerJson => text().withDefault(const Constant('{}'))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
@@ -196,7 +198,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -247,6 +249,9 @@ class AppDatabase extends _$AppDatabase {
               "UPDATE bikes SET is_ebike = 1 "
               "WHERE category IN ('emtb', 'etrekking')",
             );
+          }
+          if (from < 9) {
+            await m.addColumn(bikes, bikes.ownerJson);
           }
         },
       );

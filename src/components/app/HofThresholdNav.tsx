@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, BookOpen, Wrench } from "lucide-react";
+import { Home, Map, BookOpen } from "lucide-react";
+import { RadNavMark } from "@/components/garage/RadNavMark";
 import { HOF_NAV, isHofNavActive } from "@/lib/nav/hofNav";
 import { useHofTitle } from "@/hooks/useHofTitle";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -19,12 +20,30 @@ const ICONS = {
   hof: Home,
   karte: Map,
   platz: BookOpen,
-  werkstatt: Wrench,
 } as const;
+
+function HofTabMark({
+  id,
+  active,
+}: {
+  id: (typeof HOF_NAV)[number]["id"];
+  active: boolean;
+}) {
+  if (id === "werkstatt") return <RadNavMark active={active} />;
+  const Icon = ICONS[id];
+  return (
+    <Icon
+      className="h-[22px] w-[22px]"
+      strokeWidth={active ? 1.5 : 1.8}
+      fill={active ? "currentColor" : "none"}
+      aria-hidden
+    />
+  );
+}
 
 /**
  * Schwelle zum Hof — Haarlinie, Orange aktiv.
- * Lucide bleibt die Web-Handschrift; gefüllt wenn aktiv wie Native.
+ * Lucide für Hof/Karte/Touren; Rad bekommt die Stand-Marke.
  */
 export function HofThresholdNav() {
   const pathname = usePathname();
@@ -43,7 +62,10 @@ export function HofThresholdNav() {
     const inbox = myReviews.filter((r) =>
       savedRoutes.some((s) => stimmenTourIdOf(s) === r.tourId)
     );
-    return inbox.length > inboxSeen;
+    const listing = savedRoutes.filter(
+      (s) => s.listing === "candidate" || s.listing === "reverted"
+    ).length;
+    return inbox.length + listing > inboxSeen;
   }, [myReviews, savedRoutes, inboxSeen]);
 
   return (
@@ -55,7 +77,6 @@ export function HofThresholdNav() {
       <div className="flex h-14 items-stretch">
         {HOF_NAV.map((item, i) => {
           const active = isHofNavActive(pathname, item.href);
-          const Icon = ICONS[item.id];
           const label = item.id === "hof" ? hofTitle : copy.hofNav[item.id];
           const showDue = item.id === "werkstatt" && dueTotal > 0;
           const showPlatz = item.id === "platz" && platzUnseen;
@@ -74,12 +95,7 @@ export function HofThresholdNav() {
               )}
             >
               <span className="relative">
-                <Icon
-                  className="h-[22px] w-[22px]"
-                  strokeWidth={active ? 1.5 : 1.8}
-                  fill={active ? "currentColor" : "none"}
-                  aria-hidden
-                />
+                <HofTabMark id={item.id} active={active} />
                 {showDue ? (
                   <span
                     className="absolute -right-2 -top-1 h-1.5 w-1.5 rounded-full bg-error"

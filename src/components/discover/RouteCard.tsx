@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronRight, ExternalLink } from "lucide-react";
+import { MappeGlyph } from "@/components/tours/MappeGlyph";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
@@ -68,11 +69,11 @@ export function RouteCard({
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
           <TourCommunityChip tourId={route.id} />
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
-            <Route className="h-3 w-3" />
+            <MappeGlyph name={route.loop ? "loop" : "distance"} size={12} />
             {route.loop ? d.loopRound : d.pointAb}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
-            <Mountain className="h-3 w-3" />
+            <MappeGlyph name="elevation" size={12} />
             {route.surface}
           </span>
         </div>
@@ -111,7 +112,7 @@ export function RouteCard({
           onClick={onStart}
           className="flex min-w-[7rem] flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
         >
-          <Play className="h-4 w-4 fill-current" /> {d.startInApp}
+          <MappeGlyph name="ride" size={16} /> {d.startInApp}
         </button>
       </div>
     </article>

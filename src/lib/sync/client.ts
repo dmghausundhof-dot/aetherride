@@ -12,6 +12,7 @@ export type SyncPayload = {
   privacyZones?: unknown;
   familyRiders?: unknown;
   activeFamilyRiderId?: string | null;
+  ownSetupByBikeId?: Record<string, string>;
   riderProfile?: unknown;
   subscriptionTier?: SubscriptionTier;
   commerceMode?: unknown;

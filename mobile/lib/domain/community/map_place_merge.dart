@@ -6,6 +6,7 @@ List<MapPlace> mergeMapPlaces({
   List<MapPlace> community = const [],
   List<MapPlace> stimme = const [],
   MapPlace? meet,
+  List<MapPlace> meets = const [],
 }) {
   final seen = <String>{};
   final out = <MapPlace>[];
@@ -29,6 +30,9 @@ List<MapPlace> mergeMapPlaces({
     push(p);
   }
   push(meet);
+  for (final p in meets) {
+    push(p);
+  }
   return out;
 }
 

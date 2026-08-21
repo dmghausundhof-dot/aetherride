@@ -20,6 +20,7 @@ import {
   keepLocalRideGroupAfterCloud,
   normalizeJoinCode,
   parseGroupListing,
+  parseRideGroupWindow,
   RIDE_GROUP_JOIN_CODE_LEN,
 } from "@/lib/community/rideGroup";
 import { listedPlannedGroups } from "@/lib/community/rideTogether";
@@ -95,6 +96,7 @@ type RideGroupState = {
   ) => Promise<boolean>;
   pullCloud: () => Promise<void>;
   markInboxSeen: (n: number) => void;
+  joinListedLocal: (group: RideGroup) => RideGroup | { error: string };
 };
 
 function activeGroups(groups: RideGroup[]) {
@@ -214,13 +216,20 @@ export const useRideGroupStore = create<RideGroupState>()(
               "Anmelden — sonst sieht der Freund die Gruppe nicht auf dem Server.",
           };
         }
+        const window = parseRideGroupWindow({
+          startsAt: input.startsAt,
+          durationHours: input.durationHours,
+        });
+        if ("error" in window) {
+          return { error: "Zeit liegt außerhalb des Rahmens." };
+        }
         const cloud = await createRideGroupCloud({
           savedRouteId: input.route.id,
           catalogTourId: input.route.catalogTourId,
           title: (input.title ?? input.route.name).trim() || "Gruppe",
           visibility: parseGroupListing(input.visibility),
-          startsAt: input.startsAt,
-          durationHours: input.durationHours,
+          startsAt: window.start.toISOString(),
+          durationHours: window.durationHours,
           meetingPoint: input.meetingPoint,
         });
         if (!isCloudFail(cloud) && cloud.group) {
@@ -319,7 +328,9 @@ export const useRideGroupStore = create<RideGroupState>()(
         }
         const loggedIn = await rideGroupHasSession();
         if (!loggedIn) {
-          return { error: "Anmelden — sonst sieht der Host dich nicht." };
+          if (token) return get().joinFromInvite(code, token);
+          if (asCode) return get().joinByCode(normalized);
+          return { error: "Anmelden — sonst sieht der Gastgeber dich nicht." };
         }
         const cloud = await joinRideGroupCloud({
           code: asId ? undefined : normalized,
@@ -336,6 +347,20 @@ export const useRideGroupStore = create<RideGroupState>()(
             }),
           }));
           return { ...cloud.group, onServer: true };
+        }
+        if (
+          isCloudFail(cloud) &&
+          asCode &&
+          !token &&
+          (cloud.status === 403 ||
+            cloud.status === 400 ||
+            cloud.status === 404)
+        ) {
+          return {
+            error:
+              cloud.note ||
+              "Privat — nur mit Einladungslink. Kein Code zum Abtippen.",
+          };
         }
         if (isCloudFail(cloud) && cloud.status === 403) {
           return {
@@ -356,7 +381,12 @@ export const useRideGroupStore = create<RideGroupState>()(
           return { error: "Gruppe ist aufgelöst." };
         }
         if (isCloudFail(cloud) && cloud.status === 401) {
-          return { error: "Anmelden — sonst sieht der Host dich nicht." };
+          if (token) return get().joinFromInvite(code, token);
+          return { error: "Anmelden — sonst sieht der Gastgeber dich nicht." };
+        }
+        if (token) {
+          const local = get().joinFromInvite(code, token);
+          if (!("error" in local)) return local;
         }
         return {
           error: isCloudFail(cloud)
@@ -423,6 +453,40 @@ export const useRideGroupStore = create<RideGroupState>()(
 
       joinFromInviteAsync: async (code, token) => {
         return get().joinByCodeAsync(code, token);
+      },
+
+      joinListedLocal: (group) => {
+        const now = new Date();
+        if (group.status === "closed") {
+          return { error: "Gruppe ist aufgelöst." };
+        }
+        if (now > new Date(group.startWindowEnd)) {
+          return { error: "Fenster zu — der Link gilt nicht mehr." };
+        }
+        if (!canJoinWithoutInviteToken(parseGroupListing(group.visibility))) {
+          return {
+            error: "Privat — nur mit Einladungslink. Kein Code zum Abtippen.",
+          };
+        }
+        const uid = get().localUserId;
+        if (get().members.some((m) => m.groupId === group.id && m.userId === uid)) {
+          return group;
+        }
+        const member: RideGroupMember = {
+          groupId: group.id,
+          userId: uid,
+          displayLabel: "Du",
+          joinedAt: now.toISOString(),
+          liveOptIn: false,
+        };
+        set((s) => ({
+          lastNote: LOCAL_ONLY_NOTE,
+          groups: s.groups.some((g) => g.id === group.id)
+            ? s.groups
+            : [{ ...group, onServer: false }, ...s.groups],
+          members: [member, ...s.members],
+        }));
+        return { ...group, onServer: false };
       },
 
       setLiveOptIn: (groupId, on) => {
@@ -566,7 +630,7 @@ export function memberRosterLine(input: {
   selfSuffix?: string;
   friendLabel?: (n: number) => string;
 }): string {
-  const host = input.host ?? "Host";
+  const host = input.host ?? "Gastgeber";
   const guest = input.guest ?? "Gast";
   const you = input.you ?? "Du";
   const friendLabel = input.friendLabel ?? ((n) => `Freund ${n}`);

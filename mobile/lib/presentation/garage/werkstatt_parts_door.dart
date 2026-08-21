@@ -5,8 +5,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../shop/shop_screen.dart';
+import 'garage_chrome.dart';
 
-/// Ruhige Zeile in der Werkstatt-Liste: Tür zum Laden, gebunden ans Rad.
+/// Ruhige Zeile in der Rad-Liste: Tür zum Laden, gebunden ans Rad.
 /// Kein Banner, kein Grid, kein Preis.
 class WerkstattPartsDoor extends ConsumerWidget {
   const WerkstattPartsDoor({
@@ -41,10 +42,7 @@ class WerkstattPartsDoor extends ConsumerWidget {
         ),
         borderRadius: BorderRadius.circular(AppRadius.chip),
         child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            border: Border.all(color: AppColors.border),
-          ),
+          decoration: garageCardDecoration(),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,

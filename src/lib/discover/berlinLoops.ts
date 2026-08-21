@@ -6,7 +6,7 @@
  * ~60 / Rundkurs lens: honest loops only (is_loop / closed), never A→B fillers.
  */
 import type { BikeCategory } from "@/types";
-import type { RouteSuggestion } from "@/lib/routing/suggestions";
+import type { RoutePoiStop, RouteSuggestion } from "@/lib/routing/suggestions";
 import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 import { seedIsLoopFlag } from "@/lib/discover/loopHonesty";
 import berlinRaw from "@/lib/discover/berlin-loops-v1.json";
@@ -35,6 +35,7 @@ type BerlinSeed = {
   loop?: boolean;
   closed?: boolean;
   duration_band?: string;
+  poi_stops?: unknown;
 };
 
 const sportToCategory = (tags: string[] | undefined): BikeCategory => {
@@ -59,6 +60,30 @@ const surfaceLabel = (mix: Record<string, number> | null | undefined): string =>
     .map(([k, v]) => `${k} ${v}%`);
   return parts.join(" / ") || "mixed";
 };
+
+/** Keep seed `poi_stops` (id / title / kind / atMin). No invented catalog. */
+export function parseSeedPoiStops(raw: unknown): RoutePoiStop[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RoutePoiStop[] = [];
+  for (const p of raw) {
+    if (!p || typeof p !== "object") continue;
+    const m = p as Record<string, unknown>;
+    const atRaw = m.offset_min ?? m.at_min ?? m.atMin;
+    const atMin = typeof atRaw === "number" ? Math.round(atRaw) : Number(atRaw);
+    if (!Number.isFinite(atMin)) continue;
+    const kind = String(m.type ?? m.kind ?? "place").trim() || "place";
+    const title = String(m.title ?? m.name ?? "").trim();
+    if (!title) continue;
+    const rawId = String(m.id ?? "").trim();
+    const slug = kind.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const id = rawId || `poi-${atMin}-${slug}`;
+    const whyRaw = m.why_good ?? m.whyGood;
+    const whyGood =
+      typeof whyRaw === "string" && whyRaw.trim() ? whyRaw.trim() : undefined;
+    out.push({ id, atMin, title, kind, ...(whyGood ? { whyGood } : {}) });
+  }
+  return out;
+}
 
 function haversineKm(
   lng1: number,
@@ -134,6 +159,7 @@ function seedToSuggestion(
     ],
     center,
     distanceFromOriginKm,
+    poiStops: parseSeedPoiStops(s.poi_stops),
   } satisfies RouteSuggestion;
 }
 

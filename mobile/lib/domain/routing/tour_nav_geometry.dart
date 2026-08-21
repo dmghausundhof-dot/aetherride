@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'osm_surface_label.dart';
+import 'route_progress.dart';
 import 'route_shape.dart';
 
 /// Where Losfahren / Navigation gets its polyline for a selected tour.
@@ -156,6 +158,1520 @@ bool mapTapMaySetAbPoint({
   if (addressFieldFocused) return false;
   if (!explicitlyPicking && startSet && endSet) return false;
   return true;
+}
+
+/// Pin sofort, Route wie Web erst nach kurzer Ruhe.
+const Duration kMapPinRouteCommitDelay = Duration(milliseconds: 450);
+
+/// Join painted endpoints to pins when the engine stopped a few metres off.
+const kPlanLinePinJoinMaxM = 35.0;
+
+/// Komoot: the ribbon meets the pin. Never a long crow-flies cut through a field.
+List<List<double>> joinPlanLineToPins({
+  required List<List<double>> lineLngLat,
+  double? startLat,
+  double? startLng,
+  double? endLat,
+  double? endLng,
+  double maxJoinM = kPlanLinePinJoinMaxM,
+}) {
+  if (lineLngLat.length < 2) return lineLngLat;
+  final out = [for (final p in lineLngLat) <double>[p[0], p[1]]];
+  if (startLat != null && startLng != null) {
+    final a = out.first;
+    final gap = haversineM(startLat, startLng, a[1], a[0]);
+    if (gap > 1.5 && gap <= maxJoinM) {
+      out[0] = [startLng, startLat];
+    }
+  }
+  if (endLat != null && endLng != null) {
+    final b = out.last;
+    final gap = haversineM(endLat, endLng, b[1], b[0]);
+    if (gap > 1.5 && gap <= maxJoinM) {
+      out[out.length - 1] = [endLng, endLat];
+    }
+  }
+  return out;
+}
+
+const kPlanStreetSnapMinM = 40.0;
+const kPlanStreetSnapMaxM = 1200.0;
+
+bool routeHasFarmTrimWarning(Iterable<String> warnings) {
+  for (final w in warnings) {
+    if (w.startsWith('Kein Weg bis zum Pin')) return true;
+  }
+  return false;
+}
+
+({double lat, double lng})? snapPlanPinToStreetLine({
+  required double pinLat,
+  required double pinLng,
+  required double streetLat,
+  required double streetLng,
+  double minM = kPlanStreetSnapMinM,
+  double maxM = kPlanStreetSnapMaxM,
+}) {
+  final d = haversineM(pinLat, pinLng, streetLat, streetLng);
+  if (d < minM || d > maxM) return null;
+  return (lat: streetLat, lng: streetLng);
+}
+
+({
+  double startLat,
+  double startLng,
+  double endLat,
+  double endLng,
+  bool snappedStart,
+  bool snappedEnd,
+}) applyFarmTrimPinSnap({
+  required double startLat,
+  required double startLng,
+  required double endLat,
+  required double endLng,
+  required List<List<double>> lineLngLat,
+  Iterable<String> warnings = const [],
+  bool startIsGps = false,
+}) {
+  if (!routeHasFarmTrimWarning(warnings) || lineLngLat.length < 2) {
+    return (
+      startLat: startLat,
+      startLng: startLng,
+      endLat: endLat,
+      endLng: endLng,
+      snappedStart: false,
+      snappedEnd: false,
+    );
+  }
+  final first = lineLngLat.first;
+  final last = lineLngLat.last;
+  var slat = startLat;
+  var slng = startLng;
+  var elat = endLat;
+  var elng = endLng;
+  var snappedStart = false;
+  var snappedEnd = false;
+  if (!startIsGps) {
+    final s = snapPlanPinToStreetLine(
+      pinLat: startLat,
+      pinLng: startLng,
+      streetLat: first[1],
+      streetLng: first[0],
+    );
+    if (s != null) {
+      slat = s.lat;
+      slng = s.lng;
+      snappedStart = true;
+    }
+  }
+  final e = snapPlanPinToStreetLine(
+    pinLat: endLat,
+    pinLng: endLng,
+    streetLat: last[1],
+    streetLng: last[0],
+  );
+  if (e != null) {
+    elat = e.lat;
+    elng = e.lng;
+    snappedEnd = true;
+  }
+  return (
+    startLat: slat,
+    startLng: slng,
+    endLat: elat,
+    endLng: elng,
+    snappedStart: snappedStart,
+    snappedEnd: snappedEnd,
+  );
+}
+
+const Duration kPlanLineCoachRetry = Duration(days: 14);
+
+bool planLineCoachShouldShow({
+  required Object? stored,
+  DateTime? now,
+}) {
+  if (stored == null) return true;
+  if (stored == true || stored == '1') return false;
+  final t = stored is num ? stored.toInt() : int.tryParse('$stored');
+  if (t == null) return false;
+  final at = now ?? DateTime.now();
+  return at.millisecondsSinceEpoch - t >= kPlanLineCoachRetry.inMilliseconds;
+}
+
+/// Finger-hoch nach Pan/Zoom ist kein Ziel-Tipp.
+const Duration kMapTapAfterCameraQuiet = Duration(milliseconds: 280);
+
+/// Doppel-Feuer / Nachzittern direkt nach dem letzten Pin.
+const Duration kMapTapAfterPinQuiet = Duration(milliseconds: 350);
+
+/// Pan/zoom finger-up (or in-flight camera) is not a destination tap.
+bool mapTapLooksLikeCameraGesture({
+  required DateTime now,
+  required bool cameraMoving,
+  DateTime? cameraMovedAt,
+  Duration quiet = kMapTapAfterCameraQuiet,
+}) {
+  if (cameraMoving) return true;
+  if (cameraMovedAt == null) return false;
+  return now.difference(cameraMovedAt) < quiet;
+}
+
+bool mapTapTooSoonAfterLastPin({
+  required DateTime now,
+  DateTime? lastPinAt,
+  Duration quiet = kMapTapAfterPinQuiet,
+}) {
+  if (lastPinAt == null) return false;
+  return now.difference(lastPinAt) < quiet;
+}
+
+/// A/B/Via nur bei echtem Tipp, nicht nach Schieben oder Bounce.
+/// Long-press and explicit pick-mode use this. Short browse taps do not.
+bool mapTapMayPlaceRoutePin({
+  required bool addressFieldFocused,
+  required bool startSet,
+  required bool endSet,
+  required bool explicitlyPicking,
+  required bool cameraMoving,
+  DateTime? cameraMovedAt,
+  DateTime? lastPinAt,
+  required DateTime now,
+}) {
+  if (!mapTapMaySetAbPoint(
+    addressFieldFocused: addressFieldFocused,
+    startSet: startSet,
+    endSet: endSet,
+    explicitlyPicking: explicitlyPicking,
+  )) {
+    return false;
+  }
+  if (mapTapLooksLikeCameraGesture(
+    now: now,
+    cameraMoving: cameraMoving,
+    cameraMovedAt: cameraMovedAt,
+  )) {
+    return false;
+  }
+  if (mapTapTooSoonAfterLastPin(now: now, lastPinAt: lastPinAt)) {
+    return false;
+  }
+  return true;
+}
+
+/// Plan editor: the map is the tool. Explore browse stays inspect-only
+/// (see [mapShortTapPlacesRoutePin]).
+bool mapPlanEditorTapPlacesPin({
+  required bool editorActive,
+  required bool addressFieldFocused,
+  required bool cameraMoving,
+  DateTime? cameraMovedAt,
+  DateTime? lastPinAt,
+  required DateTime now,
+}) {
+  if (!editorActive || addressFieldFocused) return false;
+  if (mapTapLooksLikeCameraGesture(
+    now: now,
+    cameraMoving: cameraMoving,
+    cameraMovedAt: cameraMovedAt,
+  )) {
+    return false;
+  }
+  return !mapTapTooSoonAfterLastPin(now: now, lastPinAt: lastPinAt);
+}
+
+/// Short tap commits a routing pin only in explicit pick mode
+/// („Start auf Karte“ / „Ziel auf Karte“). Browse and an open plan
+/// sheet without pick mode stay inspect/select — Komoot/Google.
+bool mapShortTapPlacesRoutePin({
+  required bool explicitlyPicking,
+  required bool planSurface,
+  required bool addressFieldFocused,
+  required bool startSet,
+  required bool endSet,
+  required bool cameraMoving,
+  DateTime? cameraMovedAt,
+  DateTime? lastPinAt,
+  required DateTime now,
+}) {
+  if (!explicitlyPicking || !planSurface) return false;
+  return mapTapMayPlaceRoutePin(
+    addressFieldFocused: addressFieldFocused,
+    startSet: startSet,
+    endSet: endSet,
+    explicitlyPicking: true,
+    cameraMoving: cameraMoving,
+    cameraMovedAt: cameraMovedAt,
+    lastPinAt: lastPinAt,
+    now: now,
+  );
+}
+
+/// Seed / catalog preview on Discover — not a live A→B the rider just asked for.
+bool isTourPreviewLine(String? engine) {
+  final e = (engine ?? '').toLowerCase();
+  if (e.isEmpty) return false;
+  return e == 'seed-loop' ||
+      e == 'seed-loop-routed' ||
+      e == 'tour-routed' ||
+      e == 'tour-adopt' ||
+      e == 'tour-pin' ||
+      e == 'tour-track' ||
+      e == 'tour' ||
+      e == 'osm-trail' ||
+      e == 'osm-trail-last-mile' ||
+      e.endsWith('+tour') ||
+      e.contains('seed-loop');
+}
+
+/// A new routing pin after a tour preview must drop that leftover line.
+/// Also when start is already set (GPS→tour, then a new destination pin).
+bool mapPinClearsTourPreview({
+  required String? computedEngine,
+  required String? selectedTourId,
+}) {
+  if (selectedTourId != null && selectedTourId.isNotEmpty) return true;
+  return isTourPreviewLine(computedEngine);
+}
+
+/// Tour leftover vanishes immediately (half-old-tour bug).
+/// Live street A–B stays until the engine returns (Komoot / AllTrails).
+bool mapPinClearsLeftoverRoute({
+  required String? computedEngine,
+  required String? selectedTourId,
+  required bool hasComputedLine,
+}) {
+  final _ = hasComputedLine;
+  return mapPinClearsTourPreview(
+    computedEngine: computedEngine,
+    selectedTourId: selectedTourId,
+  );
+}
+
+/// Hit slop for tapping the painted A–B ribbon (Komoot / AllTrails).
+const double kDiscoverRouteTapMaxM = 64;
+
+bool isAdoptedTourLine(String? engine) =>
+    (engine ?? '').toLowerCase() == 'tour-adopt';
+
+/// Live A–B or an adopted catalog track the rider is customizing.
+bool isPlanCustomizableLine({
+  required String? engine,
+  required int coordinateCount,
+}) {
+  if (coordinateCount < 2) return false;
+  if (isAdoptedTourLine(engine)) return true;
+  return !isTourPreviewLine(engine);
+}
+
+bool isLiveStreetDiscoverLine({
+  required String? engine,
+  required int coordinateCount,
+}) =>
+    isPlanCustomizableLine(engine: engine, coordinateCount: coordinateCount);
+
+/// Catalog leftover wipes on the first dest pin — not after A+B in the editor.
+bool planLeftoverTourWipesOnTap({
+  required bool leftover,
+  required bool hasStart,
+  required bool hasEnd,
+  bool pickingVia = false,
+}) {
+  if (!leftover || pickingVia) return false;
+  if (hasStart && hasEnd) return false;
+  return true;
+}
+
+/// While the engine is in flight, far taps stay vias — dest only via pick/hold.
+bool planBusyBlocksDestReplace({
+  required bool routingBusy,
+  required bool hasStart,
+  required bool hasEnd,
+  bool pickingStart = false,
+  bool pickingEnd = false,
+  bool forceEnd = false,
+}) {
+  if (!routingBusy || forceEnd || pickingStart || pickingEnd) return false;
+  return hasStart && hasEnd;
+}
+
+/// Tap/drag the painted route inserts a via. Empty-map long-press stays dest.
+bool shouldInsertViaOnDiscoverRouteTap({
+  required bool hasStart,
+  required bool hasEnd,
+  required bool hasLiveStreetLine,
+  required bool leftoverTourOnMap,
+  bool pickingStart = false,
+}) {
+  if (pickingStart) return false;
+  if (!hasStart || !hasEnd) return false;
+  if (!hasLiveStreetLine) return false;
+  if (leftoverTourOnMap) return false;
+  return true;
+}
+
+/// Keep the last honest street line while a reshape is in flight.
+bool shouldKeepStaleDiscoverLine({
+  required bool hasLiveStreetLine,
+  required bool leftoverTourOnMap,
+}) =>
+    hasLiveStreetLine && !leftoverTourOnMap;
+
+bool tapHitsDiscoverRouteLine({
+  required List<List<double>> coordinates,
+  required double tapLat,
+  required double tapLng,
+  double maxM = kDiscoverRouteTapMaxM,
+}) {
+  if (coordinates.length < 2) return false;
+  final p = projectOntoRoute(
+    coordinates: coordinates,
+    lat: tapLat,
+    lng: tapLng,
+  );
+  return p.crossTrackM <= maxM;
+}
+
+/// Project the tap onto the painted polyline (via sits on the old line).
+({double lat, double lng}) snapTapOntoDiscoverRoute({
+  required List<List<double>> coordinates,
+  required double tapLat,
+  required double tapLng,
+}) {
+  if (coordinates.length < 2) return (lat: tapLat, lng: tapLng);
+  final p = projectOntoRoute(
+    coordinates: coordinates,
+    lat: tapLat,
+    lng: tapLng,
+  );
+  final pt = pointAlongRoute(coordinates, p.distanceAlongM);
+  return (lat: pt[1], lng: pt[0]);
+}
+
+/// Catalog/seed ribbons stay off while A–B is the map story.
+/// A destination pin hides leftovers immediately — also dest-only
+/// (GPS not yet adopted) and after leaving Navigieren with A+B.
+bool shouldHideDiscoverTourRibbons({
+  required bool navigateMode,
+  required bool hasStart,
+  required bool hasEnd,
+}) {
+  if (hasEnd) return true;
+  return navigateMode && hasStart;
+}
+
+/// Farm-track overlay: hide while Navigieren / loading / GPS→pin ghost.
+/// Leftover dest on Explore must not blank the trail net.
+bool shouldHideFarmTracksOnBrowse({
+  required bool navigateMode,
+  required bool loading,
+  required bool hasPendingAbHint,
+}) =>
+    navigateMode || loading || hasPendingAbHint;
+
+/// 3D plates of the selected tour. Catalog ovals can hide in A–B;
+/// plates stay on a tour preview/adopt line, never on a rider-asked A–B.
+bool shouldShowDiscoverTourPois({
+  required bool hideRibbons,
+  required bool hasSelectedTour,
+  required String? computedEngine,
+}) {
+  if (!hasSelectedTour) return false;
+  if (!hideRibbons) return true;
+  return isTourPreviewLine(computedEngine);
+}
+
+/// GPS / explicit start — never the panned map center (browse anchor).
+({double lat, double lng})? routingOriginPreferGps({
+  double? userLat,
+  double? userLng,
+  double? startLat,
+  double? startLng,
+}) {
+  if (userLat != null && userLng != null) {
+    return (lat: userLat, lng: userLng);
+  }
+  if (startLat != null && startLng != null) {
+    return (lat: startLat, lng: startLng);
+  }
+  return null;
+}
+
+/// Pin after viewing a tour: destination, GPS is start.
+/// Also when adopt already filled start with the tour’s first point.
+bool mapPinAfterTourPreviewIsDestination({
+  required bool tourPreviewOnMap,
+  required bool hasGps,
+}) =>
+    tourPreviewOnMap && hasGps;
+
+/// Browse long-press is destination. Via only via „Via auf Karte“.
+bool mapLongPressAddsVia({required bool explicitlyPickingVia}) =>
+    explicitlyPickingVia;
+
+/// Browse long-press / new pin: destination, never a start in a field.
+/// Start is GPS when we have a fix — otherwise dest only until GPS arrives.
+/// After a leftover tour or A–B line, reset A to GPS so the old start
+/// does not keep the line in the previous tour.
+/// A second pin after A+B replaces B. Via only via „Via auf Karte“.
+bool mapPinIsGpsDestination({
+  required bool tourPreviewOnMap,
+  required bool hasGps,
+  required bool startSet,
+  required bool endSet,
+  required bool pickingStart,
+  bool leftoverRoute = false,
+}) {
+  if (pickingStart) return false;
+  final _ = (tourPreviewOnMap, hasGps, startSet, endSet, leftoverRoute);
+  return true;
+}
+
+/// Status after a browse dest pin — never „Start gesetzt“ for a field pin.
+enum DiscoverBrowsePinCue { computing, waitingGpsForStart, pickStart }
+
+DiscoverBrowsePinCue discoverBrowsePinCue({
+  required bool hasStart,
+  required bool hasEnd,
+  required bool hasGps,
+}) {
+  if (hasStart && hasEnd) return DiscoverBrowsePinCue.computing;
+  if (hasEnd && !hasStart) return DiscoverBrowsePinCue.waitingGpsForStart;
+  if (hasStart && !hasEnd) return DiscoverBrowsePinCue.pickStart;
+  return hasGps
+      ? DiscoverBrowsePinCue.computing
+      : DiscoverBrowsePinCue.waitingGpsForStart;
+}
+
+/// GPS→pin without a live street line — hide farm tracks, never paint crow-flies.
+bool waitingForLiveDiscoverAb({
+  required bool hasFrom,
+  required bool hasEnd,
+  required bool hasLiveLine,
+}) =>
+    hasFrom && hasEnd && !hasLiveLine;
+
+/// Crow-flies through fields looks like the route. Do not paint it.
+bool shouldPaintPendingAbHint({
+  required bool hasFrom,
+  required bool hasEnd,
+  required bool hasLiveLine,
+}) {
+  if (!waitingForLiveDiscoverAb(
+    hasFrom: hasFrom,
+    hasEnd: hasEnd,
+    hasLiveLine: hasLiveLine,
+  )) {
+    return false;
+  }
+  return false;
+}
+
+/// km/min/hm only after a real street line — not a 2-point ghost.
+bool shouldShowLiveRouteStats({
+  required bool hasLiveLine,
+  required String? engine,
+  required int coordinateCount,
+}) {
+  if (!hasLiveLine || coordinateCount < 3) return false;
+  final e = (engine ?? '').toLowerCase();
+  if (e.contains('fallback') || e.contains('approx') || e.contains('demo')) {
+    return false;
+  }
+  return !isTourPreviewLine(engine);
+}
+
+/// Pin-only „Route berechnen“: A→B from GPS/start to the pin.
+/// Never invent a geometric destination in a field NE of the pin.
+({double startLat, double startLng, double endLat, double endLng})?
+    pinOnlyAbEndpoints({
+  required double pinLat,
+  required double pinLng,
+  double? startLat,
+  double? startLng,
+  double? userLat,
+  double? userLng,
+  bool preferGps = false,
+}) {
+  final sLat = preferGps ? (userLat ?? startLat) : (startLat ?? userLat);
+  final sLng = preferGps ? (userLng ?? startLng) : (startLng ?? userLng);
+  if (sLat == null || sLng == null) return null;
+  return (
+    startLat: sLat,
+    startLng: sLng,
+    endLat: pinLat,
+    endLng: pinLng,
+  );
+}
+
+/// A–B plan: live ORS/GraphHopper with net. Pack Dijkstra only without
+/// net (A–B, covering pack). Vias never go to the FFI graph.
+///
+/// With net, the client may still Dijkstra *after* ORS fails — if a pack
+/// on disk covers A–B. Alps + Schwarzwald must not sneak in first.
+({
+  bool preferOffline,
+  bool allowOfflineFirst,
+  bool allowOnline,
+  bool allowOfflineFallback,
+}) discoverAbEngineChoice({
+  required bool online,
+  bool viasEmpty = true,
+}) {
+  final graph = !online && viasEmpty;
+  return (
+    preferOffline: graph,
+    allowOfflineFirst: graph,
+    allowOnline: online,
+    allowOfflineFallback: viasEmpty,
+  );
+}
+
+/// Discover browse pin A–B: streets from the live engine only.
+/// Pack Dijkstra draws field-scale lines and must not run — also not
+/// after a live fail. Offline → fail honestly, no graph fallback.
+({
+  bool preferOffline,
+  bool allowOfflineFirst,
+  bool allowOnline,
+  bool allowOfflineFallback,
+}) discoverBrowseAbEngineChoice({required bool online}) {
+  return (
+    preferOffline: false,
+    allowOfflineFirst: false,
+    allowOnline: online,
+    allowOfflineFallback: false,
+  );
+}
+
+/// Explore long-press pin stays live streets. Planned Navigieren (CTA,
+/// vias, drag, line tap) uses [discoverAbEngineChoice].
+bool planCalcUsesLiveStreetsOnly({
+  required bool fromBrowsePin,
+  required bool viasEmpty,
+}) =>
+    fromBrowsePin && viasEmpty;
+
+/// Komoot/AllTrails: tap the computed ribbon to drop a stop — not empty map.
+bool planLineTapInsertsVia({
+  required bool editorActive,
+  required bool hasStart,
+  required bool hasEnd,
+  required bool hasLiveLine,
+  required bool pickingStartOrEnd,
+}) {
+  if (!editorActive || !hasStart || !hasEnd || !hasLiveLine) return false;
+  return !pickingStartOrEnd;
+}
+
+/// Finger radius in metres — tighter when zoomed in.
+double plannedRouteTapRadiusM(double zoom) {
+  final z = zoom.clamp(9.0, 18.0);
+  return (90 * math.pow(2, 14 - z)).toDouble().clamp(28.0, 200.0);
+}
+
+/// Snap a map tap onto the live line when it is close enough.
+({double lat, double lng, double alongM})? plannedRouteTapSnap({
+  required List<List<double>> lineLngLat,
+  required double tapLat,
+  required double tapLng,
+  required double maxOffsetM,
+}) {
+  if (lineLngLat.length < 2) return null;
+  final p = projectOntoRoute(
+    coordinates: lineLngLat,
+    lat: tapLat,
+    lng: tapLng,
+  );
+  if (!p.crossTrackM.isFinite || p.crossTrackM > maxOffsetM) return null;
+  final pt = pointAlongRoute(lineLngLat, p.distanceAlongM);
+  return (lat: pt[1], lng: pt[0], alongM: p.distanceAlongM);
+}
+
+bool plannedRouteViaIsDuplicate({
+  required Iterable<({double lat, double lng})> vias,
+  required double lat,
+  required double lng,
+  double minSeparationM = 40,
+}) {
+  for (final v in vias) {
+    if (haversineM(v.lat, v.lng, lat, lng) < minSeparationM) return true;
+  }
+  return false;
+}
+
+/// Drag preview: km already along the live line.
+String planDragAlongLabelKm(double alongM) {
+  if (!alongM.isFinite || alongM <= 0) return '0';
+  final km = alongM / 1000;
+  if (km < 0.1) return '0';
+  if (km < 10) return km.toStringAsFixed(1);
+  return km.round().toString();
+}
+
+List<List<double>> _planRubberKeepSlice(
+  List<List<double>> lineLngLat,
+  double fromM,
+  double toM,
+) {
+  if (lineLngLat.length < 2) return const [];
+  return planLineSlice(lineLngLat, fromM, toM);
+}
+
+List<List<double>> _planRubberJoin({
+  required List<List<double>> keep,
+  required List<double> fallback,
+  required List<double> finger,
+  required List<List<double>> tail,
+  required List<double> tailFallback,
+}) {
+  return [
+    if (keep.length >= 2) ...keep else fallback,
+    finger,
+    if (tail.length >= 2) ...tail else tailFallback,
+  ];
+}
+
+/// Komoot rubber-band: geometry before the previous anchor and after the next
+/// stays on the live line. Only the edited span is a straight ghost through
+/// the finger. [syncPendingAbOverlay] paints it.
+List<List<double>> planRubberBandLngLat({
+  required double startLat,
+  required double startLng,
+  required double endLat,
+  required double endLng,
+  required Iterable<({double lat, double lng})> vias,
+  required double fingerLat,
+  required double fingerLng,
+  required List<List<double>> lineLngLat,
+  bool draggingStart = false,
+  bool draggingEnd = false,
+  int? draggingViaIndex,
+}) {
+  final stops = vias.toList();
+  final lineLen =
+      lineLngLat.length >= 2 ? routeLengthM(lineLngLat) : 0.0;
+  if (draggingStart) {
+    final next = stops.isNotEmpty ? stops.first : (lat: endLat, lng: endLng);
+    if (lineLen > 4) {
+      final nextAlong = projectOntoRoute(
+        coordinates: lineLngLat,
+        lat: next.lat,
+        lng: next.lng,
+      ).distanceAlongM;
+      final tail = _planRubberKeepSlice(lineLngLat, nextAlong, lineLen);
+      return [
+        [fingerLng, fingerLat],
+        if (tail.length >= 2) ...tail else [next.lng, next.lat],
+      ];
+    }
+    return [
+      [fingerLng, fingerLat],
+      [next.lng, next.lat],
+    ];
+  }
+  if (draggingEnd) {
+    final prev = stops.isNotEmpty ? stops.last : (lat: startLat, lng: startLng);
+    if (lineLen > 4) {
+      final prevAlong = projectOntoRoute(
+        coordinates: lineLngLat,
+        lat: prev.lat,
+        lng: prev.lng,
+      ).distanceAlongM;
+      final head = _planRubberKeepSlice(lineLngLat, 0, prevAlong);
+      return [
+        if (head.length >= 2) ...head else [prev.lng, prev.lat],
+        [fingerLng, fingerLat],
+      ];
+    }
+    return [
+      [prev.lng, prev.lat],
+      [fingerLng, fingerLat],
+    ];
+  }
+  var prev = (lat: startLat, lng: startLng);
+  var next = (lat: endLat, lng: endLng);
+  var prevAlong = 0.0;
+  var nextAlong = lineLen > 0 ? lineLen : double.infinity;
+  if (lineLngLat.length >= 2) {
+    final along = projectOntoRoute(
+      coordinates: lineLngLat,
+      lat: fingerLat,
+      lng: fingerLng,
+    ).distanceAlongM;
+    for (var i = 0; i < stops.length; i++) {
+      if (draggingViaIndex != null && i == draggingViaIndex) continue;
+      final v = stops[i];
+      final a = projectOntoRoute(
+        coordinates: lineLngLat,
+        lat: v.lat,
+        lng: v.lng,
+      ).distanceAlongM;
+      if (a <= along && a >= prevAlong) {
+        prevAlong = a;
+        prev = v;
+      } else if (a > along && a < nextAlong) {
+        nextAlong = a;
+        next = v;
+      }
+    }
+  } else if (draggingViaIndex != null &&
+      draggingViaIndex >= 0 &&
+      draggingViaIndex < stops.length) {
+    prev = draggingViaIndex == 0
+        ? (lat: startLat, lng: startLng)
+        : stops[draggingViaIndex - 1];
+    next = draggingViaIndex == stops.length - 1
+        ? (lat: endLat, lng: endLng)
+        : stops[draggingViaIndex + 1];
+  }
+  if (lineLen > 4) {
+    final cap = nextAlong.isFinite ? math.min(nextAlong, lineLen) : lineLen;
+    return _planRubberJoin(
+      keep: _planRubberKeepSlice(lineLngLat, 0, prevAlong),
+      fallback: [prev.lng, prev.lat],
+      finger: [fingerLng, fingerLat],
+      tail: _planRubberKeepSlice(lineLngLat, cap, lineLen),
+      tailFallback: [next.lng, next.lat],
+    );
+  }
+  return [
+    [prev.lng, prev.lat],
+    [fingerLng, fingerLat],
+    [next.lng, next.lat],
+  ];
+}
+
+/// Navigieren-Sheet or plan surface — Explore leftover A–B stays inspect-only.
+bool planEditorIsActive({
+  required bool navigateMode,
+  required bool planSurface,
+}) =>
+    navigateMode || planSurface;
+
+/// While the rubber-band is up, the editor sheet recedes so the map is the editor.
+double planEditorSheetHeightFraction({
+  required bool shaping,
+  required bool ideaPin,
+}) {
+  if (shaping) return 0;
+  return ideaPin ? 0.58 : 0.52;
+}
+
+/// Floor for the plan panel clamp. Zero while shaping so 0-fraction is not
+/// forced back up to 220 px.
+double planEditorSheetMinPx({required bool shaping}) => shaping ? 0 : 220;
+
+/// Dest pin in the editor keeps start + vias (Komoot). Browse leftover
+/// tour still starts a fresh GPS→pin A–B.
+bool planDestPinKeepsSession({
+  required bool editorActive,
+  required bool startSet,
+  required bool leftoverTour,
+  required bool pickingStart,
+}) {
+  if (!editorActive || pickingStart || leftoverTour) return false;
+  return startSet;
+}
+
+/// Discs stay off until the rider has a stop or dismisses the line coach.
+/// Returning users (coach already gone) can drag the ribbon immediately.
+bool planReshapeHandlesReady({
+  required bool hasVia,
+  required bool coachVisible,
+}) =>
+    hasVia || !coachVisible;
+
+/// Spacing between grab discs — denser when zoomed in (Komoot beads).
+double planReshapeHandleStepM({double zoom = 14}) {
+  if (zoom >= 16) return 600;
+  if (zoom >= 15) return 800;
+  if (zoom >= 14) return 1100;
+  if (zoom >= 13) return 1800;
+  return 2800;
+}
+
+int planReshapeHandleMax({double zoom = 14}) {
+  if (zoom >= 16) return 10;
+  if (zoom >= 15) return 8;
+  if (zoom >= 14) return 6;
+  return 4;
+}
+
+/// Where grab discs sit — every few hundred metres, capped by zoom.
+List<double> planReshapeHandleFracs(double lenM, {double zoom = 14}) {
+  if (!(lenM > 0)) return const [0.5];
+  final step = planReshapeHandleStepM(zoom: zoom);
+  final max = planReshapeHandleMax(zoom: zoom);
+  final out = <double>[];
+  for (var a = step; a < lenM && out.length < max; a += step) {
+    out.add(a / lenM);
+  }
+  return out.isEmpty ? const [0.5] : out;
+}
+
+/// Translucent discs on the live ribbon — drag off-path like AllTrails.
+List<({double lat, double lng, double alongM})> planReshapeHandles({
+  required List<List<double>> lineLngLat,
+  required Iterable<({double lat, double lng})> vias,
+  int? maxHandles,
+  double minFromEndM = 180,
+  double minFromViaM = 140,
+  Iterable<double> avoidAlongM = const [],
+  double avoidM = 160,
+  double zoom = 14,
+}) {
+  final len = routeLengthM(lineLngLat);
+  if (len < 280) return const [];
+  final cap = maxHandles ?? planReshapeHandleMax(zoom: zoom);
+  final fracs = planReshapeHandleFracs(len, zoom: zoom);
+  final out = <({double lat, double lng, double alongM})>[];
+  for (final f in fracs) {
+    if (out.length >= cap) break;
+    final along = len * f;
+    if (along < minFromEndM || (len - along) < minFromEndM) continue;
+    var blocked = false;
+    for (final a in avoidAlongM) {
+      if ((a - along).abs() < avoidM) {
+        blocked = true;
+        break;
+      }
+    }
+    if (blocked) continue;
+    final pt = pointAlongRoute(lineLngLat, along);
+    final lat = pt[1];
+    final lng = pt[0];
+    var nearVia = false;
+    for (final v in vias) {
+      if (haversineM(v.lat, v.lng, lat, lng) < minFromViaM) {
+        nearVia = true;
+        break;
+      }
+    }
+    if (nearVia) continue;
+    out.add((lat: lat, lng: lng, alongM: along));
+  }
+  if (out.isEmpty && len >= 280) {
+    final along = len * 0.5;
+    final pt = pointAlongRoute(lineLngLat, along);
+    final lat = pt[1];
+    final lng = pt[0];
+    var nearVia = false;
+    for (final v in vias) {
+      if (haversineM(v.lat, v.lng, lat, lng) < minFromViaM) {
+        nearVia = true;
+        break;
+      }
+    }
+    if (!nearVia) {
+      out.add((lat: lat, lng: lng, alongM: along));
+    }
+  }
+  return out;
+}
+
+/// Long tours keep km-ticks for a closer zoom so the overview stays clean.
+double planDistanceTicksMinZoom(double distanceM) =>
+    distanceM >= 25000 ? 13 : 12;
+
+/// km-Ticks erst lokal (Komoot: Distanz auf der Linie, nicht in der Übersicht).
+bool planDistanceTicksVisible(double zoom, {double minZoom = 12}) =>
+    zoom >= minZoom;
+
+/// Spacing for km ticks: denser only when zoomed in (Komoot).
+double planDistanceTickStepM(double zoom) {
+  if (zoom >= 16) return 1000;
+  if (zoom >= 14.5) return 2000;
+  if (zoom >= 13) return 2500;
+  return 5000;
+}
+
+int planDistanceTickMax(double zoom) {
+  if (zoom >= 16) return 10;
+  if (zoom >= 14.5) return 8;
+  if (zoom >= 13) return 6;
+  return 4;
+}
+
+/// Along-metres of pins on the live line — keep ticks off vias / handles.
+List<double> planPinAlongMeters({
+  required List<List<double>> lineLngLat,
+  required Iterable<({double lat, double lng})> pins,
+}) {
+  if (lineLngLat.length < 2) return const [];
+  return [
+    for (final p in pins)
+      projectOntoRoute(
+        coordinates: lineLngLat,
+        lat: p.lat,
+        lng: p.lng,
+      ).distanceAlongM,
+  ];
+}
+
+/// Named via under the number. Skip generic “on map” / “Stop 1” placeholders.
+String? planViaMapCaption(
+  String? label, {
+  Iterable<String> placeholders = const [],
+}) {
+  final t = label?.trim() ?? '';
+  if (t.isEmpty) return null;
+  final lower = t.toLowerCase();
+  for (final p in placeholders) {
+    final q = p.trim().toLowerCase();
+    if (q.isNotEmpty && lower == q) return null;
+  }
+  if (RegExp(
+    r'^(punkt auf der karte|point on the map|point sur la carte|'
+    r'punto sulla mappa|punt op de kaart)$',
+    caseSensitive: false,
+  ).hasMatch(t)) {
+    return null;
+  }
+  if (RegExp(
+    r'^(zwischenstopp|stopp|stop|via|waypoint)\s*\d*$',
+    caseSensitive: false,
+  ).hasMatch(t)) {
+    return null;
+  }
+  if (RegExp(r'^\d{1,2}$').hasMatch(t)) return null;
+  if (t.length > 22) return '${t.substring(0, 20)}…';
+  return t;
+}
+
+double planChevronStepM(double zoom) {
+  if (zoom >= 16.5) return 220;
+  if (zoom >= 15.5) return 320;
+  if (zoom >= 14.5) return 480;
+  if (zoom >= 13.5) return 700;
+  return 1100;
+}
+
+int planChevronMax(double zoom) {
+  if (zoom >= 16.5) return 24;
+  if (zoom >= 15.5) return 20;
+  if (zoom >= 14.5) return 16;
+  return 12;
+}
+
+/// Bearing of the segment at [alongM], degrees clockwise from north.
+double planBearingDegAt(List<List<double>> lineLngLat, double alongM) {
+  if (lineLngLat.length < 2) return 0;
+  final a = pointAlongRoute(lineLngLat, alongM);
+  final b = pointAlongRoute(lineLngLat, alongM + 18);
+  final lat1 = a[1] * math.pi / 180;
+  final lat2 = b[1] * math.pi / 180;
+  final dLng = (b[0] - a[0]) * math.pi / 180;
+  final y = math.sin(dLng) * math.cos(lat2);
+  final x = math.cos(lat1) * math.sin(lat2) -
+      math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
+  return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+}
+
+/// Direction chevrons on the live ribbon (App — Web uses a symbol line layer).
+List<({double lat, double lng, double bearingDeg, double alongM})>
+    planDirectionChevrons({
+  required List<List<double>> lineLngLat,
+  double zoom = 14,
+  double minZoom = 12,
+  int? maxChevrons,
+  double minFromEndM = 280,
+  Iterable<double> avoidAlongM = const [],
+  double avoidM = 140,
+}) {
+  if (!planDistanceTicksVisible(zoom, minZoom: minZoom)) return const [];
+  final step = planChevronStepM(zoom);
+  final cap = maxChevrons ?? planChevronMax(zoom);
+  final len = routeLengthM(lineLngLat);
+  if (len < step + minFromEndM) return const [];
+  final out = <({double lat, double lng, double bearingDeg, double alongM})>[];
+  var along = step;
+  while (along <= len - minFromEndM && out.length < cap) {
+    if (along >= minFromEndM) {
+      var blocked = false;
+      for (final a in avoidAlongM) {
+        if ((a - along).abs() < avoidM) {
+          blocked = true;
+          break;
+        }
+      }
+      if (!blocked) {
+        final pt = pointAlongRoute(lineLngLat, along);
+        out.add((
+          lat: pt[1],
+          lng: pt[0],
+          bearingDeg: planBearingDegAt(lineLngLat, along),
+          alongM: along,
+        ));
+      }
+    }
+    along += step;
+  }
+  return out;
+}
+
+/// Sparse km labels on the live ribbon (Komoot distance ticks).
+List<({double lat, double lng, String km, double alongM})> planDistanceTicks({
+  required List<List<double>> lineLngLat,
+  double? everyM,
+  int? maxTicks,
+  double minFromEndM = 1200,
+  Iterable<double> avoidAlongM = const [],
+  double avoidM = 180,
+  double zoom = 14,
+  double minZoom = 12,
+}) {
+  if (!planDistanceTicksVisible(zoom, minZoom: minZoom)) return const [];
+  final step = everyM ?? planDistanceTickStepM(zoom);
+  final cap = maxTicks ?? planDistanceTickMax(zoom);
+  final len = routeLengthM(lineLngLat);
+  if (len < step + minFromEndM) return const [];
+  final out = <({double lat, double lng, String km, double alongM})>[];
+  var along = step;
+  while (along <= len - minFromEndM && out.length < cap) {
+    if (along >= minFromEndM) {
+      var blocked = false;
+      for (final a in avoidAlongM) {
+        if ((a - along).abs() < avoidM) {
+          blocked = true;
+          break;
+        }
+      }
+      if (!blocked) {
+        final pt = pointAlongRoute(lineLngLat, along);
+        out.add((
+          lat: pt[1],
+          lng: pt[0],
+          km: planDragAlongLabelKm(along),
+          alongM: along,
+        ));
+      }
+    }
+    along += step;
+  }
+  return out;
+}
+
+/// Komoot Höhenfarbe on the live ribbon (climb heat / descent cool).
+enum PlanGradeKind { steepUp, up, roll, down, steepDown }
+
+PlanGradeKind planGradeKind({
+  required double fromM,
+  required double toM,
+  required double distM,
+}) {
+  if (!(distM > 1)) return PlanGradeKind.roll;
+  final pct = ((toM - fromM) / distM) * 100;
+  if (pct > 8) return PlanGradeKind.steepUp;
+  if (pct > 3) return PlanGradeKind.up;
+  if (pct >= -3) return PlanGradeKind.roll;
+  if (pct >= -8) return PlanGradeKind.down;
+  return PlanGradeKind.steepDown;
+}
+
+String planGradeColorHex(PlanGradeKind kind) => switch (kind) {
+      PlanGradeKind.steepUp => '#C2410C',
+      PlanGradeKind.up => '#E85D04',
+      PlanGradeKind.roll => '#FF6A00',
+      PlanGradeKind.down => '#5B8C9A',
+      PlanGradeKind.steepDown => '#3D6B8A',
+    };
+
+int planGradeColorArgb(PlanGradeKind kind) => switch (kind) {
+      PlanGradeKind.steepUp => 0xFFC2410C,
+      PlanGradeKind.up => 0xFFE85D04,
+      PlanGradeKind.roll => 0xFFFF6A00,
+      PlanGradeKind.down => 0xFF5B8C9A,
+      PlanGradeKind.steepDown => 0xFF3D6B8A,
+    };
+
+class PlanGradeSlice {
+  const PlanGradeSlice({required this.coords, required this.kind});
+  final List<List<double>> coords;
+  final PlanGradeKind kind;
+}
+
+/// Grade between two elevation samples. Matches the web Höhenprofil (>8 %).
+bool planElevSegmentSteep({
+  required double fromM,
+  required double toM,
+  required double distM,
+  double steepPct = 8,
+}) {
+  final kind = planGradeKind(fromM: fromM, toM: toM, distM: distM);
+  if (steepPct <= 8) {
+    return kind == PlanGradeKind.steepUp || kind == PlanGradeKind.steepDown;
+  }
+  if (!(distM > 1)) return false;
+  final grade = ((toM - fromM) / distM) * 100;
+  return grade.abs() > steepPct;
+}
+
+const _planUnpavedSurfaces = {
+  'gravel',
+  'fine_gravel',
+  'pebblestone',
+  'compacted',
+  'unpaved',
+  'dirt',
+  'ground',
+  'earth',
+  'grass',
+  'sand',
+  'path',
+  'track',
+  'trail',
+  'wood',
+  'woodchips',
+  'mud',
+  'rock',
+  'stones',
+};
+
+bool planSurfaceIsUnpaved(String? surface) {
+  final s = surface?.trim().toLowerCase() ?? '';
+  return _planUnpavedSurfaces.contains(s);
+}
+
+OsmSurfaceGroup? planSurfaceKind(String? surface) => osmSurfaceGroup(surface);
+
+/// Same-kind surface bands merge across short unknown OSM gaps.
+const kPlanSurfaceMergeGapM = 80.0;
+
+/// Chart / map share one cursor: along-metres → 0..1 on the live line.
+double? planElevScrubT({required double alongM, required double lineLenM}) {
+  if (!(lineLenM > 0) || !alongM.isFinite) return null;
+  return (alongM / lineLenM).clamp(0.0, 1.0);
+}
+
+class PlanSurfaceSlice {
+  const PlanSurfaceSlice({required this.kind, required this.coords});
+  final OsmSurfaceGroup kind;
+  final List<List<double>> coords;
+}
+
+/// Merge short non-flag gaps so steep bands stay continuous.
+void fillShortFlagGaps({
+  required List<bool> flags,
+  required List<double> along,
+  required double mergeGapM,
+}) {
+  if (!(mergeGapM > 0) || flags.isEmpty || along.length < flags.length + 1) {
+    return;
+  }
+  var i = 0;
+  while (i < flags.length) {
+    if (!flags[i]) {
+      i++;
+      continue;
+    }
+    var j = i;
+    while (j + 1 < flags.length) {
+      if (flags[j + 1]) {
+        j++;
+        continue;
+      }
+      var g = j + 1;
+      var gapM = 0.0;
+      while (g < flags.length && !flags[g]) {
+        gapM += along[g + 1] - along[g];
+        g++;
+      }
+      if (g < flags.length && flags[g] && gapM <= mergeGapM) {
+        for (var k = j + 1; k < g; k++) {
+          flags[k] = true;
+        }
+        j = g;
+        continue;
+      }
+      break;
+    }
+    i = j + 1;
+  }
+}
+
+/// Inclusive slice of a polyline between two along-track metres.
+List<List<double>> planLineSlice(
+  List<List<double>> lineLngLat,
+  double fromM,
+  double toM,
+) {
+  if (lineLngLat.length < 2) return const [];
+  final lo = math.min(fromM, toM);
+  final hi = math.max(fromM, toM);
+  if (!(hi > lo + 4)) return const [];
+  final rem = sliceRouteAtAlongM(lineLngLat, lo).remaining;
+  if (rem.length < 2) {
+    return [
+      pointAlongRoute(lineLngLat, lo),
+      pointAlongRoute(lineLngLat, hi),
+    ];
+  }
+  final take = (hi - lo).clamp(0.0, routeLengthM(rem));
+  final traveled = sliceRouteAtAlongM(rem, take).traveled;
+  if (traveled.length >= 2) return traveled;
+  return [rem.first, pointAlongRoute(rem, take)];
+}
+
+double _elevAlongSamples(
+  List<double> elevM,
+  double alongM,
+  double lineLenM,
+  List<double>? distKm,
+) {
+  if (elevM.length < 2 || !(lineLenM > 0)) return elevM.first;
+  if (distKm != null &&
+      distKm.length == elevM.length &&
+      distKm.last > 0) {
+    final km = (alongM / 1000).clamp(0.0, distKm.last);
+    for (var i = 1; i < distKm.length; i++) {
+      if (km <= distKm[i]) {
+        final span = distKm[i] - distKm[i - 1];
+        final f = span < 1e-6 ? 1.0 : (km - distKm[i - 1]) / span;
+        return elevM[i - 1] * (1 - f) + elevM[i] * f;
+      }
+    }
+    return elevM.last;
+  }
+  final t = (alongM / lineLenM).clamp(0.0, 1.0);
+  final x = t * (elevM.length - 1);
+  final i = x.floor().clamp(0, elevM.length - 2);
+  final f = x - i;
+  return elevM[i] * (1 - f) + elevM[i + 1] * f;
+}
+
+/// Full-line grade coloring (Komoot Höhenfarbe). Consecutive same-kind
+/// segments merge so MapLibre stays at a handful of polylines.
+List<PlanGradeSlice> planGradeLineSlices({
+  required List<List<double>> lineLngLat,
+  required List<double> elevM,
+  List<double>? distKm,
+  double minSegM = 18,
+  int maxSlices = 28,
+}) {
+  if (lineLngLat.length < 2 || elevM.length < 2) return const [];
+  final n = lineLngLat.length;
+  final along = List<double>.filled(n, 0);
+  for (var i = 1; i < n; i++) {
+    along[i] = along[i - 1] +
+        haversineM(
+          lineLngLat[i - 1][1],
+          lineLngLat[i - 1][0],
+          lineLngLat[i][1],
+          lineLngLat[i][0],
+        );
+  }
+  final len = along.last;
+  if (len < minSegM * 2) return const [];
+
+  double elevAtAlong(double m) =>
+      _elevAlongSamples(elevM, m, len, distKm);
+
+  final kinds = <PlanGradeKind>[];
+  for (var i = 1; i < n; i++) {
+    final dist = along[i] - along[i - 1];
+    if (dist < minSegM) {
+      kinds.add(kinds.isEmpty ? PlanGradeKind.roll : kinds.last);
+      continue;
+    }
+    kinds.add(
+      planGradeKind(
+        fromM: elevAtAlong(along[i - 1]),
+        toM: elevAtAlong(along[i]),
+        distM: dist,
+      ),
+    );
+  }
+
+  var slices = <PlanGradeSlice>[];
+  List<List<double>>? cur;
+  PlanGradeKind? curKind;
+  for (var i = 0; i < kinds.length; i++) {
+    final k = kinds[i];
+    if (cur == null || curKind != k) {
+      if (cur != null && curKind != null) {
+        slices.add(PlanGradeSlice(coords: cur, kind: curKind));
+      }
+      cur = [lineLngLat[i], lineLngLat[i + 1]];
+      curKind = k;
+    } else {
+      cur.add(lineLngLat[i + 1]);
+    }
+  }
+  if (cur != null && curKind != null) {
+    slices.add(PlanGradeSlice(coords: cur, kind: curKind));
+  }
+  while (slices.length > maxSlices && slices.length >= 2) {
+    var shortest = 0;
+    var shortestLen = routeLengthM(slices.first.coords);
+    for (var i = 1; i < slices.length; i++) {
+      final l = routeLengthM(slices[i].coords);
+      if (l < shortestLen) {
+        shortestLen = l;
+        shortest = i;
+      }
+    }
+    final into = shortest == 0 ? 1 : shortest - 1;
+    final keep = slices[into];
+    final drop = slices[shortest];
+    final mergedCoords = shortest < into
+        ? [...drop.coords, ...keep.coords.skip(1)]
+        : [...keep.coords, ...drop.coords.skip(1)];
+    final merged = PlanGradeSlice(coords: mergedCoords, kind: keep.kind);
+    final next = <PlanGradeSlice>[];
+    for (var i = 0; i < slices.length; i++) {
+      if (i == shortest || i == into) continue;
+      next.add(slices[i]);
+    }
+    final insertAt = math.min(shortest, into).clamp(0, next.length);
+    next.insert(insertAt, merged);
+    slices = next;
+  }
+  return slices;
+}
+
+/// Steep climbs/descents as merged polylines for the live map ribbon.
+/// Elevation samples are stretched along the line (Komoot Höhenfarbe).
+List<List<List<double>>> planSteepLineSlices({
+  required List<List<double>> lineLngLat,
+  required List<double> elevM,
+  List<double>? distKm,
+  double steepPct = 8,
+  double minSegM = 50,
+  double mergeGapM = 80,
+  int maxSlices = 18,
+}) {
+  if (lineLngLat.length < 2 || elevM.length < 2) return const [];
+  final n = lineLngLat.length;
+  final along = List<double>.filled(n, 0);
+  for (var i = 1; i < n; i++) {
+    along[i] = along[i - 1] +
+        haversineM(
+          lineLngLat[i - 1][1],
+          lineLngLat[i - 1][0],
+          lineLngLat[i][1],
+          lineLngLat[i][0],
+        );
+  }
+  final len = along.last;
+  if (len < minSegM * 2) return const [];
+  final steep = <bool>[];
+  for (var i = 1; i < n; i++) {
+    final dist = along[i] - along[i - 1];
+    if (dist < minSegM) {
+      steep.add(steep.isEmpty ? false : steep.last);
+      continue;
+    }
+    steep.add(
+      planElevSegmentSteep(
+        fromM: _elevAlongSamples(elevM, along[i - 1], len, distKm),
+        toM: _elevAlongSamples(elevM, along[i], len, distKm),
+        distM: dist,
+        steepPct: steepPct,
+      ),
+    );
+  }
+  fillShortFlagGaps(flags: steep, along: along, mergeGapM: mergeGapM);
+  final slices = <List<List<double>>>[];
+  List<List<double>>? cur;
+  for (var i = 0; i < steep.length; i++) {
+    if (!steep[i]) {
+      if (cur != null) {
+        slices.add(cur);
+        cur = null;
+      }
+      continue;
+    }
+    if (cur == null) {
+      cur = [lineLngLat[i], lineLngLat[i + 1]];
+    } else {
+      cur.add(lineLngLat[i + 1]);
+    }
+  }
+  if (cur != null) slices.add(cur);
+  if (slices.length <= maxSlices) return slices;
+  final ranked = [...slices]
+    ..sort((a, b) => routeLengthM(b).compareTo(routeLengthM(a)));
+  return ranked.take(maxSlices).toList();
+}
+
+/// Whole-ribbon surface tint — asphalt / gravel / trail.
+List<PlanSurfaceSlice> planSurfaceLineSlices({
+  required List<List<double>> lineLngLat,
+  required List<({double fromKm, double toKm, String? surface})> bands,
+  double minSegM = 50,
+  int maxSlices = 24,
+  double mergeGapM = kPlanSurfaceMergeGapM,
+}) {
+  final merged = <({OsmSurfaceGroup kind, double fromM, double toM})>[];
+  final sorted = [...bands]
+    ..sort((a, b) => a.fromKm.compareTo(b.fromKm));
+  for (final b in sorted) {
+    final kind = planSurfaceKind(b.surface);
+    if (kind == null) continue;
+    final fromM = b.fromKm * 1000;
+    final toM = b.toKm * 1000;
+    if (!(toM - fromM >= minSegM)) continue;
+    if (merged.isNotEmpty &&
+        merged.last.kind == kind &&
+        fromM <= merged.last.toM + mergeGapM) {
+      final last = merged.removeLast();
+      merged.add((
+        kind: last.kind,
+        fromM: last.fromM,
+        toM: math.max(last.toM, toM),
+      ));
+    } else {
+      merged.add((kind: kind, fromM: fromM, toM: toM));
+    }
+  }
+  final out = <PlanSurfaceSlice>[];
+  for (final m in merged) {
+    final slice = planLineSlice(lineLngLat, m.fromM, m.toM);
+    if (slice.length >= 2) {
+      out.add(PlanSurfaceSlice(kind: m.kind, coords: slice));
+    }
+  }
+  if (out.length <= maxSlices) return out;
+  final ranked = [...out]
+    ..sort(
+      (a, b) => routeLengthM(b.coords).compareTo(routeLengthM(a.coords)),
+    );
+  return ranked.take(maxSlices).toList();
+}
+
+/// Unpaved / gravel stretches on the live ribbon (AllTrails surface tint).
+List<List<List<double>>> planUnpavedLineSlices({
+  required List<List<double>> lineLngLat,
+  required List<({double fromKm, double toKm, String? surface})> bands,
+  int maxSlices = 18,
+}) {
+  return [
+    for (final s in planSurfaceLineSlices(
+      lineLngLat: lineLngLat,
+      bands: bands,
+      maxSlices: maxSlices,
+    ))
+      if (s.kind == OsmSurfaceGroup.gravel || s.kind == OsmSurfaceGroup.trail)
+        s.coords,
+  ];
+}
+
+/// Browse style poll. Plan uses [kPlanOnlineProbeTtl] so airplane-mode
+/// after a cached-online flag does not wait the full ORS timeout.
+const kBrowseOnlineProbeTtl = Duration(seconds: 12);
+const kPlanOnlineProbeTtl = Duration(seconds: 4);
+
+/// Trust a recent *online* probe so plan skips DNS. A cached *offline*
+/// must not skip ORS — that plus pack Dijkstra draws field lines.
+bool trustCachedOnlineProbe({
+  required bool cachedOnline,
+  required DateTime? cachedAt,
+  DateTime? now,
+  Duration ttl = kBrowseOnlineProbeTtl,
+}) {
+  if (!cachedOnline || cachedAt == null) return false;
+  return (now ?? DateTime.now()).difference(cachedAt) < ttl;
 }
 
 /// A→B that wanders far beyond the crow-flies (stale cache, coarse offline
@@ -375,3 +1891,281 @@ String plannedRouteHudLabel({
   if (RegExp(r'^-?\d+[.,]\d+').hasMatch(dest)) return plannedFallback;
   return dest;
 }
+
+/// Remembered Navigieren dest — restore only if still near GPS/viewport.
+const kLastPlanDestMaxKm = 80.0;
+
+bool lastPlanDestWorthRemembering({
+  required double destLat,
+  required double destLng,
+  double? originLat,
+  double? originLng,
+}) {
+  if (destLat.abs() > 90 || destLng.abs() > 180) return false;
+  if (originLat == null || originLng == null) return true;
+  return _haversineKm(destLat, destLng, originLat, originLng) >= 0.04;
+}
+
+bool lastPlanDestIsNearby({
+  required double destLat,
+  required double destLng,
+  double? gpsLat,
+  double? gpsLng,
+  double? viewLat,
+  double? viewLng,
+  double maxKm = kLastPlanDestMaxKm,
+}) {
+  if (destLat.abs() > 90 || destLng.abs() > 180) return false;
+  bool near(double? lat, double? lng) {
+    if (lat == null || lng == null) return false;
+    final km = _haversineKm(destLat, destLng, lat, lng);
+    return km >= 0.04 && km <= maxKm;
+  }
+
+  final gpsNear = near(gpsLat, gpsLng);
+  final viewNear = near(viewLat, viewLng);
+  if (gpsLat != null &&
+      gpsLng != null &&
+      viewLat != null &&
+      viewLng != null &&
+      _haversineKm(gpsLat, gpsLng, viewLat, viewLng) > 40) {
+    return viewNear;
+  }
+  return gpsNear || viewNear;
+}
+
+String lastPlanDestChipLabel({
+  required String? savedLabel,
+  required String generic,
+  int maxNameChars = 28,
+}) {
+  final raw = savedLabel?.trim() ?? '';
+  if (raw.isEmpty) return generic;
+  if (raw.length <= maxNameChars) return raw;
+  return '${raw.substring(0, maxNameChars - 1)}…';
+}
+
+bool lastPlanDestCoordsMatch({
+  required double aLat,
+  required double aLng,
+  required double bLat,
+  required double bLng,
+}) =>
+    (aLat - bLat).abs() < 1e-5 && (aLng - bLng).abs() < 1e-5;
+
+/// Chip „Letztes Ziel“ — never auto-restore, only after dest is empty.
+bool planLastDestShouldOffer({
+  required bool hasEnd,
+  required bool nearby,
+  required bool dismissed,
+}) {
+  if (hasEnd || dismissed || !nearby) return false;
+  return true;
+}
+
+/// Live-ribbon opacity while the rubber-band is up (Komoot dims the old line).
+/// ~0.10× so a native grab translate is almost invisible behind the ghost.
+double planRibbonDimOpacity(double base, {required bool dimmed}) {
+  if (!dimmed) return base.clamp(0.0, 1.0);
+  return (base * 0.10).clamp(0.05, 0.14);
+}
+
+/// Grab discs recede with the ribbon but stay visible as hit targets.
+double planGrabHandleOpacity(double base, {required bool dimmed}) {
+  if (!dimmed) return base.clamp(0.0, 1.0);
+  return (base * 0.45).clamp(0.22, 0.55);
+}
+
+/// Compact legend keys from OSM bands + optional steep flag.
+/// Unknown OSM (orange core showing through) only when the gap is real, not a 20 m hole.
+const kPlanRibbonUnknownMinKm = 0.08;
+
+Set<String> planRibbonLegendKinds({
+  Iterable<({double fromKm, double toKm, String? surface})> bands = const [],
+  bool hasSteep = false,
+  double unknownMinKm = kPlanRibbonUnknownMinKm,
+}) {
+  final kinds = <String>{};
+  var unknownKm = 0.0;
+  for (final b in bands) {
+    final k = planSurfaceKind(b.surface);
+    if (k != null) {
+      kinds.add(k.name);
+    } else {
+      final span = b.toKm - b.fromKm;
+      if (span > 0) unknownKm += span;
+    }
+  }
+  if (unknownKm >= unknownMinKm) kinds.add('unknown');
+  if (hasSteep) kinds.add('steep');
+  return kinds;
+}
+
+/// Fat halo under the orange core — MapLibre lines are otherwise too thin to grab.
+const kPlanRibbonGrabHaloWidth = 36.0;
+
+/// MapLibre zoom 0 = 256 px world width.
+const kPlanMapTileSize = 256.0;
+
+/// Hold on the ribbon → new dest (matches web canvas hold).
+const Duration kPlanLineHold = Duration(milliseconds: 450);
+
+/// Finger must move this far before the rubber-band starts (web uses 8 px).
+const double kPlanLineGrabMovePx = 8;
+
+bool planRibbonAllowsGrab({
+  required bool editorActive,
+  required bool hasLiveStreetLine,
+  required bool approx,
+}) =>
+    editorActive && hasLiveStreetLine && !approx;
+
+double planMapMetersPerPixel({
+  required double lat,
+  required double zoom,
+  double tileSize = kPlanMapTileSize,
+}) {
+  final z = tileSize * math.pow(2, zoom);
+  if (!(z > 0)) return 0;
+  return math.cos(lat * math.pi / 180).abs() * 2 * math.pi * 6378137 / z;
+}
+
+({double lng, double lat})? planMapScreenToLngLat({
+  required double localX,
+  required double localY,
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  double bearingDeg = 0,
+  double tiltDeg = 0,
+  double tileSize = kPlanMapTileSize,
+}) {
+  if (width <= 4 || height <= 4 || tiltDeg.abs() > 1) return null;
+  var dx = localX - width / 2;
+  var dy = localY - height / 2;
+  if (bearingDeg.abs() > 0.01) {
+    final rad = -bearingDeg * math.pi / 180;
+    final c = math.cos(rad);
+    final s = math.sin(rad);
+    final rdx = dx * c - dy * s;
+    final rdy = dx * s + dy * c;
+    dx = rdx;
+    dy = rdy;
+  }
+  final world = tileSize * math.pow(2, zoom);
+  final cx = (centerLng + 180) / 360 * world;
+  final sinLat = math.sin(centerLat.clamp(-85.0, 85.0) * math.pi / 180);
+  final cy =
+      (0.5 - math.log((1 + sinLat) / (1 - sinLat)) / (4 * math.pi)) * world;
+  final lng = ((cx + dx) / world) * 360 - 180;
+  final n = math.pi - 2 * math.pi * (cy + dy) / world;
+  final lat = 180 / math.pi * math.atan(0.5 * (math.exp(n) - math.exp(-n)));
+  if (!lng.isFinite || !lat.isFinite) return null;
+  return (lng: lng, lat: lat.clamp(-85.0, 85.0));
+}
+
+({double x, double y})? planMapLngLatToScreen({
+  required double lng,
+  required double lat,
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  double bearingDeg = 0,
+  double tiltDeg = 0,
+  double tileSize = kPlanMapTileSize,
+}) {
+  if (width <= 4 || height <= 4 || tiltDeg.abs() > 1) return null;
+  final world = tileSize * math.pow(2, zoom);
+  double mercX(double lo) => (lo + 180) / 360 * world;
+  double mercY(double la) {
+    final s = math.sin(la.clamp(-85.0, 85.0) * math.pi / 180);
+    return (0.5 - math.log((1 + s) / (1 - s)) / (4 * math.pi)) * world;
+  }
+
+  var dx = mercX(lng) - mercX(centerLng);
+  var dy = mercY(lat) - mercY(centerLat);
+  if (bearingDeg.abs() > 0.01) {
+    final rad = bearingDeg * math.pi / 180;
+    final c = math.cos(rad);
+    final s = math.sin(rad);
+    final rdx = dx * c - dy * s;
+    final rdy = dx * s + dy * c;
+    dx = rdx;
+    dy = rdy;
+  }
+  return (x: width / 2 + dx, y: height / 2 + dy);
+}
+
+/// True when the pointer is on the live ribbon and not on a pin/disc.
+bool planMapPointerHitsRibbon({
+  required double localX,
+  required double localY,
+  required double width,
+  required double height,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  double bearingDeg = 0,
+  double tiltDeg = 0,
+  required List<List<double>> lineLngLat,
+  Iterable<List<double>> pinLngLat = const [],
+  double pinAvoidPx = 28,
+  double hitPx = 22,
+}) {
+  if (lineLngLat.length < 2) return false;
+  final ll = planMapScreenToLngLat(
+    localX: localX,
+    localY: localY,
+    width: width,
+    height: height,
+    centerLng: centerLng,
+    centerLat: centerLat,
+    zoom: zoom,
+    bearingDeg: bearingDeg,
+    tiltDeg: tiltDeg,
+  );
+  if (ll == null) return false;
+  for (final p in pinLngLat) {
+    if (p.length < 2) continue;
+    final s = planMapLngLatToScreen(
+      lng: p[0],
+      lat: p[1],
+      width: width,
+      height: height,
+      centerLng: centerLng,
+      centerLat: centerLat,
+      zoom: zoom,
+      bearingDeg: bearingDeg,
+      tiltDeg: tiltDeg,
+    );
+    if (s == null) continue;
+    final dx = s.x - localX;
+    final dy = s.y - localY;
+    if (dx * dx + dy * dy <= pinAvoidPx * pinAvoidPx) return false;
+  }
+  final mPerPx = planMapMetersPerPixel(lat: centerLat, zoom: zoom);
+  final maxM = math.min(
+    plannedRouteTapRadiusM(zoom),
+    math.max(28, hitPx * mPerPx),
+  );
+  return plannedRouteTapSnap(
+        lineLngLat: lineLngLat,
+        tapLat: ll.lat,
+        tapLng: ll.lng,
+        maxOffsetM: maxM.toDouble(),
+      ) !=
+      null;
+}
+
+/// Map chip while A+B exist and the engine is in flight — not a 1.6 s flash.
+bool planMapShowsRoutingWait({
+  required bool editorActive,
+  required bool routingBusy,
+  required bool hasStart,
+  required bool hasEnd,
+}) =>
+    editorActive && routingBusy && hasStart && hasEnd;

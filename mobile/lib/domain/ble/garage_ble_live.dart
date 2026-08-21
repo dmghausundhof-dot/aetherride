@@ -1,5 +1,6 @@
 import '../ble.dart';
 import '../hud_bike_peek.dart';
+import 'bike_ble_kind.dart';
 
 /// Pair sheet covers the shell, including the tab bar. Content scrolls inside.
 const kBlePairSheetHeightFactor = 0.92;
@@ -26,6 +27,48 @@ bool garageBleShowBatteryHonesty({
   double? batterySocPercent,
 }) =>
     isEbike && hasBinding && batterySocPercent == null;
+
+/// Which one-liner the workshop should show — capability, not pairing how-to.
+enum GarageBleRiderHint {
+  emptyEbike,
+  emptySensor,
+  driveNeedsWheel,
+  spinWheel,
+  boschNoSoc,
+  driveNoSoc,
+  savedNotLive,
+  none,
+}
+
+GarageBleRiderHint garageBleRiderHint({
+  required bool isEbike,
+  required bool bindingEmpty,
+  required bool live,
+  required bool hasWheel,
+  BikeBleKind? driveKind,
+  required bool spin,
+  double? batterySocPercent,
+}) {
+  if (bindingEmpty) {
+    return isEbike
+        ? GarageBleRiderHint.emptyEbike
+        : GarageBleRiderHint.emptySensor;
+  }
+  if (spin) return GarageBleRiderHint.spinWheel;
+  if (bleDriveNeedsWheelSensor(driveKind) && !hasWheel) {
+    return GarageBleRiderHint.driveNeedsWheel;
+  }
+  if (isEbike && batterySocPercent == null) {
+    if (driveKind == BikeBleKind.shimano ||
+        driveKind == BikeBleKind.yamaha ||
+        driveKind == BikeBleKind.otherDrive) {
+      return GarageBleRiderHint.driveNoSoc;
+    }
+    return GarageBleRiderHint.boschNoSoc;
+  }
+  if (!live) return GarageBleRiderHint.savedNotLive;
+  return GarageBleRiderHint.none;
+}
 
 /// Workshop live chips from GATT/LDI. Never invented from a saved MAC.
 List<String> garageBleLiveChips({

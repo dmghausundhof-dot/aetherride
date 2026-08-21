@@ -1,4 +1,5 @@
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 
 /// True if the ride has enough GPS points for an honest track export.
 bool rideHasExportableTrack(RideRecord ride) => ride.track.length >= 2;
@@ -21,11 +22,14 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
     DateTime t;
     final timeRaw = p['time'] ?? p['timeMs'];
     if (timeRaw is num) {
-      // Web uses seconds offset; mobile track often stores epoch ms.
-      if (timeRaw > 1e12) {
+      // Epoch-ms, Unix-Sekunden, sonst Sekunden ab Start — wie Web.
+      if (timeRaw >= 1e12) {
         t = DateTime.fromMillisecondsSinceEpoch(timeRaw.toInt(), isUtc: true);
-      } else if (timeRaw > 1e10) {
-        t = DateTime.fromMillisecondsSinceEpoch(timeRaw.toInt(), isUtc: true);
+      } else if (timeRaw >= 1e9) {
+        t = DateTime.fromMillisecondsSinceEpoch(
+          (timeRaw * 1000).round(),
+          isUtc: true,
+        );
       } else {
         t = ride.startedAt
             .toUtc()
@@ -56,7 +60,7 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
 <gpx version="1.1" creator="FlowLine" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1">
   <metadata>
     <name>${_escapeXml(name)}</name>
-    <desc>${_escapeXml(bikeName ?? 'Ride')} · $distanceM m · ${ride.elevationM.round()} hm$emptyNote</desc>
+    <desc>${_escapeXml(bikeName ?? 'Ride')} · $distanceM m · ${honestClimbM(ride.track, ride.elevationM)} hm$emptyNote</desc>
     <time>${ride.startedAt.toUtc().toIso8601String()}</time>
   </metadata>
   <trk>

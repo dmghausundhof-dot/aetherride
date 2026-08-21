@@ -47,8 +47,8 @@ export const APP_SURFACES = [
     body: "Ride-HUD, Turn-by-turn, GPS im Hintergrund, gesperrtes Display.",
   },
   {
-    title: "Offline",
-    body: "Stadt-Packs ohne Netz. Keine Länderkarte, kein Komoot-Europa.",
+    title: "Offline-Routing",
+    body: "Routing-Graph des Packs ohne Netz. Keine Länderkarte, kein Komoot-Europa.",
   },
   {
     title: "Sensoren & Uhr",
@@ -69,7 +69,7 @@ export const WEB_APP_MATRIX: {
   { feature: "Tour planen & speichern", web: "voll", app: "voll" },
   { feature: "SEO-Touren & Regionen", web: "voll", app: "Deep Link" },
   { feature: "Live-Navigation / HUD", web: "Bridge zur App", app: "voll" },
-  { feature: "Offline-Karten", web: "—", app: "Packs" },
+  { feature: "Offline-Routing", web: "—", app: "Graph" },
   { feature: "GPS-Aufzeichnung", web: "nach Sync", app: "nativ" },
   { feature: "Sensoren, Uhr, BLE", web: "Hinweis", app: "koppeln" },
   { feature: "Laden / Kasse", web: "pausiert", app: "pausiert" },
@@ -83,12 +83,12 @@ export const JOURNEY = [
   {
     n: "1",
     title: "Ankommen",
-    body: "Sport und Gewicht — oder überspringen. Kein Demo-Bike, kein Fake-Kilometer.",
+    body: "Sport und Gewicht — oder überspringen. Kein Demo-Rad, kein Fake-Kilometer.",
   },
   {
     n: "2",
     title: "Rad am Stand",
-    body: "In der Werkstatt abstellen — oder ohne Rad fahren.",
+    body: "Rad anlegen — oder ohne Rad fahren.",
   },
   {
     n: "3",
@@ -131,7 +131,7 @@ export const WORKFLOWS: {
     steps: [
       { label: "Karte", href: "/discover" },
       { label: "Planen", href: "/discover?panel=plan" },
-      { label: "Platz / Mappe", href: "/library" },
+      { label: "Touren / Mappe", href: "/library" },
       { label: "App-Brücke", href: "/ride" },
     ],
   },
@@ -143,15 +143,15 @@ export const WORKFLOWS: {
       { label: "Was reinkam", href: "/activities" },
       { label: "Nach der Fahrt", href: "/post-ride" },
       { label: "Hof-Tafel", href: "/home" },
-      { label: "Werkstatt", href: "/garage" },
+      { label: "Rad", href: "/garage" },
     ],
   },
   {
     id: "garage-shop",
     title: "Pflege und Teile",
-    hint: "Die Werkstatt kennt das Rad. Der Laden ist vorerst aus.",
+    hint: "Das Rad kennt seinen Stand. Der Laden ist vorerst aus.",
     steps: [
-      { label: "Rad abstellen", href: "/garage?wizard=basic" },
+      { label: "Rad anlegen", href: "/garage?wizard=basic" },
       { label: "Wartung", href: "/garage?tab=maintenance" },
     ],
   },
@@ -208,13 +208,13 @@ export const SCREEN_GROUPS: {
   },
   {
     title: "Vier Türen (Web-App)",
-    hint: "Dieselbe IA wie in der nativen App. Ride ist kein Tab. Teile kommen aus der Werkstatt.",
+    hint: "Dieselbe IA wie in der nativen App. Ride ist kein Tab. Teile sitzen am Rad.",
     screens: [
       { href: "/home", name: "Der Hof", role: "Stand, Himmel, Tor" },
       { href: "/discover", name: "Karte", role: "OSM, Loops, Filter" },
       { href: "/discover?panel=plan", name: "Planen", role: "Start, Via, Ziel" },
-      { href: "/library", name: "Platz", role: "Mappe, Stimmen, Gruppen" },
-      { href: "/garage", name: "Werkstatt", role: "Box, Setup, Pflege, Teile" },
+      { href: "/library", name: "Touren", role: "Mappe, Stimmen, Gruppen" },
+      { href: "/garage", name: "Rad", role: "Box, Setup, Pflege, Teile" },
     ],
   },
   {

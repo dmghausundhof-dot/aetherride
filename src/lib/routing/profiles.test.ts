@@ -19,6 +19,8 @@ import {
   difficultiesFromTrailLabel,
   getProfile,
   graphhopperCustomModel,
+  graphhopperCustomModelShouldSend,
+  isGraphhopperCustomModelRejected,
   isLabeledTrailSuitable,
   isRoutingProfile,
   isTrailSuitable,
@@ -137,7 +139,25 @@ assert.ok(
   )
 );
 assert.ok(
+  graphhopperCustomModel("urban")?.priority.some(
+    (r) => r.if.includes("TRACK") && r.multiply_by < 1
+  ),
+  "urban A–B must not prefer farm tracks"
+);
+assert.ok(
+  graphhopperCustomModel("urban")?.priority.some(
+    (r) => r.if.includes("PATH") && r.if.includes("GRASS") && r.multiply_by < 1
+  ),
+  "urban A–B must not prefer grass paths"
+);
+assert.ok(
   graphhopperCustomModel("gravel")?.priority.some((r) => r.if.includes("TRACK"))
+);
+assert.ok(
+  graphhopperCustomModel("gravel")?.priority.some(
+    (r) => r.if.includes("GRASS") && r.multiply_by < 1
+  ),
+  "grass farm tracks stay off gravel A–B"
 );
 assert.ok(
   graphhopperCustomModel("mtb_enduro")?.priority.some((r) =>
@@ -146,6 +166,17 @@ assert.ok(
 );
 
 assert.equal(graphhopperCustomModel("auto"), null);
+assert.equal(graphhopperCustomModelShouldSend({}), true);
+assert.equal(graphhopperCustomModelShouldSend({ env: "0" }), false);
+assert.equal(
+  graphhopperCustomModelShouldSend({ rejectedThisProcess: true }),
+  false,
+);
+assert.equal(
+  isGraphhopperCustomModelRejected("Cannot use custom_model on this package"),
+  true,
+);
+assert.equal(isGraphhopperCustomModelRejected("rate limit"), false);
 assert.equal(isRoutingProfile("auto"), true);
 assert.equal(navSessionForBike("dh"), "gravity");
 assert.equal(navSessionForBike("mtb_am"), "pedal");

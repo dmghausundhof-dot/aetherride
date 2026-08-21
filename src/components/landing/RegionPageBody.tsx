@@ -12,6 +12,7 @@ import { useHomepageCopy } from "@/hooks/useHomepageCopy";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
 import { guideFor } from "@/lib/i18n/guidesCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
+import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
 
 export function RegionPageBody({ slug }: { slug: string }) {
   const lang = useChromeLang();
@@ -113,8 +114,13 @@ export function RegionPageBody({ slug }: { slug: string }) {
                   {t.summary}
                 </p>
                 <p className="mt-3 text-xs tabular-nums text-text-secondary">
-                  {t.distanceKm} km · {t.elevationM} hm · {t.durationMin} min
-                  {t.difficulty !== "—" ? ` · ${t.difficulty}` : ""}
+                  {[
+                    formatDistanceElevation(t.distanceKm, t.elevationM),
+                    `${t.durationMin} min`,
+                    t.difficulty !== "—" ? t.difficulty : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
               </Link>
             ))}

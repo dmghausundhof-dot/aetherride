@@ -1,5 +1,6 @@
 import 'package:aetherride_mobile/data/routing/ride_to_saved.dart';
 import 'package:aetherride_mobile/domain/ride.dart';
+import 'package:aetherride_mobile/domain/ride_media.dart';
 import 'package:aetherride_mobile/domain/saved_route_note.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +14,17 @@ void main() {
     expect(coords, [
       [9.9, 48.4],
       [9.91, 48.41],
+    ]);
+  });
+
+  test('trackToLngLat keeps GPS ele as third coordinate', () {
+    final coords = trackToLngLat([
+      {'lat': 48.4, 'lng': 9.9, 'elev': 200},
+      {'lat': 48.41, 'lng': 9.91, 'ele': 240},
+    ]);
+    expect(coords, [
+      [9.9, 48.4, 200],
+      [9.91, 48.41, 240],
     ]);
   });
 
@@ -42,6 +54,20 @@ void main() {
     expect(entry.id, startsWith('recorded-'));
   });
 
+  test('SavedRouteMeta keeps geotagged media', () {
+    final media = RideMedia.fromPath('/tmp/a.jpg', kind: RideMediaKind.photo)
+        .copyWith(lat: 49.4, lng: 8.6);
+    final meta = SavedRouteMeta(
+      description: 'Hausrunde',
+      photoPaths: const ['/tmp/a.jpg'],
+      media: [media],
+      rideId: 'ride-1',
+    );
+    final decoded = SavedRouteMeta.fromJson(meta.toJson());
+    expect(decoded.photoPaths, ['/tmp/a.jpg']);
+    expect(decoded.media.single.hasPin, isTrue);
+    expect(decoded.media.single.lat, 49.4);
+  });
   test('SavedRouteNote + Meta roundtrip JSON', () {
     final note = SavedRouteNote.create(text: 'Schöner Flow', authorLabel: 'Du');
     final meta = SavedRouteMeta(
@@ -87,5 +113,23 @@ void main() {
     );
     final entry = rideRecordToSavedEntry(ride, id: 'recorded-${ride.id}');
     expect(entry.id, 'recorded-ride-stable');
+  });
+
+  test('rideRecordToSavedEntry does not copy stored route climb', () {
+    final ride = RideRecord(
+      id: 'ride-flat',
+      bikeId: 'bike-1',
+      startedAt: DateTime.utc(2026, 8, 12, 10),
+      endedAt: DateTime.utc(2026, 8, 12, 11),
+      distanceKm: 8,
+      movingTimeSec: 1800,
+      elevationM: 800,
+      track: [
+        {'lat': 48.4, 'lng': 9.9, 'elev': 200},
+        {'lat': 48.41, 'lng': 9.91, 'elev': 200},
+      ],
+    );
+    final entry = rideRecordToSavedEntry(ride);
+    expect(entry.elevationM, 0);
   });
 }

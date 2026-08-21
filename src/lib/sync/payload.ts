@@ -14,6 +14,7 @@ export type AppSyncSlice = {
   privacyZones: unknown;
   familyRiders: unknown;
   activeFamilyRiderId: string | null;
+  ownSetupByBikeId?: Record<string, string>;
   riderProfile: unknown;
   subscriptionTier: SubscriptionTier;
   commerceMode: unknown;
@@ -41,6 +42,7 @@ export function buildSyncPayload(s: AppSyncSlice): SyncPayload {
     privacyZones: s.privacyZones,
     familyRiders: s.familyRiders,
     activeFamilyRiderId: s.activeFamilyRiderId,
+    ownSetupByBikeId: s.ownSetupByBikeId,
     riderProfile: s.riderProfile,
     subscriptionTier: s.subscriptionTier,
     commerceMode: s.commerceMode,
@@ -67,6 +69,7 @@ export type RemoteApplyPatch = {
   privacyZones?: unknown;
   familyRiders?: unknown;
   activeFamilyRiderId?: string | null;
+  ownSetupByBikeId?: Record<string, string> | null;
   riderProfile?: unknown;
   subscriptionTier?: SubscriptionTier;
   commerceMode?: unknown;
@@ -94,6 +97,8 @@ export function remoteToApplyPatch(remote: SyncPayload): RemoteApplyPatch {
     patch.familyRiders = remote.familyRiders;
   if (remote.activeFamilyRiderId !== undefined)
     patch.activeFamilyRiderId = remote.activeFamilyRiderId ?? null;
+  if (remote.ownSetupByBikeId && typeof remote.ownSetupByBikeId === "object")
+    patch.ownSetupByBikeId = remote.ownSetupByBikeId;
   if (remote.riderProfile && typeof remote.riderProfile === "object")
     patch.riderProfile = remote.riderProfile;
   if (remote.subscriptionTier === "pro" || remote.subscriptionTier === "free")

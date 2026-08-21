@@ -21,7 +21,7 @@ const langs = ["de", "en", "fr", "it", "nl"] as const;
 function testDeExact() {
   const d = discoverUi("de");
   assert.equal(d.sixtyTitle, "~60 Min Rundkurse");
-  assert.equal(d.osmOptional, "OSM · ~60-Min-Rundkurse — Bike optional");
+  assert.equal(d.osmOptional, "OSM · ~60-Min-Rundkurse — Rad optional");
   assert.equal(d.noLoopsNearby, "Keine Rundkurse in der Nähe");
   assert.equal(d.saveAria, "Speichern");
   assert.equal(d.mappeHeading, "Die Mappe");
@@ -41,6 +41,7 @@ function testBrands() {
     const d = discoverUi(lang);
     assert.equal(d.mappeHeading, "Die Mappe", lang);
     assert.ok(d.importGpx.includes("GPX"), lang);
+    assert.ok(d.mappeShowAll.length > 3, lang);
     assert.ok(d.nearbyLiveHint.includes("MTB"), lang);
     assert.ok(d.rangeLine(40, 80).includes("km"), lang);
     assert.ok(d.elevEst(200).includes("hm"), lang);
@@ -101,10 +102,26 @@ function testP2Copy() {
   assert.equal(de.openNativeApp, "In der App öffnen");
   assert.equal(de.placeKind("cafe"), "Café");
   assert.equal(de.placeKind("shop"), "Laden");
-  assert.equal(de.variantValhallaOnly, "Ohne Live-Strecke keine Varianten");
+  assert.equal(
+    de.variantValhallaOnly,
+    "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
+  );
+  assert.equal(de.backToGps, "Zurück zu GPS");
+  assert.equal(de.tapLineVia.includes("Zwischenstopp"), true);
+  assert.equal(de.tapLineVia.includes("Alt-Klick"), true);
+  assert.equal(de.tapLineVia.includes("Höhenprofil"), true);
+  assert.equal(de.planUndo, "Rückgängig");
+  assert.equal(de.planRedo, "Wiederholen");
+  assert.equal(discoverUi("en").planUndo, "Undo");
+  assert.equal(discoverUi("en").planRedo, "Redo");
+  assert.ok(de.planLineCoach.includes("Linie"));
+  assert.ok(de.planLineCoach.includes("Halten"));
+  assert.equal(de.planMapSteep, "Steil");
+  assert.equal(de.planMapUnknown, "Unbekannt");
+  assert.equal(discoverUi("en").planMapUnknown, "Unknown");
   assert.equal(
     discoverUi("en").variantValhallaOnly,
-    "No variants without a live route",
+    "Flatter and more gravel need a live route — this is the planned line.",
   );
   for (const lang of langs) {
     const line = discoverUi(lang).variantValhallaOnly.toLowerCase();
@@ -143,6 +160,10 @@ function testHonestyCopy() {
     "Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.",
   );
   assert.equal(
+    de.honestyFarmTail,
+    "Kein Weg bis zum Pin — Ziel liegt an der Straße.",
+  );
+  assert.equal(
     discoverUi("en").honestyRoad,
     "Route mostly follows roads — tap a trail on the map and attach it.",
   );
@@ -150,9 +171,30 @@ function testHonestyCopy() {
     discoverUi("en").honestyCycleway,
     "Little dedicated bike path — the live route often stays on the road.",
   );
+  assert.equal(
+    discoverUi("en").honestyFarmTail,
+    "No path all the way to the pin — destination is on the street.",
+  );
+  assert.equal(
+    discoverUi("en").honestyFarmMid,
+    "Parts of the route follow farm tracks — set the destination closer to a street.",
+  );
+  assert.equal(
+    discoverUi("de").lastDestChip("Kino"),
+    "Letztes Ziel: Kino",
+  );
+  assert.equal(discoverUi("en").lastDestUndo, "Undo");
+  assert.equal(
+    discoverUi("de").endSetComputing,
+    "Ziel gesetzt — Route wird berechnet",
+  );
+  assert.equal(discoverUi("de").planLineCoachOk, "Verstanden");
+  assert.ok(discoverUi("de").planStopSetHint.includes("Stopp gesetzt"));
+  assert.ok(discoverUi("en").planStopSetHint.toLowerCase().includes("stop"));
+  assert.equal(discoverUi("en").placeOnRoute, "Include on route");
   for (const lang of langs) {
     const d = discoverUi(lang);
-    for (const line of [d.honestyRoad, d.honestyCycleway]) {
+    for (const line of [d.honestyRoad, d.honestyCycleway, d.honestyFarmTail, d.honestyFarmMid]) {
       const lower = line.toLowerCase();
       assert.ok(!lower.includes("graphhopper"), `${lang}: ${line}`);
       assert.ok(!lower.includes("valhalla"), `${lang}: ${line}`);
@@ -160,20 +202,41 @@ function testHonestyCopy() {
     }
   }
   const mapped = discoverStatus(
-    `12.3 km · 45 min · ${de.honestyCycleway}`,
+    `12.3 km · 45 min · ${de.honestyFarmTail}`,
     "en",
   );
-  assert.ok(mapped.includes("Little dedicated bike path"));
+  assert.ok(mapped.includes("No path all the way to the pin"));
+  const mappedMid = discoverStatus(
+    `12.3 km · 45 min · ${de.honestyFarmMid}`,
+    "en",
+  );
+  assert.ok(mappedMid.includes("farm tracks"));
   assert.ok(!mapped.toLowerCase().includes("graphhopper"));
   assert.ok(!mapped.toLowerCase().includes("valhalla"));
   assert.ok(!mapped.toLowerCase().includes("osrm"));
   assert.ok(de.outdooractive(3).includes("Outdooractive"));
 }
 
+function testTrailUnsuitableDoor() {
+  assert.ok(discoverUi("de").trailUnsuitable("Gravel").includes("Stand"));
+  assert.ok(!discoverUi("de").trailUnsuitable("Gravel").includes("Garage"));
+  assert.ok(!discoverUi("en").trailUnsuitable("gravel").toLowerCase().includes("garage"));
+}
+
 function testSurface() {
   assert.equal(discoverSurfaceLabel("Schotter", "de"), "Schotter");
   assert.equal(discoverSurfaceLabel("Schotter", "en"), "Gravel");
   assert.equal(discoverSurfaceLabel("unknown", "it"), "unknown");
+  for (const lang of langs) {
+    const d = discoverUi(lang);
+    assert.ok(d.recently.length > 1, lang);
+    assert.ok(d.setEndCta.length > 1, lang);
+    assert.ok(d.closeLoopHint.length > 1, lang);
+    assert.ok(d.browserPlanOnly.length > 1, lang);
+    assert.ok(!d.inPlanNeedEnd("X").toLowerCase().includes("compute"), lang);
+    assert.ok(!d.inPlanNeedEnd("X").includes("berechnen"), lang);
+  }
+  assert.equal(discoverUi("de").onMapPlace, "Punkt auf der Karte");
 }
 
 function testHeatCopy() {
@@ -190,6 +253,66 @@ function testHeatCopy() {
   }
 }
 
+function testPacksCopy() {
+  assert.equal(discoverUi("de").packsTitle, "Routing-Packs");
+  assert.ok(discoverUi("de").packsLead.includes("Browser"));
+  for (const lang of langs) {
+    const d = discoverUi(lang);
+    assert.ok(d.packsLead.toLowerCase().includes("app"), lang);
+    assert.ok(!d.packsLead.toLowerCase().includes("tuiles"), lang);
+  }
+}
+
+function testAroundYouCopy() {
+  assert.equal(discoverUi("de").aroundYouCta, "Hier rundherum");
+  assert.equal(
+    discoverUi("de").aroundYouLoop,
+    "Rundkurs um dich · OSM-Wege",
+  );
+  assert.equal(
+    discoverUi("de").aroundYouHint,
+    "Rundkurs auf OSM-Wegen — kein Trailforks-Trail",
+  );
+  for (const lang of langs) {
+    const d = discoverUi(lang);
+    const blob = [
+      d.aroundYouCta,
+      d.aroundYouAnother,
+      d.aroundYouLoop,
+      d.aroundYouHint,
+      d.aroundYouBusy,
+      d.aroundYouFail,
+      d.aroundYouSport,
+      d.aroundYouNeedGps,
+      d.aroundYouOffline,
+      d.aroundYouUncertain,
+      d.aroundYouUncertainShort,
+      d.aroundYouStats("18.2", 61),
+      d.aroundYouReasonDuration(61, 60),
+      d.aroundYouReasonSurface("Asphalt"),
+      d.aroundYouReasonOsm,
+      d.savePreview,
+      d.fromHereHint,
+      d.previewEngine("18 km"),
+    ]
+      .join(" ")
+      .toLowerCase();
+    assert.ok(!blob.includes("graphhopper"), lang);
+    assert.ok(!blob.includes("valhalla"), lang);
+    assert.ok(!blob.includes("osrm"), lang);
+    assert.ok(!blob.includes("openrouteservice"), lang);
+    assert.ok(!/\bors\b/.test(blob), lang);
+    assert.ok(d.aroundYouCta.length > 3, lang);
+    assert.ok(d.aroundYouLoop.toLowerCase().includes("osm"), lang);
+    assert.ok(!d.aroundYouUncertain.toLowerCase().includes("ors"), lang);
+    const stats = d.aroundYouStats("18.2", 61);
+    assert.ok(stats.includes("18.2"), lang);
+    assert.ok(stats.includes("61"), lang);
+    assert.ok(d.aroundYouUncertainShort.includes("12"), lang);
+    assert.equal(d.savePreview.length > 2, true, lang);
+  }
+}
+
 testDeExact();
 testBrands();
 testStatusMap();
@@ -197,6 +320,9 @@ testPins();
 testP2Copy();
 testGhMinuteLimit();
 testHonestyCopy();
+testTrailUnsuitableDoor();
 testSurface();
 testHeatCopy();
+testPacksCopy();
+testAroundYouCopy();
 console.log("discoverUi.test.ts OK");

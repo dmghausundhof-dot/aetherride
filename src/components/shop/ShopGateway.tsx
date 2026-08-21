@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bike, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { RadNavMark } from "@/components/garage/RadNavMark";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { ShopImageFallback } from "@/components/shop/ShopImageFallback";
 import { ShopCatalogPreview } from "@/components/shop/ShopCatalogPreview";
 import { FeaturedBikeCard } from "@/components/shop/FeaturedBikeCard";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
@@ -203,7 +205,6 @@ export function ShopGateway() {
         showPartsFallback ? (
           <ShopDoor
             highlighted={highlightParts}
-            icon={Bike}
             title={copy.shopForYourBike}
             hint={copy.shopForYourBikeHint(bike.name)}
             href={partsHref}
@@ -216,7 +217,7 @@ export function ShopGateway() {
           className="block rounded-2xl border border-border bg-surface p-5 hover:border-chrome/40"
         >
           <div className="flex items-start gap-3">
-            <Bike className="mt-0.5 h-5 w-5 shrink-0 text-chrome" />
+            <RadNavMark className="mt-0.5 h-5 w-5 shrink-0 text-chrome" />
             <div>
               <h2 className="text-base font-extrabold">
                 {copy.shopForYourBike}
@@ -250,7 +251,9 @@ export function ShopGateway() {
                         alt={p.imageAlt || p.name}
                         className="h-full w-full object-cover"
                       />
-                    ) : null}
+                    ) : (
+                      <ShopImageFallback markClassName="h-6 w-6" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="font-extrabold leading-snug">{p.name}</h3>
@@ -274,14 +277,12 @@ export function ShopGateway() {
 }
 
 function ShopDoor({
-  icon: Icon,
   title,
   hint,
   href,
   action,
   highlighted,
 }: {
-  icon: typeof Bike;
   title: string;
   hint: string;
   href: string;
@@ -297,7 +298,7 @@ function ShopDoor({
       }
     >
       <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-chrome" />
+        <RadNavMark className="mt-0.5 h-5 w-5 shrink-0 text-chrome" />
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-extrabold">{title}</h2>
           <p className="mt-1 text-sm text-text-secondary">{hint}</p>

@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
+import 'garage_chrome.dart';
 
 /// Live BLE pairing: Bosch / Shimano / CSC / Power. Open scan, user picks.
 Future<bool> showBlePairSheet(
@@ -387,18 +388,11 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              l10n.bleBikeTitle,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.blePairLeadAny,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.muted,
-                  ),
+            const GarageSheetHandle(),
+            GarageSheetTitle(
+              title: l10n.bleBikeTitle,
+              hint: l10n.blePairLeadFor(isEbike: widget.isEbike),
+              hintKey: const Key('ble-pair-cap-lead'),
             ),
             if (status != null) ...[
               const SizedBox(height: AppSpacing.s),
@@ -428,7 +422,10 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               const LinearProgressIndicator(minHeight: 2),
             Expanded(
               child: _hits.isEmpty && !_busy
-                  ? _EmptyScan(scanning: _scanning)
+                  ? _EmptyScan(
+                      scanning: _scanning,
+                      isEbike: widget.isEbike,
+                    )
                   : ListView(
                       children: [
                         for (final h in _hits)
@@ -475,9 +472,10 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
 }
 
 class _EmptyScan extends StatelessWidget {
-  const _EmptyScan({required this.scanning});
+  const _EmptyScan({required this.scanning, required this.isEbike});
 
   final bool scanning;
+  final bool isEbike;
 
   @override
   Widget build(BuildContext context) {
@@ -498,6 +496,16 @@ class _EmptyScan extends StatelessWidget {
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isEbike ? l10n.bleEmptyEbike : l10n.bleEmptySensor,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.3,
               color: AppColors.muted,
             ),
           ),
@@ -562,7 +570,7 @@ class _HitTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        l10n.bleConnectTipFor(hit.kind),
+                        l10n.bleCapFor(hit.kind),
                         style: const TextStyle(
                           fontSize: 12,
                           height: 1.3,

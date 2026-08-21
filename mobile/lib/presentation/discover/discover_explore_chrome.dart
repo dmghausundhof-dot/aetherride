@@ -1,5 +1,6 @@
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/browse_map_paint.dart';
+import '../../domain/tours/add_route_start.dart';
 
 /// Discover-Chrome: Umkreis und Filter sind zwei Flächen.
 ///
@@ -22,6 +23,22 @@ abstract final class DiscoverExploreChromeLogic {
       return formatAwayKm(selectedAwayKm!);
     }
     return defaultAroundKm;
+  }
+
+  /// Umkreis-km nur mit GPS/Start oder lokaler, echter Kartenmitte.
+  ///
+  /// DACH-Übersicht (47.2, 6.5) und Zoom unter 9 sind kein Origin —
+  /// sonst filtert „≤40 km“ um die Jura und liefert 0 Touren.
+  static bool aroundOriginIsUsable({
+    required bool hasGpsOrStart,
+    double? browseLat,
+    double? browseLng,
+    required double mapZoom,
+  }) {
+    if (hasGpsOrStart) return true;
+    if (browseLat == null || browseLng == null) return false;
+    if (isPlaceholderDiscoverCenter(browseLat, browseLng)) return false;
+    return isLocalDiscoverZoom(mapZoom);
   }
 
   /// Distanz-Max sitzt am Umkreis-Chip, nicht im Filter-Badge.
@@ -61,8 +78,7 @@ abstract final class DiscoverExploreChromeLogic {
   static bool showIdlePeek(String? selectedTourId) =>
       selectedTourId != null && selectedTourId.isNotEmpty;
 
-  /// Nur die Suche klappt Dauer/Layer ein — eine gewählte Tour nicht.
-  /// Sonst wechselt die Leiste das Design und die Layer sitzen hinter ihr.
+  /// Nur die Suche klappt die Leiste ein — eine gewählte Tour nicht.
   static bool compactExploreChrome({
     required bool hasSelection,
     required bool searching,
@@ -76,29 +92,66 @@ abstract final class DiscoverExploreChromeLogic {
   }) =>
       false;
 
+  /// Kompakte Farblegende unter der Leiste — Layer sitzen im Karteninhalt.
   static bool showExploreLayerRow({
     required bool hasSelection,
     required bool planning,
   }) =>
       !planning;
 
+  /// Layer-Chip markiert, wenn etwas vom Default versteckt ist.
+  static bool mapContentsCustomized({
+    required bool toursOn,
+    required bool trailsOn,
+    required bool waysOn,
+    required bool hillshadeOn,
+    required bool placesOn,
+    required bool heatOn,
+    required bool heatConsent,
+  }) {
+    if (!toursOn || !trailsOn || !waysOn || !hillshadeOn || !placesOn) {
+      return true;
+    }
+    return heatConsent && !heatOn;
+  }
+
+  /// Unter 360 dp eigene Zeile für die Suche — „Route planen“ quetscht sie nicht.
+  static bool stackSearchOnOwnRow(double width) => width < 360;
+
   /// Navigieren bleibt in der Leiste — gleiche Form mit und ohne Tour.
   static bool chromeShowsPlanCta(bool hasSelection) => true;
 
-  /// Suchfeld + Chips + Dauer. Layer sitzen darunter, nicht bei top+92.
+  /// Suchfeld + Filterchips. Legende sitzt darunter, Layer im Sheet.
   static const double exploreChromeTopPad = 8;
   static const double exploreChromeToLayersGap = 6;
   static const double exploreChromeBodyHeight = 112;
-  static const double exploreLayerRowHeight = 48;
+
+  /// Extra Höhe, wenn Suche und Plan-CTA untereinander stehen.
+  static const double exploreChromeStackedExtra = 48;
+
+  static double exploreChromeBodyHeightFor(double width) =>
+      exploreChromeBodyHeight +
+      (stackSearchOnOwnRow(width) ? exploreChromeStackedExtra : 0);
+
+  /// Vor dem ersten Measure: schmale Leiste nicht mit 112 unter den Ornaments.
+  static double resolvedChromeHeight({
+    required double measured,
+    required double width,
+  }) {
+    if ((measured - exploreChromeBodyHeight).abs() < 0.5) {
+      return exploreChromeBodyHeightFor(width);
+    }
+    return measured;
+  }
+
   static const double exploreLegendHeight = BrowseMapPaint.legendHeight;
   static const double exploreOrnamentGap = 8;
 
-  /// Extra unter SafeArea für Kompass/Location — unter Layer + 3-Farben-Legende.
+  /// Extra unter SafeArea für Kompass/Location — unter Leiste + Legende.
   static double ornamentExtraBelowSafe(double chromeHeight) =>
       exploreChromeTopPad +
       chromeHeight +
       exploreChromeToLayersGap +
-      exploreLayerRowHeight +
       exploreLegendHeight +
       exploreOrnamentGap -
       8;
@@ -107,10 +160,7 @@ abstract final class DiscoverExploreChromeLogic {
     required double statusTop,
     required double chromeHeight,
   }) =>
-      statusTop +
-      exploreChromeTopPad +
-      chromeHeight +
-      exploreChromeToLayersGap;
+      statusTop + exploreChromeTopPad + chromeHeight + exploreChromeToLayersGap;
 
   /// Zweiter Zurück-Schritt im Peek: Auswahl lösen, echter Leerlauf.
   static bool backClearsSelection({
@@ -145,6 +195,12 @@ abstract final class DiscoverExploreChromeLogic {
         if (trailsOn) ...trailOverlayClasses,
         if (waysOn) ...wayOverlayClasses,
       };
+
+  /// Asphalt-Punkt nur wenn Radwege an sind.
+  static bool legendShowsPaved({required bool waysOn}) => waysOn;
+
+  /// Schotter + Pfad nur wenn Trails an sind.
+  static bool legendShowsTrailFamily({required bool trailsOn}) => trailsOn;
 
   /// ICN-Wand nur ausgeklappt, nie dauerhaft im Leerlauf.
   static bool legendShowsMeshNote({

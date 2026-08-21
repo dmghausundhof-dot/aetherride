@@ -13,6 +13,7 @@ import { useChromeLang } from "@/hooks/useChromeLang";
 import { chromeDateLocale } from "@/lib/i18n/chromeLang";
 import { shareCopy } from "@/lib/i18n/shareCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
+import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
 
 export default function SharedCollectionPage() {
   const params = useParams();
@@ -153,7 +154,7 @@ export default function SharedCollectionPage() {
                 <p className="truncate font-medium">{name}</p>
                 {pub && (
                   <p className="text-[11px] text-text-secondary">
-                    {pub.distanceKm} km · {pub.elevationM} hm
+                    {formatDistanceElevation(pub.distanceKm, pub.elevationM)}
                   </p>
                 )}
               </div>

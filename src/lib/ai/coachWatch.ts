@@ -15,6 +15,12 @@ import type {
   RideFeedback,
   RiderProfile,
 } from "@/types";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import { chatCopy, type ChatCopy } from "@/lib/i18n/chatCopy";
+import {
+  postRideAnalysisCopy,
+  type PostRideAnalysisCopy,
+} from "@/lib/i18n/postRideAnalysisCopy";
 
 export type CoachKind =
   | "maintenance"
@@ -246,28 +252,61 @@ export function buildCoachWatch(input: CoachWatchInput): CoachNotice[] {
   return unique;
 }
 
-export function formulateCoachWatch(notices: CoachNotice[]): string {
-  if (notices.length === 0) {
-    return "Gerade steht nichts an. Wartung, Verschleiß, Setup und Kompatibilität sind im grünen Bereich.";
+export function localizeCoachNotice(
+  n: CoachNotice,
+  lang: ChromeLang = "de"
+): { title: string; detail: string } {
+  const chat = chatCopy(lang);
+  const analysis = postRideAnalysisCopy(lang);
+  return localizeCoachNoticeWith(n, chat, analysis);
+}
+
+function localizeCoachNoticeWith(
+  n: CoachNotice,
+  chat: ChatCopy,
+  analysis: PostRideAnalysisCopy
+): { title: string; detail: string } {
+  if (n.kind === "feedback") {
+    return { title: chat.feedbackTitle, detail: chat.feedbackDetail };
   }
+  if (n.kind === "setup") {
+    if (n.title.includes("2 Klicks langsamer")) {
+      return { title: analysis.sugReboundSlowTitle, detail: n.detail };
+    }
+    if (n.title.includes("2 Klicks schneller")) {
+      return { title: analysis.sugReboundFastTitle, detail: n.detail };
+    }
+    if (/Luftdruck|air pressure|pression|pressione|luchtdruk/i.test(n.title)) {
+      return { title: analysis.sugPressureTitle, detail: n.detail };
+    }
+  }
+  return { title: n.title, detail: n.detail };
+}
+
+export function formulateCoachWatch(
+  notices: CoachNotice[],
+  lang: ChromeLang = "de"
+): string {
+  const chat = chatCopy(lang);
+  const analysis = postRideAnalysisCopy(lang);
+  if (notices.length === 0) return chat.watchNothing;
   const overdue = notices.filter((n) => n.severity === "overdue").length;
   const soon = notices.filter((n) => n.severity === "due_soon").length;
-  const lines = notices
-    .slice(0, 5)
-    .map((n) => {
-      const tag =
-        n.severity === "overdue"
-          ? "überfällig"
-          : n.severity === "due_soon"
-            ? "bald"
-            : "Hinweis";
-      return `${tag}: ${n.title} — ${n.detail}`;
-    });
+  const lines = notices.slice(0, 5).map((n) => {
+    const loc = localizeCoachNoticeWith(n, chat, analysis);
+    const tag =
+      n.severity === "overdue"
+        ? chat.sevOverdue
+        : n.severity === "due_soon"
+          ? chat.sevSoon
+          : chat.sevInfo;
+    return `${tag}: ${loc.title} — ${loc.detail}`;
+  });
   const head =
     overdue > 0
-      ? `${overdue} überfällig, ${soon} bald fällig.`
+      ? `${overdue} ${chat.sevOverdue.toLowerCase()}, ${soon} ${chat.sevSoon.toLowerCase()}.`
       : soon > 0
-        ? `${soon} bald fällig.`
-        : `${notices.length} Hinweis${notices.length === 1 ? "" : "e"}.`;
+        ? `${soon} ${chat.sevSoon.toLowerCase()}.`
+        : `${notices.length} ${chat.sevInfo}.`;
   return `${head} ${lines.join(" ")}`;
 }

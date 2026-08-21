@@ -30,7 +30,7 @@ export const FAQ_ITEMS: {
   {
     id: "web-app",
     q: "Was läuft im Browser, was in der App?",
-    a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
+    a: "Im Web: Hof, Karte, Planen, Touren, Rad. In der App: Ride-HUD, Offline-Routing, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -45,7 +45,7 @@ export const FAQ_ITEMS: {
   {
     id: "ohne-app",
     q: "Geht FlowLine nur im Browser?",
-    a: "Planen, Karte, Platz und Werkstatt ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
+    a: "Planen, Karte, Touren und Rad ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -64,7 +64,7 @@ export const FAQ_ITEMS: {
   {
     id: "preise",
     q: "Was kostet Pro?",
-    a: "Free plant und navigiert in der App. Pro kostet 6,99 €/Monat oder 59,99 €/Jahr — Multi-Bike, Bracketing, Reichweiten-Spannen, höhere Chat-Limits. Checkout im Profil (Stripe) bzw. Play Billing in Android. Kein Abo mitten in der Tour.",
+    a: "Free plant und navigiert in der App. Pro kostet 6,99 €/Monat oder 59,99 €/Jahr — mehrere Räder, Bracketing, Reichweiten-Spannen, höhere Chat-Limits. Checkout im Profil (Stripe) bzw. Play Billing in Android. Kein Abo mitten in der Tour.",
     links: [{ href: "/pricing", label: "Preise" }],
   },
   {
@@ -89,9 +89,9 @@ export const FAQ_ITEMS: {
   {
     id: "shop",
     q: "Kann ich hier Ersatzteile kaufen?",
-    a: "Nein. Der Laden und Shopify sind vorerst aus. Die Werkstatt bleibt für Rad, Setup und Wartung — ohne Kasse in FlowLine.",
+    a: "Nein. Der Laden und Shopify sind vorerst aus. Das Rad bleibt für Setup und Wartung — ohne Kasse in FlowLine.",
     links: [
-      { href: "/garage", label: "Werkstatt" },
+      { href: "/garage", label: "Rad" },
     ],
   },
   {
@@ -115,7 +115,7 @@ export const FAQ_ITEMS: {
   {
     id: "app-stores",
     q: "Wo lade ich die App?",
-    a: "Store-Links stehen, sobald die Listings live sind. Bis dahin laufen Hof, Karte, Platz und Werkstatt im Browser. HUD, Offline und Sensoren kommen mit der nativen App.",
+    a: "Store-Links stehen, sobald die Listings live sind. Bis dahin laufen Hof, Karte, Touren und Rad im Browser. HUD, Offline und Sensoren kommen mit der nativen App.",
     links: [{ href: "/download", label: "App" }],
   },
   {

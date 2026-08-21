@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../domain/bike.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 
 /// Full portable JSON dump (DSGVO Art. 20) — web `fullJsonExport`.
 String fullJsonExport({
@@ -39,7 +40,7 @@ String fullJsonExport({
           'startTime': r.startedAt.toIso8601String(),
           'endTime': r.endedAt?.toIso8601String(),
           'distanceM': r.distanceKm * 1000,
-          'elevationGainM': r.elevationM,
+          'elevationGainM': honestClimbM(r.track, r.elevationM),
           'durationSec': r.movingTimeSec,
           'name': r.name,
           'routeId': r.routeId,

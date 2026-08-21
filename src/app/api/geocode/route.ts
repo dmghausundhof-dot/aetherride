@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { chromeLangFrom } from "@/lib/i18n/chromeLang";
+import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
 import {
+  cinemaPlaceQuery,
   dedupeGeocodeHits,
   rankGeocodeHits,
 } from "@/lib/geocode/photonRank";
+import { photonHitsFromCollection } from "@/lib/geocode/photonFeature";
 
 export type GeocodeHit = {
   label: string;
@@ -26,8 +28,25 @@ export async function GET(req: Request) {
   );
 
   const lang = chromeLangFrom(url.searchParams.get("lang"));
+  const latParam = url.searchParams.get("lat");
+  const lonParam =
+    url.searchParams.get("lon") ?? url.searchParams.get("lng");
+  const reverseLat = latParam != null ? Number(latParam) : NaN;
+  const reverseLon = lonParam != null ? Number(lonParam) : NaN;
 
   if (q.length < 2) {
+    if (
+      Number.isFinite(reverseLat) &&
+      Number.isFinite(reverseLon) &&
+      Math.abs(reverseLat) <= 90 &&
+      Math.abs(reverseLon) <= 180
+    ) {
+      return reverseGeocode({
+        lat: reverseLat,
+        lon: reverseLon,
+        lang,
+      });
+    }
     return NextResponse.json({
       hits: [] as GeocodeHit[],
       attribution: "© OpenStreetMap · Photon",
@@ -47,19 +66,22 @@ export async function GET(req: Request) {
   try {
     const photonLang = lang === "nl" ? "en" : lang;
     // DACH bias (override with lat/lon near user)
-    const biasLat = url.searchParams.get("lat") ?? "48.0";
-    const biasLon =
-      url.searchParams.get("lon") ?? url.searchParams.get("lng") ?? "10.0";
+    const biasLat = latParam ?? "48.0";
+    const biasLon = lonParam ?? "10.0";
+    const userBias =
+      latParam != null && lonParam != null
+        ? { lat: Number(latParam), lng: Number(lonParam) }
+        : undefined;
 
-    const photonUrl = (osmTag?: string) => {
+    const photonUrl = (opts?: { osmTag?: string; query?: string }) => {
       const photon = new URL("https://photon.komoot.io/api/");
-      photon.searchParams.set("q", q);
+      photon.searchParams.set("q", opts?.query ?? q);
       // Photon: default/en/de/fr. nl is not a Photon lang — use en.
       photon.searchParams.set("lang", photonLang);
       photon.searchParams.set("limit", String(Math.min(8, limit + 3)));
       photon.searchParams.set("lat", biasLat);
       photon.searchParams.set("lon", biasLon);
-      if (osmTag) photon.searchParams.set("osm_tag", osmTag);
+      if (opts?.osmTag) photon.searchParams.set("osm_tag", opts.osmTag);
       return photon.toString();
     };
 
@@ -68,15 +90,28 @@ export async function GET(req: Request) {
       "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
     } as const;
 
-    const [res, placeRes] = await Promise.all([
+    const cinemaPlace = cinemaPlaceQuery(q);
+    const [res, placeRes, cinemaRes] = await Promise.all([
       fetch(photonUrl(), {
         headers: photonHeaders,
         next: { revalidate: 3600 },
       }),
-      fetch(photonUrl("place"), {
+      fetch(photonUrl({ osmTag: "place" }), {
         headers: photonHeaders,
         next: { revalidate: 3600 },
       }).catch(() => null),
+      cinemaPlace != null
+        ? fetch(
+            photonUrl({
+              osmTag: "amenity:cinema",
+              query: cinemaPlace || q,
+            }),
+            {
+              headers: photonHeaders,
+              next: { revalidate: 3600 },
+            }
+          ).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     if (!res.ok) {
@@ -112,54 +147,33 @@ export async function GET(req: Request) {
       );
     }
 
-    type PhotonFeature = {
-      geometry?: { coordinates?: number[] };
-      properties?: Record<string, unknown>;
-    };
-    const parseHits = (data: { features?: PhotonFeature[] }): GeocodeHit[] => {
-      const hits: GeocodeHit[] = [];
-      for (const f of data.features ?? []) {
-        const coords = f.geometry?.coordinates;
-        if (!coords || coords.length < 2) continue;
-        const p = f.properties ?? {};
-        const name = typeof p.name === "string" ? p.name.trim() : "";
-        const parts = [
-          name,
-          p.street,
-          p.housenumber,
-          p.postcode,
-          p.city ?? p.town ?? p.village ?? p.county,
-          p.state,
-          p.country,
-        ]
-          .map((x) => (typeof x === "string" ? x.trim() : ""))
-          .filter(Boolean);
-        const label = [...new Set(parts)].join(", ");
-        if (!label) continue;
-        hits.push({
-          label,
-          lng: coords[0],
-          lat: coords[1],
-          kind: typeof p.type === "string" ? p.type : undefined,
-          ...(name ? { name } : {}),
-        });
-      }
-      return hits;
-    };
-
-    const data = (await res.json()) as { features?: PhotonFeature[] };
-    let hits = parseHits(data);
+    const data = (await res.json()) as { features?: unknown[] };
+    let hits = photonHitsFromCollection(data);
     if (placeRes?.ok) {
       try {
         const placeData = (await placeRes.json()) as {
-          features?: PhotonFeature[];
+          features?: unknown[];
         };
-        hits = [...parseHits(placeData), ...hits];
+        hits = [...photonHitsFromCollection(placeData), ...hits];
       } catch {
         /* keep default hits */
       }
     }
-    hits = rankGeocodeHits(q, dedupeGeocodeHits(hits)).slice(0, limit);
+    if (cinemaRes?.ok) {
+      try {
+        const cinemaData = (await cinemaRes.json()) as {
+          features?: unknown[];
+        };
+        hits = [...photonHitsFromCollection(cinemaData), ...hits];
+      } catch {
+        /* keep default hits */
+      }
+    }
+    hits = rankGeocodeHits(
+      q,
+      dedupeGeocodeHits(hits),
+      userBias
+    ).slice(0, limit);
 
     if (hits.length > 0) {
       return NextResponse.json({
@@ -205,6 +219,55 @@ export async function GET(req: Request) {
         hits: [],
         attribution: "© OpenStreetMap · Photon",
         error: e instanceof Error ? e.message : "geocode failed",
+      },
+      { status: 502 }
+    );
+  }
+}
+
+const PHOTON_HEADERS = {
+  Accept: "application/json",
+  "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
+} as const;
+
+/** GET /api/geocode?lat=&lon= — Photon reverse, no invented names. */
+async function reverseGeocode(opts: {
+  lat: number;
+  lon: number;
+  lang: ChromeLang;
+}) {
+  const photonLang = opts.lang === "nl" ? "en" : opts.lang;
+  const photon = new URL("https://photon.komoot.io/reverse");
+  photon.searchParams.set("lat", String(opts.lat));
+  photon.searchParams.set("lon", String(opts.lon));
+  photon.searchParams.set("lang", photonLang);
+  try {
+    const res = await fetch(photon.toString(), {
+      headers: PHOTON_HEADERS,
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) {
+      return NextResponse.json({
+        hits: [] as GeocodeHit[],
+        attribution: "© OpenStreetMap · Photon",
+        provider: "photon",
+        warning: `Photon reverse ${res.status}`,
+      });
+    }
+    const data = (await res.json()) as { features?: unknown[] };
+    const hits = photonHitsFromCollection(data).slice(0, 1);
+    return NextResponse.json({
+      hits,
+      attribution: "© OpenStreetMap contributors · Photon (Komoot)",
+      provider: "photon",
+      reverse: true,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      {
+        hits: [] as GeocodeHit[],
+        attribution: "© OpenStreetMap · Photon",
+        error: e instanceof Error ? e.message : "reverse geocode failed",
       },
       { status: 502 }
     );

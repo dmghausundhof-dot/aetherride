@@ -15,9 +15,10 @@ function testDe() {
   const d = discoverCopy("de");
   assert.equal(d.loop, "Rundkurs");
   assert.equal(d.searchHint, "Ort oder Tour");
-  assert.equal(d.planRouteCta, "Navigieren");
+  assert.equal(d.planRouteCta, "Planen");
   assert.equal(d.filter, "Filter");
   assert.equal(d.distance, "Distanz");
+  assert.equal(d.around, "Umkreis");
   assert.equal(d.aroundKm(35), "in 35 km");
   assert.equal(d.showTours(1), "1 Tour zeigen");
   assert.equal(d.showTours(3), "3 Touren zeigen");
@@ -34,7 +35,7 @@ function testDe() {
   assert.equal(d.sport.gravel, "Gravel");
   assert.equal(d.sport.ebike, "E-MTB");
   assert.equal(d.mappe, "Mappe");
-  assert.equal(d.sportPref, "Disziplin (Präferenz)");
+  assert.equal(d.sportPref, "Disziplin");
   assert.notEqual(d.sportPref, d.sportPref.toUpperCase());
   assert.notEqual(d.mappe, d.mappe.toUpperCase());
   assert.equal(d.dist(20), "≤ 20 km");
@@ -50,6 +51,7 @@ function testParity() {
     assert.equal(d.surface.trail, "Trail", lang);
     assert.ok(d.dist(40).includes("km"), lang);
     assert.ok(d.aroundKm(35).includes("km"), lang);
+    assert.ok(d.around.length > 0, lang);
     assert.ok(d.distance.length > 0, lang);
     assert.ok(d.searchHint.length > 0, lang);
     assert.ok(d.elevAlpine.includes("hm"), lang);

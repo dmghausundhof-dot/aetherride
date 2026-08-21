@@ -364,9 +364,11 @@ const kOsmLiveSourceCandidates = <String>['openmaptiles'];
 const kOsmLiveCyclewayLayerId = 'osm-live-cycleway';
 const kOsmLivePathLayerId = 'osm-live-path';
 const kOsmLiveTrackLayerId = 'osm-live-track';
+const kOsmLiveStreetLayerId = 'osm-live-street';
 
 const kOsmLiveLayerClass = <String, BikeOverlayClass>{
   kOsmLiveCyclewayLayerId: BikeOverlayClass.road,
+  kOsmLiveStreetLayerId: BikeOverlayClass.urban,
   kOsmLivePathLayerId: BikeOverlayClass.mtbUnrated,
   kOsmLiveTrackLayerId: BikeOverlayClass.gravel,
   kOsmSGradeLayerId: BikeOverlayClass.mtb,
@@ -418,6 +420,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
     required double width,
     required List<dynamic> filter,
     required double minzoom,
+    double opacity = BrowseMapPaint.lineOpacity,
+    List<double>? dash,
   }) async {
     try {
       final ids = [for (final raw in await c.getLayerIds()) raw.toString()];
@@ -430,9 +434,10 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
         LineLayerProperties(
           lineColor: color,
           lineWidth: BrowseMapPaint.liveZoomWidth(width),
-          lineOpacity: BrowseMapPaint.lineOpacity,
-          lineCap: 'round',
+          lineOpacity: opacity,
+          lineCap: dash == null ? 'round' : 'butt',
           lineJoin: 'round',
+          lineDasharray: dash,
           visibility: 'visible',
         ),
         sourceLayer: 'transportation',
@@ -447,6 +452,7 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
     layerId: kOsmLiveCyclewayLayerId,
     color: BikeOverlayColors.road,
     width: BrowseMapPaint.liveCyclewayWidth,
+    opacity: BrowseMapPaint.quietOpacity,
     minzoom: BrowseMapPaint.liveCyclewayMinZoom,
     filter: [
       'all',
@@ -502,6 +508,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
     layerId: kOsmLiveTrackLayerId,
     color: BikeOverlayColors.gravel,
     width: BrowseMapPaint.liveTrackWidth,
+    opacity: BrowseMapPaint.farmTrackOpacity,
+    dash: BrowseMapPaint.farmTrackDash,
     minzoom: BrowseMapPaint.liveTrackMinZoom,
     filter: [
       'all',
@@ -516,6 +524,30 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
         '==',
         ['get', 'class'],
         'track',
+      ],
+    ],
+  );
+  await addLive(
+    layerId: kOsmLiveStreetLayerId,
+    color: '#8A9399',
+    width: BrowseMapPaint.liveStreetWidth,
+    opacity: BrowseMapPaint.streetHintOpacity,
+    minzoom: 12,
+    filter: [
+      'all',
+      [
+        'match',
+        ['geometry-type'],
+        ['LineString', 'MultiLineString'],
+        true,
+        false,
+      ],
+      [
+        'match',
+        ['get', 'class'],
+        ['minor', 'service', 'street', 'tertiary', 'secondary'],
+        true,
+        false,
       ],
     ],
   );
@@ -635,6 +667,7 @@ Future<void> attachBikeOverlayLayers(
     required double lineWidth,
     List<double>? dash,
     double minzoom = 11,
+    double? opacity,
   }) async {
     try {
       await c.addLineLayer(
@@ -643,7 +676,7 @@ Future<void> attachBikeOverlayLayers(
         LineLayerProperties(
           lineColor: lineColor,
           lineWidth: BrowseMapPaint.zoomWidth(lineWidth),
-          lineOpacity: BrowseMapPaint.lineOpacity,
+          lineOpacity: opacity ?? BrowseMapPaint.opacityForClass(classId),
           lineCap: 'round',
           lineJoin: 'round',
           lineDasharray: dash,
@@ -721,11 +754,19 @@ Future<void> attachBikeOverlayLayers(
   );
 }
 
+/// OSM live farm tracks stay off while an A–B dest is on the map.
+bool osmLiveTrackLayerVisible({
+  required bool classVisible,
+  required bool hideFarmTracks,
+}) =>
+    classVisible && !hideFarmTracks;
+
 Future<void> applyBikeOverlayVisibility(
   MapLibreMapController c, {
   required BikeOverlayFamily family,
   required bool visible,
   required Set<BikeOverlayClass> extraOn,
+  bool hideFarmTracks = false,
 }) async {
   final on = overlayClassesShown(overlayOn: visible, extraOn: extraOn);
   for (final entry in kBikeOverlayLayerIds.entries) {
@@ -735,8 +776,10 @@ Future<void> applyBikeOverlayVisibility(
       if (on.contains(entry.key)) {
         await c.setLayerProperties(
           layerId,
-          const LineLayerProperties(
-            lineOpacity: BrowseMapPaint.visibilityOpacity,
+          LineLayerProperties(
+            lineOpacity: BrowseMapPaint.opacityForClass(
+              bikeOverlayClassId(entry.key),
+            ),
           ),
         );
       }
@@ -744,7 +787,12 @@ Future<void> applyBikeOverlayVisibility(
   }
   for (final entry in kOsmLiveLayerClass.entries) {
     try {
-      await c.setLayerVisibility(entry.key, on.contains(entry.value));
+      final show = osmLiveTrackLayerVisible(
+        classVisible: on.contains(entry.value),
+        hideFarmTracks:
+            hideFarmTracks && entry.key == kOsmLiveTrackLayerId,
+      );
+      await c.setLayerVisibility(entry.key, show);
     } catch (_) {}
   }
 }

@@ -68,6 +68,21 @@ void main() {
       expect(store.preferredSports, [BikeCategory.gravel]);
     });
 
+    test('adoptBikeCategory sets haupt when empty, else only adds', () {
+      final store = UserProfileStore();
+      store.adoptBikeCategory(BikeCategory.gravel, makePrimary: true);
+      expect(store.preferredSport, BikeCategory.gravel);
+      expect(store.preferredSports, [BikeCategory.gravel]);
+
+      store.adoptBikeCategory(BikeCategory.road, makePrimary: false);
+      expect(store.preferredSport, BikeCategory.gravel);
+      expect(store.preferredSports, contains(BikeCategory.road));
+
+      store.adoptBikeCategory(BikeCategory.mtbAm, makePrimary: true);
+      expect(store.preferredSport, BikeCategory.mtbAm);
+      expect(store.preferredSports.first, BikeCategory.mtbAm);
+    });
+
     test('setPrimary adds missing sport and moves it first', () {
       final store = UserProfileStore();
       store.setPrimarySport(BikeCategory.urban);

@@ -1,3 +1,4 @@
+import 'package:aetherride_mobile/domain/routing/trail_difficulty.dart';
 import 'package:aetherride_mobile/domain/routing/trail_last_mile.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,6 +71,44 @@ void main() {
     expect(
       snapPointOntoTrails(trails: [s3], lat: 49.5, lng: 8.76),
       isNull,
+    );
+  });
+
+  test('farm track without scale is not corridor-eligible', () {
+    expect(
+      trailIsCorridorEligible(
+        highway: 'track',
+        difficulty: TrailDifficulty.open,
+      ),
+      isFalse,
+    );
+    expect(
+      trailIsCorridorEligible(
+        highway: 'path',
+        difficulty: TrailDifficulty.open,
+      ),
+      isFalse,
+    );
+    expect(
+      trailIsCorridorEligible(
+        highway: 'path',
+        difficulty: TrailDifficulty.s1,
+      ),
+      isTrue,
+    );
+    expect(
+      trailIsCorridorEligible(
+        highway: 'cycleway',
+        difficulty: TrailDifficulty.open,
+      ),
+      isTrue,
+    );
+    expect(
+      trailIsCorridorEligible(
+        highway: 'track',
+        difficulty: TrailDifficulty.s1,
+      ),
+      isTrue,
     );
   });
 }

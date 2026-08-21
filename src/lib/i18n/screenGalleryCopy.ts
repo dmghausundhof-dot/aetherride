@@ -17,13 +17,13 @@ export type ScreenGalleryCopy = {
 
 const DE: ScreenGalleryCopy = {
   heading: "So sieht FlowLine aus",
-  hint: "Marke und Screens aus dem Design-System. Die vier Türen bleiben: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad.",
+  hint: "Marke und Screens aus dem Design-System. Die vier Türen bleiben: Hof, Karte, Touren, Rad. Teile sitzen am Rad.",
   shots: SCREEN_GALLERY,
 };
 
 const EN: ScreenGalleryCopy = {
   heading: "What FlowLine looks like",
-  hint: "Brand and screens from the design system. The four doors stay: Home, Map, Platz, Workshop. Parts sit on the bike.",
+  hint: "Brand and screens from the design system. The four doors stay: Home, Map, Tours, Bike. Parts sit on the bike.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -55,16 +55,16 @@ const EN: ScreenGalleryCopy = {
     },
     {
       src: "/landing/screens/werkstatt.jpg",
-      alt: "FlowLine workshop card",
-      title: "Workshop",
-      door: "Workshop",
+      alt: "FlowLine bike card",
+      title: "Bike",
+      door: "Bike",
       note: "Bike, kilometres, care. The shop is off for now.",
     },
     {
       src: "/landing/screens/laden.jpg",
       alt: "FlowLine shop — paused for now",
       title: "Shop paused",
-      door: "Workshop",
+      door: "Bike",
       note: "Not a tab. No till in FlowLine while the shop is closed.",
     },
     {
@@ -79,7 +79,7 @@ const EN: ScreenGalleryCopy = {
 
 const FR: ScreenGalleryCopy = {
   heading: "À quoi ressemble FlowLine",
-  hint: "Marque et écrans du design system. Les quatre portes restent : Home, Carte, Platz, Atelier. Les pièces tiennent au vélo.",
+  hint: "Marque et écrans du design system. Les quatre portes restent : Home, Carte, Parcours, Vélo. Les pièces tiennent au vélo.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -111,16 +111,16 @@ const FR: ScreenGalleryCopy = {
     },
     {
       src: "/landing/screens/werkstatt.jpg",
-      alt: "Carte atelier FlowLine",
-      title: "Atelier",
-      door: "Atelier",
+      alt: "Carte vélo FlowLine",
+      title: "Vélo",
+      door: "Vélo",
       note: "Vélo, kilomètres, entretien. Le magasin est coupé pour l’instant.",
     },
     {
       src: "/landing/screens/laden.jpg",
       alt: "Magasin FlowLine — en pause",
       title: "Magasin en pause",
-      door: "Atelier",
+      door: "Vélo",
       note: "Pas un onglet. Pas de caisse dans FlowLine tant que le magasin est fermé.",
     },
     {
@@ -135,7 +135,7 @@ const FR: ScreenGalleryCopy = {
 
 const IT: ScreenGalleryCopy = {
   heading: "Come si presenta FlowLine",
-  hint: "Marca e schermate dal design system. Le quattro porte restano: Home, Mappa, Platz, Officina. I pezzi stanno sulla bici.",
+  hint: "Marca e schermate dal design system. Le quattro porte restano: Home, Mappa, Percorsi, Bici. I pezzi stanno sulla bici.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -167,16 +167,16 @@ const IT: ScreenGalleryCopy = {
     },
     {
       src: "/landing/screens/werkstatt.jpg",
-      alt: "Scheda officina FlowLine",
-      title: "Officina",
-      door: "Officina",
+      alt: "Scheda bici FlowLine",
+      title: "Bici",
+      door: "Bici",
       note: "Bici, chilometri, cura. Il negozio è spento per ora.",
     },
     {
       src: "/landing/screens/laden.jpg",
       alt: "Negozio FlowLine — in pausa",
       title: "Negozio in pausa",
-      door: "Officina",
+      door: "Bici",
       note: "Non è una scheda. Niente cassa in FlowLine finché il negozio è chiuso.",
     },
     {
@@ -191,7 +191,7 @@ const IT: ScreenGalleryCopy = {
 
 const NL: ScreenGalleryCopy = {
   heading: "Zo ziet FlowLine eruit",
-  hint: "Merk en schermen uit het design system. De vier deuren blijven: Home, Kaart, Platz, Werkplaats. Onderdelen zitten aan de fiets.",
+  hint: "Merk en schermen uit het design system. De vier deuren blijven: Home, Kaart, Tochten, Fiets. Onderdelen zitten aan de fiets.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -223,16 +223,16 @@ const NL: ScreenGalleryCopy = {
     },
     {
       src: "/landing/screens/werkstatt.jpg",
-      alt: "FlowLine-werkplaatskaart",
-      title: "Werkplaats",
-      door: "Werkplaats",
+      alt: "FlowLine-fietskaart",
+      title: "Fiets",
+      door: "Fiets",
       note: "Fiets, kilometers, zorg. De winkel is voorlopig uit.",
     },
     {
       src: "/landing/screens/laden.jpg",
       alt: "FlowLine-winkel — voorlopig gepauzeerd",
       title: "Winkel gepauzeerd",
-      door: "Werkplaats",
+      door: "Fiets",
       note: "Geen tab. Geen kassa in FlowLine zolang de winkel dicht is.",
     },
     {

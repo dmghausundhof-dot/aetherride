@@ -43,7 +43,11 @@ const catalog = route({
 });
 
 assert.equal(visibleInPublicExplore(priv), false);
-assert.equal(visibleInPublicExplore(shared), true);
+assert.equal(visibleInPublicExplore(shared), false);
+assert.equal(
+  visibleInPublicExplore({ ...shared, listing: "listed" }),
+  true
+);
 assert.equal(mayContributeSavedGeometry(priv), false);
 assert.equal(mayContributeSavedGeometry(shared), true);
 assert.equal(mayContributeRideTrack(undefined), true);

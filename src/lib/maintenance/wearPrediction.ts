@@ -12,6 +12,7 @@
  */
 
 import type { Bike, BikeComponent, Ride } from "@/types";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 
 export type WearKind =
   | "chain"
@@ -19,6 +20,17 @@ export type WearKind =
   | "brake_pads_rear"
   | "cassette"
   | "tires";
+
+export interface WearFacts {
+  lifeLow: number;
+  lifeHigh: number;
+  km?: number;
+  hours?: number;
+  wetPct?: number;
+  isEbike?: boolean;
+  descentHm?: number;
+  impacts?: number;
+}
 
 export interface WearForecast {
   kind: WearKind;
@@ -31,6 +43,7 @@ export interface WearForecast {
   reasoning: string;
   sourceLabel: string;
   dueSoon: boolean;
+  facts: WearFacts;
 }
 
 function activeComp(bike: Bike, slot: string): BikeComponent | undefined {
@@ -53,7 +66,10 @@ function sumKm(rides: Ride[]): number {
 
 /** Abfahrts-HM-Proxy: ohne Negativ-Höhenmeter ≈ ElevGain (Rundkurs-Annahme) */
 function sumDescentProxy(rides: Ride[]): number {
-  return rides.reduce((s, r) => s + r.elevationGainM, 0);
+  return rides.reduce(
+    (s, r) => s + honestClimbM(r.track, r.elevationGainM),
+    0
+  );
 }
 
 function sumMovingHours(rides: Ride[]): number {
@@ -119,6 +135,14 @@ export function forecastWear(bike: Bike, rides: Ride[]): WearForecast[] {
       }Nässe-Anteil ${(wet * 100).toFixed(0)} % in der Spanne. Wechselziel 0,5 % Längung (11-/12-fach, Park Tool / Bavarian Bike).`,
       sourceLabel: "Velopit 2026 · Bavarian Bike · BIKE Magazin · Linexo",
       dueSoon: rem.ratio >= 0.75,
+      facts: {
+        lifeLow,
+        lifeHigh,
+        km,
+        hours,
+        wetPct: wet * 100,
+        isEbike: bike.isEbike,
+      },
     });
   }
 
@@ -144,6 +168,13 @@ export function forecastWear(bike: Bike, rides: Ride[]): WearForecast[] {
       reasoning: `Skaliert mit Abfahrts-HM (Proxy ${descent.toFixed(0)} hm), ${impacts} Impacts, Nässe ${(wet * 100).toFixed(0)} %. Spanne Bergfahrer 800–2500 km (Velopit); Wechsel bei < 0,5–1 mm Belagdicke (BIKE Magazin).`,
       sourceLabel: "Velopit MTB-Wartung · BIKE Magazin Belagsverschleiß",
       dueSoon: rem.ratio >= 0.75,
+      facts: {
+        lifeLow,
+        lifeHigh,
+        descentHm: descent,
+        impacts,
+        wetPct: wet * 100,
+      },
     });
   }
 
@@ -168,6 +199,13 @@ export function forecastWear(bike: Bike, rides: Ride[]): WearForecast[] {
       reasoning: `Hintere Beläge oft früher; Abfahrts-HM ${descent.toFixed(0)}, Impacts ${impacts}. Nie Punktwert — immer Spanne (Spec F-GAR-005).`,
       sourceLabel: "Velopit · BIKE Magazin · Industriepraxis",
       dueSoon: rem.ratio >= 0.75,
+      facts: {
+        lifeLow,
+        lifeHigh,
+        descentHm: descent,
+        impacts,
+        wetPct: wet * 100,
+      },
     });
   }
 
@@ -187,6 +225,7 @@ export function forecastWear(bike: Bike, rides: Ride[]): WearForecast[] {
       reasoning: `Hält typisch 2–3 Ketten (3.000–5.000 km, Velopit), sofern Kette bei 0,5 % gewechselt wird. Bei > 1 % Längung oft Kette+Kassette (Bavarian Bike).`,
       sourceLabel: "Velopit 2026 · Bavarian Bike · Zero Friction Praxis",
       dueSoon: rem.ratio >= 0.8,
+      facts: { lifeLow: 3000, lifeHigh: 5000, km },
     });
   }
 
@@ -209,6 +248,7 @@ export function forecastWear(bike: Bike, rides: Ride[]): WearForecast[] {
       reasoning: `MTB 1.500–4.000 km / Straße 3.000–7.000 km (Velopit). Stollenrundung = Grip weg — Sichtprüfung vor jeder Tour.`,
       sourceLabel: "Velopit Serviceintervalle 2026",
       dueSoon: rem.ratio >= 0.85,
+      facts: { lifeLow, lifeHigh, km },
     });
   }
 

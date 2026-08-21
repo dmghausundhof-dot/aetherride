@@ -67,7 +67,7 @@ export const GUIDES: Guide[] = [
     relatedHrefs: [
       { href: "/pricing", label: "Pro & Reichweite" },
       { href: "/download", label: "App laden" },
-      { href: "/garage", label: "E-Bike in der Werkstatt" },
+      { href: "/garage", label: "E-Bike am Rad" },
     ],
   },
   {
@@ -78,12 +78,12 @@ export const GUIDES: Guide[] = [
     category: "setup",
     readMin: 6,
     body: [
-      "Druck und Rebound hängen vom Systemgewicht (Fahrer + Packs + Bike) und vom Federweg ab. Hersteller-Charts sind Startpunkte, keine Gesetze.",
-      "In der Werkstatt findest du SAG-Hinweise und Setup-Versionen. Bracketing (Pro) vergleicht Serien systematisch — mit der Regel, dass „kein signifikanter Unterschied“ ehrlich angezeigt wird.",
+      "Druck und Rebound hängen vom Systemgewicht (Fahrer + Packs + Rad) und vom Federweg ab. Hersteller-Charts sind Startpunkte, keine Gesetze.",
+      "Am Rad findest du SAG-Hinweise und Setup-Versionen. Bracketing (Pro) vergleicht Serien systematisch — mit der Regel, dass „kein signifikanter Unterschied“ ehrlich angezeigt wird.",
       "Post-Ride-Feedback (≤3 Taps in der App) fließt in Vorschläge. Auf dem Desktop vertiefst du Setups und exportierst Service-Reports für die Werkstatt.",
     ],
     relatedHrefs: [
-      { href: "/garage", label: "Werkstatt" },
+      { href: "/garage", label: "Rad" },
       { href: "/pricing", label: "Pro für Bracketing" },
       { href: "/activities", label: "Aktivitäten" },
     ],
@@ -97,7 +97,7 @@ export const GUIDES: Guide[] = [
     readMin: 5,
     body: [
       "Ketten: oft ab ~0,5 % Längung tauschen (Hersteller/Park Tool). Beläge: Restbelag und Geräusche. Gabel/Dämpfer: Service-Intervalle in Stunden oder Saisons.",
-      "FlowLine speichert Intervalle pro Bike und warnt in der Werkstatt. Der Laden schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Bike.",
+      "FlowLine speichert Intervalle pro Rad und warnt am Stand. Der Laden schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Rad.",
       "Road und City brauchen andere Schwerpunkte (Reifenpannen, Kette, Bremsen) als Enduro (Fahrwerk, Beläge, Reifen). Disziplin-Filter im Shop helfen.",
     ],
     relatedHrefs: [
@@ -113,7 +113,7 @@ export const GUIDES: Guide[] = [
     readMin: 4,
     body: [
       "Große Outdoor-Anbieter trennen klar: Web für Inspiration, SEO-Touren und Desktop-Planung; App für Offline, Turn-by-turn und Sensoren.",
-      "FlowLine folgt dem: Touren, Planen, Tour-Seiten, Werkstatt und Platz im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
+      "FlowLine folgt dem: Touren, Planen, Tour-Seiten, Rad und Hof im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
       "Wenn du „Losfahren“ siehst, landest du auf der App-Bridge — speichere die Tour und öffne sie auf dem Gerät.",
     ],
     relatedHrefs: [
@@ -128,12 +128,12 @@ export const GUIDES: Guide[] = [
     slug: "hof-fuenf-tueren",
     title: "Der Hof: vier Türen, kein Ride-Tab",
     teaser:
-      "Warum FlowLine nicht wie ein Feed aussieht — und wozu Hof, Karte, Platz und Werkstatt da sind.",
+      "Warum FlowLine nicht wie ein Feed aussieht — und wozu Hof, Karte, Touren und Rad da sind.",
     category: "safety",
     readMin: 4,
     body: [
       "Viele Rad-Apps stapeln Karten: Home, Explore, Activity, Club, Shop. FlowLine hat vier Türen am Hof. Ride ist der orange Knopf, nicht der fünfte Tab. Der Laden ist keine Tür in der Leiste.",
-      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad. Der Laden ist vorerst aus.",
+      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Touren hält Mappe, Stimmen und Gruppen. Das Rad kennt seinen Stand. Der Laden ist vorerst aus.",
       "Was im Browser fehlt, bleibt leer: kein Live-GPS, kein HUD, keine Dummy-Kilometer. Die App übernimmt Navigation, Offline und Sensoren.",
     ],
     relatedHrefs: [
@@ -190,13 +190,13 @@ export const GUIDES: Guide[] = [
     category: "safety",
     readMin: 4,
     body: [
-      "Der Laden ist keine fünfte Tür in der Leiste. Die Werkstatt bleibt für Rad, Setup und Wartung. Katalog und Kasse sind vorerst aus — es gibt keinen Warenkorb, der hier kassiert.",
+      "Der Laden ist keine fünfte Tür in der Leiste. Das Rad bleibt für Setup und Wartung. Katalog und Kasse sind vorerst aus — es gibt keinen Warenkorb, der hier kassiert.",
       "Ohne hinterlegtes Impressum (Name und ladungsfähige Anschrift) bleibt ein Checkout sowieso gesperrt. Das ist Absicht: wir erfinden keine TMG-Angaben, damit etwas „kaufen“ heißt.",
       "Wenn der Laden wieder öffnet, sitzt die Kasse außerhalb von FlowLine. Ersatzteile würden zum abgestellten Rad passen, keine erfundenen SKUs. Store-Listings der App sind unabhängig davon und stehen, sobald sie live sind.",
     ],
     relatedHrefs: [
-      { href: "/garage", label: "Zur Werkstatt" },
-      { href: "/garage", label: "Werkstatt" },
+      { href: "/garage", label: "Zum Rad" },
+      { href: "/garage", label: "Rad" },
       { href: "/legal/impressum", label: "Impressum" },
       { href: "/produkt", label: "Produktkarte" },
     ],
@@ -217,7 +217,7 @@ export function listGuideSlugs(): string[] {
 
 export const GUIDE_CATEGORY_LABEL: Record<Guide["category"], string> = {
   planning: "Planung",
-  bike: "Bike & Wartung",
+  bike: "Rad & Wartung",
   ebike: "E-Bike",
   setup: "Setup",
   safety: "Plattform",

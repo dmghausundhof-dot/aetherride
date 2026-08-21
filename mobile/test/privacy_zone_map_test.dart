@@ -79,17 +79,26 @@ void main() {
       expect(unknown.lng, kPrivacyZoneGermanyCenter.lng);
     });
 
-    test('pre-place only for GPS/ride, not country fallback', () {
+    test('pre-place only for an existing zone, not GPS or country', () {
       expect(
         resolvePrivacyZoneMapOrigin(
           gpsLat: 49.4,
           gpsLng: 8.7,
         ).shouldPrePlace,
-        isTrue,
+        isFalse,
       );
       expect(
         resolvePrivacyZoneMapOrigin(countryCode: 'DE').shouldPrePlace,
         isFalse,
+      );
+      expect(
+        const PrivacyZoneMapOrigin(
+          lat: 49.4,
+          lng: 8.7,
+          zoom: 14,
+          source: PrivacyZoneMapOriginSource.existing,
+        ).shouldPrePlace,
+        isTrue,
       );
     });
   });
@@ -141,10 +150,10 @@ void main() {
       label: '  Zuhause  ',
       lat: 47.45,
       lng: 12.15,
-      radiusM: 200,
+      radiusM: 500,
     );
     expect(zone.label, 'Zuhause');
-    expect(zone.radiusM, 200);
+    expect(zone.radiusM, 500);
     final json = zone.toJson();
     final back = PrivacyZone.fromJson(json);
     expect(back.id, zone.id);
@@ -165,7 +174,7 @@ void main() {
   });
 
   test('list subtitle is radius-first, coords secondary', () {
-    expect(privacyZoneRadiusLabel(200), '200 m');
+    expect(privacyZoneRadiusLabel(500), '500 m');
     expect(privacyZoneCoordHint(47.45, 12.15), '47.4500, 12.1500');
   });
 
@@ -202,11 +211,18 @@ void main() {
 
     expect(find.text('Tippe auf die Karte, um die Zone zu setzen.'), findsOneWidget);
     expect(find.text(kPrivacyZoneDefaultLabel), findsWidgets);
+    expect(find.text('500 m'), findsWidgets);
     expect(find.text('200 m'), findsOneWidget);
+    expect(find.text('1000 m'), findsOneWidget);
     expect(find.byType(Slider), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNWidgets(3));
     expect(find.text('Koordinaten'), findsOneWidget);
     expect(find.text('Lat'), findsNothing);
     expect(find.text('Lng'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, '200 m'));
+    await tester.pump();
+    expect(radius, 200);
 
     await tester.tap(find.text('Koordinaten'));
     await tester.pumpAndSettle();

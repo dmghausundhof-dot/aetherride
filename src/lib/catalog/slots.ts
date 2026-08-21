@@ -1,3 +1,8 @@
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import {
+  localizedBikeCategoryLabel,
+  localizedSlotLabel,
+} from "@/lib/i18n/slotCopy";
 import type { BikeCategory, ComponentSlot } from "@/types/garage";
 
 /** Pflicht-Slots je Bike-Kategorie (F-GAR-002) */
@@ -69,53 +74,11 @@ export function requiredSlotsForCategory(category: BikeCategory): ComponentSlot[
   return Array.from(new Set(slots));
 }
 
-export function slotLabel(slot: ComponentSlot): string {
-  const map: Record<ComponentSlot, string> = {
-    frame: "Rahmen",
-    fork: "Gabel",
-    rear_shock: "Dämpfer",
-    headset: "Steuersatz",
-    stem: "Vorbau",
-    handlebar: "Lenker",
-    grips: "Griffe",
-    seatpost: "Sattelstütze",
-    saddle: "Sattel",
-    front_hub: "Nabe vorne",
-    rear_hub: "Nabe hinten",
-    front_rim: "Felge vorne",
-    rear_rim: "Felge hinten",
-    tire_front: "Reifen vorne",
-    tire_rear: "Reifen hinten",
-    tire_insert_front: "Insert vorne",
-    tire_insert_rear: "Insert hinten",
-    cassette: "Kassette",
-    chain: "Kette",
-    crankset: "Kurbel",
-    chainring: "Kettenblatt",
-    rear_derailleur: "Schaltwerk",
-    shifter: "Schalthebel",
-    front_derailleur: "Umwerfer",
-    bottom_bracket: "Innenlager",
-    brake_front: "Bremse vorne",
-    brake_rear: "Bremse hinten",
-    rotor_front: "Bremsscheibe vorne",
-    rotor_rear: "Bremsscheibe hinten",
-    brake_pads_front: "Bremsbeläge vorne",
-    brake_pads_rear: "Bremsbeläge hinten",
-    pedals: "Pedale",
-    bar_tape: "Lenkerband",
-    motor: "Motor",
-    battery: "Akku",
-    display: "Display/Remote",
-    light: "Licht",
-    lock: "Schloss",
-    rack: "Gepäckträger",
-    bags: "Taschen",
-    hiking_shoes: "Schuhe",
-    hiking_pack: "Rucksack",
-    hiking_poles: "Stöcke",
-  };
-  return map[slot] ?? slot;
+export function slotLabel(
+  slot: ComponentSlot,
+  lang: ChromeLang = "de"
+): string {
+  return localizedSlotLabel(slot, lang);
 }
 
 export function isSafetyCriticalSlot(slot: ComponentSlot): boolean {
@@ -187,21 +150,9 @@ export function bikeTypeToCategory(
   }
 }
 
-export function bikeCategoryLabel(category: BikeCategory): string {
-  const map: Record<BikeCategory, string> = {
-    mtb_trail: "MTB Trail",
-    mtb_am: "All-Mountain",
-    mtb_enduro: "Enduro",
-    dh: "Downhill",
-    gravel: "Gravel",
-    road: "Rennrad",
-    urban: "City",
-    cargo: "Lastenrad",
-    folding: "Faltrad",
-    kids: "Kinderrad",
-    emtb: "E-MTB",
-    etrekking: "E-Trekking",
-    hiking: "Wandern",
-  };
-  return map[category];
+export function bikeCategoryLabel(
+  category: BikeCategory,
+  lang: ChromeLang = "de"
+): string {
+  return localizedBikeCategoryLabel(category, lang);
 }

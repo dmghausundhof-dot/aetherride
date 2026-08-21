@@ -14,8 +14,8 @@ int apiOriginPort(String apiBaseUrl, {int fallback = 80}) {
   return port == 0 ? fallback : port;
 }
 
-/// Lightweight online check for mid-ride reroute honesty (N-02b).
-/// No fake replan when offline — map/TBT can still work from cache.
+/// Lightweight online check for mid-ride rejoin.
+/// Graph A→B and on-route splice can run without net; live ORS cannot.
 Future<bool> rideHasNetwork({
   Duration timeout = const Duration(seconds: 2),
 }) async {

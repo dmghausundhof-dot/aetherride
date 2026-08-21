@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Taschen">
+  <title>FlowLine Taschen</title>
+  <path d="M6.2 9.4 H17.8 V18.2 C17.8 18.8 17.2 19.2 16.6 19.2 H7.4 C6.8 19.2 6.2 18.8 6.2 18.2 Z" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M9 9.4 V7.6 C9 6.2 10.2 5.2 12 5.2 C13.8 5.2 15 6.2 15 7.6 V9.4" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

@@ -3,6 +3,8 @@
  */
 
 import type { Bike, Ride, RiderProfile, Setup } from "@/types";
+import { trackPointEpochMs } from "@/lib/geo/trackPointTime";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 
 /** Enough GPS points for an honest track export / Strava upload. */
 export function rideHasExportableTrack(ride: Ride): boolean {
@@ -16,6 +18,7 @@ export function rideHasExportableTrack(ride: Ride): boolean {
 export function rideToGpx(ride: Ride, bikeName?: string): string {
   const name = `FlowLine ${new Date(ride.startTime).toISOString().slice(0, 10)}`;
   const pts = ride.track && ride.track.length > 0 ? ride.track : [];
+  const startMs = new Date(ride.startTime).getTime();
 
   const trkpts = pts
     .map((p, i) => {
@@ -26,13 +29,9 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
       ) {
         return null;
       }
-      const t =
-        typeof p.time === "number"
-          ? new Date(new Date(ride.startTime).getTime() + p.time * 1000)
-          : new Date(
-              new Date(ride.startTime).getTime() +
-                (i * ride.durationSec * 1000) / Math.max(1, pts.length - 1)
-            );
+      const t = new Date(
+        trackPointEpochMs(p.time, startMs, i, ride.durationSec, pts.length)
+      );
       return `      <trkpt lat="${p.lat}" lon="${p.lng}">${
         p.elev != null ? `\n        <ele>${p.elev}</ele>` : ""
       }\n        <time>${t.toISOString()}</time>${gpxPointExtensions(p)}\n      </trkpt>`;
@@ -46,7 +45,7 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
 <gpx version="1.1" creator="FlowLine" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1">
   <metadata>
     <name>${escapeXml(name)}</name>
-    <desc>${escapeXml(bikeName || "Ride")} · ${ride.distanceM} m · ${ride.elevationGainM} hm${emptyNote}</desc>
+    <desc>${escapeXml(bikeName || "Ride")} · ${ride.distanceM} m · ${honestClimbM(ride.track, ride.elevationGainM)} hm${emptyNote}</desc>
     <time>${ride.startTime}</time>
   </metadata>
   <trk>
@@ -127,6 +126,7 @@ export function fullJsonExport(input: {
       bikes: input.bikes,
       rides: input.rides.map((r) => ({
         ...r,
+        elevationGainM: honestClimbM(r.track, r.elevationGainM),
         // privacy: track optional
       })),
     },
@@ -147,7 +147,7 @@ export function rideToStravaActivityStub(ride: Ride): object {
     start_date_local: ride.startTime,
     elapsed_time: ride.durationSec,
     distance: ride.distanceM,
-    total_elevation_gain: ride.elevationGainM,
+    total_elevation_gain: honestClimbM(ride.track, ride.elevationGainM),
     description:
       "Exportiert aus FlowLine — Strava API OAuth in Produktion (Spec 8.6 P1).",
     _note: "Demo-Stub ohne Netzwerkaufruf. Markenrichtlinien Strava beachten.",

@@ -133,6 +133,15 @@ assert.equal(
   })?.id,
   "p1"
 );
+assert.equal(
+  pickGroupForRide({
+    rideRouteId: "r-other-city",
+    groups: [session, planned],
+    memberCounts: { s1: 2, p1: 2 },
+    idOf: (g) => g.id,
+  }),
+  null
+);
 
 assert.deepEqual(
   listedPlannedGroups([session, planned]).map((g) => g.id),

@@ -147,6 +147,13 @@ abstract final class SavedRouteMetaStore {
               'preferredBikeId': e.value.preferredBikeId,
             if (e.value.visibility == 'shared') 'visibility': 'shared',
             if (e.value.shareEpoch > 0) 'shareEpoch': e.value.shareEpoch,
+            if (e.value.listing != 'none' && e.value.listing.isNotEmpty)
+              'listing': e.value.listing,
+            if (e.value.candidateSince != null)
+              'candidateSince':
+                  e.value.candidateSince!.toUtc().toIso8601String(),
+            if (e.value.listedAt != null)
+              'listedAt': e.value.listedAt!.toUtc().toIso8601String(),
             'updatedAt':
                 (e.value.updatedAt ?? DateTime.now().toUtc()).toIso8601String(),
           },
@@ -176,6 +183,11 @@ abstract final class SavedRouteMetaStore {
           preferredBikeId: incoming.preferredBikeId,
           visibility: incoming.visibility,
           shareEpoch: incoming.shareEpoch,
+          listing: incoming.listing,
+          candidateSince: incoming.candidateSince,
+          clearCandidateSince: incoming.candidateSince == null,
+          listedAt: incoming.listedAt,
+          clearListedAt: incoming.listedAt == null,
           updatedAt: remoteTs,
         );
       }

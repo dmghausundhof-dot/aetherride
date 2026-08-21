@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 
@@ -63,7 +64,51 @@ bool geocodeNameMatchesQuery(String name, String query) {
   return next == ' ' || next == '-' || next == '/' || next == ',';
 }
 
-int geocodeHitScore(String query, GeocodeHit hit) {
+bool isCinemaQuery(String query) {
+  return RegExp(
+    r'\b(kino|cinema|kinopolis|cineplex|filmpalast|kinotreff)\b',
+    caseSensitive: false,
+  ).hasMatch(query.trim());
+}
+
+/// Place tokens without the cinema keyword, or "" when the query is only "Kino".
+String? cinemaPlaceQuery(String query) {
+  if (!isCinemaQuery(query)) return null;
+  return query
+      .replaceAll(
+        RegExp(
+          r'\b(kino|cinema|kinopolis|cineplex|filmpalast|kinotreff)\b',
+          caseSensitive: false,
+        ),
+        ' ',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+double geocodeHaversineKm(
+  double lat1,
+  double lng1,
+  double lat2,
+  double lng2,
+) {
+  double toRad(double d) => d * math.pi / 180;
+  final dLat = toRad(lat2 - lat1);
+  final dLng = toRad(lng2 - lng1);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(toRad(lat1)) *
+          math.cos(toRad(lat2)) *
+          math.sin(dLng / 2) *
+          math.sin(dLng / 2);
+  return 2 * 6371 * math.asin(math.min(1, math.sqrt(a)));
+}
+
+int geocodeHitScore(
+  String query,
+  GeocodeHit hit, {
+  double? biasLat,
+  double? biasLng,
+}) {
   final q = query.trim().toLowerCase();
   final name = hit.matchName.toLowerCase();
   var s = 0;
@@ -75,15 +120,68 @@ int geocodeHitScore(String query, GeocodeHit hit) {
   final kind = hit.kind ?? '';
   if (kind == 'city' || kind == 'locality') s += 25;
   if (kind == 'street' || kind == 'house') s -= 15;
+  final hay = '$name ${hit.label}'.toLowerCase();
+  for (final token in q.split(RegExp(r'\s+')).where((t) => t.length >= 3)) {
+    if (hay.contains(token)) s += 12;
+  }
+  if (isCinemaQuery(query) &&
+      RegExp(
+        r'(kino|cinema|filmpalast|kinopolis|cineplex|kinotreff)',
+        caseSensitive: false,
+      ).hasMatch(hay)) {
+    s += 20;
+  }
+  if (biasLat != null &&
+      biasLng != null &&
+      biasLat.isFinite &&
+      biasLng.isFinite) {
+    final km = geocodeHaversineKm(biasLat, biasLng, hit.lat, hit.lng);
+    if (km <= 8) {
+      s += 55;
+    } else if (km <= 25) {
+      s += 28;
+    } else if (km <= 60) {
+      s += 8;
+    } else {
+      s -= ((km - 60) / 4).clamp(0, 50).round();
+    }
+  }
   return s;
 }
 
-List<GeocodeHit> rankGeocodeHits(String query, List<GeocodeHit> hits) {
+List<GeocodeHit> rankGeocodeHits(
+  String query,
+  List<GeocodeHit> hits, {
+  double? biasLat,
+  double? biasLng,
+}) {
   final copy = [...hits];
   copy.sort(
-    (a, b) => geocodeHitScore(query, b).compareTo(geocodeHitScore(query, a)),
+    (a, b) => geocodeHitScore(
+      query,
+      b,
+      biasLat: biasLat,
+      biasLng: biasLng,
+    ).compareTo(
+      geocodeHitScore(
+        query,
+        a,
+        biasLat: biasLat,
+        biasLng: biasLng,
+      ),
+    ),
   );
   return copy;
+}
+
+List<GeocodeHit> dedupeGeocodeHits(List<GeocodeHit> hits) {
+  final seen = <String>{};
+  final out = <GeocodeHit>[];
+  for (final h in hits) {
+    final key = '${h.lat.toStringAsFixed(4)},${h.lng.toStringAsFixed(4)}';
+    if (seen.add(key)) out.add(h);
+  }
+  return out;
 }
 
 /// Adresssuche über Next `/api/geocode` (Photon).
@@ -148,7 +246,7 @@ class GeocodeClient {
     if (data is! Map) return const [];
     final raw = data['hits'];
     if (raw is! List) return const [];
-    final hits = [
+    var hits = [
       for (final e in raw)
         if (e is Map)
           GeocodeHit(
@@ -167,7 +265,25 @@ class GeocodeClient {
               h.lng.abs() <= 180,
         )
         .toList();
-    return preferPlaces ? rankGeocodeHits(q, hits).take(limit).toList() : hits;
+    if (isCinemaQuery(q) && biasLat != null && biasLng != null) {
+      try {
+        final place = cinemaPlaceQuery(q);
+        final extra = await _photon(
+          (place == null || place.isEmpty) ? q : place,
+          limit: limit,
+          biasLat: biasLat,
+          biasLng: biasLng,
+          osmTag: 'amenity:cinema',
+        );
+        hits = [...extra, ...hits];
+      } catch (_) {}
+    }
+    return rankGeocodeHits(
+      q,
+      dedupeGeocodeHits(hits),
+      biasLat: biasLat,
+      biasLng: biasLng,
+    ).take(limit).toList();
   }
 
   Future<List<GeocodeHit>> _photon(
@@ -231,6 +347,111 @@ class GeocodeClient {
           (properties['county'] as String).trim(),
         if (properties['state'] is String)
           (properties['state'] as String).trim(),
+        if (properties['country'] is String)
+          (properties['country'] as String).trim(),
+      ].where((p) => p.isNotEmpty).toList();
+      final label = <String>{...parts}.join(', ');
+      if (label.isEmpty) continue;
+      hits.add(
+        GeocodeHit(
+          label: label,
+          lat: lat,
+          lng: lng,
+          kind: properties['type'] as String?,
+          name: name.isEmpty ? null : name,
+        ),
+      );
+    }
+    return hits;
+  }
+
+  /// Photon reverse — name for a map pin. Null when unknown.
+  Future<GeocodeHit?> reverse(double lat, double lng) async {
+    if (!lat.isFinite || !lng.isFinite) return null;
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/geocode').replace(
+        queryParameters: {
+          'lat': lat.toStringAsFixed(5),
+          'lon': lng.toStringAsFixed(5),
+          'lang': AppLocaleBinding.chromeLanguageCode,
+        },
+      );
+      final res = await _http.get(uri, headers: {
+        'Accept': 'application/json',
+      }).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data is Map) {
+          final raw = data['hits'];
+          if (raw is List && raw.isNotEmpty && raw.first is Map) {
+            final e = raw.first as Map;
+            final label = (e['label'] as String?)?.trim() ?? '';
+            final hitLat = (e['lat'] as num?)?.toDouble() ?? lat;
+            final hitLng = (e['lng'] as num?)?.toDouble() ?? lng;
+            if (label.isNotEmpty) {
+              return GeocodeHit(
+                label: label,
+                lat: hitLat,
+                lng: hitLng,
+                kind: e['kind'] as String?,
+                name: (e['name'] as String?)?.trim(),
+              );
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    try {
+      final lang = AppLocaleBinding.chromeLanguageCode;
+      final uri = Uri.https('photon.komoot.io', '/reverse', {
+        'lat': lat.toStringAsFixed(5),
+        'lon': lng.toStringAsFixed(5),
+        'lang': lang == 'nl' ? 'en' : lang,
+      });
+      final res = await _http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': _photonUa,
+        },
+      ).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+      final features = data['features'];
+      if (features is! List || features.isEmpty) return null;
+      final parsed = _photonHitsFromFeatures(features);
+      return parsed.isEmpty ? null : parsed.first;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<GeocodeHit> _photonHitsFromFeatures(List<dynamic> raw) {
+    final hits = <GeocodeHit>[];
+    for (final e in raw) {
+      if (e is! Map) continue;
+      final geometry = e['geometry'];
+      final properties = e['properties'];
+      if (geometry is! Map || properties is! Map) continue;
+      final coords = geometry['coordinates'];
+      if (coords is! List || coords.length < 2) continue;
+      final lng = (coords[0] as num?)?.toDouble();
+      final lat = (coords[1] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+      final name = (properties['name'] as String?)?.trim() ?? '';
+      final parts = <String>[
+        name,
+        if (properties['street'] is String)
+          (properties['street'] as String).trim(),
+        if (properties['housenumber'] is String)
+          (properties['housenumber'] as String).trim(),
+        if (properties['city'] is String)
+          (properties['city'] as String).trim()
+        else if (properties['town'] is String)
+          (properties['town'] as String).trim()
+        else if (properties['village'] is String)
+          (properties['village'] as String).trim(),
         if (properties['country'] is String)
           (properties['country'] as String).trim(),
       ].where((p) => p.isNotEmpty).toList();

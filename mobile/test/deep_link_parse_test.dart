@@ -242,11 +242,13 @@ void main() {
         ),
         isNull,
       );
-      expect(DeepLinkParse.shopFitBikeOf(Uri.parse('aetherride://shop')), isFalse);
+      expect(
+          DeepLinkParse.shopFitBikeOf(Uri.parse('aetherride://shop')), isFalse);
     });
   });
 
-  test('Shop-Deep-Link öffnet ShopScreen nicht, solange der Laden pausiert', () {
+  test('Shop-Deep-Link öffnet ShopScreen nicht, solange der Laden pausiert',
+      () {
     expect(
       DeepLinkParse.kindOf(Uri.parse('aetherride://shop')),
       DeepLinkKind.shop,
@@ -265,5 +267,33 @@ void main() {
       DeepLinkParse.opensShopScreen(Uri.parse('aetherride://ride')),
       isFalse,
     );
+  });
+
+  group('DeepLinkParse elevation', () {
+    test('never invents from distance', () {
+      expect(
+        DeepLinkParse.elevationMOf({'distanceM': 16000}),
+        0,
+      );
+      expect(
+        DeepLinkParse.elevationMOf({'elevationM': 120, 'distanceM': 16000}),
+        120,
+      );
+    });
+
+    test('keeps measured ele and climb from the track', () {
+      final coords = DeepLinkParse.trackCoordsFromGeometry({
+        'type': 'LineString',
+        'coordinates': [
+          [8.6, 49.4, 110],
+          [8.7, 49.5, 180],
+        ],
+      });
+      expect(coords.first[2], 110);
+      expect(
+        DeepLinkParse.elevationMOf({'distanceM': 16000}, coords),
+        70,
+      );
+    });
   });
 }

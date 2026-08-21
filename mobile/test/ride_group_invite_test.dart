@@ -12,6 +12,7 @@ import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_fr.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_it.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_nl.dart';
+import 'package:aetherride_mobile/presentation/library/platz_extras.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -202,6 +203,8 @@ void main() {
     );
     final blocked = await other.tryJoin(code: 'K7M2NP');
     expect(blocked.fail, RideGroupJoinFail.needLink);
+    expect(blocked.message, contains('Einladungslink'));
+    expect(blocked.message.toLowerCase(), isNot(contains('anmelden')));
   });
 
   test('tryJoin unterscheidet unbekannt und ungültig', () async {
@@ -260,9 +263,23 @@ void main() {
     const fail = RideGroupJoinOut.fail(RideGroupJoinFail.unknown);
     expect(fail.message, contains('Einladungslink'));
     expect(fail.message.toLowerCase(), isNot(contains('token')));
+    expect(
+      rideGroupJoinMessage(
+        AppLocalizationsDe(),
+        const RideGroupJoinOut.fail(RideGroupJoinFail.expired),
+      ),
+      AppLocalizationsDe().platzJoinExpired,
+    );
+    expect(
+      rideGroupJoinMessage(
+        AppLocalizationsEn(),
+        const RideGroupJoinOut.fail(RideGroupJoinFail.needLink),
+      ),
+      AppLocalizationsEn().platzJoinPrivateCode,
+    );
   });
 
-  test('lokaler Join sagt, dass der Host dich nicht sieht', () {
+  test('lokaler Join sagt, dass der Gastgeber dich nicht sieht', () {
     final group = RideGroup(
       id: '11111111-1111-1111-1111-111111111111',
       hostUserId: 'host-1',
@@ -276,7 +293,7 @@ void main() {
       createdAt: DateTime.utc(2026, 8, 15, 8),
     );
     expect(
-        RideGroupJoinOut.ok(group).message, contains('Host sieht dich nicht'));
+        RideGroupJoinOut.ok(group).message, contains('Gastgeber sieht dich nicht'));
     expect(RideGroupJoinOut.ok(group).message, contains('Nur auf diesem Gerät'));
     expect(RideGroupJoinOut.ok(group).message, isNot(contains('Lokal dabei')));
     expect(

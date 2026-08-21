@@ -14,9 +14,8 @@ import { chromeLangFrom } from "@/lib/i18n/chromeLang";
  *     &access=1  — gravity/access leg: no OSM trail splice
  * POST { profile, from, to, vias?, engine?, variant?, access? }
  * Costing comes from `profile` (auto = car, hiking = foot). Engine only
- * translates that costing. Live A–B may splice a nearby OSM trail (MTB/Gravel)
- * or a separate cycleway (urban/ebike, gated) unless access=1.
- * TRAIL_CORRIDOR_SNAP=0 disables snap globally.
+ * translates that costing. Discover A–B keeps the engine line. OSM
+ * trail/cycleway splice only with corridorSnap=1.
  */
 
 function parseAccessFlag(raw: unknown): boolean {

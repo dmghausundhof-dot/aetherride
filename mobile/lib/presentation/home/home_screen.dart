@@ -8,12 +8,22 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/location/safe_position.dart';
+import '../../data/community/listings_client.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
+import '../../data/routing/coverage_label.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/naehe_seeds.dart';
+import '../../data/routing/offline_pack_catalog.dart';
+import '../../data/routing/offline_pack_catalog_client.dart';
+import '../../data/routing/offline_pack_dirs.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/overlay_regions.dart';
+import '../../domain/home/hof_pack.dart';
 
 import '../../data/weather/weather_client.dart';
+import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/component.dart';
@@ -28,6 +38,8 @@ import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/tour_akte.dart';
 import '../../domain/tours/tour_display_name.dart';
+import '../../domain/tours/tour_listing.dart';
+import '../../data/community/tour_share_revoke.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
@@ -35,11 +47,16 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
+import '../discover/offline_maps_sheet.dart';
 
+import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 import '../post_ride/post_ride_screen.dart';
 import '../profile/profile_screen.dart';
+import '../ride/ride_elev_sparkline.dart';
+import '../garage/rad_stand_frame.dart';
 import '../shared/bike_hero_banner.dart';
-import '../shared/bike_schema_view.dart';
+import '../shared/weather_glyph.dart';
 import '../shell/shell_tabs.dart';
 import 'hof_coach_banner.dart';
 import 'hof_watch_card.dart';
@@ -56,6 +73,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   WeatherSnapshot? _weather;
   bool _weatherResolved = false;
+  bool _weatherOffline = false;
   double? _lat;
   double? _lng;
   NaeheSeedsBundle? _seeds;
@@ -65,13 +83,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _tafelStimmenText;
   String? _tafelStimmenRouteId;
   String? _tafelGroupText;
-
+  String? _tafelListingText;
+  String? _tafelListingRouteId;
+  HofPackHint? _packHint;
 
   @override
   void initState() {
     super.initState();
     TourCommunityStore.revision.addListener(_onCommunityRevision);
     RideGroupStore.revision.addListener(_onGroupRevision);
+    OfflineMapsPrefs.revision.addListener(_onPackRevision);
     unawaited(_bootHof());
   }
 
@@ -79,8 +100,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void dispose() {
     TourCommunityStore.revision.removeListener(_onCommunityRevision);
     RideGroupStore.revision.removeListener(_onGroupRevision);
+    OfflineMapsPrefs.revision.removeListener(_onPackRevision);
     super.dispose();
   }
+
+  void _onPackRevision() => unawaited(_refreshPackHint());
 
   void _onGroupRevision() => unawaited(_loadTafelGroup());
 
@@ -89,6 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final id = _gate.seed?.id;
     if (id != null) unawaited(_loadNeighbors(id));
     unawaited(_loadTafelStimmen());
+    unawaited(_tickListings());
   }
 
   Future<void> _bootHof() async {
@@ -101,6 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (mounted) {
       unawaited(_loadTafelStimmen());
       unawaited(_loadTafelGroup());
+      unawaited(_tickListings());
     }
   }
 
@@ -151,16 +177,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     setState(() {
-      _tafelGroupText = groups.isEmpty
-          ? null
-          : l10n.hofTafelGroup(groups.first.title);
+      _tafelGroupText =
+          groups.isEmpty ? null : l10n.hofTafelGroup(groups.first.title);
+    });
+  }
+
+  Future<void> _tickListings() async {
+    final saved = ref.read(savedRoutesProvider).valueOrNull ?? const [];
+    if (saved.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _tafelListingText = null;
+          _tafelListingRouteId = null;
+        });
+      }
+      return;
+    }
+    final metas = await SavedRouteMetaStore.listAll();
+    final store = TourCommunityStore();
+    final own = <ListingTafelOwn>[];
+    String? listingRouteId;
+    for (final r in saved) {
+      final meta = metas[r.id] ?? SavedRouteMeta.empty;
+      if (meta.visibility != 'shared' &&
+          meta.listing != 'candidate' &&
+          meta.listing != 'listed' &&
+          meta.listing != 'reverted') {
+        continue;
+      }
+      final catalog = catalogTourIdOf(r.id, meta);
+      final stimmenId = RouteVisibility.stimmenTourIdOf(r.id, meta);
+      var reviews = const <TourCommunityReview>[];
+      if (stimmenId != null) {
+        try {
+          reviews = await store.reviewsForTour(stimmenId);
+          await store.mergeCloudBundle(stimmenId);
+          reviews = await store.reviewsForTour(stimmenId);
+        } catch (_) {}
+      }
+      final confirms = confirmationsFromReviews([
+        for (final v in reviews)
+          (
+            authorLabel: v.authorLabel,
+            authorId: null,
+            createdAt: v.createdAt,
+            status: switch (v.cloudStatus) {
+              CloudSubmitResult.pending => 'pending',
+              CloudSubmitResult.rejected => 'rejected',
+              _ => 'approved',
+            },
+            editorial: false,
+          ),
+      ]);
+      final ticked = tickSavedMeta(
+        meta: meta,
+        isCatalog: catalog != null,
+        confirmations: confirms,
+      );
+      if (ticked.decision.changed) {
+        await SavedRouteMetaStore.put(r.id, ticked.meta);
+        if (ticked.decision.notice == ListingNotice.reverted &&
+            ticked.decision.shareEpoch > meta.shareEpoch) {
+          unawaited(
+            revokeTourShareOnServer(
+              routeId: r.id,
+              epoch: ticked.meta.shareEpoch,
+            ),
+          );
+        }
+      }
+      own.add(
+        ListingTafelOwn(
+          name: r.name,
+          notice: ticked.decision.notice,
+          confirmCount: ticked.decision.confirmCount,
+          candidateSince: ticked.decision.candidateSince,
+        ),
+      );
+      if (ticked.decision.notice != ListingNotice.none) {
+        listingRouteId = r.id;
+      }
+    }
+    var nearbyWaiting = 0;
+    final lat = _lat;
+    final lng = _lng;
+    if (lat != null && lng != null) {
+      try {
+        final hit = await NearbyListingsClient().fetchViewport(
+          west: lng - 0.2,
+          south: lat - 0.2,
+          east: lng + 0.2,
+          north: lat + 0.2,
+        );
+        nearbyWaiting = hit.nearbyWaiting;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _tafelListingText = pickListingTafel(
+        own: own,
+        nearbyWaiting: nearbyWaiting,
+      );
+      _tafelListingRouteId = listingRouteId;
     });
   }
 
   Future<void> _loadPosition({bool prompt = false}) async {
     try {
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
+      if (prompt && perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
       if (prompt &&
@@ -169,27 +294,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         await Geolocator.openAppSettings();
         perm = await Geolocator.checkPermission();
       }
-      Position? pos;
-      try {
-        pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-            timeLimit: Duration(seconds: 8),
-          ),
-        );
-      } catch (_) {
-        pos = await Geolocator.getLastKnownPosition();
-        if (pos != null &&
-            DateTime.now().difference(pos.timestamp) >
-                const Duration(minutes: 10)) {
-          pos = null;
-        }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
+      // Boot: nur lastKnown. getCurrentPosition auf dem ersten Frame
+      // kann auf dem Emulator ANR (NmeaListener auf dem UI-Thread).
+      var pos = await readCachedPosition(maxAge: const Duration(minutes: 15));
+      if (pos == null && prompt) {
+        pos = await readFreshPosition();
       }
       if (pos != null && mounted) {
         setState(() {
           _lat = pos!.latitude;
           _lng = pos.longitude;
         });
+        unawaited(_refreshPackHint());
         if (prompt) {
           await _loadWeather();
           if (mounted && _seeds != null) _recomputeGate();
@@ -202,20 +322,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final lat = _lat;
     final lng = _lng;
     if (lat == null || lng == null) {
-      if (mounted) setState(() => _weatherResolved = true);
+      if (mounted) {
+        setState(() {
+          _weatherResolved = true;
+          _weatherOffline = false;
+        });
+      }
       return;
     }
     try {
-      final w = await ref.read(weatherClientProvider).fetch(lat: lat, lon: lng);
+      final bikes = ref.read(bikesProvider).valueOrNull ?? [];
+      final active = hofResidentBike(bikes);
+      final profile = active != null
+          ? routingProfileForBike(active.category).apiId
+          : null;
+      final w = await ref.read(weatherClientProvider).fetch(
+            lat: lat,
+            lon: lng,
+            profile: profile,
+            lang: Localizations.localeOf(context).languageCode,
+          );
       if (mounted) {
         setState(() {
-          _weather = w;
+          if (w != null) {
+            _weather = w;
+            _weatherOffline = false;
+          } else {
+            _weatherOffline = _weather == null;
+          }
           _weatherResolved = true;
         });
         if (_seeds != null) _recomputeGate();
       }
     } catch (_) {
-      if (mounted) setState(() => _weatherResolved = true);
+      if (mounted) {
+        setState(() {
+          _weatherOffline = _weather == null;
+          _weatherResolved = true;
+        });
+      }
     }
   }
 
@@ -310,7 +455,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text(
                   loc.hofSystemStatus,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 17),
                 ),
                 const SizedBox(height: AppSpacing.m),
                 if (!showSupabaseWarning && !showSyncWarning)
@@ -381,8 +527,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openMappe({String? akteRouteId}) {
     if (akteRouteId != null && akteRouteId.isNotEmpty) {
-      ref.read(discoverPendingAkteRouteIdProvider.notifier).state =
-          akteRouteId;
+      ref.read(discoverPendingAkteRouteIdProvider.notifier).state = akteRouteId;
     }
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.platz;
   }
@@ -390,6 +535,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startRide() {
     final done = ref.read(onboardingDoneProvider);
     if (done == false) return;
+    ref.read(ridePendingGroupIdProvider.notifier).state = null;
     ref.read(rideAutostartProvider.notifier).state = true;
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.ride;
   }
@@ -434,6 +580,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           coordinates: r.coordinates,
           isLoop: navGeometryIsLoop(r.coordinates),
         );
+        ref.read(ridePendingGroupIdProvider.notifier).state = null;
         ref.read(rideAutostartProvider.notifier).state = true;
         ref.read(shellTabIndexProvider.notifier).state = ShellTabs.ride;
         return;
@@ -442,17 +589,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _openKarte();
   }
 
+  Future<void> _refreshPackHint() async {
+    final lat = _lat;
+    final lng = _lng;
+    if (lat == null || lng == null) {
+      if (mounted && _packHint != null) setState(() => _packHint = null);
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final region = overlayRegionForPoint(lng, lat);
+    final ready = await OfflinePackDirs.legitimateCoversPoint(lng, lat);
+    if (!mounted) return;
+    String? suggestedId;
+    String? suggestedName;
+    String? readyId;
+    String? readyName;
+    final overlayIsEnvelope = region != null && isEnvelopePackId(region.id);
+    if (ready) {
+      try {
+        final m = await OfflineMapsPrefs.read();
+        readyId = OfflineMapsPrefs.packIdFromActivatedPath(
+          m['activatedPackPath'] as String?,
+        );
+        final raw = (m['regionPack'] as String?)?.trim();
+        if (readyId != null && readyId.isNotEmpty) {
+          readyName = l10n.overlayRegionNameFor(readyId, raw);
+        } else if (raw != null && raw.isNotEmpty) {
+          readyId = raw;
+          readyName = raw;
+        }
+      } catch (_) {}
+      if (!mounted) return;
+    } else {
+      try {
+        final packs = await loadOfflinePackCatalog();
+        final sug = suggestedPackForPoint(packs: packs, lng: lng, lat: lat);
+        suggestedId = sug?.id;
+        suggestedName =
+            sug == null ? null : l10n.overlayRegionNameFor(sug.id, sug.name);
+      } catch (_) {}
+      if (!mounted) return;
+    }
+    final hint = hofHintForLocation(
+      overlayId: region?.id,
+      overlayName: region == null
+          ? null
+          : l10n.overlayRegionNameFor(region.id, region.name),
+      overlayIsEnvelope: overlayIsEnvelope,
+      suggestedId: suggestedId,
+      suggestedName: suggestedName,
+      packReady: ready,
+      readyId: readyId,
+      readyName: readyName,
+    );
+    if (hint?.regionId == _packHint?.regionId &&
+        hint?.ready == _packHint?.ready) {
+      return;
+    }
+    setState(() => _packHint = hint);
+  }
+
+  Future<void> _openOfflineMaps() async {
+    var paused = false;
+    await openOfflineMapsSheet(
+      context,
+      userLng: _lng,
+      userLat: _lat,
+      focusPackId: _packHint?.regionId,
+      onDownloadPaused: () => paused = true,
+    );
+    if (!mounted) return;
+    if (paused) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(AppLocalizations.of(context).offlineDownloadPaused)),
+      );
+    }
+    await _refreshPackHint();
+  }
+
   String _skyLine(AppLocalizations l10n) {
     if (!_weatherResolved) return '';
     if (_lat == null) return '';
     final w = _weather;
-    if (w == null) return l10n.hofSkyUnknown;
-    final temp = w.tempC.round().toString();
-    return switch (w.trailHint) {
-      'wet_likely' => l10n.hofSkyWet(temp),
-      'damp_possible' => l10n.hofSkyDamp(temp),
-      _ => l10n.hofSkyDry(temp),
-    };
+    if (w != null) {
+      final temp = w.tempC.round().toString();
+      return switch (w.trailHint) {
+        'wet_likely' => l10n.hofSkyWet(temp),
+        'damp_possible' => l10n.hofSkyDamp(temp),
+        _ => l10n.hofSkyDry(temp),
+      };
+    }
+    if (_weatherOffline) return l10n.hofSkyNeedNet;
+    return '';
   }
 
   String _hofTitle(BuildContext context) {
@@ -478,6 +707,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (mounted) _recomputeGate();
         });
       }
+      final prevCat =
+          hofResidentBike(prev?.valueOrNull ?? const <Bike>[])?.category;
+      final nextCat =
+          hofResidentBike(next.valueOrNull ?? const <Bike>[])?.category;
+      if (prevCat != nextCat) unawaited(_loadWeather());
+    });
+    ref.listen(shellTabIndexProvider, (prev, next) {
+      if (next == ShellTabs.hof) unawaited(_refreshPackHint());
     });
     final bikes = ref.watch(bikesProvider);
     final session = ref.watch(authSessionProvider).valueOrNull;
@@ -532,6 +769,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         HofCoachBellButton(
           stimmenText: _tafelStimmenText,
           groupText: _tafelGroupText,
+          listingText: _tafelListingText,
           onOpenCare: () {
             final id = active?.id;
             if (id != null) _openGarage(bikeId: id);
@@ -554,7 +792,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SizedBox(width: AppSpacing.xs),
         IconButton(
           tooltip: l10n.profile,
-          onPressed: () => openProfileScreen(context),
+          onPressed: () async {
+            await openProfileScreen(context);
+            if (mounted) unawaited(_refreshPackHint());
+          },
           icon: _HofProfileAvatar(
             initials: initials,
             photo: photo,
@@ -576,14 +817,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     final skyLine = sky.isEmpty
         ? null
-        : Text(
-            sky,
+        : Row(
             key: const Key('hof-sky'),
-            style: const TextStyle(
-              color: AppColors.sageOnDark,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
+            children: [
+              WeatherGlyph(
+                _weather?.trailHint,
+                offline: _weatherOffline,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  sky,
+                  style: const TextStyle(
+                    color: AppColors.sageOnDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
           );
 
     final gpsHonesty = (_weatherResolved && _lat == null)
@@ -611,12 +864,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (active == null) {
           return _EmptyStand(l10n: l10n, compact: landscape);
         }
-        final comps = ref
-                    .watch(bikeComponentsProvider(active.id))
-                    .valueOrNull ??
+        final comps =
+            ref.watch(bikeComponentsProvider(active.id)).valueOrNull ??
                 const <BikeComponent>[];
         final hasMotor = comps.any((c) => c.slot == ComponentSlot.motor);
         final lastId = ret?.rideId;
+        RideRecord? lastRide;
+        if (lastId != null && lastId.isNotEmpty) {
+          for (final r in rides) {
+            if (r.id == lastId) {
+              lastRide = r;
+              break;
+            }
+          }
+        }
+        final due = listDueMaintenance(
+          bike: active,
+          components: comps,
+          logs: store.maintenanceLogs,
+        );
+        final plan = planDieBox(
+          bike: active,
+          components: comps,
+          due: due,
+          logs: store.maintenanceLogs,
+        );
+        final health = bikeHealthLine(
+          readiness: plan.readiness,
+          odometerKm: active.odometerKm,
+          readyLabel: l10n.dieBoxReady,
+          almostLabel: l10n.dieBoxAlmost,
+          unknownLabel: l10n.dieBoxUnknown,
+        );
         return Semantics(
           container: true,
           explicitChildNodes: true,
@@ -624,12 +903,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             bike: active,
             others: others,
             ret: ret!,
+            lastRide: lastRide,
+            healthLine: health,
             l10n: l10n,
             sport: l10n.hofResidentSportLabel(active, hasMotor: hasMotor),
             bleAwake: bleAwake,
             photoHeight: shortLandscape ? 72 : (landscape ? 96 : 112),
-            hasPhoto: (store.bikePhotos[active.id]?.trim().isNotEmpty ??
-                false),
+            photos: store.bikePhotos,
             onOpenBike: () => _openGarage(bikeId: active!.id),
             onBringForward: (id) async {
               await ref.read(garageRepositoryProvider).setActiveBike(id);
@@ -643,8 +923,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
     );
 
-    final savedCount =
-        ref.watch(savedRoutesProvider).valueOrNull?.length ?? 0;
+    final savedCount = ref.watch(savedRoutesProvider).valueOrNull?.length ?? 0;
 
     Widget tafelLine(HofTafelItem item, {required bool overdue}) {
       return _TafelLine(
@@ -665,7 +944,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : () => _openMappe(
                   akteRouteId: item.kind == HofTafelKind.stimmen
                       ? _tafelStimmenRouteId
-                      : null,
+                      : item.kind == HofTafelKind.listing
+                          ? _tafelListingRouteId
+                          : null,
                 ),
       );
     }
@@ -673,6 +954,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Widget tourColumn(String? careText, {bool overdue = false}) {
       final lines = buildHofTafel(
         careText: careText,
+        listingText: _tafelListingText,
         stimmenText: _tafelStimmenText,
         groupText: _tafelGroupText,
         savedCount: savedCount,
@@ -690,8 +972,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               key: const Key('hof-tafel-workshop'),
               kicker: l10n.navWorkshop,
               children: [
-                for (final item in careLines)
-                  tafelLine(item, overdue: overdue),
+                for (final item in careLines) tafelLine(item, overdue: overdue),
               ],
             ),
           if (careLines.isNotEmpty && tourLines.isNotEmpty)
@@ -717,27 +998,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       tafelBody = Consumer(
         builder: (context, ref, _) {
           final compsAsync = ref.watch(bikeComponentsProvider(bike.id));
-          final setup =
-              ref.watch(currentSetupProvider(bike.id)).valueOrNull;
+          final setup = ref.watch(currentSetupProvider(bike.id)).valueOrNull;
+          final setups =
+              ref.watch(setupsForBikeProvider(bike.id)).valueOrNull ??
+                  (setup != null ? [setup] : const []);
           final logs = ref.watch(userProfileStoreProvider).maintenanceLogs;
           return compsAsync.when(
             data: (comps) {
               final due = listDueMaintenance(
                 bike: bike,
                 components: comps,
+                logs: logs,
               );
               final plan = planDieBox(
                 bike: bike,
                 components: comps,
                 currentSetup: setup,
-                setups: setup != null ? [setup] : const [],
+                setups: setups,
                 due: due,
                 logs: logs,
               );
               final item = tafelCareItem(plan);
+              final care = item == null ? null : l10n.localizeDieBoxItem(item);
               return tourColumn(
-                item == null ? null : l10n.hofCareInWorkshop(item.title),
-                overdue: item?.due?.status == DueStatus.overdue,
+                care == null ? null : l10n.hofCareInWorkshop(care.title),
+                overdue: care?.due?.status == DueStatus.overdue,
               );
             },
             loading: () => tourColumn(null),
@@ -765,6 +1050,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: _openGate,
           )
         : null;
+    final packHint = _packHint;
+    final packLine = packHint == null
+        ? null
+        : packHint.ready
+            ? Align(
+                alignment: Alignment.centerLeft,
+                child: InkWell(
+                  key: const Key('hof-offline-ready'),
+                  onTap: () => unawaited(_openOfflineMaps()),
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
+                          color: AppColors.sageOnDark,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.hofPackReadyRideMap(
+                              coverageGlanceName(packHint.regionName),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.3,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : Align(
+                alignment: Alignment.centerLeft,
+                child: ActionChip(
+                  key: const Key('hof-load-offline-map'),
+                  avatar: const Icon(Icons.download_outlined, size: 18),
+                  label: Text(
+                    l10n.hofLoadOfflineMap(
+                      coverageGlanceName(packHint.regionName),
+                    ),
+                  ),
+                  backgroundColor: AppColors.sage.withValues(alpha: 0.22),
+                  side: const BorderSide(color: AppColors.sageOnDark),
+                  onPressed: () => unawaited(_openOfflineMaps()),
+                ),
+              );
 
     final ctaHeight = shortLandscape ? 44.0 : 52.0;
     final emptyStand = active == null;
@@ -773,9 +1110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       style: emptyStand
           ? AppTheme.parkCta(height: ctaHeight)
           : AppTheme.rideOutCta(height: ctaHeight),
-      onPressed: emptyStand
-          ? () => _openGarage(addBike: true)
-          : _startRide,
+      onPressed: emptyStand ? () => _openGarage(addBike: true) : _startRide,
       child: Text(
         emptyStand
             ? l10n.hofParkBike
@@ -789,14 +1124,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final secondary = Center(
       child: TextButton(
-        onPressed: emptyStand
-            ? _startRide
-            : () => _openGarage(bikeId: active!.id),
+        onPressed:
+            emptyStand ? _startRide : () => _openGarage(bikeId: active!.id),
         child: Text(
           emptyStand ? l10n.hofRideWithoutBike : l10n.hofOpenBike,
         ),
       ),
     );
+    final groupHint = emptyStand
+        ? null
+        : Text(
+            l10n.hofRideGroupHint,
+            key: const Key('hof-ride-group-hint'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          );
 
     if (landscape) {
       return Scaffold(
@@ -848,10 +1190,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   cta,
                                   const SizedBox(height: AppSpacing.s),
                                   secondary,
+                                  if (groupHint != null) ...[
+                                    const SizedBox(height: 4),
+                                    groupHint,
+                                  ],
                                   if (gate != null) ...[
                                     const SizedBox(height: AppSpacing.s),
                                     gate,
                                   ],
+                                  if (packLine != null) packLine,
                                   const SizedBox(height: AppSpacing.s),
                                   watch,
                                 ],
@@ -901,6 +1248,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: AppSpacing.m),
                             gate,
                           ],
+                          if (packLine != null) packLine,
                         ],
                       ),
                     ),
@@ -925,6 +1273,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   cta,
                   const SizedBox(height: AppSpacing.s),
                   secondary,
+                  if (groupHint != null) ...[
+                    const SizedBox(height: 4),
+                    groupHint,
+                  ],
                   const HofWatchCard(),
                 ],
               ),
@@ -1086,6 +1438,8 @@ class _Resident extends StatelessWidget {
     required this.bike,
     required this.others,
     required this.ret,
+    this.lastRide,
+    this.healthLine,
     required this.l10n,
     required this.sport,
     required this.bleAwake,
@@ -1093,12 +1447,14 @@ class _Resident extends StatelessWidget {
     required this.onBringForward,
     this.onLastRide,
     this.photoHeight = 188,
-    this.hasPhoto = false,
+    this.photos = const {},
   });
 
   final Bike bike;
   final List<Bike> others;
   final RideReturn ret;
+  final RideRecord? lastRide;
+  final String? healthLine;
   final AppLocalizations l10n;
   final String sport;
   final bool bleAwake;
@@ -1106,7 +1462,7 @@ class _Resident extends StatelessWidget {
   final Future<void> Function(String id) onBringForward;
   final VoidCallback? onLastRide;
   final double photoHeight;
-  final bool hasPhoto;
+  final Map<String, String> photos;
 
   @override
   Widget build(BuildContext context) {
@@ -1175,24 +1531,16 @@ class _Resident extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (hasPhoto)
-          BikeHeroBanner(
-            bike: bike,
-            onTap: onOpenBike,
-            showPhotoPicker: false,
-            showActiveBadge: false,
-            showCaption: false,
-            photoHeight: photoHeight,
-          ),
-        if (hasPhoto) const SizedBox(height: AppSpacing.s),
-        if (!hasPhoto) ...[
-          BikeSchemaView(
-            key: const Key('hof-parked-mark'),
-            bike: bike,
-            height: photoHeight < 90 ? 88 : 140,
-          ),
-          const SizedBox(height: AppSpacing.s),
-        ],
+        BikeHeroBanner(
+          key: const Key('hof-parked-mark'),
+          bike: bike,
+          onTap: onOpenBike,
+          showPhotoPicker: false,
+          showActiveBadge: false,
+          showCaption: false,
+          photoHeight: photoHeight < 90 ? 88 : photoHeight,
+        ),
+        const SizedBox(height: AppSpacing.s),
         InkWell(
           onTap: onOpenBike,
           child: Text(
@@ -1204,6 +1552,25 @@ class _Resident extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         metaBlock(),
+        if (healthLine != null) ...[
+          const SizedBox(height: 4),
+          InkWell(
+            onTap: onOpenBike,
+            child: Text(
+              healthLine!,
+              key: const Key('hof-bike-health'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.chrome,
+              ),
+            ),
+          ),
+        ],
+        if (lastRide != null && lastRide!.track.length >= 2) ...[
+          const SizedBox(height: AppSpacing.s),
+          _LastRideSpark(ride: lastRide!, onTap: onLastRide),
+        ],
         if (bleAwake) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -1222,15 +1589,60 @@ class _Resident extends StatelessWidget {
             runSpacing: AppSpacing.s,
             children: [
               for (final b in others)
-                ActionChip(
-                  label: Text(l10n.hofBringForward(b.name)),
-                  onPressed: () => onBringForward(b.id),
-                  visualDensity: VisualDensity.compact,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onBringForward(b.id),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: SizedBox(
+                      width: 92,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RadMiniStand(
+                            bike: b,
+                            photo: photos[b.id],
+                            width: 92,
+                            height: 48,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.hofBringForward(b.name),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
         ],
       ],
+    );
+  }
+}
+
+class _LastRideSpark extends StatelessWidget {
+  const _LastRideSpark({required this.ride, this.onTap});
+
+  final RideRecord ride;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tel = buildRideTelemetry(ride.track);
+    if (!tel.hasElev) return const SizedBox.shrink();
+    return RideTerrainPeek(
+      key: const Key('hof-ride-spark'),
+      telemetry: tel,
+      caption: terrainCaption(tel),
+      onTap: onTap,
     );
   }
 }
@@ -1252,7 +1664,8 @@ class _EmptyStand extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.border),
           ),
-          child: const CustomPaint(painter: _StandPainter()),
+          clipBehavior: Clip.antiAlias,
+          child: RadEmptyStandMark(height: compact ? 96 : 160),
         ),
         const SizedBox(height: AppSpacing.m),
         Text(
@@ -1270,32 +1683,6 @@ class _EmptyStand extends StatelessWidget {
       ],
     );
   }
-}
-
-class _StandPainter extends CustomPainter {
-  const _StandPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.muted
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    final cy = size.height * 0.72;
-    final cx = size.width / 2;
-    canvas.drawLine(
-        Offset(size.width * 0.22, cy), Offset(size.width * 0.78, cy), paint);
-    canvas.drawLine(Offset(cx, cy), Offset(cx, size.height * 0.32), paint);
-    canvas.drawLine(
-      Offset(cx - 28, size.height * 0.32),
-      Offset(cx + 28, size.height * 0.32),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _GateCard extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/component.dart';
+import 'package:aetherride_mobile/domain/ride.dart';
 import 'package:aetherride_mobile/domain/saved_route.dart';
 import 'package:aetherride_mobile/domain/saved_route_note.dart';
 import 'package:aetherride_mobile/domain/tours/tour_akte.dart';
@@ -160,7 +161,7 @@ void main() {
 
   test('buildHofTafel is at most three lines and counts all saved routes', () {
     final lines = buildHofTafel(
-      careText: 'Kette — in der Werkstatt',
+      careText: 'Kette — am Rad',
       stimmenText: 'Neue Stimme zu Neckar',
       groupText: 'Gruppe vor dem Tor · Freitag',
       savedCount: 2,
@@ -178,7 +179,7 @@ void main() {
 
   test('listing line sits after care and before group, still max three', () {
     final lines = buildHofTafel(
-      careText: 'Kette — in der Werkstatt',
+      careText: 'Kette — am Rad',
       listingText: 'Neckar wartet auf Bestätigung (1/3).',
       stimmenText: 'Neue Stimme zu Neckar',
       groupText: 'Gruppe vor dem Tor · Freitag',
@@ -196,5 +197,34 @@ void main() {
     expect(shouldAssignRideWear(''), isFalse);
     expect(shouldAssignRideWear('unknown'), isFalse);
     expect(shouldAssignRideWear('bike-1'), isTrue);
+  });
+
+  test('lastRideForSavedRoute skips active rides and joins catalog id', () {
+    const savedId = 'saved-abc';
+    final active = RideRecord(
+      id: 'r-live',
+      bikeId: 'b1',
+      startedAt: DateTime.utc(2026, 8, 18),
+      routeId: savedId,
+    );
+    final done = RideRecord(
+      id: 'r-done',
+      bikeId: 'b1',
+      startedAt: DateTime.utc(2026, 8, 12, 10),
+      endedAt: DateTime.utc(2026, 8, 12, 12),
+      routeId: 'idea-grunewald',
+    );
+    expect(
+      lastRideForSavedRoute(
+        savedRouteId: savedId,
+        catalogTourId: 'idea-grunewald',
+        rides: [active, done],
+      )?.id,
+      'r-done',
+    );
+    expect(joinMappeCaption(['gefahren mit Aeroad', 'zuletzt 12.8.']),
+        'gefahren mit Aeroad · zuletzt 12.8.');
+    expect(joinMappeCaption([null, '  ']), isNull);
+    expect(formatMappeDay(DateTime.utc(2026, 8, 12)), contains('.'));
   });
 }

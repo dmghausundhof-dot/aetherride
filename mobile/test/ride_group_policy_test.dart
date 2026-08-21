@@ -118,6 +118,35 @@ void main() {
       isFalse,
     );
     expect(
+      RideGroupPolicy.isEventWindowOpen(
+        now: start,
+        start: start,
+        end: end,
+        status: RideGroupStatus.open,
+      ),
+      isTrue,
+    );
+    expect(
+      RideGroupPolicy.isEventWindowOpen(
+        now: end,
+        start: start,
+        end: end,
+        status: RideGroupStatus.open,
+      ),
+      isTrue,
+    );
+    expect(
+      RideGroupPolicy.canJoin(
+        now: end,
+        end: end,
+        status: RideGroupStatus.open,
+      ),
+      isTrue,
+    );
+    expect(RideGroupPolicy.formatDurationHours(0.25, decimalSep: ','), '15 Min');
+    expect(RideGroupPolicy.formatDurationHours(0.5, decimalSep: ','), '30 Min');
+    expect(RideGroupPolicy.formatDurationHours(1.25, decimalSep: ','), '1,25 h');
+    expect(
       RideGroupPolicy.formatWhen(
         DateTime(2026, 8, 16, 10),
         DateTime(2026, 8, 16, 13),
@@ -132,6 +161,14 @@ void main() {
         now: DateTime(2026, 8, 14, 12),
       ),
       'So 10:00 · 1,5 h',
+    );
+    expect(
+      RideGroupPolicy.formatWhen(
+        DateTime(2026, 8, 16, 10),
+        DateTime(2026, 8, 16, 10, 15),
+        now: DateTime(2026, 8, 14, 12),
+      ),
+      'So 10:00 · 15 Min',
     );
     expect(
       RideGroupPolicy.platzPrimaryIsInvite(
@@ -154,7 +191,50 @@ void main() {
       ),
       isFalse,
     );
+    expect(
+      RideGroupPolicy.platzPrimaryIsInvite(
+        selfIsHost: true,
+        otherMemberCount: 0,
+        windowOpen: true,
+      ),
+      isFalse,
+    );
+    expect(
+      RideGroupPolicy.platzPrimaryIsInvite(
+        selfIsHost: true,
+        otherMemberCount: 0,
+        windowOpen: false,
+      ),
+      isTrue,
+    );
     expect(RideGroupPolicy.formatDurationHours(3.5, decimalSep: ','), '3,5 h');
+    expect(
+      RideGroupPolicy.weekdayShortForLocale(DateTime(2026, 8, 19), 'de'),
+      'Mi',
+    );
+    expect(
+      RideGroupPolicy.weekdayShortForLocale(DateTime(2026, 8, 19), 'en_US'),
+      'Wed',
+    );
+    expect(
+      RideGroupPolicy.weekdayShortForLocale(DateTime(2026, 8, 19), 'fr'),
+      'mer',
+    );
+    expect(
+      RideGroupPolicy.formatWhenLabeled(
+        start: DateTime(2026, 8, 19, 17),
+        end: DateTime(2026, 8, 19, 20, 30),
+        now: DateTime(2026, 8, 19, 10),
+        weekdayShort: (local) =>
+            RideGroupPolicy.weekdayShortForLocale(local, 'de'),
+        today: (t, d) => 'heute $t · $d',
+        tomorrow: (t, d) => 'morgen $t · $d',
+        other: (wd, t, d) => '$wd $t · $d',
+        closed: (wd, t) => 'zu — $wd $t',
+        decimalSep: ',',
+      ),
+      'heute 17:00 · 3,5 h',
+    );
   });
 
   test('Quantisierung und Zonen', () {
@@ -287,12 +367,41 @@ void main() {
       now: now,
     );
     expect(byEnd!.durationHours, 1.25);
+    final quarter = RideGroupPolicy.parseWindow(
+      startsAt: DateTime.utc(2026, 8, 16, 8),
+      durationHours: 0.25,
+      now: now,
+    );
+    expect(quarter, isNotNull);
+    expect(quarter!.durationHours, 0.25);
+    expect(quarter.end, DateTime.utc(2026, 8, 16, 8, 15));
+    expect(
+      RideGroupPolicy.parseWindow(startsAt: now, durationHours: 0.25, now: now)
+          ?.status,
+      RideGroupStatus.open,
+    );
     expect(
       RideGroupPolicy.parseWindow(durationHours: 0.1, now: now),
       isNull,
     );
     expect(
       RideGroupPolicy.parseWindow(durationHours: 13, now: now),
+      isNull,
+    );
+    expect(
+      RideGroupPolicy.parseWindow(
+        startsAt: now.add(const Duration(days: 14)),
+        durationHours: 3,
+        now: now,
+      ),
+      isNotNull,
+    );
+    expect(
+      RideGroupPolicy.parseWindow(
+        startsAt: now.add(const Duration(days: 14, hours: 1)),
+        durationHours: 3,
+        now: now,
+      ),
       isNull,
     );
     expect(RideGroupPolicy.parseDurationHours('1,5'), 1.5);

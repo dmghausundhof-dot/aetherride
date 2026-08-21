@@ -12,11 +12,17 @@ void main() {
 
   test('selected routed line is brighter and thicker than unselected', () {
     expect(DiscoverMapLineStyle.selectedRouted, '#FF6A00');
+    expect(DiscoverMapLineStyle.planSteep, '#C2410C');
     expect(DiscoverMapLineStyle.selectedRouted, isNot('#00E676'));
     expect(DiscoverMapLineStyle.unselectedRouted, isNot(DiscoverMapLineStyle.selectedRouted));
     expect(
       DiscoverMapLineStyle.activeWidth,
       greaterThan(DiscoverMapLineStyle.inactiveWidth),
+    );
+    expect(
+      DiscoverMapLineStyle.activeWidth,
+      lessThan(6.5),
+      reason: 'selected orange ribbon stays slim next to pins',
     );
     expect(
       DiscoverMapLineStyle.activeOpacity,
@@ -31,10 +37,43 @@ void main() {
       DiscoverMapLineStyle.activeCasingWidth,
       greaterThan(DiscoverMapLineStyle.mutedCasingWidth),
     );
+    expect(
+      DiscoverMapLineStyle.selectedGlowWidth,
+      greaterThan(DiscoverMapLineStyle.activeCasingWidth),
+    );
+    expect(DiscoverMapLineStyle.selectedGlowOpacity, lessThan(0.4));
   });
 
   test('trail overlay stays under tour ribbons', () {
     expect(DiscoverMapLineStyle.trailUnselectedOpacity, lessThan(0.4));
+  });
+
+  test('pending A–B ghost stays lighter than the live ribbon', () {
+    expect(DiscoverMapLineStyle.pendingAbOpacity, lessThan(0.75));
+    expect(
+      DiscoverMapLineStyle.pendingAbWidth,
+      lessThan(DiscoverMapLineStyle.activeWidth),
+    );
+    expect(DiscoverMapLineStyle.pendingAbDash.length, 2);
+    expect(DiscoverMapLineStyle.planRubber, '#FF6A00');
+    expect(
+      DiscoverMapLineStyle.planRubberOpacity,
+      greaterThan(DiscoverMapLineStyle.pendingAbOpacity),
+    );
+    expect(
+      DiscoverMapLineStyle.planGrabHaloWidth,
+      greaterThan(DiscoverMapLineStyle.activeWidth * 4),
+    );
+    expect(
+      DiscoverMapLineStyle.planGrabHaloOpacity,
+      greaterThan(0),
+      reason: 'MapLibre skips fully transparent line hits',
+    );
+    expect(
+      DiscoverMapLineStyle.planGrabHaloOpacity,
+      lessThan(0.04),
+      reason: 'native first-frame translate must stay invisible',
+    );
   });
 
   test('gravel, road and DH ribbons are not the same mint green', () {
@@ -70,6 +109,23 @@ void main() {
     expect(
       DiscoverMapLineStyle.approachCore,
       isNot(DiscoverMapLineStyle.selectedRouted),
+    );
+  });
+
+  test('plan outside pack is sage, not chrome', () {
+    expect(DiscoverMapLineStyle.packOutside, '#7A8B73');
+    expect(
+      DiscoverMapLineStyle.packOutside,
+      isNot(DiscoverMapLineStyle.selectedRouted),
+    );
+    expect(
+      DiscoverMapLineStyle.packOutsideCasing,
+      isNot(DiscoverMapLineStyle.packOutside),
+    );
+    expect(DiscoverMapLineStyle.packOutsideDash.length, 2);
+    expect(
+      DiscoverMapLineStyle.packOutsideWidth,
+      lessThan(DiscoverMapLineStyle.activeWidth),
     );
   });
 }

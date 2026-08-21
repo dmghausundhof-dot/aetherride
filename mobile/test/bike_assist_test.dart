@@ -175,19 +175,55 @@ void main() {
       );
     });
 
-    test('pickGroups führt Alltag vor Trail', () {
-      final muscle = BikeAssistUx.pickGroups(BikeAssistMode.muscle);
-      expect(muscle.first.id, 'everyday');
-      expect(muscle.first.categories, contains(BikeCategory.urban));
-      expect(muscle.first.categories, contains(BikeCategory.cargo));
-      expect(muscle.first.categories, isNot(contains(BikeCategory.mtbAm)));
+    test('addCategories bleibt kurz und ohne Trail-Untertypen', () {
       expect(
-        muscle.firstWhere((g) => g.id == 'trail').categories,
-        contains(BikeCategory.mtbAm),
+        BikeAssistUx.addCategories(BikeAssistMode.muscle),
+        [
+          BikeCategory.urban,
+          BikeCategory.gravel,
+          BikeCategory.road,
+          BikeCategory.mtbAm,
+          BikeCategory.cargo,
+          BikeCategory.folding,
+        ],
+      );
+      expect(
+        BikeAssistUx.addCategories(BikeAssistMode.ebike),
+        [
+          BikeCategory.urban,
+          BikeCategory.etrekking,
+          BikeCategory.gravel,
+          BikeCategory.road,
+          BikeCategory.emtb,
+          BikeCategory.cargo,
+        ],
+      );
+      expect(
+        BikeAssistUx.addTileSelected(
+          BikeCategory.mtbAm,
+          BikeCategory.mtbEnduro,
+          BikeAssistMode.muscle,
+        ),
+        isTrue,
+      );
+      expect(
+        BikeAssistUx.defaultWheelFor(BikeCategory.urban),
+        WheelSize.c700,
+      );
+    });
+
+    test('pickGroups führt Trail vor Alltag und lässt Zu Fuß weg', () {
+      final muscle = BikeAssistUx.pickGroups(BikeAssistMode.muscle);
+      expect(muscle.first.id, 'trail');
+      expect(muscle.first.categories, contains(BikeCategory.mtbAm));
+      expect(muscle.first.categories, isNot(contains(BikeCategory.hiking)));
+      expect(
+        muscle.firstWhere((g) => g.id == 'everyday').categories,
+        contains(BikeCategory.urban),
       );
 
       final ebike = BikeAssistUx.pickGroups(BikeAssistMode.ebike);
-      expect(ebike.first.categories.first, BikeCategory.etrekking);
+      expect(ebike.first.id, 'trail');
       expect(
         ebike.firstWhere((g) => g.id == 'trail').categories,
         [BikeCategory.emtb],

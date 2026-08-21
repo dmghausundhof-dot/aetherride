@@ -5,16 +5,18 @@ import 'fit.dart';
 import 'gpx.dart';
 
 /// Apply privacy trim then export helpers.
+///
+/// Empty result stays empty — never fall back to the raw track (that would
+/// leak a ride that sat entirely inside a zone).
 RideRecord rideWithTrimmedTrack(
   RideRecord ride,
   List<PrivacyZone> zones,
 ) {
-  if (zones.isEmpty && ride.track.length < 3) return ride;
+  if (ride.track.length < 3) return ride;
   final trimmed = trimTrackForPrivacyZones(
     List<Map<String, dynamic>>.from(ride.track),
     zones,
   );
-  if (trimmed.isEmpty) return ride;
   return RideRecord(
     id: ride.id,
     bikeId: ride.bikeId,
@@ -25,6 +27,7 @@ RideRecord rideWithTrimmedTrack(
     elevationM: ride.elevationM,
     name: ride.name,
     routeId: ride.routeId,
+    setupId: ride.setupId,
     track: trimmed,
     feedback: ride.feedback,
     summary: ride.summary,

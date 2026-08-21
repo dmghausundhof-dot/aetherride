@@ -132,6 +132,14 @@ void main() {
       )?.id,
       'p1',
     );
+    expect(
+      RideTogetherPolicy.pickGroupForRide(
+        rideRouteId: 'r-other-city',
+        groups: [session, planned],
+        memberCounts: {'s1': 2, 'p1': 2},
+      ),
+      isNull,
+    );
   });
 
   test('Session-Gruppe nie als Treffen-Pin', () {

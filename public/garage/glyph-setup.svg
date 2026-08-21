@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Setup">
+  <title>FlowLine Setup</title>
+  <path d="M6.2 8.2 H17.8" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M6.2 12 H17.8" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M6.2 15.8 H17.8" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="9.4" cy="8.2" r="1.6" fill="#FF6A00"/>
+  <circle cx="14.8" cy="12" r="1.6" fill="#FF6A00"/>
+  <circle cx="11.2" cy="15.8" r="1.6" fill="#FF6A00"/>
+</svg>

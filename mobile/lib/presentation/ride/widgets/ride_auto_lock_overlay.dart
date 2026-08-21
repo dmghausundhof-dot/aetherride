@@ -43,72 +43,74 @@ class RideAutoLockOverlay extends StatelessWidget {
           child: ColoredBox(
             color: dim,
             child: Center(
-              child: Material(
-                color: AppColors.isSunlight(context)
-                    ? AppColors.sunSurface.withValues(alpha: 0.94)
-                    : AppColors.hofGround.withValues(alpha: 0.88),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.l,
-                    AppSpacing.m,
-                    AppSpacing.m,
-                    AppSpacing.m,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.lock,
-                        size: 28,
-                        color: AppColors.chromeFill(context),
-                      ),
-                      const SizedBox(width: AppSpacing.m),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            titleText,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.sheetInk(context),
-                            ),
-                          ),
-                          Text(
-                            hintText,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.meta(context),
-                            ),
-                          ),
-                          if (routeName != null && routeName!.trim().isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 180),
-                                child: Text(
-                                  routeName!.trim(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.sheetInk(context),
-                                  ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                child: Material(
+                  color: AppColors.isSunlight(context)
+                      ? AppColors.sunSurface.withValues(alpha: 0.94)
+                      : AppColors.hofGround.withValues(alpha: 0.88),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.l,
+                      AppSpacing.m,
+                      AppSpacing.m,
+                      AppSpacing.m,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lock,
+                          size: 28,
+                          color: AppColors.chromeFill(context),
+                        ),
+                        const SizedBox(width: AppSpacing.m),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                titleText,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.sheetInk(context),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(width: AppSpacing.m),
-                      FilledButton(
-                        key: unlockButtonKey,
-                        onPressed: onUnlock,
-                        child: Text(actionText),
-                      ),
-                    ],
+                              Text(
+                                hintText,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.meta(context),
+                                ),
+                              ),
+                              if (routeName != null &&
+                                  routeName!.trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    routeName!.trim(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.sheetInk(context),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.s),
+                        FilledButton(
+                          key: unlockButtonKey,
+                          onPressed: onUnlock,
+                          child: Text(actionText),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

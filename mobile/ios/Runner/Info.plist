@@ -80,9 +80,11 @@
 	<key>NSMotionUsageDescription</key>
 	<string>Bewegungssensoren für Ride-Metriken (Beschleunigung, Neigung).</string>
 	<key>NSCameraUsageDescription</key>
-	<string>FlowLine nutzt die Kamera für Fotos in Garage, nach der Fahrt und am Rad.</string>
+	<string>FlowLine nutzt die Kamera für Fotos und kurze Videos in Garage, nach der Fahrt und am Rad.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FlowLine nimmt Ton nur auf, wenn du nach der Fahrt ein Video mit der Kamera aufzeichnest.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>FlowLine liest Fotos aus der Mediathek für Profil, Stimmen, Garage und Fahrten.</string>
+	<string>FlowLine liest Fotos und Videos aus der Mediathek für Profil, Stimmen, Garage und Fahrten.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

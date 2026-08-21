@@ -13,11 +13,16 @@ Future<OrtSheetAction?> showOrtSheet(
   BuildContext context, {
   required MapPlace place,
   bool canAddVia = true,
+  bool onLiveRoute = false,
 }) {
   return showModalBottomSheet<OrtSheetAction>(
     context: context,
     showDragHandle: true,
-    builder: (ctx) => OrtSheet(place: place, canAddVia: canAddVia),
+    builder: (ctx) => OrtSheet(
+      place: place,
+      canAddVia: canAddVia,
+      onLiveRoute: onLiveRoute,
+    ),
   );
 }
 
@@ -26,10 +31,12 @@ class OrtSheet extends StatelessWidget {
     super.key,
     required this.place,
     this.canAddVia = true,
+    this.onLiveRoute = false,
   });
 
   final MapPlace place;
   final bool canAddVia;
+  final bool onLiveRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +78,11 @@ class OrtSheet extends StatelessWidget {
                 onPressed: () =>
                     Navigator.pop(context, OrtSheetAction.addVia),
                 icon: const Icon(Icons.add_location_alt_outlined),
-                label: Text(l10n.ortSheetVia),
+                label: Text(
+                  onLiveRoute
+                      ? l10n.discoverPlaceOnRoute
+                      : l10n.ortSheetVia,
+                ),
               ),
             if (canAddVia) const SizedBox(height: 8),
             OutlinedButton.icon(

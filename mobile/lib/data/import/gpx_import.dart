@@ -89,7 +89,11 @@ GpxTrack? parseGpx(String xml, {String fallbackName = 'GPX-Import'}) {
 
   return GpxTrack(
     name: name,
-    points: [for (final p in pts) [p.lng, p.lat]],
+    points: [
+      for (final p in pts)
+        if (p.elev != null && p.elev!.isFinite) [p.lng, p.lat, p.elev!]
+        else [p.lng, p.lat],
+    ],
     distanceKm: dist / 1000,
     elevationM: elevGain,
   );

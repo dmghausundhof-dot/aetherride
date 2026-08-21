@@ -20,6 +20,47 @@ function admin() {
 
 type OemMap = Record<string, string>;
 
+type CatalogGroup = {
+  id: string;
+  name: string;
+  bikes: ReturnType<typeof serializeManufacturers>[number]["bikes"];
+};
+
+function preferManufacturerId(a: string, b?: string) {
+  if (!b) return a;
+  if (a.startsWith("mfr-") && !b.startsWith("mfr-")) return a;
+  if (b.startsWith("mfr-") && !a.startsWith("mfr-")) return b;
+  return a;
+}
+
+/** Postgres hat Marken doppelt (`canyon` + `mfr-canyon`). Ein Eintrag pro Name. */
+function mergeManufacturersByName(list: CatalogGroup[]): CatalogGroup[] {
+  const byName = new Map<string, CatalogGroup>();
+  for (const m of list) {
+    const key = m.name.trim().toLowerCase();
+    if (!key) continue;
+    const existing = byName.get(key);
+    if (!existing) {
+      byName.set(key, {
+        id: preferManufacturerId(m.id),
+        name: m.name.trim(),
+        bikes: [...m.bikes],
+      });
+      continue;
+    }
+    const seen = new Set(existing.bikes.map((b) => b.id));
+    for (const b of m.bikes) {
+      if (!b.id || seen.has(b.id)) continue;
+      existing.bikes.push(b);
+      seen.add(b.id);
+    }
+    existing.id = preferManufacturerId(existing.id, m.id);
+  }
+  return [...byName.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  );
+}
+
 function oemFromSeed(raw: unknown): OemMap {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const out: OemMap = {};
@@ -162,7 +203,9 @@ export async function GET(req: Request) {
         });
       }
 
-      const manufacturers = [...byMfr.values()].filter((m) => m.bikes.length > 0);
+      const manufacturers = mergeManufacturersByName(
+        [...byMfr.values()].filter((m) => m.bikes.length > 0)
+      );
       const bikeCount = manufacturers.reduce((n, m) => n + m.bikes.length, 0);
       const oemRefs = manufacturers.reduce(
         (n, m) =>
@@ -186,11 +229,13 @@ export async function GET(req: Request) {
     }
   }
 
-  const manufacturers = serializeManufacturers(listCatalogManufacturers(), {
-    q,
-    manufacturer,
-    category,
-  });
+  const manufacturers = mergeManufacturersByName(
+    serializeManufacturers(listCatalogManufacturers(), {
+      q,
+      manufacturer,
+      category,
+    })
+  );
   const stats = catalogStats();
 
   return NextResponse.json({

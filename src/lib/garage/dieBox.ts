@@ -1,5 +1,5 @@
 /**
- * Die Box — Werkstatt IA. Tab stays Werkstatt; this is the resident stall.
+ * Die Box — Rad-IA. Tab bleibt intern werkstatt; das ist der Stand.
  * Mirrors mobile/lib/domain/garage/die_box.dart
  */
 import type { Bike, BikeCategory, BikeComponent, ComponentSlot, Setup } from "@/types/garage";
@@ -133,6 +133,35 @@ export function wheelLabel(bike: Bike): string | undefined {
   return bike.wheelSizeFront;
 }
 
+/** Fit-only slots: rider may add them, catalog OEM dump stays off the list. */
+const QUIET_OEM_SLOTS: ComponentSlot[] = [
+  "headset",
+  "front_hub",
+  "front_rim",
+  "rotor_front",
+];
+
+export function isQuietFitSlot(slot: ComponentSlot): boolean {
+  return QUIET_OEM_SLOTS.includes(slot);
+}
+
+function isQuietOemDump(c: BikeComponent): boolean {
+  return Boolean(c.componentModelId) && isQuietFitSlot(c.slot);
+}
+
+/** Ghosts: rider checklist, not fit-engineering slots. Schema invites those. */
+export function ghostSlotsFor(input: {
+  addable: ComponentSlot[];
+  installed: Iterable<ComponentSlot>;
+  schemaSlots?: ComponentSlot[];
+}): ComponentSlot[] {
+  const installed = new Set(input.installed);
+  const onSchema = new Set(input.schemaSlots ?? []);
+  return input.addable.filter(
+    (s) => !installed.has(s) && !isQuietFitSlot(s) && !onSchema.has(s)
+  );
+}
+
 /** Teile-Tab and Am Rad: addable slots plus rider-typed parts. Catalog OEM dump stays off. */
 export function listedWorkshopParts(
   parts: BikeComponent[],
@@ -140,13 +169,13 @@ export function listedWorkshopParts(
 ): BikeComponent[] {
   const listed: BikeComponent[] = [];
   for (const s of addable) {
-    const hit = parts.find((c) => c.slot === s);
+    const hit = parts.find((c) => c.slot === s && !isQuietOemDump(c));
     if (hit) listed.push(hit);
   }
   for (const c of parts) {
     if (listed.some((x) => x.id === c.id)) continue;
-    const explicit = Boolean(c.freeText) && !c.componentModelId;
-    if (explicit) listed.push(c);
+    const catalogDump = Boolean(c.componentModelId);
+    if (!catalogDump) listed.push(c);
   }
   return listed;
 }
@@ -165,6 +194,10 @@ export function addableSlotsFor(input: {
     "chain",
     "brake_front",
     "brake_rear",
+    "headset",
+    "front_hub",
+    "front_rim",
+    "rotor_front",
   ]);
   if (input.kind === "urban") {
     slots.add("light");
@@ -247,16 +280,13 @@ export function planDieBox(input: {
     if (hasLock) chips.push({ label: "Schloss", known: true });
     if (hasRack) chips.push({ label: "Träger", known: true });
     if (hasChain || chainMeasured) chips.push({ label: "Kette", known: true });
-    if (pressureKnown) chips.push({ label: "Druck", known: true });
   }
   if (gravel) {
-    if (pressureKnown) chips.push({ label: "Druck", known: true });
     if (hasBags) chips.push({ label: "Taschen", known: true });
     if (hasCockpit) chips.push({ label: "Cockpit", known: true });
     if (hasChain || chainMeasured) chips.push({ label: "Kette", known: true });
   }
   if (road) {
-    if (pressureKnown) chips.push({ label: "Druck", known: true });
     if (chainMeasured) chips.push({ label: "Kette", known: true });
     if (hasCockpit) chips.push({ label: "Cockpit", known: true });
   }
@@ -268,7 +298,6 @@ export function planDieBox(input: {
       });
     }
     if (sagKnown) chips.push({ label: "SAG", known: true });
-    if (pressureKnown) chips.push({ label: "Reifen", known: true });
     if (hasBrakes) chips.push({ label: "Bremsen", known: true });
     if (showParkTrail) chips.push({ label: "Park | Trail", known: true });
   }
@@ -276,6 +305,7 @@ export function planDieBox(input: {
     chips.push({ label: "CSC", known: true });
   }
   if (hasLights && !everyday) chips.push({ label: "Licht", known: true });
+  if (bike.serialNumber?.trim()) chips.push({ label: "Ausweis", known: true });
 
   const today: DieBoxTodayItem[] = [];
   if (!bike.isActive) {
@@ -321,11 +351,24 @@ export function planDieBox(input: {
     });
   }
   if (mtb && hasSuspension && !sagKnown) {
+    const fully = travelR > 0 || hasShock;
     today.push({
       id: "sagUnknown",
       title: "Federung merken",
-      hint: "Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.",
+      hint: fully
+        ? "Eine Zahl an Gabel und Dämpfer, abgelesen am Rad."
+        : "Eine Zahl an der Gabel, abgelesen am Rad.",
       cta: "Federung merken",
+      slot: fully ? undefined : "fork",
+    });
+  }
+  if (gravel && hasFork && !sagKnown && !mtb) {
+    today.push({
+      id: "sagUnknown",
+      title: "Federung merken",
+      hint: "Eine Zahl an der Gabel, abgelesen am Rad.",
+      cta: "Federung merken",
+      slot: "fork",
     });
   }
   if ((road || gravel || everyday) && !chainMeasured) {
@@ -417,6 +460,23 @@ export function planDieBox(input: {
     heuteRest: today.slice(1),
     isReady: readiness === "ready" && today.length === 0,
   };
+}
+
+/** Hof line: readiness + km. Not a 0–100 score. */
+export function bikeHealthLine(input: {
+  readiness: DieBoxReadiness;
+  odometerKm: number;
+  readyLabel: string;
+  almostLabel: string;
+  unknownLabel: string;
+}): string {
+  const label =
+    input.readiness === "ready"
+      ? input.readyLabel
+      : input.readiness === "almost"
+        ? input.almostLabel
+        : input.unknownLabel;
+  return `${label} · ${Math.round(input.odometerKm)} km`;
 }
 
 function buildSentence(p: {

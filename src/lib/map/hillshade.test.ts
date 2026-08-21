@@ -15,6 +15,7 @@ assert.equal(HILLSHADE_SOURCE.type, "raster-dem");
 assert.equal(HILLSHADE_SOURCE.encoding, "terrarium");
 assert.equal(HILLSHADE_LAYER.type, "hillshade");
 assert.equal(HILLSHADE_LAYER.source, HILLSHADE_SOURCE_ID);
+assert.equal(HILLSHADE_LAYER.paint["hillshade-exaggeration"], 0.48);
 
 assert.equal(
   hillshadeBeforeLayerId((id) => (id === "roads" ? {} : undefined)),

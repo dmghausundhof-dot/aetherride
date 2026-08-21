@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { hofSkyLine, isSkyWet } from "@/lib/home/hofSky";
 import {
   formatHofGateAway,
@@ -18,13 +19,22 @@ import { residentMeta, rideReturnForBike } from "@/lib/home/rideReturn";
 import { berlinSixtyMinLoopSuggestions } from "@/lib/discover/berlinLoops";
 import { hasCommunity } from "@/lib/community/tourCommunity";
 import { getMaintenanceSummary, lastRideForBike } from "@/lib/maintenance/summary";
+import { slotLabel } from "@/lib/catalog/slots";
+import { bikeHealthLine, planDieBox } from "@/lib/garage/dieBox";
 import { useHofLocation } from "@/hooks/useHofLocation";
 import { useHofTitle } from "@/hooks/useHofTitle";
-import { useAppStore } from "@/store/useAppStore";
-import { HofWatchCard } from "./HofWatchCard";
+import { profileForBikeCategory } from "@/lib/routing/profiles";
+import { WeatherGlyph } from "@/components/shared/WeatherGlyph";
 import { HofTafel } from "./HofTafel";
 import { HofCornerTools } from "@/components/app/HofCornerTools";
-import { buildHofTafel } from "@/lib/tours/tourAkte";
+import { buildHofTafel, catalogTourIdOf } from "@/lib/tours/tourAkte";
+import {
+  confirmationsFromReviews,
+  listingPatch,
+  listingSnapshotOf,
+  pickListingTafel,
+  tickTourListing,
+} from "@/lib/tours/tourListing";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import {
   listedRideGroups,
@@ -32,6 +42,13 @@ import {
 } from "@/store/useRideGroupStore";
 import { cn } from "@/lib/utils";
 import { HOF_TOKENS } from "@/lib/hof/tokens";
+import { buildRideTelemetry } from "@/lib/ride/rideTelemetry";
+import { RideTerrainPeek } from "@/components/ride/ActivitySparkline";
+import { terrainCaption } from "@/lib/ride/terrainCaption";
+import { rideTelemetryCopy } from "@/lib/i18n/rideTelemetryCopy";
+import { RadEmptyStage } from "@/components/garage/RadEmptyStage";
+import { RadStandFrame } from "@/components/garage/RadStandFrame";
+import { radSilhouetteSrc } from "@/lib/garage/radMark";
 
 type WeatherPayload = {
   current?: { temperature_2m?: number };
@@ -40,6 +57,8 @@ type WeatherPayload = {
 
 export function HofStand() {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const telCopy = rideTelemetryCopy(lang);
 
   const title = useHofTitle();
   const bikes = useAppStore((s) => s.bikes);
@@ -47,6 +66,7 @@ export function HofStand() {
   const setActiveBike = useAppStore((s) => s.setActiveBike);
   const rides = useAppStore((s) => s.rides);
   const savedRoutes = useAppStore((s) => s.savedRoutes);
+  const updateSavedRoute = useAppStore((s) => s.updateSavedRoute);
   const intervals = useAppStore((s) => s.maintenanceIntervals);
   const myReviews = useCommunityStore((s) => s.myReviews);
   const groups = useRideGroupStore((s) => s.groups);
@@ -60,10 +80,27 @@ export function HofStand() {
     ? rideReturnForBike({ bikeId: active.id, rides })
     : { kind: "neverOut" as const };
   const justBack = ret.kind === "justBack";
+  const lastRide = ret.rideId
+    ? rides.find((r) => r.id === ret.rideId)
+    : undefined;
+  const lastTel = lastRide ? buildRideTelemetry(lastRide.track) : null;
+  const healthLine = active
+    ? bikeHealthLine({
+        readiness: planDieBox({ bike: active }).readiness,
+        odometerKm: active.totalOdometerKm,
+        readyLabel: copy.workshopZoneReady,
+        almostLabel: copy.workshopBoxAlmost,
+        unknownLabel: copy.workshopBoxUnknown,
+      })
+    : null;
 
   const [weather, setWeather] = useState<WeatherPayload | null>(null);
   const [weatherResolved, setWeatherResolved] = useState(false);
   const [neighborCount, setNeighborCount] = useState<number | null>(null);
+  const [listingTafel, setListingTafel] = useState<{
+    text: string;
+    href: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!geoResolved) return;
@@ -77,6 +114,9 @@ export function HofStand() {
       lat: String(geo.lat),
       lon: String(geo.lng),
     });
+    if (active?.category) {
+      q.set("profile", profileForBikeCategory(active.category));
+    }
     void fetch(`/api/weather?${q}`)
       .then(async (r) => {
         const j = (await r.json()) as WeatherPayload & { error?: string };
@@ -96,7 +136,7 @@ export function HofStand() {
     return () => {
       cancelled = true;
     };
-  }, [geo, geoResolved]);
+  }, [geo, geoResolved, active?.category]);
 
   const loops = useMemo(
     () =>
@@ -153,6 +193,68 @@ export function HofStand() {
     };
   }, [gateId, justBack]);
 
+  useEffect(() => {
+    const now = new Date();
+    const own: Array<{
+      id: string;
+      name: string;
+      notice: "none" | "candidate" | "listed" | "reverted";
+      confirmCount: number;
+      candidateSince?: string | null;
+    }> = [];
+    for (const r of savedRoutes) {
+      if (
+        r.visibility !== "shared" &&
+        r.listing !== "candidate" &&
+        r.listing !== "listed" &&
+        r.listing !== "reverted"
+      ) {
+        continue;
+      }
+      const catalog = catalogTourIdOf(r);
+      const related = myReviews.filter(
+        (rev) => rev.tourId === r.id || rev.tourId === catalog
+      );
+      const decision = tickTourListing({
+        ...listingSnapshotOf(r),
+        isCatalog: Boolean(catalog),
+        confirmations: confirmationsFromReviews(related),
+        now,
+      });
+      if (decision.changed) {
+        updateSavedRoute(r.id, listingPatch(decision));
+        if (decision.notice === "reverted") {
+          void import("@/lib/community/tourShareRevoke").then((m) => {
+            m.revokeTourShareLocally(r.id, decision.shareEpoch);
+            void m.revokeTourShareOnServer(r.id, decision.shareEpoch);
+          });
+        }
+      }
+      own.push({
+        id: r.id,
+        name: r.name,
+        notice: decision.notice,
+        confirmCount: decision.confirmCount,
+        candidateSince: decision.candidateSince,
+      });
+    }
+    const text = pickListingTafel({ own });
+    if (!text) {
+      setListingTafel(null);
+      return;
+    }
+    const hit =
+      own.find((o) => o.notice === "reverted") ??
+      own.find((o) => o.notice === "candidate") ??
+      own.find((o) => o.notice === "listed");
+    setListingTafel({
+      text,
+      href: hit
+        ? `/library?akte=${encodeURIComponent(hit.id)}`
+        : "/discover?sheet=tours",
+    });
+  }, [savedRoutes, myReviews, updateSavedRoute]);
+
   const noGps = geoResolved && !geo;
   const gpsHonesty = noGps ? copy.gpsUnknown : "";
   const sky = noGps
@@ -175,19 +277,22 @@ export function HofStand() {
     if (summary.status !== "overdue" && summary.status !== "due_soon") {
       return null;
     }
-    const label = summary.topItem?.shortLabel ?? copy.careFallback;
+    const label = summary.topItem
+      ? slotLabel(summary.topItem.slot, lang)
+      : copy.careFallback;
     return {
       href: summary.href,
       text: copy.careInWorkshop(label),
       overdue: summary.status === "overdue",
     };
-  }, [active, intervals, rides, copy]);
+  }, [active, intervals, rides, copy, lang]);
 
   const group = listedRideGroups(groups)[0];
   const tafel = useMemo(
     () =>
       buildHofTafel({
         care,
+        listing: listingTafel,
         savedRoutes,
         myReviews,
         group: group
@@ -197,7 +302,7 @@ export function HofStand() {
             }
           : null,
       }),
-    [care, savedRoutes, myReviews, group]
+    [care, listingTafel, savedRoutes, myReviews, group]
   );
 
   const primaryHref = active
@@ -238,10 +343,15 @@ export function HofStand() {
           {sky ? (
             <p
               data-testid="hof-sky"
-              className="mt-2 text-[15px] font-bold lg:text-lg"
+              className="mt-2 flex items-center gap-2 text-[15px] font-bold lg:text-lg"
               style={{ color: HOF_TOKENS.sageOnDark }}
             >
-              {sky}
+              <WeatherGlyph
+                hint={weather?.trailHint}
+                offline={!weather && weatherResolved}
+                size={18}
+              />
+              <span>{sky}</span>
             </p>
           ) : null}
           {gpsHonesty ? (
@@ -260,18 +370,25 @@ export function HofStand() {
                   href={`/garage?bike=${encodeURIComponent(active.id)}`}
                   className="mb-3 block overflow-hidden rounded-2xl border border-border bg-surface"
                 >
-                  {/* User-captured data URLs / arbitrary hosts — not next/image remote. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <RadStandFrame
                     src={active.photoUrl}
                     alt=""
-                    className="h-28 w-full object-cover lg:h-44"
+                    photo
+                    heightClass="h-28 lg:h-44"
                   />
                 </Link>
               ) : (
-                <div data-testid="hof-parked-mark" className="mb-2">
-                  <ParkedMark />
-                </div>
+                <Link
+                  href={`/garage?bike=${encodeURIComponent(active.id)}`}
+                  data-testid="hof-parked-mark"
+                  className="mb-3 block overflow-hidden rounded-2xl border border-border"
+                >
+                  <RadStandFrame
+                    src={radSilhouetteSrc(active)}
+                    alt=""
+                    heightClass="h-28 lg:h-36"
+                  />
+                </Link>
               )}
               <h2 className="truncate text-xl font-extrabold">
                 <Link
@@ -322,6 +439,31 @@ export function HofStand() {
                   })}
                 </p>
               )}
+              {healthLine ? (
+                <Link
+                  href={`/garage?bike=${encodeURIComponent(active.id)}`}
+                  data-testid="hof-bike-health"
+                  className="mt-1 block text-[13px] font-bold text-chrome"
+                >
+                  {healthLine}
+                </Link>
+              ) : null}
+              {lastTel?.channels.elev && lastRide ? (
+                <Link
+                  href={
+                    ret.rideId
+                      ? `/post-ride?id=${encodeURIComponent(ret.rideId)}`
+                      : "/activities"
+                  }
+                  className="mt-3 block"
+                  data-testid="hof-ride-spark"
+                >
+                  <RideTerrainPeek
+                    telemetry={lastTel}
+                    caption={terrainCaption(lastTel, telCopy.hm)}
+                  />
+                </Link>
+              ) : null}
               {others.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {others.map((b) => (
@@ -329,9 +471,17 @@ export function HofStand() {
                       key={b.id}
                       type="button"
                       onClick={() => setActiveBike(b.id)}
-                      className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary hover:border-chrome hover:text-chrome"
+                      className="w-[7.5rem] overflow-hidden rounded-xl border border-border text-left hover:border-chrome"
                     >
-                      {copy.bringForward(b.name)}
+                      <RadStandFrame
+                        src={b.photoUrl || radSilhouetteSrc(b)}
+                        alt=""
+                        photo={Boolean(b.photoUrl)}
+                        heightClass="h-12"
+                      />
+                      <span className="block truncate px-2 py-1.5 text-[11px] font-semibold">
+                        {copy.bringForward(b.name)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -339,8 +489,8 @@ export function HofStand() {
             </section>
           ) : (
             <section className="mt-5">
-              <div className="flex h-28 items-center justify-center rounded-2xl border border-border lg:h-44">
-                <EmptyStandMark />
+              <div className="overflow-hidden rounded-2xl border border-dashed border-border">
+                <RadEmptyStage heightClass="h-28 lg:h-40" />
               </div>
               <h2
                 data-testid="hof-empty-stand"
@@ -466,66 +616,3 @@ function GateCard({
   );
 }
 
-function ParkedMark() {
-  return (
-    <svg width="128" height="56" viewBox="0 0 88 40" aria-hidden>
-      <g
-        className="text-sage"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="19" cy="25" r="9" />
-        <circle cx="69" cy="25" r="9" />
-        <path d="M19 25 L37 25 L32 8 L60 9 L69 25 L37 25 L60 9" />
-        <path d="M53 5 H70" />
-      </g>
-      <g
-        className="text-text-secondary"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      >
-        <line x1="8" y1="38" x2="80" y2="38" />
-        <line x1="44" y1="38" x2="44" y2="16" />
-      </g>
-    </svg>
-  );
-}
-
-function EmptyStandMark() {
-  return (
-    <svg width="120" height="48" viewBox="0 0 120 48" aria-hidden>
-      <line
-        x1="20"
-        y1="40"
-        x2="100"
-        y2="40"
-        stroke="currentColor"
-        className="text-text-secondary"
-        strokeWidth="2"
-      />
-      <line
-        x1="60"
-        y1="40"
-        x2="60"
-        y2="12"
-        stroke="currentColor"
-        className="text-text-secondary"
-        strokeWidth="2"
-      />
-      <line
-        x1="48"
-        y1="12"
-        x2="72"
-        y2="12"
-        stroke="currentColor"
-        className="text-text-secondary"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}

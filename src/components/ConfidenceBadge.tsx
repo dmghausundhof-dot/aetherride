@@ -1,12 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { recapChromeCopy } from "@/lib/i18n/recapChromeCopy";
 
 type Confidence = "low" | "medium" | "high";
-
-const LABEL: Record<Confidence, string> = {
-  low: "niedrig",
-  medium: "mittel",
-  high: "hoch",
-};
 
 /**
  * F-AI-003 ConfidenceBadge für Setup-Empfehlungen.
@@ -18,6 +16,13 @@ export function ConfidenceBadge({
   confidence: Confidence;
   className?: string;
 }) {
+  const copy = recapChromeCopy(useChromeLang());
+  const level =
+    confidence === "high"
+      ? copy.confHigh
+      : confidence === "medium"
+        ? copy.confMedium
+        : copy.confLow;
   return (
     <span
       className={cn(
@@ -28,7 +33,7 @@ export function ConfidenceBadge({
         className
       )}
     >
-      Konfidenz {LABEL[confidence]}
+      {copy.confPrefix} {level}
     </span>
   );
 }

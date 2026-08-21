@@ -2,6 +2,7 @@
  * G-SCH-03 mapper tests — run: npx tsx src/lib/garage/schema/mapper.test.ts
  */
 import { planBikeSchema } from "./mapper";
+import { schemaInviteSlots } from "./invites";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -71,5 +72,19 @@ for (const s of [
 ] as const) {
   assert(road.hotspotSlots.includes(s), `core ${s}`);
 }
+
+const invited = schemaInviteSlots({
+  hotspotSlots: ["tire_front", "fork", "frame", "saddle"],
+  installed: [],
+});
+assert(invited.length === 2, "two invitations on an empty schema");
+assert(invited[0] === "tire_front", "first core slot first");
+assert(
+  schemaInviteSlots({
+    hotspotSlots: ["stem", "frame", "saddle"],
+    installed: [],
+  }).join() === "stem,saddle",
+  "frame is not an invitation"
+);
 
 console.log("mapper.test.ts OK");

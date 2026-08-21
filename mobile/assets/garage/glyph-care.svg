@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Wartung">
+  <title>FlowLine Pflege</title>
+  <circle cx="9.2" cy="14.8" r="4.2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M12.2 11.8 L16.8 6.4 C17.6 5.6 18.8 5.6 19.6 6.4 C20.4 7.2 20.4 8.4 19.6 9.2 L15 13.8" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M15.6 8 L18.2 10.6" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

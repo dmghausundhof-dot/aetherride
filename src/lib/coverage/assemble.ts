@@ -15,6 +15,7 @@ import { fetchGooglePlacesNearby, type GooglePlacePoi } from "./google";
 import { fetchSchweizMobilNear, type SchweizMobilHit } from "./schweizmobil";
 import type { DachHonesty } from "./dach";
 import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
+import { fetchOpenMeteoWeather } from "@/lib/weather/openMeteoWeather";
 
 export type CoverageBikeClass = "mtb" | "gravel" | "road" | "urban";
 
@@ -37,6 +38,9 @@ export type CoveragePayload = {
   weather: {
     provider: string;
     trailHint?: string;
+    trailHintSource?: string;
+    precip72hMm?: number | null;
+    rideWindow?: { label: string; kind: string } | null;
     current?: unknown;
     attribution: string;
   } | null;
@@ -93,38 +97,47 @@ export function parseBikeClass(raw: string | null): CoverageBikeClass {
   return "road";
 }
 
-async function fetchWeather(lat: number, lng: number): Promise<{
+function soilProfileForBike(bike: CoverageBikeClass): string {
+  switch (bike) {
+    case "mtb":
+      return "mtb_allmountain";
+    case "gravel":
+      return "gravel";
+    case "urban":
+      return "urban";
+    default:
+      return "road";
+  }
+}
+
+async function fetchWeather(
+  lat: number,
+  lng: number,
+  bikeClass: CoverageBikeClass
+): Promise<{
   provider: string;
   trailHint?: string;
+  trailHintSource?: string;
+  precip72hMm?: number | null;
+  rideWindow?: { label: string; kind: string } | null;
   current?: unknown;
   attribution: string;
 } | null> {
   try {
-    const api = new URL("https://api.open-meteo.com/v1/forecast");
-    api.searchParams.set("latitude", String(lat));
-    api.searchParams.set("longitude", String(lng));
-    api.searchParams.set(
-      "current",
-      "temperature_2m,precipitation,weather_code,wind_speed_10m"
-    );
-    api.searchParams.set("forecast_days", "1");
-    api.searchParams.set("timezone", "auto");
-    const res = await fetch(api.toString(), {
+    const w = await fetchOpenMeteoWeather({
+      lat,
+      lon: lng,
+      profile: soilProfileForBike(bikeClass),
       signal: AbortSignal.timeout(4000),
-      next: { revalidate: 1800 },
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      current?: { precipitation?: number };
-    };
-    const precip = data?.current?.precipitation ?? 0;
-    const trailHint =
-      precip >= 5 ? "wet_likely" : precip >= 1 ? "damp_possible" : "dry_likely";
     return {
-      provider: "open-meteo",
-      trailHint,
-      current: data.current,
-      attribution: "Weather data by Open-Meteo.com",
+      provider: w.provider,
+      trailHint: w.trailHint,
+      trailHintSource: w.trailHintSource,
+      precip72hMm: w.precip72hMm,
+      rideWindow: w.rideWindow,
+      current: w.current,
+      attribution: w.attribution,
     };
   } catch {
     return null;
@@ -214,7 +227,7 @@ export async function assembleCoverageLive(opts: {
       lon: opts.lng,
       radiusKm: Math.min(36, radiusKm * 3),
     }),
-    fetchWeather(opts.lat, opts.lng),
+    fetchWeather(opts.lat, opts.lng, bikeClass),
     fetchGooglePlacesNearby({
       lat: opts.lat,
       lng: opts.lng,

@@ -150,7 +150,7 @@ void main() {
         lessThan(h - 8));
   });
 
-  testWidgets('Leerer Hof: Rad abstellen, kein Demo-Bike', (tester) async {
+  testWidgets('Leerer Hof: Rad anlegen, kein Demo-Bike', (tester) async {
     await tester.pumpWidget(_hofApp(bikes: const []));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -312,6 +312,7 @@ void main() {
     expect(find.text('Was reinkam'), findsOneWidget);
     expect(find.textContaining('Apple Watch'), findsNothing);
     expect(find.byKey(const Key('hof-resident-meta')), findsOneWidget);
+    expect(find.byKey(const Key('hof-bike-health')), findsOneWidget);
   });
 
   testWidgets('Hof: Tafel als Brett, kein Laden', (tester) async {

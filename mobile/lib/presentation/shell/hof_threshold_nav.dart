@@ -68,14 +68,16 @@ class HofThresholdNav extends StatelessWidget {
 
 class HofThresholdDestination {
   const HofThresholdDestination({
-    required this.icon,
-    required this.selectedIcon,
+    this.icon,
+    this.selectedIcon,
+    this.mark,
     required this.label,
     this.showBadge = false,
   });
 
-  final IconData icon;
-  final IconData selectedIcon;
+  final IconData? icon;
+  final IconData? selectedIcon;
+  final Widget Function(Color color, bool selected)? mark;
   final String label;
   final bool showBadge;
 }
@@ -114,11 +116,14 @@ class _HofThresholdTab extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Icon(
-                    selected ? destination.selectedIcon : destination.icon,
-                    size: 22,
-                    color: color,
-                  ),
+                  destination.mark?.call(color, selected) ??
+                      Icon(
+                        selected
+                            ? (destination.selectedIcon ?? destination.icon)
+                            : destination.icon,
+                        size: 22,
+                        color: color,
+                      ),
                   if (destination.showBadge)
                     Positioned(
                       right: -3,

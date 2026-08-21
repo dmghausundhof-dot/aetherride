@@ -35,3 +35,42 @@ export function enteredPressureToPsi(
 ): number {
   return pressureUsesBar(category) ? barToPsi(entered) : entered;
 }
+
+export function formatPressureValue(psi: number, usesBar: boolean): string {
+  return usesBar ? psiToBar(psi).toFixed(1) : String(Math.round(psi));
+}
+
+/** First logged front/rear psi on the setups list — same order as the app. */
+export function loggedTirePsi(
+  setups: { values: { adjusterKey: string; valueNum: number }[] }[]
+): { front?: number; rear?: number } {
+  let front: number | undefined;
+  let rear: number | undefined;
+  for (const s of setups) {
+    for (const v of s.values) {
+      if (v.adjusterKey === "tire_front.pressure_psi" && front == null) {
+        front = v.valueNum;
+      }
+      if (v.adjusterKey === "tire_rear.pressure_psi" && rear == null) {
+        rear = v.valueNum;
+      }
+    }
+    if (front != null && rear != null) break;
+  }
+  return { front, rear };
+}
+
+/** e.g. `1.8 / 2.0 bar` or `26 psi`. */
+export function formatLoggedTirePressure(
+  setups: { values: { adjusterKey: string; valueNum: number }[] }[],
+  usesBar: boolean
+): string | null {
+  const pair = loggedTirePsi(setups);
+  if (pair.front == null && pair.rear == null) return null;
+  const unit = usesBar ? "bar" : "psi";
+  if (pair.front != null && pair.rear != null) {
+    return `${formatPressureValue(pair.front, usesBar)} / ${formatPressureValue(pair.rear, usesBar)} ${unit}`;
+  }
+  const one = pair.front ?? pair.rear!;
+  return `${formatPressureValue(one, usesBar)} ${unit}`;
+}

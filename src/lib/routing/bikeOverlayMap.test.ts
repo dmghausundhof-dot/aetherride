@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { overlayFamilyForBike } from "./bikeOverlayClass";
 import {
+  bikeOverlayExcludeFarmTracks,
   bikeOverlayLayerFilter,
   bikeOverlaySurfaceLineColor,
   overlayClassesOn,
@@ -139,4 +140,17 @@ testRoadHidesMtb();
 testGravelKeepsS0S1();
 testSurfaceLineColorReadyWithoutField();
 testSurfaceEmptyUsesClassFallbackNotGrey();
+
+function testFarmTracksFilterDropsHighwayTrack() {
+  const base = bikeOverlayLayerFilter("gravel");
+  assert.notEqual(base, false);
+  const filtered = bikeOverlayExcludeFarmTracks(base);
+  assert.notEqual(filtered, false);
+  const json = JSON.stringify(filtered);
+  assert.ok(json.includes("highway"), "farm-track filter reads OSM highway");
+  assert.ok(json.includes("track"), "farm-track filter drops highway=track");
+  assert.equal(bikeOverlayExcludeFarmTracks(false), false);
+}
+
+testFarmTracksFilterDropsHighwayTrack();
 console.log("bikeOverlayMap.test.ts OK");

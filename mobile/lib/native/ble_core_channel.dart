@@ -620,7 +620,7 @@ class BleCoreChannel {
       });
 
     // Ride-Start ohne Picker: nur Standard-CSC/Power auto-koppeln.
-    // Bosch/Shimano brauchen eine bewusste Wahl in der Werkstatt.
+    // Bosch/Shimano brauchen eine bewusste Wahl am Rad.
     for (final hit in ranked) {
       if (bikeBleKindIsDrive(hit.kind)) continue;
       await _attachSensorDevice(
@@ -633,7 +633,7 @@ class BleCoreChannel {
     if (_device == null) {
       final drives = ranked.where((h) => bikeBleKindIsDrive(h.kind)).length;
       _statusDetail = drives > 0
-          ? 'Antrieb gesehen — in der Werkstatt koppeln (Bosch/Shimano)'
+          ? 'Antrieb gesehen — am Rad koppeln (Bosch/Shimano)'
           : 'Kein Tempo-Sensor in Reichweite';
     }
     return _device != null;
@@ -954,7 +954,7 @@ class BleCoreChannel {
     int? lastCode;
     for (var i = 0; i < max; i++) {
       if (i > 0) {
-        _progress('Verbinde … Retry ${i + 1}/$max');
+        _progress('Verbinde … Versuch ${i + 1}/$max');
         await _closeGattQuietly(device);
         await Future<void>.delayed(
           Duration(milliseconds: i == 1 ? 1500 : 3000),
@@ -1253,7 +1253,7 @@ class BleCoreChannel {
         _socPercent == null) {
       _statusDetail = _driveBonded
           ? '$who · erkannt — Tempo über den Sensor am Rad'
-          : '$who · erkannt — Akku nach Bestätigung in der Werkstatt';
+          : '$who · erkannt — Akku nach Bestätigung am Rad';
     } else {
       _statusDetail =
           caps.isEmpty ? '$who verbunden' : '$who · ${caps.join(', ')}';
@@ -1384,7 +1384,7 @@ class BleCoreChannel {
     if (_reconnectAttempts >= max) {
       _statusDetail =
           'Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, '
-          'in der Werkstatt erneut koppeln.';
+          'am Rad erneut koppeln.';
       debugPrint('ble_core reconnect: gave up after $_reconnectAttempts');
       return;
     }

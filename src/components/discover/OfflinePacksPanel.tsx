@@ -19,7 +19,13 @@ type PackRow = {
  * Browser-Download für Offline-Region-Packs (API).
  * Aktivierung/Valhalla nur in der Mobile-App — hier ehrlich nur Download.
  */
-export function OfflinePacksPanel({ className = "" }: { className?: string }) {
+export function OfflinePacksPanel({
+  className = "",
+  id,
+}: {
+  className?: string;
+  id?: string;
+}) {
   const lang = useChromeLang();
   const d = discoverUi(lang);
   const [packs, setPacks] = useState<PackRow[]>([]);
@@ -106,6 +112,7 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
 
   return (
     <div
+      id={id}
       className={`rounded-2xl border border-border bg-surface p-4 ${className}`}
     >
       <h3 className="mb-1 flex items-center gap-2 font-semibold">
@@ -144,8 +151,8 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
                       : [
                           size,
                           p.engines?.valhalla_tiles
-                            ? "Valhalla-Tiles"
-                            : "offline_graph",
+                            ? "Valhalla"
+                            : "Routing",
                         ]
                           .filter(Boolean)
                           .join(" · ")}

@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import type { LiveFeaturedBike } from "@/lib/shop/featuredSync";
 import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { ShopImageFallback } from "@/components/shop/ShopImageFallback";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { formatShopPrice } from "@/lib/shop/shopifyLocale";
@@ -35,9 +36,7 @@ export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
             onError={() => setImgBroken(true)}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-text-secondary">
-            {copy.shopNoImage}
-          </div>
+          <ShopImageFallback label={copy.shopNoImage} />
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-4">

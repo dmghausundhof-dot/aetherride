@@ -32,32 +32,38 @@
         {
           "offset_min": 1,
           "title": "Theodor-Heuss-Brücke / Bismarckplatz",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Central Neckar crossing with bike lanes that drops you straight onto the Neuenheim river meadows."
         },
         {
           "offset_min": 8,
           "title": "Neckarwiese",
-          "type": "water"
+          "type": "water",
+          "why_good": "Heidelberg’s big riverside lawn between Theodor-Heuss- and Ernst-Walz-Brücke, with a paved Neckar Valley Cycle Path along the bank."
         },
         {
           "offset_min": 12,
           "title": "Kiosk do Bairro / Café Bairro Neuenheim",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Neighborhood café stop at the Neckarwiese playground kiosk (and parent café on Neuenheimer Marktplatz) for coffee right on the loop."
         },
         {
           "offset_min": 25,
           "title": "Philosophengärtchen / Merianausblick",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "The iconic castle–Altstadt–Neckar panorama opposite the Old Town; reach via the paved Philosophenweg approach from Neuenheim (avoid the stepped Schlangenweg)."
         },
         {
           "offset_min": 35,
           "title": "Alte Brücke (Karl-Theodor-Brücke)",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "1788 sandstone Neckar bridge linking Neuenheim and the Altstadt — Heidelberg’s most photogenic river crossing for bikes."
         },
         {
           "offset_min": 48,
           "title": "Heidelberger Schloss",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Red-sandstone castle ruin above the Altstadt; the road climb is steep but e-bike friendly and rewards with terrace views over the Neckar valley."
         }
       ],
       "center": {
@@ -89,32 +95,38 @@
         {
           "offset_min": 1,
           "title": "Mannheimer Schloss",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "One of Europe’s largest Baroque palaces; the Ehrenhof is the official start of Mannheim’s Rhine–Waldpark bike outing."
         },
         {
           "offset_min": 8,
           "title": "Wasserturm Friedrichsplatz",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Mannheim’s Art Nouveau landmark and city pin — easy to clip onto the loop before dropping toward the Rhine."
         },
         {
           "offset_min": 18,
           "title": "Rheinpromenade / Stephanienufer",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Tree-lined Rhine bank through Lindenhof with ship traffic views and continuous bike-friendly promenade asphalt."
         },
         {
           "offset_min": 28,
           "title": "Waldpark Mannheim",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Mannheim’s green lung of floodplain forest and meadow paths where the promenade turns into quiet park riding."
         },
         {
           "offset_min": 38,
           "title": "Bellenkrappen (Reißinsel edge)",
-          "type": "water"
+          "type": "water",
+          "why_good": "Calm Old Rhine arm beside the Reißinsel nature reserve — ride the paved park paths along the water (bikes stay outside the core NSG)."
         },
         {
           "offset_min": 45,
           "title": "PURiNO Strandbad am Rhein",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Italian riverside restaurant on stilts at Strandbadweg 1 — the classic post-ride pasta/pizza stop before spinning back to the city."
         }
       ],
       "center": {
@@ -146,27 +158,32 @@
         {
           "offset_min": 1,
           "title": "Heidelberg-Kirchheim/Rohrbach Bahnhof",
-          "type": "transit"
+          "type": "transit",
+          "why_good": "Rhine-Neckar S-Bahn stop on the Wiesloch–Heidelberg line — ideal Discover staging for riders arriving from the corridor."
         },
         {
           "offset_min": 12,
           "title": "Boxberg forest roads",
-          "type": "trailhead"
+          "type": "trailhead",
+          "why_good": "Entry into the Königstuhl massif’s gravel Forstwege above Rohrbach, used by local gravel and MTB loops toward Kohlhof and Gaisberg."
         },
         {
           "offset_min": 30,
           "title": "Bierhelderhof",
-          "type": "cafe"
+          "type": "cafe",
+          "why_good": "Historic farm-inn on a clearing at ~260 m with beer garden, Hofladen, and a natural mid-loop pause above Rohrbach."
         },
         {
           "offset_min": 40,
           "title": "Ehrenfriedhof Heidelberg",
-          "type": "culture"
+          "type": "culture",
+          "why_good": "Hillside memorial cemetery on the Speyerer Hof / Gaisberg approach, a quiet landmark on the forest-road network."
         },
         {
           "offset_min": 52,
           "title": "Gaisbergturm & Mammutbäume",
-          "type": "viewpoint"
+          "type": "viewpoint",
+          "why_good": "Lookout tower on the 376 m Gaisberg with Rhine-plain views, next to the 1870s sequoia arboretum — the scenic high point of a ~60–75 min foothills spin."
         }
       ],
       "center": {

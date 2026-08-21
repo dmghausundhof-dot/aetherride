@@ -8,6 +8,15 @@ import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
 
+/** Seed `poi_stops` — minutes along the loop, not a global catalog. */
+export type RoutePoiStop = {
+  id: string;
+  atMin: number;
+  title: string;
+  kind: string;
+  whyGood?: string;
+};
+
 export interface RouteSuggestion {
   id: string;
   name: string;
@@ -28,6 +37,8 @@ export interface RouteSuggestion {
   center?: [number, number];
   /** Luftlinie vom Discover-Standort (km), wenn near gesetzt */
   distanceFromOriginKm?: number;
+  /** Selected-tour highlights from seed JSON (`poi_stops`). */
+  poiStops?: RoutePoiStop[];
 }
 
 interface RouteSeed {

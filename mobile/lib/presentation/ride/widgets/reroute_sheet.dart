@@ -11,8 +11,11 @@ enum RerouteSheetAction {
 }
 
 /// Online off-route sheet: Rejoin · Stay · Skip section.
-/// Caller handles offline toast separately (no fake replan).
-Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
+/// Caller: no graph and far off-route → toast. Graph or close splice → sheet.
+Future<RerouteSheetAction?> showRerouteSheet(
+  BuildContext context, {
+  bool online = true,
+}) {
   return showModalBottomSheet<RerouteSheetAction>(
     context: context,
     isScrollControlled: false,
@@ -45,7 +48,7 @@ Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                l10n.rerouteHint,
+                online ? l10n.rerouteHint : l10n.rerouteHintOffline,
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                       color: AppColors.meta(ctx),
                     ),

@@ -1,5 +1,13 @@
 import type { MapRouteLayer } from "@/components/MapView";
-import type { PlanDraft, QuickOption } from "@/lib/routing/planDraft";
+import {
+  type PlanDraft,
+  type QuickOption,
+  joinPlanLineToPins,
+  startOf,
+  endOf,
+  planSteepLineSlices,
+  planSurfaceLineSlices,
+} from "@/lib/routing/planDraft";
 import type { TrailSegment } from "@/lib/routing/trailSegments";
 import { buildElevationFromTrack } from "@/lib/routing/elevationProfile";
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
@@ -26,6 +34,8 @@ export function buildDiscoverMapLayers(opts: {
   rundkursOnly?: boolean;
   /** Filtert/highlighted Seed-Trails nach RideProfile (S0–S3+). */
   rideProfileId?: RideProfileId | null;
+  /** Dim the live A–B ribbon while a reshape is in flight (Komoot). */
+  staleActive?: boolean;
 }): MapRouteLayer[] {
   const {
     quickOptions: rawQuick,
@@ -34,6 +44,7 @@ export function buildDiscoverMapLayers(opts: {
     showTrails,
     rundkursOnly = false,
     rideProfileId = null,
+    staleActive = false,
   } = opts;
   const draft = rundkursOnly
     ? sanitizeDraftForRundkurs(opts.draft)
@@ -116,6 +127,17 @@ export function buildDiscoverMapLayers(opts: {
   }
 
   if (draft.computed?.geometry && draft.computed.geometry.coordinates.length >= 2) {
+    const start = startOf(draft);
+    const dest = endOf(draft);
+    const coords = (draft.computed.geometry.coordinates ?? []) as [
+      number,
+      number,
+    ][];
+    const joined = joinPlanLineToPins(coords, { start, end: dest });
+    const geometry: GeoJSON.LineString = {
+      ...draft.computed.geometry,
+      coordinates: joined,
+    };
     // When we have approach+tour layers, still show merged as active outline
     // unless it's pure tour adopt without parts
     const hasParts = Boolean(
@@ -124,31 +146,79 @@ export function buildDiscoverMapLayers(opts: {
     if (!hasParts || draft.mode === "quick" || draft.mode === "point_to_point") {
       layers.push({
         id: "active",
-        geometry: draft.computed.geometry,
+        geometry,
         role:
           draft.computed.engine?.includes("pin") ||
           draft.computed.engine?.includes("demo")
             ? "approx"
             : "active",
+        opacity: staleActive ? 0.45 : undefined,
       });
     } else if (!draft.layers?.tour && !draft.layers?.trail) {
       layers.push({
         id: "active",
-        geometry: draft.computed.geometry,
+        geometry,
         role: "active",
+        opacity: staleActive ? 0.45 : undefined,
       });
     } else {
       // hybrid with parts: active = merged lightly, tour/trail already drawn
       layers.push({
         id: "active-merged",
-        geometry: draft.computed.geometry,
+        geometry,
         role: "active",
-        opacity: 0.35,
+        opacity: staleActive ? 0.28 : 0.35,
         width: 6,
       });
     }
   }
 
+  return layers;
+}
+
+/** Grade + surface overlays on the live A–B ribbon (Komoot / AllTrails). */
+export function buildPlanGradeOverlayLayers(opts: {
+  line: [number, number][];
+  elevM: number[];
+  distKm?: number[] | null;
+  surfaceBands?: { fromKm: number; toKm: number; surface: string | null }[];
+}): MapRouteLayer[] {
+  const layers: MapRouteLayer[] = [];
+  const surfaces = planSurfaceLineSlices({
+    line: opts.line,
+    bands: opts.surfaceBands ?? [],
+  });
+  surfaces.forEach((slice, i) => {
+    const role =
+      slice.kind === "asphalt"
+        ? "paved"
+        : slice.kind === "gravel"
+          ? "gravel"
+          : "unpaved";
+    const prefix =
+      slice.kind === "asphalt"
+        ? "paved"
+        : slice.kind === "gravel"
+          ? "gravel"
+          : "unpaved";
+    layers.push({
+      id: `${prefix}-${i}`,
+      geometry: { type: "LineString", coordinates: slice.coords },
+      role,
+    });
+  });
+  const steep = planSteepLineSlices({
+    line: opts.line,
+    elevM: opts.elevM,
+    distKm: opts.distKm,
+  });
+  steep.forEach((coords, i) => {
+    layers.push({
+      id: `steep-${i}`,
+      geometry: { type: "LineString", coordinates: coords },
+      role: "steep",
+    });
+  });
   return layers;
 }
 

@@ -58,7 +58,7 @@ void main() {
     expect(find.textContaining('Tour finden'), findsNothing);
   });
 
-  testWidgets('Zurück vom Laden in der Werkstatt, nicht als Tab',
+  testWidgets('Zurück vom Laden am Rad, nicht als Tab',
       (tester) async {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 2.625;

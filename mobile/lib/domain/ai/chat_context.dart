@@ -115,6 +115,8 @@ Map<String, dynamic> bikeToChatJson(
     if (b.frameSize != null) 'frameSize': b.frameSize,
     if (b.travelFrontMm != null) 'travelFrontMm': b.travelFrontMm,
     if (b.travelRearMm != null) 'travelRearMm': b.travelRearMm,
+    if (b.owner.color != null) 'color': b.owner.color,
+    if (b.owner.weightKg != null) 'weightKg': b.owner.weightKg,
     if (wheelApiId(b.wheelSize) != null)
       'wheelSizeFront': wheelApiId(b.wheelSize),
     'isActive': b.isActive,
@@ -169,12 +171,19 @@ Map<String, dynamic> buildChatApiBody({
   RangeCalibration? calibration,
   List<CoachNotice> notices = const [],
   String lang = 'de',
+  double? lat,
+  double? lon,
+  String? routingProfile,
 }) {
   final sport = active != null ? bikeTypeApiId(active.category) : 'enduro';
   return {
     'query': query,
     'tool': tool,
     'lang': lang,
+    if (lat != null) 'lat': lat,
+    if (lon != null) 'lon': lon,
+    if (routingProfile != null && routingProfile.isNotEmpty)
+      'routingProfile': routingProfile,
     'profile': {
       ...profile.toJson(),
       'riderWeightKg': effectiveWeightKg,

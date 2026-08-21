@@ -67,6 +67,7 @@ class EmptyStateIllustration extends StatelessWidget {
     this.onAction,
     this.actionIcon,
     this.icon,
+    this.illustration,
     this.compact = false,
   });
 
@@ -76,6 +77,7 @@ class EmptyStateIllustration extends StatelessWidget {
   final VoidCallback? onAction;
   final IconData? actionIcon;
   final IconData? icon;
+  final Widget? illustration;
 
   /// Kleinere Variante für Screens, auf denen der Leerzustand nicht die
   /// ganze Fläche einnimmt (z. B. unter einer bereits gefüllten Liste),
@@ -93,7 +95,9 @@ class EmptyStateIllustration extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null)
+          if (illustration != null)
+            illustration!
+          else if (icon != null)
             Icon(
               icon,
               size: iconSize,

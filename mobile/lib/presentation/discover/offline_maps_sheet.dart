@@ -16,25 +16,54 @@ import '../../core/theme/app_theme.dart';
 import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_catalog.dart';
+import '../../data/routing/offline_pack_catalog_client.dart';
 import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/routing/offline_pmtiles_store.dart';
 import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/map_style_url.dart';
+import 'offline_coverage_sketch.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/overlay_regions.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 
-/// Offline-Karten: gebaute Region-Packs (Graph + MapLibre-Kacheln).
+/// Offline-Routing: gebaute Region-Packs (Graph + optionale Übersicht).
+Future<bool?> openOfflineMapsSheet(
+  BuildContext context, {
+  double? userLng,
+  double? userLat,
+  String? focusPackId,
+  VoidCallback? onDownloadPaused,
+  ValueChanged<List<double>>? onShowOnMap,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => OfflineMapsSheet(
+      userLng: userLng,
+      userLat: userLat,
+      focusPackId: focusPackId,
+      onDownloadPaused: onDownloadPaused,
+      onShowOnMap: onShowOnMap,
+    ),
+  );
+}
+
 class OfflineMapsSheet extends StatefulWidget {
   const OfflineMapsSheet({
     super.key,
     this.userLng,
     this.userLat,
+    this.focusPackId,
+    this.onDownloadPaused,
+    this.onShowOnMap,
   });
 
   final double? userLng;
   final double? userLat;
+  final String? focusPackId;
+  final VoidCallback? onDownloadPaused;
+  final ValueChanged<List<double>>? onShowOnMap;
 
   @override
   State<OfflineMapsSheet> createState() => _OfflineMapsSheetState();
@@ -48,12 +77,20 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   String? _valhallaStatus;
   String? _engineHint;
   bool _loading = true;
+  bool _catalogReady = false;
   bool _busy = false;
+  bool _downloadCancelled = false;
+  http.Client? _downloadClient;
   String? _progress;
   double? _progressValue;
   String? _catalogNote;
   bool _basemapReady = false;
   Set<String> _installed = {};
+  Map<String, String> _localBuiltAt = {};
+  List<double>? _packBbox;
+  List<List<double>>? _packRing;
+  int _storageBytes = 0;
+  bool _prefsChanged = false;
   List<OfflinePackRow> _regions = [
     for (final r in kOverlayRegions)
       OfflinePackRow(
@@ -74,28 +111,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
 
   Future<void> _fetchCatalog() async {
     try {
-      final res = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/offline/packs'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 8));
-      List<OfflinePackRow> apiPacks = [];
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data is Map) {
-          for (final raw in (data['packs'] as List? ?? const [])) {
-            final row = parseOfflinePackRow(raw);
-            if (row != null) apiPacks.add(row);
-          }
-        }
-      }
-      final cdnPacks = await _fetchCdnCatalog();
-      final packs = mergePreferReady(apiPacks, cdnPacks);
+      final merged = await loadOfflinePackCatalog();
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
-      final merged = mergeOfflineCatalog(
-        api: packs,
-        local: kOverlayRegions,
-      );
       final ready = merged.where((p) => p.isReady).length;
       setState(() {
         _regions = sortOfflinePacks(
@@ -103,60 +121,17 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           userLng: widget.userLng,
           userLat: widget.userLat,
         );
-        _catalogNote = packs.isEmpty
-            ? l10n.offlineNoRemoteDach
-            : ready == 0
-                ? l10n.offlineNoBuiltPacks
-                : l10n.offlinePacksReadyLabel(ready);
+        _catalogNote = ready == 0 ? l10n.offlineDachCatalog : null;
+        _catalogReady = true;
       });
     } catch (_) {
-      try {
-        final cdnPacks = await _fetchCdnCatalog();
-        if (cdnPacks.isNotEmpty && mounted) {
-          final merged = mergeOfflineCatalog(
-            api: cdnPacks,
-            local: kOverlayRegions,
-          );
-          final ready = merged.where((p) => p.isReady).length;
-          setState(() {
-            _regions = sortOfflinePacks(
-              merged,
-              userLng: widget.userLng,
-              userLat: widget.userLat,
-            );
-            _catalogNote = ready == 0
-                ? AppLocalizations.of(context).offlineDachCatalog
-                : AppLocalizations.of(context).offlinePacksReadyLabel(ready);
-          });
-          return;
-        }
-      } catch (_) {}
       if (mounted) {
-        setState(
-          () => _catalogNote = AppLocalizations.of(context).offlineDachCatalog,
-        );
+        setState(() {
+          _catalogNote = AppLocalizations.of(context).offlineDachCatalog;
+          _catalogReady = true;
+        });
       }
       _sortRegions();
-    }
-  }
-
-  Future<List<OfflinePackRow>> _fetchCdnCatalog() async {
-    try {
-      final res = await http.get(
-        Uri.parse(AppConfig.offlinePacksCatalogCdnUrl),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return const [];
-      final data = jsonDecode(res.body);
-      if (data is! Map) return const [];
-      final packs = <OfflinePackRow>[];
-      for (final raw in (data['packs'] as List? ?? const [])) {
-        final row = parseOfflinePackRow(raw);
-        if (row != null) packs.add(row);
-      }
-      return packs;
-    } catch (_) {
-      return const [];
     }
   }
 
@@ -173,6 +148,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
 
   @override
   void dispose() {
+    if (_busy) widget.onDownloadPaused?.call();
+    _downloadCancelled = true;
+    _downloadClient?.close();
     _urlCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -187,33 +165,47 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     String? activated;
     String? engineHint;
     var basemapReady = false;
+    List<double>? packBbox;
     try {
       final m = await OfflineMapsPrefs.read();
       override = (m['pmtilesUrl'] as String?) ?? '';
       region = m['regionPack'] as String?;
-      activated = m['activatedPackPath'] as String?;
+      activated = (m['activatedPackPath'] as String?)?.trim();
+      if (activated != null && activated.isEmpty) activated = null;
       engineHint = m['engineHint'] as String?;
       basemapReady = m['basemapReady'] == true;
+      packBbox = await OfflinePackDirs.activatedCoverageBbox() ??
+          OfflineMapsPrefs.packBboxFrom(m);
+    } catch (_) {}
+    List<List<double>>? packRing;
+    try {
+      packRing = await OfflinePackDirs.activatedCoverageRing();
     } catch (_) {}
     if (activated != null && activated.isNotEmpty) {
       final dir = Directory(activated);
       if (!await OfflinePackDirs.directoryIsLegitimate(dir)) {
+        _prefsChanged = true;
         await OfflineMapsPrefs.merge({
           'regionPack': null,
           'activatedPackPath': null,
           'engineHint': null,
           'packBbox': null,
           'basemapReady': null,
+          'activatedAt': null,
         });
         region = null;
         activated = null;
         engineHint = null;
         basemapReady = false;
+        packBbox = null;
+        packRing = null;
         OfflineTilesStore.instance.clearCache();
       }
     }
     final installed = await _scanInstalled();
+    final builtAt = await OfflinePackDirs.builtAtById();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
+    final storage = await _scanStorage();
     if (!mounted) return;
     setState(() {
       _urlCtrl.text = override.isNotEmpty
@@ -227,8 +219,18 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _valhallaStatus = status;
       _basemapReady = basemapReady;
       _installed = installed;
+      _localBuiltAt = builtAt;
+      _packBbox = packBbox;
+      _packRing = packRing;
+      _storageBytes = storage;
       _loading = false;
     });
+  }
+
+  Future<int> _scanStorage() async {
+    final g = await OfflinePackDirs.totalBytes();
+    final b = await OfflinePmtilesStore.totalBytes();
+    return g + b;
   }
 
   Future<void> _savePrefs({
@@ -239,10 +241,13 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     List<double>? packBbox,
     bool? basemapReady,
   }) async {
+    _prefsChanged = true;
     await OfflineMapsPrefs.merge({
       if (pmtilesUrl != null) 'pmtilesUrl': pmtilesUrl,
       if (regionPack != null) 'regionPack': regionPack,
       if (activatedPackPath != null) 'activatedPackPath': activatedPackPath,
+      if (activatedPackPath != null)
+        'activatedAt': DateTime.now().toUtc().toIso8601String(),
       if (engineHint != null) 'engineHint': engineHint,
       if (packBbox != null) 'packBbox': packBbox,
       if (basemapReady != null) 'basemapReady': basemapReady,
@@ -271,7 +276,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     Uri url, {
     void Function(int received, int? total)? onBytes,
   }) async {
+    if (_downloadCancelled || !mounted) return null;
     final client = http.Client();
+    _downloadClient = client;
     try {
       final req = http.Request('GET', url);
       final res = await client.send(req).timeout(const Duration(seconds: 20));
@@ -281,14 +288,19 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       var got = 0;
       await for (final chunk
           in res.stream.timeout(const Duration(seconds: 45))) {
+        if (_downloadCancelled || !mounted) return null;
         out.add(chunk);
         got += chunk.length;
         onBytes?.call(got, total);
       }
       if (out.length == 0) return null;
       return out.takeBytes();
+    } catch (_) {
+      if (_downloadCancelled) return null;
+      rethrow;
     } finally {
       client.close();
+      if (identical(_downloadClient, client)) _downloadClient = null;
     }
   }
 
@@ -298,6 +310,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   ) async {
     Uint8List? last;
     for (final url in urls) {
+      if (_downloadCancelled || !mounted) return null;
       try {
         final bytes = await _streamDownload(
           url,
@@ -350,8 +363,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   }
 
   bool _isActive(OfflinePackRow r) {
-    if (_regionPref == r.name) return true;
-    return _activatedPath?.contains('/${r.id}') ?? false;
+    final path = (_activatedPath ?? '').replaceAll('\\', '/');
+    if (path.isEmpty) return false;
+    return p.basename(path) == r.id;
   }
 
   Future<void> _activateExisting(OfflinePackRow region) async {
@@ -361,10 +375,12 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       throw Exception(
         mounted
             ? AppLocalizations.of(context).offlineInvalidGraphFolder(region.id)
-            : 'Ordner ${region.id} enthält keinen gültigen Graph für diese Region',
+            : 'Ordner ${region.id} enthält keinen gültigen Graph für dieses Pack',
       );
     }
-    final mapOk = await OfflineBasemap.hasRegionId(region.id);
+    final mapOk = await OfflinePmtilesStore.isReady(
+      basemapArchiveIdForBbox(region.bbox),
+    );
     await _savePrefs(
       regionPack: region.name,
       activatedPackPath: regionDir.path,
@@ -374,6 +390,13 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     );
     OfflineTilesStore.instance.clearCache();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
+    if (mounted) {
+      setState(() {
+        _progress =
+            AppLocalizations.of(context).offlineProgressActivating;
+      });
+    }
+    final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
     if (!mounted) return;
     setState(() {
       _regionPref = region.name;
@@ -381,10 +404,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _engineHint = 'offline_graph';
       _valhallaStatus = status;
       _basemapReady = mapOk;
+      _packBbox = region.bbox;
+      _packRing = ring?.outline;
     });
-    if (!mapOk && region.bbox != null) {
-      await _downloadBasemap(region);
-    }
   }
 
   Future<OfflineBasemapResult> _downloadBasemap(OfflinePackRow region) async {
@@ -408,24 +430,27 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       }
     }
     setState(() {
-      _progress = AppLocalizations.of(context).offlineProgressBasemap(archiveId);
+      _progress =
+          AppLocalizations.of(context).offlineProgressBasemap(archiveId);
       _progressValue = 0;
     });
     try {
       await OfflinePmtilesStore.downloadArchive(
         id: archiveId,
         onProgress: (got, total) {
-          if (!mounted) return;
+          if (!mounted || _downloadCancelled) return;
           final t = total != null && total > 0 ? formatPackBytes(total) : '?';
           setState(() {
             _progressValue =
                 total != null && total > 0 ? (got / total).clamp(0, 1) : null;
-            _progress = AppLocalizations.of(context).offlineProgressBasemapBytes(
+            _progress =
+                AppLocalizations.of(context).offlineProgressBasemapBytes(
               formatPackBytes(got),
               t,
             );
           });
         },
+        isCancelled: () => _downloadCancelled || !mounted,
       );
       final local = await OfflinePmtilesStore.localStyleUri(archiveId);
       if (local != null) {
@@ -438,8 +463,13 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         }
         return OfflineBasemapResult.success;
       }
+    } on OfflineDownloadCancelled {
+      return OfflineBasemapResult.failed;
     } catch (e) {
       debugPrint('PMTiles archive $archiveId: $e');
+    }
+    if (_downloadCancelled || !mounted) {
+      return OfflineBasemapResult.failed;
     }
     final style = await AppConfig.resolveMapStyleUrl();
     if (skipMapLibreOfflineRegion(style)) {
@@ -475,21 +505,29 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     return result;
   }
 
-  Future<void> _onRegionTap(OfflinePackRow region) async {
+  Future<void> _onRegionTap(
+    OfflinePackRow region, {
+    bool forceDownload = false,
+  }) async {
     if (_busy) return;
     if (!region.isReady && region.id != kBundledOfflineGraphRegionId) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).offlinePackNotBuilt(_regionLabel(region)),
+            AppLocalizations.of(context)
+                .offlinePackNotBuilt(_regionLabel(region)),
           ),
         ),
       );
       return;
     }
     final installed = _installed.contains(region.id);
-    if (installed && !_isActive(region)) {
+    if (installed && !forceDownload) {
+      if (_isActive(region)) {
+        if (mounted) Navigator.of(context).pop(_prefsChanged);
+        return;
+      }
       setState(() {
         _busy = true;
         _progress = AppLocalizations.of(context).offlineProgressActivating;
@@ -505,7 +543,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
             ),
           ),
         );
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(_prefsChanged);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -529,7 +567,43 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       }
       return;
     }
+    if (packNeedsDownloadConfirm(region)) {
+      final l10n = AppLocalizations.of(context);
+      final size = formatPackBytes(region.bytes);
+      final ok = await _confirmSize(
+        title: l10n.offlineConfirmLargeTitle,
+        body: l10n.offlineConfirmLargeBody(_regionLabel(region), size),
+      );
+      if (!ok) return;
+    }
     await _downloadAndActivate(region);
+  }
+
+  Future<bool> _confirmSize({
+    required String title,
+    required String body,
+    String? confirmLabel,
+  }) async {
+    if (!mounted) return false;
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(confirmLabel ?? l10n.offlineConfirmLoad),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
   }
 
   Future<void> _downloadAndActivate(OfflinePackRow region) async {
@@ -632,6 +706,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       if (!gotPack) {
         throw Exception(l10n.offlineDownloadEmpty);
       }
+      if (_downloadCancelled || !mounted) {
+        throw const OfflineDownloadCancelled();
+      }
 
       List<double>? bbox = region.bbox;
       final rawBbox = manifest?['bbox'];
@@ -672,8 +749,24 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
             'id': region.id,
             'name': (manifest?['name'] as String?) ?? region.name,
             'bbox': bbox,
+            if ((region.builtAt ?? manifest?['builtAt']) != null)
+              'builtAt': region.builtAt ?? manifest?['builtAt'],
           }),
         );
+      } else {
+        try {
+          final existing = jsonDecode(await manOut.readAsString());
+          if (existing is Map &&
+              (existing['builtAt'] == null ||
+                  '${existing['builtAt']}'.trim().isEmpty)) {
+            final stamp = region.builtAt ?? manifest?['builtAt'];
+            if (stamp is String && stamp.trim().isNotEmpty) {
+              existing['builtAt'] = stamp;
+              existing['id'] = existing['id'] ?? region.id;
+              await manOut.writeAsString(jsonEncode(existing));
+            }
+          }
+        } catch (_) {}
       }
 
       if (await regionDir.exists()) {
@@ -698,15 +791,17 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       await downloadBikeOverlayIntoPack(regionDir, region.id);
       OfflineTilesStore.instance.clearCache();
       final status = await OfflineTilesStore.instance.valhallaLinkStatus();
-
-      var mapResult = OfflineBasemapResult.failed;
-      if (bbox != null && bbox.length >= 4) {
-        mapResult = await _downloadBasemap(
-          region.copyWith(bbox: bbox, name: region.name),
-        );
-      }
+      final archiveId = basemapArchiveIdForBbox(bbox);
+      final mapOk = await OfflinePmtilesStore.isReady(archiveId);
+      await _savePrefs(basemapReady: mapOk);
 
       final installed = await _scanInstalled();
+      final builtAt = await OfflinePackDirs.builtAtById();
+      final storage = await _scanStorage();
+      if (mounted) {
+        setState(() => _progress = l10n.offlineProgressActivating);
+      }
+      final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
       if (!mounted) return;
       setState(() {
         _regionPref = (manifest?['name'] as String?) ?? region.name;
@@ -714,31 +809,31 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         _engineHint = hint;
         _valhallaStatus = status;
         _installed = installed;
+        _localBuiltAt = builtAt;
+        _packBbox = bbox;
+        _packRing = ring?.outline;
+        _basemapReady = mapOk;
+        _storageBytes = storage;
         _progress = null;
         _progressValue = null;
       });
-      final mapNote = switch (mapResult) {
-        OfflineBasemapResult.success => l10n.offlineReadyMapRouting,
-        OfflineBasemapResult.timedOut => l10n.offlineRoutingBg,
-        OfflineBasemapResult.skippedPmtiles => l10n.offlineBasemapFail,
-        OfflineBasemapResult.failed => l10n.offlineTilesMissing,
-      };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             sourceLabel == 'bundle'
                 ? l10n.offlineDemoGraph(_regionLabel(region))
-                : '${_regionLabel(region)}: $mapNote',
+                : l10n.offlineSnackRoutingOnly(_regionLabel(region)),
           ),
         ),
       );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(_prefsChanged);
     } catch (e) {
       if (tmpDir != null && await tmpDir.exists()) {
         try {
           await tmpDir.delete(recursive: true);
         } catch (_) {}
       }
+      if (_downloadCancelled || e is OfflineDownloadCancelled) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -806,32 +901,19 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         ),
       ),
     );
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(_prefsChanged);
   }
 
   Future<void> _clearActivatedPack() async {
-    String? activeId;
-    for (final r in _regions) {
-      if (_isActive(r)) {
-        activeId = r.id;
-        break;
-      }
-    }
-    if (activeId != null) {
-      await OfflineBasemap.deleteRegionId(activeId);
-      try {
-        final docs = await getApplicationDocumentsDirectory();
-        final dir = Directory(p.join(docs.path, 'regions', activeId));
-        if (await dir.exists()) await dir.delete(recursive: true);
-      } catch (_) {}
-    }
     await OfflineMapsPrefs.merge({
       'regionPack': null,
       'activatedPackPath': null,
       'engineHint': null,
       'packBbox': null,
       'basemapReady': null,
+      'activatedAt': null,
     });
+    _prefsChanged = true;
     OfflineTilesStore.instance.clearCache();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     final installed = await _scanInstalled();
@@ -843,14 +925,118 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _valhallaStatus = status;
       _basemapReady = false;
       _installed = installed;
+      _packBbox = null;
+      _packRing = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context).offlineRemoved),
       ),
     );
-    if (!mounted) return;
-    Navigator.of(context).pop(true);
+  }
+
+  Future<void> _deleteInstalled(OfflinePackRow region) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await OfflineBasemap.deleteRegionId(region.id);
+      await OfflinePackDirs.deleteId(region.id);
+      _prefsChanged = true;
+      final wasActive = _isActive(region);
+      if (wasActive) {
+        await OfflineMapsPrefs.merge({
+          'regionPack': null,
+          'activatedPackPath': null,
+          'engineHint': null,
+          'packBbox': null,
+          'basemapReady': null,
+          'activatedAt': null,
+        });
+      }
+      OfflineTilesStore.instance.clearCache();
+      final installed = await _scanInstalled();
+      final builtAt = await OfflinePackDirs.builtAtById();
+      final storage = await _scanStorage();
+      final status = await OfflineTilesStore.instance.valhallaLinkStatus();
+      if (!mounted) return;
+      setState(() {
+        _installed = installed;
+        _localBuiltAt = builtAt;
+        _storageBytes = storage;
+        _valhallaStatus = status;
+        if (wasActive) {
+          _regionPref = null;
+          _activatedPath = null;
+          _engineHint = null;
+          _packBbox = null;
+          _packRing = null;
+          _basemapReady = false;
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _onOverviewTap() async {
+    if (_busy) return;
+    OfflinePackRow? region;
+    for (final r in _regions) {
+      if (_isActive(r)) {
+        region = r;
+        break;
+      }
+    }
+    final bbox = region?.bbox ?? _packBbox;
+    if (bbox == null || bbox.length < 4) return;
+    region ??= OfflinePackRow(
+      id: _activatedPath != null ? p.basename(_activatedPath!) : 'active',
+      name: _regionPref ?? '',
+      bbox: bbox,
+      downloadable: true,
+      status: 'ready',
+    );
+    final overviewMb = formatPackBytes(
+      estimatedBasemapBytesForBbox(bbox),
+    );
+    final archiveId = basemapArchiveIdForBbox(bbox);
+    final l10n = AppLocalizations.of(context);
+    final ok = await _confirmSize(
+      title: l10n.offlineConfirmOverviewTitle,
+      body: l10n.offlineConfirmOverviewBody(archiveId, overviewMb),
+    );
+    if (!ok) return;
+    if (!await OfflineBasemap.onWifiLikely()) {
+      final cellOk = await _confirmSize(
+        title: l10n.offlineConfirmCellularTitle,
+        body: l10n.offlineConfirmCellularBody(overviewMb),
+        confirmLabel: l10n.offlineConfirmCellularAnyway,
+      );
+      if (!cellOk) return;
+    }
+    setState(() => _busy = true);
+    try {
+      final result = await _downloadBasemap(region);
+      final storage = await _scanStorage();
+      if (!mounted || _downloadCancelled) return;
+      setState(() => _storageBytes = storage);
+      final loc = AppLocalizations.of(context);
+      final msg = switch (result) {
+        OfflineBasemapResult.success => loc.offlineOverviewReady,
+        OfflineBasemapResult.skippedPmtiles => loc.offlineBasemapFail,
+        OfflineBasemapResult.timedOut => loc.offlineRoutingBg,
+        OfflineBasemapResult.failed => loc.offlineTilesMissing,
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _progress = null;
+          _progressValue = null;
+        });
+      }
+    }
   }
 
   String _regionLabel(OfflinePackRow r) =>
@@ -867,82 +1053,238 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   List<OfflinePackRow> get _filtered {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isEmpty) return _regions;
+    final l10n = AppLocalizations.of(context);
     return [
       for (final r in _regions)
         if (r.name.toLowerCase().contains(q) ||
             r.id.contains(q) ||
-            _regionLabel(r).toLowerCase().contains(q))
+            _regionLabel(r).toLowerCase().contains(q) ||
+            packCountryCode(r).toLowerCase() == q ||
+            l10n
+                .offlineCountryLabelFor(packCountryCode(r))
+                .toLowerCase()
+                .contains(q))
           r,
     ];
   }
 
-  Widget _regionTile(OfflinePackRow r) {
+  Widget _sketchLegendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.muted),
+        ),
+      ],
+    );
+  }
+
+  Widget _regionTile(
+    OfflinePackRow r, {
+    bool showDelete = false,
+    bool highlight = false,
+  }) {
+    final l10n = AppLocalizations.of(context);
     final active = _isActive(r);
     final installed = _installed.contains(r.id);
+    final hasUpdate = installed &&
+        packRemoteIsNewer(
+          localBuiltAt: _localBuiltAt[r.id],
+          remoteBuiltAt: r.builtAt,
+        );
     final enabled = !_busy &&
         (r.isReady || installed || r.id == kBundledOfflineGraphRegionId);
-    final subtitle = AppLocalizations.of(context).offlinePackSubtitleFor(
+    var subtitle = l10n.offlinePackSubtitleFor(
       r,
       active: active,
       installed: installed,
     );
+    if (hasUpdate) {
+      final size = formatPackBytes(r.routingBytes);
+      subtitle = size.isEmpty
+          ? l10n.offlineSubUpdate
+          : l10n.offlineSubUpdateSized(size);
+    }
+    final sizeLabel = formatPackBytes(r.routingBytes);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _onRegionTap(r),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  active
-                      ? Icons.check_circle
-                      : installed
-                          ? Icons.sd_storage_outlined
-                          : r.isReady
-                              ? Icons.download_outlined
-                              : Icons.hourglass_empty,
-                  color: active
-                      ? AppColors.chrome
-                      : enabled
-                          ? AppColors.muted
-                          : AppColors.muted.withValues(alpha: 0.5),
-                  size: 22,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: enabled ? () => _onRegionTap(r) : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _regionLabel(r),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: enabled ? null : AppColors.muted,
-                        ),
+                child: Row(
+                  children: [
+                    Icon(
+                      active
+                          ? Icons.check_circle
+                          : hasUpdate
+                              ? Icons.update
+                              : installed
+                                  ? Icons.sd_storage_outlined
+                                  : !r.isReady
+                                      ? Icons.hourglass_empty
+                                      : isEnvelopePackId(r.id)
+                                          ? Icons.crop_free
+                                          : Icons.download_outlined,
+                      color: active || hasUpdate
+                          ? AppColors.chrome
+                          : enabled
+                              ? AppColors.muted
+                              : AppColors.muted.withValues(alpha: 0.5),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _regionLabel(r),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: enabled ? null : AppColors.muted,
+                            ),
+                          ),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.muted,
-                        ),
+                    ),
+                    if (hasUpdate)
+                      IconButton(
+                        tooltip: l10n.offlineUpdatePack,
+                        onPressed: _busy
+                            ? null
+                            : () => _onRegionTap(r, forceDownload: true),
+                        icon: const Icon(Icons.download_outlined, size: 20),
+                        color: AppColors.chrome,
                       ),
-                    ],
+                    if (showDelete && installed)
+                      IconButton(
+                        tooltip: l10n.offlineDeletePack,
+                        onPressed: _busy ? null : () => _deleteInstalled(r),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: AppColors.muted,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (highlight && enabled && !installed && r.isReady)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.chrome,
+                  ),
+                  onPressed: _busy ? null : () => _onRegionTap(r),
+                  child: Text(
+                    sizeLabel.isEmpty
+                        ? l10n.offlineSubLoad
+                        : '${l10n.offlineSubLoad} · $sizeLabel',
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _countryGroup(
+    OfflinePackCountryGroup g, {
+    required bool expand,
+    required bool searching,
+    String? pinId,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final split = collapseCountryPacks(
+      packs: g.packs,
+      userLng: widget.userLng,
+      userLat: widget.userLat,
+      pinId: pinId,
+      searching: searching,
+    );
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        key: ValueKey('offline-country-${g.code}-$searching'),
+        initiallyExpanded: expand,
+        tilePadding: EdgeInsets.zero,
+        title: Text(
+          l10n.offlineCountryLabelFor(g.code),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          l10n.offlineCountrySubtitleFor(
+            packCount: g.packs.length,
+            envelopeCount: g.envelopes.length,
+          ),
+          style: const TextStyle(color: AppColors.muted, fontSize: 12),
+        ),
+        children: [
+          for (final r in split.shown) _regionTile(r),
+          if (split.more.isNotEmpty)
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.only(left: 8),
+                title: Text(
+                  l10n.offlineCountryMorePacks(split.more.length),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                children: [
+                  for (final r in split.more) _regionTile(r),
+                ],
+              ),
+            ),
+          if (g.envelopes.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+              child: Text(
+                l10n.offlineEnvelopesHint,
+                style: const TextStyle(color: AppColors.muted, fontSize: 11),
+              ),
+            ),
+            for (final r in g.envelopes) _regionTile(r),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
@@ -950,252 +1292,396 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    final hasPack = _activatedPath != null;
+    final hasPack = (_activatedPath ?? '').trim().isNotEmpty;
     final filtered = _filtered;
     final searching = _searchCtrl.text.trim().isNotEmpty;
-    final ready = visibleReadyPacks(
+    final sections = groupOfflinePacks(
       filtered: filtered,
       installed: _installed,
+      userLng: widget.userLng,
+      userLat: widget.userLat,
       searching: searching,
-    );
-    final stubs = visibleStubPacks(
-      filtered: filtered,
-      installed: _installed,
-      searching: searching,
+      focusPackId: widget.focusPackId,
     );
     final l10n = AppLocalizations.of(context);
+    final overviewMb = formatPackBytes(
+      estimatedBasemapBytesForBbox(_packBbox ?? sections.suggested?.bbox),
+    );
+    final archiveId = basemapArchiveIdForBbox(
+      _packBbox ?? sections.suggested?.bbox,
+    );
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottom),
-      child: _loading
-          ? const SizedBox(
-              height: 120,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.offlineMapsTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.offlineMapsHint,
-                    style:
-                        const TextStyle(color: AppColors.muted, fontSize: 13),
-                  ),
-                  if (AppConfig.showRoutingDebug) ...[
-                    const SizedBox(height: 6),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        Navigator.of(context).pop(_prefsChanged);
+      },
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottom),
+        child: _loading
+            ? const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      'API ${AppConfig.apiBaseUrl}',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 11,
-                      ),
+                      l10n.offlineMapsTitle,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
-                  ],
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceDark,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.offlineMapsHint,
+                      style:
+                          const TextStyle(color: AppColors.muted, fontSize: 13),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          hasPack
-                              ? Icons.check_circle_outline
-                              : Icons.cloud_download_outlined,
-                          color: hasPack
-                              ? AppColors.chrome
-                              : AppColors.muted,
+                    if (AppConfig.showRoutingDebug) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'API ${AppConfig.apiBaseUrl}',
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 11,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Text(
+                              Icon(
                                 hasPack
-                                    ? _activeRegionTitle(l10n)
-                                    : l10n.offlineNoRegion,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                    ? Icons.check_circle_outline
+                                    : Icons.cloud_download_outlined,
+                                color: hasPack
+                                    ? AppColors.chrome
+                                    : AppColors.muted,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                hasPack
-                                    ? (_basemapReady
-                                        ? l10n.offlineReadyBoth
-                                        : l10n.offlineReadyRouting)
-                                    : l10n.offlineLoadBelow,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.muted,
-                                ),
-                              ),
-                              if (AppConfig.showRoutingDebug &&
-                                  _valhallaStatus != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.offlineEngineStatusLineFor(
-                                    valhallaStatus: _valhallaStatus!,
-                                    engineHint: _engineHint,
-                                  ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  hasPack
+                                      ? _activeRegionTitle(l10n)
+                                      : l10n.offlineNoRegion,
                                   style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.muted,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    l10n.offlineRegions,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  if (_catalogNote != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      _catalogNote!,
-                      style: const TextStyle(
-                        color: AppColors.warning,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Semantics(
-                    label: l10n.offlineSearchRegion,
-                    textField: true,
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        hintText: l10n.offlineSearchRegion,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  if (_progress != null) ...[
-                    const SizedBox(height: 10),
-                    Text(_progress!, style: const TextStyle(fontSize: 12)),
-                    const SizedBox(height: 6),
-                    LinearProgressIndicator(value: _progressValue),
-                  ],
-                  const SizedBox(height: 10),
-                  if (searching && filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        l10n.offlineNoneFound,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ),
-                  if (!searching && ready.isEmpty && stubs.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        l10n.offlineNoPacks,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ),
-                  for (final r in ready) _regionTile(r),
-                  if (stubs.isNotEmpty)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                      ),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        title: Text(
-                          l10n.offlineNotBuilt(stubs.length),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(
-                          l10n.offlineStubsHint,
-                          style: const TextStyle(
-                            color: AppColors.muted,
-                            fontSize: 12,
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                avatar: Icon(
+                                  hasPack ? Icons.check : Icons.alt_route,
+                                  size: 16,
+                                  color: hasPack
+                                      ? AppColors.chrome
+                                      : AppColors.muted,
+                                ),
+                                label: Text(
+                                  hasPack
+                                      ? l10n.offlineRoutingOn
+                                      : l10n.offlineRoutingOff,
+                                ),
+                              ),
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                avatar: Icon(
+                                  _basemapReady
+                                      ? Icons.check
+                                      : Icons.map_outlined,
+                                  size: 16,
+                                  color: _basemapReady
+                                      ? AppColors.chrome
+                                      : AppColors.muted,
+                                ),
+                                label: Text(
+                                  _basemapReady
+                                      ? l10n.offlineOverviewOn
+                                      : l10n.offlineOverviewOff,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        children: [for (final r in stubs) _regionTile(r)],
-                      ),
-                    ),
-                  if (hasPack)
-                    TextButton(
-                      onPressed: _busy ? null : _clearActivatedPack,
-                      child: Text(l10n.offlineRemoveRegion),
-                    ),
-                  if (AppConfig.showRoutingDebug) ...[
-                    const SizedBox(height: 8),
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                      ),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        childrenPadding: EdgeInsets.zero,
-                        title: Text(
-                          l10n.offlineStyleTitle,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(
-                          l10n.offlineStyleHint,
-                          style: const TextStyle(
-                            color: AppColors.muted,
-                            fontSize: 12,
-                          ),
-                        ),
-                        children: [
-                          TextField(
-                            controller: _urlCtrl,
-                            decoration: InputDecoration(
-                              labelText: l10n.offlineStyleUrl,
-                              hintText:
-                                  'https://…/basemap/dach-z11-style.json',
-                              border: const OutlineInputBorder(),
+                          if (_storageBytes > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.offlineStorageLine(
+                                formatPackBytes(_storageBytes),
+                              ),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Text(
+                            hasPack
+                                ? (_basemapReady
+                                    ? l10n.offlineReadyBoth
+                                    : l10n.offlineReadyRouting)
+                                : l10n.offlineLoadBelow,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.chrome,
+                          if (_packBbox != null &&
+                              _packBbox!.length >= 4 &&
+                              !skipFitCameraForPackId(
+                                OfflineMapsPrefs.packIdFromActivatedPath(
+                                  _activatedPath,
+                                ),
+                              )) ...[
+                            const SizedBox(height: 10),
+                            OfflineCoverageSketch(
+                              bbox: _packBbox!,
+                              ring: _packRing,
+                              userLng: widget.userLng,
+                              userLat: widget.userLat,
+                              overviewReady: _basemapReady,
+                              progress: _busy ? _progressValue : null,
+                              semanticLabel: l10n.offlineCoverageShowOnMap,
+                              onTap: widget.onShowOnMap == null
+                                  ? null
+                                  : () {
+                                      widget.onShowOnMap!(_packBbox!);
+                                      Navigator.of(context).pop(false);
+                                    },
                             ),
-                            onPressed: _busy ? null : _saveStyleUrl,
-                            child: Text(l10n.offlineSaveStyle),
-                          ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                _sketchLegendDot(
+                                  AppColors.chrome,
+                                  l10n.offlineSketchRouting,
+                                ),
+                                if (_basemapReady) ...[
+                                  const SizedBox(width: 12),
+                                  _sketchLegendDot(
+                                    AppColors.sage,
+                                    l10n.offlineSketchOverview,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                          if (hasPack &&
+                              !_basemapReady &&
+                              _packBbox != null &&
+                              _packBbox!.length >= 4) ...[
+                            const SizedBox(height: 10),
+                            FilledButton(
+                              key: const Key('offline-overview-download'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.chrome,
+                              ),
+                              onPressed: _busy ? null : _onOverviewTap,
+                              child: Text(
+                                l10n.offlineOverviewCta(archiveId, overviewMb),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.offlineOverviewExplain,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                          if (AppConfig.showRoutingDebug &&
+                              _valhallaStatus != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              l10n.offlineEngineStatusLineFor(
+                                valhallaStatus: _valhallaStatus!,
+                                engineHint: _engineHint,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    if (_progress != null) ...[
+                      const SizedBox(height: 12),
+                      Text(_progress!, style: const TextStyle(fontSize: 12)),
+                      const SizedBox(height: 6),
+                      LinearProgressIndicator(value: _progressValue),
+                    ],
+                    if (sections.suggested != null) ...[
+                      _sectionTitle(l10n.offlineSuggested),
+                      _regionTile(
+                        sections.suggested!,
+                        highlight: true,
+                        showDelete: _installed.contains(sections.suggested!.id),
+                      ),
+                    ],
+                    if (sections.installed.isNotEmpty) ...[
+                      _sectionTitle(l10n.offlineInstalledSection),
+                      for (final r in sections.installed)
+                        _regionTile(r, showDelete: true),
+                    ],
+                    if (_catalogNote != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _catalogNote!,
+                        style: const TextStyle(
+                          color: AppColors.warning,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Semantics(
+                      label: l10n.offlineSearchRegion,
+                      textField: true,
+                      child: TextField(
+                        controller: _searchCtrl,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          hintText: l10n.offlineSearchRegion,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (searching && filtered.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          l10n.offlineNoneFound,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                    for (final g in sections.countries)
+                      _countryGroup(
+                        g,
+                        expand: searching || g.code == sections.focusCountry,
+                        searching: searching,
+                        pinId: sections.suggested?.id,
+                      ),
+                    if (sections.stubs.isNotEmpty)
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: Text(
+                            l10n.offlineNotBuilt(sections.stubs.length),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            l10n.offlineStubsHint,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12,
+                            ),
+                          ),
+                          children: [
+                            for (final r in sections.stubs) _regionTile(r),
+                          ],
+                        ),
+                      ),
+                    if (_catalogReady &&
+                        !searching &&
+                        sections.countries.isEmpty &&
+                        sections.installed.isEmpty &&
+                        sections.stubs.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          l10n.offlineNoPacks,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                    if (hasPack)
+                      TextButton(
+                        onPressed: _busy ? null : _clearActivatedPack,
+                        child: Text(l10n.offlineRemoveRegion),
+                      ),
+                    if (AppConfig.showRoutingDebug) ...[
+                      const SizedBox(height: 8),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          childrenPadding: EdgeInsets.zero,
+                          title: Text(
+                            l10n.offlineStyleTitle,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            l10n.offlineStyleHint,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12,
+                            ),
+                          ),
+                          children: [
+                            TextField(
+                              controller: _urlCtrl,
+                              decoration: InputDecoration(
+                                labelText: l10n.offlineStyleUrl,
+                                hintText:
+                                    'https://…/basemap/dach-z11-style.json',
+                                border: const OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.chrome,
+                              ),
+                              onPressed: _busy ? null : _saveStyleUrl,
+                              child: Text(l10n.offlineSaveStyle),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }

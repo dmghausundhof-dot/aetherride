@@ -68,30 +68,84 @@ class BikeAssistUx {
 
   static const trailEbike = <BikeCategory>[BikeCategory.emtb];
 
-  /// Anlegen: Alltag zuerst, Trail nicht als Default-Welt.
+  /// Kurze Typ-Liste beim Anlegen — Feinschnitt später in der Identität.
+  static const addMuscle = <BikeCategory>[
+    BikeCategory.urban,
+    BikeCategory.gravel,
+    BikeCategory.road,
+    BikeCategory.mtbAm,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+  ];
+
+  static const addEbike = <BikeCategory>[
+    BikeCategory.urban,
+    BikeCategory.etrekking,
+    BikeCategory.gravel,
+    BikeCategory.road,
+    BikeCategory.emtb,
+    BikeCategory.cargo,
+  ];
+
+  static List<BikeCategory> addCategories(BikeAssistMode mode) =>
+      mode == BikeAssistMode.ebike ? addEbike : addMuscle;
+
+  /// Enduro/Trail/DH aus Onboarding markieren die MTB-Kachel.
+  static bool addTileSelected(
+    BikeCategory tile,
+    BikeCategory current,
+    BikeAssistMode mode,
+  ) {
+    if (tile == current) return true;
+    if (mode == BikeAssistMode.muscle && tile == BikeCategory.mtbAm) {
+      return current == BikeCategory.mtbTrail ||
+          current == BikeCategory.mtbEnduro ||
+          current == BikeCategory.dh;
+    }
+    return false;
+  }
+
+  static WheelSize defaultWheelFor(BikeCategory c) => switch (c) {
+        BikeCategory.urban ||
+        BikeCategory.road ||
+        BikeCategory.etrekking ||
+        BikeCategory.cargo ||
+        BikeCategory.folding ||
+        BikeCategory.kids =>
+          WheelSize.c700,
+        BikeCategory.gravel => WheelSize.b650,
+        _ => WheelSize.w29,
+      };
+
+  /// Anlegen: Trail zuerst (Katalog-Schwerpunkt). Zu Fuß ist kein Rad.
   static List<({String id, String label, List<BikeCategory> categories})>
-      pickGroups(BikeAssistMode mode) {
+      pickGroups(
+    BikeAssistMode mode, {
+    bool includeHiking = false,
+  }) {
     final allowed = mode == BikeAssistMode.ebike
         ? ebikeCategories
         : muscleCategories;
     List<BikeCategory> take(List<BikeCategory> raw) => [
           for (final c in raw)
-            if (allowed.contains(c)) c,
+            if (allowed.contains(c) &&
+                (includeHiking || c != BikeCategory.hiking))
+              c,
         ];
     return [
-      (
-        id: 'everyday',
-        label: 'Alltag',
-        categories: take(
-          mode == BikeAssistMode.ebike ? everydayEbike : everydayMuscle,
-        ),
-      ),
-      (id: 'tour', label: 'Tour', categories: take(tourCategories)),
       (
         id: 'trail',
         label: 'Trail',
         categories: take(
           mode == BikeAssistMode.ebike ? trailEbike : trailMuscle,
+        ),
+      ),
+      (id: 'tour', label: 'Tour', categories: take(tourCategories)),
+      (
+        id: 'everyday',
+        label: 'Alltag',
+        categories: take(
+          mode == BikeAssistMode.ebike ? everydayEbike : everydayMuscle,
         ),
       ),
     ].where((g) => g.categories.isNotEmpty).toList();

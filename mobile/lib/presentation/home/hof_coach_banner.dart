@@ -13,6 +13,7 @@ class HofCoachBellButton extends ConsumerWidget {
     this.careText,
     this.stimmenText,
     this.groupText,
+    this.listingText,
     this.onOpenCare,
     this.onOpenTours,
   });
@@ -20,6 +21,7 @@ class HofCoachBellButton extends ConsumerWidget {
   final String? careText;
   final String? stimmenText;
   final String? groupText;
+  final String? listingText;
   final VoidCallback? onOpenCare;
   final VoidCallback? onOpenTours;
 
@@ -39,6 +41,7 @@ class HofCoachBellButton extends ConsumerWidget {
         careText: careText,
         stimmenText: stimmenText,
         groupText: groupText,
+        listingText: listingText,
         onOpenCare: onOpenCare,
         onOpenTours: onOpenTours,
       ),

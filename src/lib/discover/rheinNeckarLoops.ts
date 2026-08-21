@@ -5,6 +5,7 @@
 import type { BikeCategory } from "@/types";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import { parseSeedPoiStops } from "@/lib/discover/berlinLoops";
 import raw from "@/lib/discover/rhein-neckar-loops-v1.json";
 
 type RnSeed = {
@@ -19,6 +20,7 @@ type RnSeed = {
   center?: { lat: number; lng: number };
   is_loop?: boolean;
   duration_band?: string;
+  poi_stops?: unknown;
 };
 
 const sportToCategory = (tags: string[] | undefined): BikeCategory => {
@@ -92,6 +94,7 @@ export function rheinNeckarLoopSuggestions(
       center,
       distanceFromOriginKm:
         near && center ? distanceKm(near, center) : undefined,
+      poiStops: parseSeedPoiStops(s.poi_stops),
     } satisfies RouteSuggestion;
   });
 }

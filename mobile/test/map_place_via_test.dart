@@ -34,6 +34,12 @@ void main() {
       expect(moveLabeledVia(list, 0, -1), list);
       expect(moveLabeledVia(list, 1, 1), list);
     });
+
+    test('moveLabeledViaTo reorders by destination index', () {
+      final moved = moveLabeledViaTo([a, b, c], 0, 2);
+      expect(moved.map((e) => e.label).toList(), ['Quelle', 'Laden', 'Café']);
+      expect(moveLabeledViaTo([a, b], 0, 0), [a, b]);
+    });
   });
 
   group('parseStimmeTags', () {
@@ -141,12 +147,21 @@ void main() {
         lng: 8.66,
         source: MapPlaceSource.meet,
       );
+      const extra = MapPlace(
+        id: 'm2',
+        name: 'Bahnhof',
+        kind: MapPlaceKind.meet,
+        lat: 49.39,
+        lng: 8.68,
+        source: MapPlaceSource.meet,
+      );
       final merged = mergeMapPlaces(
         coverage: const [cafe],
         community: const [dup],
         meet: meet,
+        meets: [extra],
       );
-      expect(merged.map((e) => e.id).toList(), ['c', 'm']);
+      expect(merged.map((e) => e.id).toList(), ['c', 'm', 'm2']);
     });
   });
 

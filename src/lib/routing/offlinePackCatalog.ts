@@ -40,6 +40,7 @@ export type OfflineCatalogPack = {
   downloadable: boolean;
   status: OfflinePackStatus;
   bytes: number | null;
+  graphBytes: number | null;
   cdn: OfflinePackManifest["cdn"] | null;
 };
 
@@ -90,6 +91,12 @@ export function catalogPackBytes(m: OfflinePackManifest): number | null {
   }
   const graph = files["offline_graph.json"];
   if (typeof graph?.bytes === "number") return graph.bytes;
+  return null;
+}
+
+export function catalogPackGraphBytes(m: OfflinePackManifest): number | null {
+  const graph = m.files?.["offline_graph.json"];
+  if (typeof graph?.bytes === "number" && graph.bytes > 0) return graph.bytes;
   return null;
 }
 
@@ -187,6 +194,32 @@ export function mergeCatalogPreferReady(
   return [...byId.values()];
 }
 
+/** Union two catalogs. Never drop a ready pack the other side still has. */
+export function mergeCatalogUnion(
+  a: OfflineCatalogPack[],
+  b: OfflineCatalogPack[] | null | undefined
+): OfflineCatalogPack[] {
+  const byId = new Map(a.map((p) => [p.id, p]));
+  for (const p of b ?? []) {
+    if (!p?.id || !SAFE_ID.test(p.id)) continue;
+    const existing = byId.get(p.id);
+    if (!existing) {
+      byId.set(p.id, p);
+      continue;
+    }
+    if (isReadyCatalogRow(p) && !isReadyCatalogRow(existing)) {
+      byId.set(p.id, p);
+      continue;
+    }
+    if (isReadyCatalogRow(p) && isReadyCatalogRow(existing)) {
+      const pb = p.bytes ?? 0;
+      const eb = existing.bytes ?? 0;
+      if (pb > eb) byId.set(p.id, p);
+    }
+  }
+  return [...byId.values()];
+}
+
 export function parsePublishedCatalog(raw: unknown): OfflineCatalogPack[] {
   if (!raw || typeof raw !== "object") return [];
   const packs = (raw as { packs?: unknown }).packs;
@@ -210,8 +243,9 @@ export function parsePublishedCatalog(raw: unknown): OfflineCatalogPack[] {
       hasManifest: p.hasManifest !== false,
       downloadable: status === "ready",
       status,
-      bytes: typeof p.bytes === "number" ? p.bytes : null,
-      cdn: (p.cdn as OfflinePackManifest["cdn"]) ?? null,
+        bytes: typeof p.bytes === "number" ? p.bytes : null,
+        graphBytes: typeof p.graphBytes === "number" ? p.graphBytes : null,
+        cdn: (p.cdn as OfflinePackManifest["cdn"]) ?? null,
     });
   }
   return out;

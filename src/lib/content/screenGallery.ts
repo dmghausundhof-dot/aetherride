@@ -15,7 +15,7 @@ export const SCREEN_GALLERY: {
     alt: "FlowLine Onboarding: Willkommen und Sport",
     title: "Ankommen",
     door: "Der Hof",
-    note: "Sport wählen oder überspringen. Kein Demo-Bike.",
+    note: "Sport wählen oder überspringen. Kein Demo-Rad.",
   },
   {
     src: "/landing/screens/karte.jpg",
@@ -40,16 +40,16 @@ export const SCREEN_GALLERY: {
   },
   {
     src: "/landing/screens/werkstatt.jpg",
-    alt: "FlowLine Werkstatt-Karte",
-    title: "Werkstatt",
-    door: "Werkstatt",
+    alt: "FlowLine Rad-Karte",
+    title: "Rad",
+    door: "Rad",
     note: "Rad, Kilometer, Pflege. Der Laden ist vorerst aus.",
   },
   {
     src: "/landing/screens/laden.jpg",
     alt: "FlowLine Laden — vorerst pausiert",
     title: "Laden pausiert",
-    door: "Werkstatt",
+    door: "Rad",
     note: "Kein Tab. Keine Kasse in FlowLine, solange der Laden zu ist.",
   },
   {

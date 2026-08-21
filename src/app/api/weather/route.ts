@@ -1,57 +1,40 @@
 import { NextResponse } from "next/server";
+import { chromeLangFrom } from "@/lib/i18n/chromeLang";
+import { fetchOpenMeteoWeather } from "@/lib/weather/openMeteoWeather";
 
 /**
- * Open-Meteo weather proxy for ride planning / trail wetness heuristic (S6).
- * GET /api/weather?lat=&lon=
+ * GET /api/weather?lat=&lon=&profile=&lang=
+ * Open-Meteo: current + 72h hourly soil reservoir → trailHint
+ * (dry_likely | damp_possible | wet_likely). Optional precip72hMm /
+ * trailHintSource / rideWindow for Numeric-Guard — not shown on the
+ * Hof sky line. rideWindow only for Gravel/MTB.
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const lat = url.searchParams.get("lat");
-  const lon = url.searchParams.get("lon") || url.searchParams.get("lng");
-  if (!lat || !lon) {
+  const lat = Number(url.searchParams.get("lat"));
+  const lon = Number(
+    url.searchParams.get("lon") || url.searchParams.get("lng")
+  );
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return NextResponse.json({ error: "lat,lon required" }, { status: 400 });
   }
+  const profile = url.searchParams.get("profile");
+  const lang = chromeLangFrom(url.searchParams.get("lang"));
 
-  const api = new URL("https://api.open-meteo.com/v1/forecast");
-  api.searchParams.set("latitude", lat);
-  api.searchParams.set("longitude", lon);
-  api.searchParams.set(
-    "current",
-    "temperature_2m,precipitation,weather_code,wind_speed_10m"
-  );
-  api.searchParams.set(
-    "daily",
-    "precipitation_sum,precipitation_probability_max"
-  );
-  api.searchParams.set("forecast_days", "3");
-  api.searchParams.set("timezone", "auto");
-
-  const res = await fetch(api.toString(), { next: { revalidate: 1800 } });
-  if (!res.ok) {
+  try {
+    const payload = await fetchOpenMeteoWeather({
+      lat,
+      lon,
+      profile,
+      lang,
+    });
+    return NextResponse.json(payload);
+  } catch (e) {
     return NextResponse.json(
-      { error: `open-meteo ${res.status}` },
+      {
+        error: e instanceof Error ? e.message : "open-meteo failed",
+      },
       { status: 502 }
     );
   }
-  const data = await res.json();
-  const precip =
-    data?.current?.precipitation ??
-    data?.daily?.precipitation_sum?.[0] ??
-    0;
-  const trailHint =
-    precip >= 5
-      ? "wet_likely"
-      : precip >= 1
-        ? "damp_possible"
-        : "dry_likely";
-
-  return NextResponse.json({
-    provider: "open-meteo",
-    lat: Number(lat),
-    lon: Number(lon),
-    current: data.current,
-    daily: data.daily,
-    trailHint,
-    attribution: "Weather data by Open-Meteo.com",
-  });
 }

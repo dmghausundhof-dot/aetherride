@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 
+import '../data/routing/coverage_label.dart';
 import '../data/routing/offline_pack_catalog.dart';
 import '../domain/ble/bike_ble_kind.dart';
+import '../domain/ble/garage_ble_live.dart';
 import '../domain/ble/watch_candidate.dart';
 import '../domain/bike.dart';
 import '../domain/bike_assist.dart';
@@ -9,12 +11,14 @@ import '../domain/compatibility/rules.dart';
 import '../domain/component.dart';
 import '../domain/community/difficulty_crowd.dart';
 import '../domain/community/map_place.dart';
+import '../domain/garage/bike_receipt.dart';
 import '../domain/garage/die_box.dart';
 import '../domain/garage/werkstatt_setup.dart';
 import '../domain/hud_compass.dart';
 import '../domain/post_ride/analyze.dart';
 import '../domain/privacy/consents.dart';
 import '../domain/ride.dart';
+import '../domain/ride/ride_telemetry.dart';
 import '../domain/routing/battery_preset.dart';
 import '../domain/routing/connectivity_chip.dart';
 import '../domain/routing/tour_filters.dart';
@@ -211,6 +215,7 @@ extension AetherL10n on AppLocalizations {
         'Kette' => dieBoxChipChain,
         'Druck' => dieBoxChipPressure,
         'Cockpit' => dieBoxChipCockpit,
+        'Ausweis' => garageBikeId,
         _ => label,
       };
 
@@ -262,7 +267,9 @@ extension AetherL10n on AppLocalizations {
       case DieBoxItemId.sagUnknown:
         return item.copyWith(
           title: dieBoxSagMissingTitle,
-          hint: dieBoxSagMissingHint,
+          hint: item.slot == ComponentSlot.fork
+              ? item.hint
+              : dieBoxSagMissingHint,
           cta: dieBoxSagMissingCta,
         );
       case DieBoxItemId.chainTeach:
@@ -304,6 +311,18 @@ extension AetherL10n on AppLocalizations {
           title: dieBoxPairCscTitle,
           hint: dieBoxPairCscHint,
           cta: dieBoxPairCscCta,
+        );
+      case DieBoxItemId.serviceAppointment:
+        final date = item.title.startsWith('Termin am ')
+            ? item.title.substring('Termin am '.length)
+            : '';
+        return item.copyWith(
+          title: switch (item.title) {
+            'Wartungstermin überfällig' => dieBoxServiceOverdue,
+            'Wartungstermin heute' => dieBoxServiceToday,
+            _ => date.isEmpty ? item.title : dieBoxServiceOnDate(date),
+          },
+          cta: dieBoxServiceCta,
         );
     }
   }
@@ -376,7 +395,9 @@ extension AetherL10n on AppLocalizations {
   String? lastRideHeroLineFor(RideRecord? ride) {
     if (ride == null) return null;
     if (ride.distanceKm >= 0.05) {
-      return lastRideKm(ride.distanceKm.toStringAsFixed(1));
+      final base = lastRideKm(ride.distanceKm.toStringAsFixed(1));
+      final climb = honestClimbM(ride.track, ride.elevationM);
+      return climb >= 10 ? '$base · $climb hm' : base;
     }
     return lastRideNoGps;
   }
@@ -453,13 +474,68 @@ extension AetherL10n on AppLocalizations {
         RideBatteryPreset.ultra => rideBatteryUltraSnack,
       };
 
-  String connectivityChipLabelFor(ConnectivityChipState state) =>
+  String connectivityChipLabelFor(
+    ConnectivityChipState state, {
+    bool mapHintVisible = false,
+  }) =>
       switch (state) {
         ConnectivityChipState.live => rideChipLive,
         ConnectivityChipState.routeOffline => rideChipRouteOffline,
         ConnectivityChipState.offlineMapOk => rideChipOfflineMapOk,
+        ConnectivityChipState.routingOffline =>
+          mapHintVisible ? rideChipRoutingOfflineShort : rideChipRoutingOffline,
         ConnectivityChipState.mapsMissing => rideChipMapsMissing,
       };
+
+  String navigateOfflineHintForPack(
+    String name,
+    String size, {
+    String? packId,
+  }) {
+    final envelope = packId != null && isEnvelopePackId(packId);
+    if (envelope) {
+      return size.isEmpty
+          ? navigateOfflineHintPackEnvelope(name)
+          : navigateOfflineHintPackEnvelopeSized(name, size);
+    }
+    if (size.isEmpty) return navigateOfflineHintPack(name);
+    return navigateOfflineHintPackSized(name, size);
+  }
+
+  String offlineCoverageLabelFor(String name, {String? packId}) {
+    if (packId != null && isEnvelopePackId(packId)) {
+      return offlineCoverageLabelEnvelope(name);
+    }
+    return offlineCoverageLabel(name);
+  }
+
+  String offlineCoverageEdgeFor(
+    String name, {
+    required bool outside,
+    String? packId,
+    bool overviewStyle = false,
+    bool mapNeedsNet = false,
+  }) {
+    final glance = coverageGlanceName(name);
+    if (outside) return offlineCoverageOutside(glance);
+    if (overviewStyle) return offlineCoverageOverview(glance);
+    if (mapNeedsNet) return offlineCoverageMapNeedsNet(glance);
+    return offlineCoverageLabelFor(glance, packId: packId);
+  }
+
+  String discoverOfflineAfterSaveForPack(
+    String name,
+    String size, {
+    String? packId,
+  }) {
+    if (packId != null && isEnvelopePackId(packId)) {
+      return size.isEmpty
+          ? discoverOfflineAfterSavePackEnvelope(name)
+          : discoverOfflineAfterSavePackEnvelopeSized(name, size);
+    }
+    if (size.isEmpty) return discoverOfflineAfterSavePack(name);
+    return discoverOfflineAfterSavePackSized(name, size);
+  }
 
   String compassCardinalFor(double headingDeg) {
     final i = ((normalizeHeadingDeg(headingDeg) + 22.5) / 45).floor() % 8;
@@ -520,19 +596,45 @@ extension AetherL10n on AppLocalizations {
         'Bremsbeläge hinten prüfen' => maintPadsRear,
         'Tubeless-Milch erneuern' => maintSealant,
         'Dropper Lower-Post Service' => maintDropper,
+        'Jährliche Inspektion' => maintAnnual,
+        'Jährliche E-Bike-Inspektion' => maintAnnualEbike,
+        'Erste Inspektion' => maintFirst,
+        'Erste E-Bike-Inspektion' => maintFirstEbike,
+        'Reifen prüfen' => maintTires,
+        'Lager prüfen (Steuersatz/Naben/Tretlager)' => maintBearings,
+        'Bremsen: Druckpunkt / Entlüften' => maintBleed,
+        'Akku-Check (Kontakte, Kapazität)' => maintBattery,
         _ => de,
       };
 
   String maintRemainingFor(String raw) {
     if (raw == 'Kein Intervall') return maintNoInterval;
+    if (raw == 'noch keine Inspektion gemerkt') return maintNeverLogged;
     return raw.split(' · ').map(_maintRemainingPart).join(' · ');
   }
 
   String _maintRemainingPart(String part) {
     final t = part.trim();
-    final m = RegExp(r'^(\d+)\s+Tage$').firstMatch(t);
-    if (m != null) return maintDays(m.group(1)!);
+    if (t == 'noch keine Inspektion gemerkt') return maintNeverLogged;
+    if (t.startsWith('fällig')) return maintDueNow;
+    final days = RegExp(r'^(\d+)\s+Tage$').firstMatch(t);
+    if (days != null) return maintDays(days.group(1)!);
+    final km = RegExp(r'^(\d+)\s+km$').firstMatch(t);
+    if (km != null) return maintKmLeft(km.group(1)!);
+    final hours = RegExp(r'^(\d+)\s+h$').firstMatch(t);
+    if (hours != null) return maintHoursLeft(hours.group(1)!);
     return t;
+  }
+
+  List<String> sagMeasureStepsFor(String end) {
+    final part = end == 'fork' ? garageSagPartFork : garageSagPartShock;
+    return [
+      garageSagStepExtend(part),
+      garageSagStepBounce,
+      garageSagStepDismount,
+      garageSagStepRatio,
+      garageSagStepAir,
+    ];
   }
 
   String compatTitleFor(CompatibilityResult r) => switch (r.ruleCode) {
@@ -640,13 +742,87 @@ extension AetherL10n on AppLocalizations {
     return _compatFail(r);
   }
 
-  String _compatFail(CompatibilityResult r) => r.explainDe;
+  String _compatFail(CompatibilityResult r) {
+    String a(String k) => r.valuesA[k] ?? '?';
+    String b(String k) => r.valuesB[k] ?? '?';
+    return switch (r.ruleCode) {
+      'RL-DRV-011' =>
+        compatFailDrv011(a('freehub_standard'), b('freehub_standard')),
+      'RL-FRM-004' => compatFailFrm004(a('rear_spacing'), b('rear_spacing')),
+      'RL-SUS-007' => compatFailSus007(
+          a('eye_to_eye_mm'),
+          a('stroke_mm'),
+          a('mount_type'),
+        ),
+      'RL-SUS-012' => compatFailSus012(a('steerer_type'), b('steerer_type')),
+      'RL-BRK-003' =>
+        compatFailBrk003(a('brake_mount'), b('brake_mount_rear')),
+      'RL-BRK-008' => compatFailBrk008(a('rotor_mount'), b('rotor_mount')),
+      'RL-BRK-008F' => compatFailBrk008f(a('rotor_mount'), b('rotor_mount')),
+      'RL-WHL-005' =>
+        compatFailWhl005(a('tire_width_mm'), b('internal_rim_width_mm')),
+      'RL-WHL-005F' =>
+        compatFailWhl005f(a('tire_width_mm'), b('internal_rim_width_mm')),
+      'RL-WHL-009' =>
+        compatFailWhl009(a('tire_width_mm'), b('max_tire_width_mm')),
+      'RL-CKP-002' =>
+        compatFailCkp002(a('handlebar_clamp_mm'), b('stem_clamp_mm')),
+      'RL-SPT-006' =>
+        compatFailSpt006(a('seatpost_diameter_mm'), b('seatpost_diameter_mm')),
+      'RL-BB-003' => compatFailBb003(a('crank_axle'), b('crank_axle')),
+      'RL-BB-003F' => compatFailBb003f(a('bb_standard'), b('bb_standard')),
+      'RL-EBK-002' =>
+        compatFailEbk002(b('motor_interface'), a('motor_interface')),
+      'RL-FRM-004F' => compatFailFrm004f(a('axle_front'), b('axle_front')),
+      _ => r.explainDe,
+    };
+  }
+
+  String setupTemplateLabelFor(String id, {String? fallback}) => switch (id) {
+        'tpl-fox-oem-base' => setupTplFoxOem,
+        'tpl-fox-x2-oem' => setupTplFoxX2,
+        'tpl-rockshox-sag-start' => setupTplRockShox,
+        'tpl-editorial-wet-roots' => setupTplWetRoots,
+        'tpl-editorial-bikepark' => setupTplBikepark,
+        'tpl-editorial-marathon' => setupTplMarathon,
+        'tpl-editorial-race-enduro' => setupTplRace,
+        'tpl-gravel-base' => setupTplGravel,
+        'tpl-road-tires' => setupTplRoad,
+        'tpl-urban-tires' => setupTplUrban,
+        _ => fallback ?? id,
+      };
+
+  String setupTemplateDisclaimerFor(String id, {String? fallback}) =>
+      switch (id) {
+        'tpl-fox-oem-base' => setupTplFoxOemHint,
+        'tpl-fox-x2-oem' => setupTplFoxX2Hint,
+        'tpl-rockshox-sag-start' => setupTplRockShoxHint,
+        'tpl-editorial-wet-roots' => setupTplWetRootsHint,
+        'tpl-editorial-bikepark' => setupTplBikeparkHint,
+        'tpl-editorial-marathon' => setupTplMarathonHint,
+        'tpl-editorial-race-enduro' => setupTplRaceHint,
+        'tpl-gravel-base' => setupTplGravelHint,
+        'tpl-road-tires' => setupTplRoadHint,
+        'tpl-urban-tires' => setupTplUrbanHint,
+        _ => fallback ?? '',
+      };
 
   String postRideFactLine(String de) {
-    final bike = RegExp(r'^Bike: (.+)$').firstMatch(de);
+    final bike = RegExp(r'^(?:Bike|Rad): (.+)$').firstMatch(de);
     if (bike != null) return postRideFactBike(bike.group(1)!);
     final soc = RegExp(r'^SOC (.+)%$').firstMatch(de);
     if (soc != null) return postRideFactSoc(soc.group(1)!);
+    final rideElev = RegExp(
+      r'^([\d.]+) km · (\d+) hm ↑ · (\d+) hm ↓ · ([\d.]+) min$',
+    ).firstMatch(de);
+    if (rideElev != null) {
+      return postRideFactRideElev(
+        rideElev.group(1)!,
+        rideElev.group(2)!,
+        rideElev.group(3)!,
+        rideElev.group(4)!,
+      );
+    }
     final ride = RegExp(
       r'^([\d.]+) km · (\d+) hm · ([\d.]+) min$',
     ).firstMatch(de);
@@ -656,6 +832,14 @@ extension AetherL10n on AppLocalizations {
         ride.group(2)!,
         ride.group(3)!,
       );
+    }
+    final setup = RegExp(r'^Setup „(.+)“ \((.+)\)$').firstMatch(de);
+    if (setup != null) {
+      return postRideFactSetup(setup.group(1)!, setup.group(2)!);
+    }
+    final motor = RegExp(r'^Ø SOC (\d+)% · Rider (\d+) W$').firstMatch(de);
+    if (motor != null) {
+      return postRideFactMotor(motor.group(1)!, motor.group(2)!);
     }
     final lean = RegExp(
       r'^Flow ([\d.]+) · Peak ([\d.]+) g · (\d+) Impacts · Lean ([\d.]+)°$',
@@ -681,7 +865,25 @@ extension AetherL10n on AppLocalizations {
     return de;
   }
 
-  String postRideObservationText(PostRideObservation o) => o.text;
+  String postRideObservationText(PostRideObservation o) {
+    final p = o.params;
+    return switch (o.id) {
+      'impacts' => postRideObsImpacts(p['count'] ?? '', p['km'] ?? ''),
+      'smooth' => postRideObsSmooth(p['km'] ?? ''),
+      'flow-high' => postRideObsFlowHigh(p['flow'] ?? ''),
+      'flow-low' => postRideObsFlowLow(p['flow'] ?? ''),
+      'peak-g' => postRideObsPeakG(p['g'] ?? ''),
+      'elev-gap' => postRideObsElevGap(p['gap'] ?? ''),
+      'steep' => postRideObsSteep(p['grade'] ?? ''),
+      'steep-down' => postRideObsSteepDown(p['grade'] ?? ''),
+      'fb-harsh' => postRideObsFbHarsh(
+          p['front'] == 'too_firm' ? postRideFrontTooFirm : postRideFrontOk,
+          p['bumps'] == 'harsh' ? postRideBumpsHarsh : postRideBumpsNone,
+        ),
+      'fb-soft' => postRideObsFbSoft,
+      _ => o.text,
+    };
+  }
 
   String _suggestionKind(SetupChangeSuggestion s) {
     final key = s.adjusterKey ?? '';
@@ -702,6 +904,14 @@ extension AetherL10n on AppLocalizations {
 
   String postRideSuggestionContent(SetupChangeSuggestion s) =>
       switch (_suggestionKind(s)) {
+        'rebound-slow' => postRideSugReboundSlowContent(
+            s.params['current'] ?? '',
+            s.params['next'] ?? '',
+          ),
+        'rebound-fast' => postRideSugReboundFastContent(
+            s.params['current'] ?? '',
+            s.params['next'] ?? '',
+          ),
         'pressure' => postRideSugPressureContent,
         _ => s.content,
       };
@@ -755,8 +965,9 @@ extension AetherL10n on AppLocalizations {
     final t = raw.trim();
     final approach = RegExp(r'^Schätzung: (\w+) \(Anfahrt\)$').firstMatch(t);
     if (approach != null) return postRideAssistApproach(approach.group(1)!);
-    final climb =
-        RegExp(r'^Schätzung: (\w+) \(Steigung, (\d+) %\)$').firstMatch(t);
+    final climb = RegExp(
+      r'^Schätzung: (\w+) \(Steigung(?:, Konfidenz)?, (\d+) %\)$',
+    ).firstMatch(t);
     if (climb != null) {
       return postRideAssistClimb(climb.group(1)!, climb.group(2)!);
     }
@@ -791,11 +1002,32 @@ extension AetherL10n on AppLocalizations {
         BikeBleKind.power => bleTipPower,
       };
 
+  String bleCapFor(BikeBleKind kind) => switch (kind) {
+        BikeBleKind.bosch => bleCapBosch,
+        BikeBleKind.shimano ||
+        BikeBleKind.yamaha ||
+        BikeBleKind.otherDrive =>
+          bleCapDriveNoLive,
+        BikeBleKind.csc => bleCapCsc,
+        BikeBleKind.power => bleCapPower,
+      };
+
   String blePairLeadFor({required bool isEbike}) =>
       isEbike ? blePairLeadEbike : blePairLeadSensor;
 
   String garageBleHintFor({required bool isEbike}) =>
       isEbike ? garageBleHintEbike : garageBleHintSensor;
+
+  String garageBleRiderHintFor(GarageBleRiderHint hint) => switch (hint) {
+        GarageBleRiderHint.emptyEbike => garageBleHintEbike,
+        GarageBleRiderHint.emptySensor => garageBleHintSensor,
+        GarageBleRiderHint.driveNeedsWheel => garageBleHintDriveNeedsWheel,
+        GarageBleRiderHint.spinWheel => garageBleLiveWaiting,
+        GarageBleRiderHint.boschNoSoc => dieBoxBatteryHint,
+        GarageBleRiderHint.driveNoSoc => garageBleHintNoSocDrive,
+        GarageBleRiderHint.savedNotLive => bleTooltipSaved,
+        GarageBleRiderHint.none => '',
+      };
 
   String bleScanName(BikeBleScanHit hit) {
     final n = hit.name.trim();
@@ -872,13 +1104,17 @@ extension AetherL10n on AppLocalizations {
       'Kein Rad oder Sensor in Reichweite' => bleStatusNoneInRange,
       'Antrieb gesehen — in der Werkstatt koppeln (Bosch/Shimano)' =>
         bleStatusDriveSeen,
+      'Antrieb gesehen — am Rad koppeln (Bosch/Shimano)' => bleStatusDriveSeen,
       'Intuvia gesehen — in der Werkstatt über Flow verbinden' =>
         bleStatusDriveSeen,
+      'Intuvia gesehen — am Rad koppeln' => bleStatusDriveSeen,
       'Kein Radsensor in Reichweite' => bleStatusNoCscInRange,
       'Kein Tempo-Sensor in Reichweite' => bleStatusNoCscInRange,
       'Radsensor getrennt' => bleStatusSensorDisconnected,
       'Sensor getrennt' => bleStatusSensorDisconnected,
       'Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, in der Werkstatt erneut koppeln.' =>
+        bleStatusReconnectLost,
+      'Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, am Rad erneut koppeln.' =>
         bleStatusReconnectLost,
       'Verbindung abgelehnt — andere Fitness-App schließen, Uhr nah halten.' =>
         bleGattWatchRejected,
@@ -893,9 +1129,13 @@ extension AetherL10n on AppLocalizations {
         bleGattRejectedGeneric,
       'Timeout — Display wecken, Flow zu, nah halten. Motorwerte nur mit CSC oder offiziellem LDI.' =>
         bleGattTimeoutBosch,
+      'Timeout — Display wecken. Akku vom Display, Tempo vom Sensor am Rad.' =>
+        bleGattTimeoutBosch,
       'Timeout — E-TUBE zu, in 15 s nach Power/Taster tippen.' =>
         bleGattTimeoutShimano,
       'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.' =>
+        bleGattTimeoutDrive,
+      'Timeout — Hersteller-App zu, Display an. Tempo über den Sensor am Rad.' =>
         bleGattTimeoutDrive,
       'Timeout — Sensor wecken, näher rangehen.' => bleGattTimeoutSensor,
       'Timeout — Display wecken, näher rangehen.' => bleGattTimeoutSensor,
@@ -940,11 +1180,35 @@ extension AetherL10n on AppLocalizations {
     if (driveNeedBond != null) {
       return bleStatusDriveNeedBond(_bleWho(driveNeedBond.group(1)!));
     }
+    final driveNeedBondRad = RegExp(
+      r'^(.+) · erkannt — Akku nach Bluetooth-Kopplung am Rad$',
+    ).firstMatch(t);
+    if (driveNeedBondRad != null) {
+      return bleStatusDriveNeedBond(_bleWho(driveNeedBondRad.group(1)!));
+    }
+    final driveNeedConfirm = RegExp(
+      r'^(.+) · erkannt — Akku nach Bestätigung in der Werkstatt$',
+    ).firstMatch(t);
+    if (driveNeedConfirm != null) {
+      return bleStatusDriveNeedBond(_bleWho(driveNeedConfirm.group(1)!));
+    }
+    final driveNeedConfirmRad = RegExp(
+      r'^(.+) · erkannt — Akku nach Bestätigung am Rad$',
+    ).firstMatch(t);
+    if (driveNeedConfirmRad != null) {
+      return bleStatusDriveNeedBond(_bleWho(driveNeedConfirmRad.group(1)!));
+    }
     final drive = RegExp(
       r'^(.+) · erkannt — Tempo über CSC, Akku nur mit Standard-GATT$',
     ).firstMatch(t);
     if (drive != null) {
       return bleStatusDriveNoLive(_bleWho(drive.group(1)!));
+    }
+    final driveSensor = RegExp(
+      r'^(.+) · erkannt — Tempo über den Sensor am Rad$',
+    ).firstMatch(t);
+    if (driveSensor != null) {
+      return bleStatusDriveNoLive(_bleWho(driveSensor.group(1)!));
     }
     final connected = RegExp(r'^(.+) verbunden$').firstMatch(t);
     if (connected != null) {
@@ -1059,6 +1323,12 @@ extension AetherL10n on AppLocalizations {
     }
     if (raw.startsWith('Wenig eigener Radweg')) {
       return discoverHonestyCycleway;
+    }
+    if (raw.startsWith('Kein Weg bis zum Pin')) {
+      return discoverHonestyFarmTail;
+    }
+    if (raw.startsWith('Teile der Route folgen Feldwegen')) {
+      return discoverHonestyFarmMid;
     }
     return raw;
   }
@@ -1204,8 +1474,28 @@ extension AetherL10n on AppLocalizations {
       'bordeaux' => overlayBordeaux,
       'toulouse' => overlayToulouse,
       'nantes' => overlayNantes,
-      _ => fallback ?? id,
+      _ => envelopePackDisplayName(
+          id: id,
+          languageCode: localeName,
+          fallback: fallback,
+        ),
     };
+  }
+
+  /// Profile row: same honesty as the Hof ready line.
+  String offlineMapsProfileSubtitle({
+    required bool ready,
+    String? packId,
+    String? packName,
+  }) {
+    if (!ready) return profileOfflineMapsHint;
+    final id = packId?.trim() ?? '';
+    final raw = packName?.trim() ?? '';
+    final name = coverageGlanceName(
+      id.isNotEmpty ? overlayRegionNameFor(id, raw.isEmpty ? id : raw) : raw,
+    );
+    if (name.isEmpty) return offlineRoutingOn;
+    return hofPackReadyRideMap(name);
   }
 
   String seasonLabelFor(String? raw) {
@@ -1279,8 +1569,32 @@ extension AetherL10n on AppLocalizations {
       if (r.id == kBundledOfflineGraphRegionId) return offlineSubDemoGraph;
       return offlineSubNotBuilt;
     }
-    final size = formatPackBytes(r.bytes);
+    final size = formatPackBytes(r.routingBytes);
+    if (isEnvelopePackId(r.id)) {
+      return size.isEmpty ? offlineSubEnvelope : offlineSubEnvelopeSized(size);
+    }
     return size.isEmpty ? offlineSubLoad : offlineSubLoadSized(size);
+  }
+
+  String offlineCountryLabelFor(String code) => switch (code) {
+        'DE' => offlineCountryDE,
+        'CH' => offlineCountryCH,
+        'AT' => offlineCountryAT,
+        'FR' => offlineCountryFR,
+        'NL' => offlineCountryNL,
+        'IT' => offlineCountryIT,
+        'LI' => offlineCountryLI,
+        'DACH' => offlineCountryDACH,
+        _ => offlineCountryOther,
+      };
+
+  String offlineCountrySubtitleFor({
+    required int packCount,
+    required int envelopeCount,
+  }) {
+    if (envelopeCount <= 0) return offlineCountryPacks(packCount);
+    if (packCount <= 0) return offlineCountryEnvelopes(envelopeCount);
+    return offlineCountryPacksAndEnvelopes(packCount, envelopeCount);
   }
 
   String extractedGraphErrorFor(ExtractedGraphCheck check, String name) =>
@@ -1367,7 +1681,7 @@ extension AetherL10n on AppLocalizations {
     ).firstMatch(t);
     if (sha != null) return offlineShaMismatch(sha.group(1)!);
     final folder = RegExp(
-      r'^Ordner (.+) enthält keinen gültigen Graph für diese Region$',
+      r'^Ordner (.+) enthält keinen gültigen Graph für diese(s Pack| Region)$',
     ).firstMatch(t);
     if (folder != null) return offlineInvalidGraphFolder(folder.group(1)!);
     final remote = RegExp(
@@ -1452,6 +1766,31 @@ extension AetherL10n on AppLocalizations {
         'wet_likely' => discoverTrailWet,
         'damp_possible' => discoverTrailDamp,
         _ => discoverTrailDry,
+      };
+
+  String identifyReasonLabel(String? reason) => switch (reason) {
+        'no_key' => identifyReasonNoKey,
+        'quota' => identifyReasonQuota,
+        'failed' => identifyReasonFailed,
+        'unreadable' => identifyReasonUnreadable,
+        'no_catalog' => identifyReasonNoCatalog,
+        _ => identifyReasonFallback,
+      };
+
+  String receiptKindLabel(BikeReceiptKind kind) => switch (kind) {
+        BikeReceiptKind.workshop => garageReceiptKindWorkshop,
+        BikeReceiptKind.parts => garageReceiptKindParts,
+        BikeReceiptKind.warranty => garageReceiptKindWarranty,
+        BikeReceiptKind.other => garageReceiptKindOther,
+      };
+
+  String receiptScanLabel(ReceiptScanReason reason) => switch (reason) {
+        ReceiptScanReason.ok => receiptScanOk,
+        ReceiptScanReason.noKey => receiptScanNoKey,
+        ReceiptScanReason.quota => receiptScanQuota,
+        ReceiptScanReason.failed => receiptScanFailed,
+        ReceiptScanReason.unreadable => receiptScanUnreadable,
+        ReceiptScanReason.none => receiptScanNone,
       };
 
   String _bleWho(String who) => switch (who.trim()) {

@@ -8,7 +8,6 @@ import {
   Camera,
   Flame,
   Mountain,
-  Play,
   AreaChart,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,7 +30,10 @@ import {
   getTrailViewNear,
   type TrailViewResult,
 } from "@/lib/routing/trailView";
-import { MapView, type MapRouteLayer } from "@/components/MapView";
+import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
+import { mapPoiKindFromRaw, pinGlyphForCategory, poiPinSrc } from "@/lib/map/mapPinSvg";
+import { MappeGlyph } from "@/components/tours/MappeGlyph";
+import { placeTourPoiStops } from "@/lib/map/tourPoiStops";
 import { ElevationChart } from "@/components/discover/ElevationChart";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { TourReviews } from "@/components/community/TourReviews";
@@ -60,6 +62,20 @@ function heatSegmentsToRoutes(
     }));
 }
 
+function PoiTimelineIcon({ kind }: { kind: string }) {
+  const src = poiPinSrc(mapPoiKindFromRaw(kind));
+  return (
+    <img
+      src={src}
+      alt=""
+      width={16}
+      height={20}
+      className="h-5 w-4 object-contain"
+      draggable={false}
+    />
+  );
+}
+
 export function RouteDetail({
   route,
   saved,
@@ -67,12 +83,16 @@ export function RouteDetail({
   rangePro,
   isEbike,
   heatmapConsent,
+  highlightPoiId,
   rides,
   privacyZones,
   onBack,
   onStart,
   onToggleSave,
   onAdoptIntoPlan,
+  hideMiniMap = false,
+  geometry = null,
+  onSelectPoi,
 }: {
   route: RouteSuggestion;
   saved: boolean;
@@ -80,12 +100,16 @@ export function RouteDetail({
   rangePro: boolean;
   isEbike: boolean;
   heatmapConsent: boolean;
+  highlightPoiId?: string | null;
   rides: { id: string; track?: { lat: number; lng: number }[] }[];
   privacyZones: { lat: number; lng: number; radiusM: number }[];
   onBack: () => void;
   onStart: () => void;
   onToggleSave: () => void;
   onAdoptIntoPlan?: () => void;
+  hideMiniMap?: boolean;
+  geometry?: GeoJSON.LineString | null;
+  onSelectPoi?: (id: string) => void;
 }) {
   const lang = useChromeLang();
   const d = discoverUi(lang);
@@ -94,6 +118,28 @@ export function RouteDetail({
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
   const [community, setCommunity] = useState<HeatmapResult | null>(null);
   const [communityErr, setCommunityErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightPoiId) return;
+    setLayer("overview");
+    let cancelled = false;
+    const tryScroll = (attempt: number) => {
+      if (cancelled) return;
+      const el = document.querySelector(
+        `[data-poi-id="${CSS.escape(highlightPoiId)}"]`
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+      if (attempt >= 8) return;
+      requestAnimationFrame(() => tryScroll(attempt + 1));
+    };
+    tryScroll(0);
+    return () => {
+      cancelled = true;
+    };
+  }, [highlightPoiId]);
 
   const center = useMemo(() => demoCenterLngLat(route.id), [route.id]);
   const elev = useMemo(() => buildElevationForSuggestion(route), [route]);
@@ -155,6 +201,40 @@ export function RouteDetail({
     () => heatSegmentsToRoutes(mergedHeat.segments),
     [mergedHeat.segments]
   );
+
+  const tourLine = useMemo((): MapRouteLayer[] => {
+    if (!geometry?.coordinates || geometry.coordinates.length < 2) return [];
+    return [{ id: "detail-tour", geometry, role: "tour" }];
+  }, [geometry]);
+
+  const poiMarkers = useMemo((): MapMarker[] => {
+    const pins = placeTourPoiStops({
+      stops: route.poiStops,
+      durationMin: route.durationMin,
+      geometry,
+      zoom: 13,
+      selectedId: highlightPoiId,
+    });
+    const out: MapMarker[] = pins.map((p) => ({
+      id: `poi-${p.id}`,
+      lngLat: p.lngLat,
+      kind: "poi" as const,
+      poiKind: p.poiKind,
+      selected: p.selected,
+      label: p.label,
+    }));
+    if (!geometry) {
+      out.unshift({
+        id: "idea",
+        lngLat: center,
+        color: "#5C6B73",
+        kind: "tour",
+        glyph: pinGlyphForCategory(route.category),
+        label: d.pinIdea,
+      });
+    }
+    return out;
+  }, [route, geometry, highlightPoiId, center, d.pinIdea]);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,22 +315,73 @@ export function RouteDetail({
 
       {layer === "overview" && (
         <div className="flex flex-col gap-3">
-          <MapView
-            className="aspect-[4/3] w-full overflow-hidden rounded-2xl"
-            center={center}
-            zoom={12}
-            markers={[
-              {
-                id: "idea",
-                lngLat: center,
-                color: "#78909C",
-                label: d.pinIdea,
-              },
-            ]}
-          />
-          <p className="text-[11px] text-text-secondary">
-            {d.pinOnlyHint}
-          </p>
+          {!hideMiniMap && (
+            <>
+              <MapView
+                className="aspect-[4/3] w-full overflow-hidden rounded-2xl"
+                center={center}
+                zoom={12}
+                routes={tourLine}
+                markers={poiMarkers}
+                onMarkerClick={(id) => {
+                  if (id.startsWith("poi-")) onSelectPoi?.(id.slice("poi-".length));
+                }}
+              />
+              {!geometry && (
+                <p className="text-[11px] text-text-secondary">
+                  {d.pinOnlyHint}
+                </p>
+              )}
+            </>
+          )}
+          {route.poiStops && route.poiStops.length > 0 && (
+            <ol className="ml-1">
+              {route.poiStops
+                .filter((p) => p.atMin > 0)
+                .slice(0, 8)
+                .map((p, i, list) => {
+                  const on = highlightPoiId === p.id;
+                  const last = i === list.length - 1;
+                  return (
+                    <li key={p.id} className="flex gap-3">
+                      <div className="flex w-8 shrink-0 flex-col items-center">
+                        <span
+                          className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-[#F4F1EC] text-[#1A120C] ${
+                            on ? "border-accent" : "border-chrome/50"
+                          }`}
+                          aria-hidden
+                        >
+                          <PoiTimelineIcon kind={p.kind} />
+                        </span>
+                        {!last && (
+                          <span className="mt-0.5 w-0.5 flex-1 min-h-4 bg-border" />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        data-poi-id={p.id}
+                        onClick={() => onSelectPoi?.(p.id)}
+                        className={`mb-3 min-w-0 flex-1 rounded-xl px-2 py-1.5 text-left ${
+                          on ? "bg-accent/10" : ""
+                        }`}
+                      >
+                        <span className="block text-[11px] font-bold text-text-secondary">
+                          {i + 1} · {p.atMin} min
+                        </span>
+                        <span className="block text-sm font-semibold">
+                          {p.title}
+                        </span>
+                        {p.whyGood ? (
+                          <span className="mt-0.5 block text-xs font-normal text-text-secondary">
+                            {p.whyGood}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+            </ol>
+          )}
           <EvidenceSheet title={d.whySuggestion}>
             <ol className="list-decimal space-y-1 pl-4 text-sm">
               {route.reasons.map((r) => (
@@ -425,7 +556,7 @@ export function RouteDetail({
             onClick={onAdoptIntoPlan}
             className="rounded-xl border border-border py-2.5 text-sm font-medium"
           >
-            {d.intoPlan}
+            {geometry ? d.intoPlan : d.setEndCta}
           </button>
         )}
         <div className="flex gap-2">
@@ -446,7 +577,7 @@ export function RouteDetail({
             onClick={onStart}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
           >
-            <Play className="h-4 w-4 fill-current" /> {d.startInApp}
+            <MappeGlyph name="ride" size={16} /> {d.startInApp}
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">

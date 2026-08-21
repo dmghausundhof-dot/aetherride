@@ -92,7 +92,7 @@ String rideGroupHudStatusLine({
   if (others.isEmpty) {
     return snap.optIn ? selfOn(left) : selfOff(left);
   }
-  if (snap.sharing < snap.total) {
+  if (snap.sharing < snap.total && snap.total >= 2) {
     return ratio(snap.sharing, snap.total, left);
   }
   if (mateDetail != null) {
@@ -107,6 +107,10 @@ String rideGroupHudStatusLine({
       final detail = mateDetail(nearest);
       if (detail.isNotEmpty) return withDetail(detail, left);
     }
+  }
+  final named = others.where((m) => m.label.trim().isNotEmpty);
+  if (named.isNotEmpty) {
+    return withDetail(named.first.label, left);
   }
   return ratio(snap.sharing, snap.total, left);
 }

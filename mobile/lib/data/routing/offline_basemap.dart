@@ -39,6 +39,26 @@ abstract final class OfflineBasemap {
     await applyNetworkMode(online: online);
   }
 
+  static Future<bool> onWifiLikely() async {
+    try {
+      final ifaces = await NetworkInterface.list(
+        includeLoopback: false,
+        type: InternetAddressType.IPv4,
+      );
+      var wifi = false;
+      var cell = false;
+      for (final i in ifaces) {
+        if (networkInterfaceLooksLikeWifi(i.name)) wifi = true;
+        if (networkInterfaceLooksLikeCellular(i.name)) cell = true;
+      }
+      if (wifi) return true;
+      if (cell) return false;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> hasAnyRegion() async {
     try {
       final list = await ml.getListOfRegions();

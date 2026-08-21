@@ -61,6 +61,7 @@ export function mergeCommunityPlaces(input: {
   mapPlaces?: CommunityPlace[];
   stimmePins?: CommunityPlace[];
   meet?: CommunityPlace | null;
+  meets?: CommunityPlace[];
 }): { places: CommunityPlace[]; honesty: string } {
   const seen = new Set<string>();
   const places: CommunityPlace[] = [];
@@ -84,6 +85,7 @@ export function mergeCommunityPlaces(input: {
   for (const p of input.mapPlaces ?? []) push(p);
   for (const p of input.stimmePins ?? []) push(p);
   push(input.meet ?? null);
+  for (const p of input.meets ?? []) push(p);
   return {
     places,
     honesty:

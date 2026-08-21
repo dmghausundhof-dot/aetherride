@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,23 +15,31 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/user_profile_store.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/sync/sync_engine.dart'
     show SyncConflictException, SyncConflictStrategy;
 import '../../domain/bike.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/home/hof_stand.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 import '../../domain/rider_profile.dart';
 import '../../domain/ai/coach_inbox.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../auth/auth_screen.dart';
+import '../discover/offline_maps_sheet.dart';
 import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../garage/ble_pair_sheet.dart';
+import '../garage/rad_nav_mark.dart';
 import '../home/watch_pair_sheet.dart';
+import '../map/nav_puck_profile_tile.dart';
+import '../post_ride/post_ride_screen.dart';
 import '../privacy/privacy_screen.dart';
+import '../ride/ride_elev_sparkline.dart';
 import '../shell/shell_tabs.dart';
 import 'hud_media_connection_tile.dart';
 import 'public_profile_section.dart';
@@ -56,22 +65,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Dauer-Formular — wie Komoot/AllTrails „Profil bearbeiten" als
   /// bewusste Aktion, nicht als Default-Zustand. Siehe UX-Review.
   bool _editingRider = false;
-  bool _ignoreChipToggle = false;
+  int _privacyZoneCount = 0;
+  bool _offlineRoutingReady = false;
+  String? _offlinePackId;
+  String? _offlinePackName;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
     _weightCtrl = TextEditingController(text: '75');
+    OfflineMapsPrefs.revision.addListener(_onPackRevision);
     _load();
   }
 
   @override
   void dispose() {
+    OfflineMapsPrefs.revision.removeListener(_onPackRevision);
     _nameCtrl.dispose();
     _weightCtrl.dispose();
     super.dispose();
   }
+
+  void _onPackRevision() => unawaited(_refreshOfflineLine());
 
   List<String> get _styleIds {
     switch (_discipline) {
@@ -145,6 +161,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _load() async {
     final store = ref.read(userProfileStoreProvider);
     await store.load();
+    var zoneCount = 0;
+    try {
+      zoneCount =
+          (await ref.read(garageRepositoryProvider).listPrivacyZones()).length;
+    } catch (_) {}
     if (!mounted) return;
     final styles = _styleIds.toSet();
     var style = store.riderProfile.style;
@@ -155,7 +176,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _style = style;
       _skill = store.riderProfile.skillLevel;
       _discipline = store.preferredSport ?? BikeCategory.urban;
+      _privacyZoneCount = zoneCount;
     });
+    unawaited(_refreshOfflineLine());
+  }
+
+  Future<void> _refreshOfflineLine() async {
+    try {
+      final ready = await OfflinePackDirs.hasLegitimateActivatedPack();
+      final m = await OfflineMapsPrefs.read();
+      final raw = (m['regionPack'] as String?)?.trim() ?? '';
+      final id = OfflineMapsPrefs.packIdFromActivatedPath(
+        m['activatedPackPath'] as String?,
+      );
+      if (!mounted) return;
+      setState(() {
+        _offlineRoutingReady = ready;
+        _offlinePackId = ready ? id : null;
+        _offlinePackName = ready && raw.isNotEmpty ? raw : null;
+      });
+    } catch (_) {}
+  }
+
+  String _offlineMapsSubtitle(AppLocalizations l10n) {
+    return l10n.offlineMapsProfileSubtitle(
+      ready: _offlineRoutingReady,
+      packId: _offlinePackId,
+      packName: _offlinePackName,
+    );
   }
 
   /// Zentrale Rückmeldung — ersetzt das alte, leicht übersehene
@@ -228,6 +276,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _cancelEditRider() {
     unawaited(_load());
     setState(() => _editingRider = false);
+  }
+
+  Future<void> _openOfflineMaps() async {
+    var paused = false;
+    double? lng;
+    double? lat;
+    String? focusPackId;
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        lng = last.longitude;
+        lat = last.latitude;
+      }
+    } catch (_) {}
+    try {
+      final m = await OfflineMapsPrefs.read();
+      focusPackId = OfflineMapsPrefs.packIdFromActivatedPath(
+        m['activatedPackPath'] as String?,
+      );
+      if (lng == null || lat == null) {
+        final bbox = await OfflinePackDirs.activatedCoverageBbox() ??
+            OfflineMapsPrefs.packBboxFrom(m);
+        if (bbox != null && bbox.length >= 4) {
+          lng = (bbox[0] + bbox[2]) / 2;
+          lat = (bbox[1] + bbox[3]) / 2;
+        }
+      }
+    } catch (_) {}
+    await openOfflineMapsSheet(
+      context,
+      userLng: lng,
+      userLat: lat,
+      focusPackId: focusPackId,
+      onDownloadPaused: () => paused = true,
+    );
+    if (!mounted) return;
+    await _refreshOfflineLine();
+    if (!mounted) return;
+    if (paused) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(AppLocalizations.of(context).offlineDownloadPaused)),
+      );
+    }
   }
 
   Future<void> _sync() async {
@@ -432,7 +524,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (brand != null && brand.isNotEmpty) brand,
       active.name,
     ].join(' ');
-    return l10n.profileActiveBike(name, l10n.bikeCategoryShort(active.category));
+    return l10n.profileActiveBike(
+        name, l10n.bikeCategoryShort(active.category));
   }
 
   @override
@@ -477,6 +570,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             totalElevationM: statsAsync.valueOrNull?.totalElevationM,
             distanceKnown: statsAsync.valueOrNull?.distanceKnown ?? true,
             onTap: _openStatsTarget,
+          ),
+          const SizedBox(height: AppSpacing.m),
+          _RecentRides(
+            rides: ref.watch(recentRidesProvider).valueOrNull ?? const [],
+            onOpen: (id) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PostRideScreen(rideId: id),
+                ),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.xl),
           _SubscriptionCard(
@@ -558,7 +662,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         : '—',
                     alsoLabels: [
                       for (final s in store.preferredSports)
-                        if (s != store.preferredSport) l10n.bikeCategoryShort(s),
+                        if (s != store.preferredSport)
+                          l10n.bikeCategoryShort(s),
                     ],
                     styleLabel: styleOptions
                         .firstWhere(
@@ -591,7 +696,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             padded: false,
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.location_off_outlined),
+                  title: Text(l10n.privacyHomePlacesTitle),
+                  subtitle: Text(
+                    _privacyZoneCount == 0
+                        ? l10n.privacyHomePlacesEmpty
+                        : l10n.privacyHomePlacesCount(_privacyZoneCount),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await openPrivacyScreen(context);
+                    if (!mounted) return;
+                    await _load();
+                  },
+                ),
                 const HudMediaConnectionTile(),
+                const NavPuckProfileTile(),
                 ListTile(
                   leading: const Icon(Icons.sync),
                   title: Text(l10n.authSyncNow),
@@ -599,6 +720,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ? Text(l10n.profileLocalOnly)
                       : null,
                   onTap: _busy ? null : _sync,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.map_outlined),
+                  title: Text(l10n.profileOfflineMaps),
+                  subtitle: Text(_offlineMapsSubtitle(l10n)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => unawaited(_openOfflineMaps()),
                 ),
                 ListTile(
                   leading: const Icon(Icons.lock_open),
@@ -642,7 +770,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: Text(l10n.authPrivacy),
-                  onTap: () => openPrivacyScreen(context),
+                  subtitle: Text(l10n.privacyConsentsExportHint),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await openPrivacyScreen(context);
+                    if (!mounted) return;
+                    await _load();
+                  },
                 ),
               ],
             ),
@@ -758,24 +892,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (selected) ...[
-            GestureDetector(
-              onTap: _busy || isPrimary
-                  ? null
-                  : () {
-                      _ignoreChipToggle = true;
-                      unawaited(
-                        _setPrimaryDiscipline(d).whenComplete(() {
-                          _ignoreChipToggle = false;
-                        }),
-                      );
-                    },
-              child: Tooltip(
-                message: l10n.profileSetPrimary,
-                child: Icon(
-                  isPrimary ? Icons.star : Icons.star_border,
-                  size: 16,
-                  color: AppColors.accent,
-                ),
+            Tooltip(
+              message: isPrimary
+                  ? l10n.profilePrimarySuffix(l10n.bikeCategoryShort(d))
+                  : l10n.profileSetPrimary,
+              child: Icon(
+                isPrimary ? Icons.star : Icons.star_border,
+                size: 16,
+                color: AppColors.accent,
               ),
             ),
             const SizedBox(width: 4),
@@ -787,12 +911,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      onSelected: _busy
-          ? null
-          : (_) {
-              if (_ignoreChipToggle) return;
-              unawaited(_onDisciplineChipTap(d));
-            },
+      onSelected: _busy ? null : (_) => unawaited(_onDisciplineChipTap(d)),
     );
   }
 
@@ -803,10 +922,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _notify(AppLocalizations.of(context).profileNeedOneDiscipline);
         return;
       }
-      store.togglePreferredSport(d);
-    } else {
-      store.togglePreferredSport(d);
+      // Zweites Tippen auf eine gewählte Disziplin setzt sie als Haupt —
+      // nicht abwählen. Sonst gewinnt der Chip-Toggle gegen „Als Haupt".
+      await _setPrimaryDiscipline(d);
+      return;
     }
+    store.togglePreferredSport(d);
     _syncDisciplineStyle(store.preferredSport ?? d);
     await _persistDisciplines();
   }
@@ -954,6 +1075,111 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RecentRides extends StatelessWidget {
+  const _RecentRides({required this.rides, required this.onOpen});
+
+  final List<RideRecord> rides;
+  final void Function(String id) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final ended = [
+      for (final r in rides)
+        if (r.endedAt != null) r,
+    ];
+    if (ended.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    final shown = ended.take(5).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.profileActivityLabel,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.muted,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        for (final ride in shown)
+          _RecentRideTile(ride: ride, onOpen: () => onOpen(ride.id)),
+      ],
+    );
+  }
+}
+
+class _RecentRideTile extends StatelessWidget {
+  const _RecentRideTile({required this.ride, required this.onOpen});
+
+  final RideRecord ride;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final tel = buildRideTelemetry(ride.track);
+    final km = ride.distanceKm >= 0.05
+        ? '${ride.distanceKm.toStringAsFixed(1)} km'
+        : '—';
+    final hm = tel.hasElev
+        ? '${tel.climbM} hm'
+        : (ride.elevationM >= 1 ? '${ride.elevationM.round()} hm' : null);
+    final when = ride.startedAt.toLocal();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: Material(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ride.name?.trim().isNotEmpty == true
+                            ? ride.name!.trim()
+                            : '${when.day}.${when.month}.${when.year}',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      [
+                        km,
+                        if (hm != null) hm,
+                      ].join(' · '),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+                if (tel.hasElev) ...[
+                  const SizedBox(height: 8),
+                  RideTerrainPeek(
+                    telemetry: tel,
+                    caption: terrainCaption(tel),
+                    sparkHeight: 32,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1160,45 +1386,48 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: padded ? AppSpacing.l : 0,
-        vertical: AppSpacing.m,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.chipIdle,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(
-              left: padded ? 0 : AppSpacing.l,
-              right: padded ? 0 : AppSpacing.l,
-              bottom: AppSpacing.s,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: padded ? AppSpacing.l : 0,
+          vertical: AppSpacing.m,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.chipIdle,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(
+                left: padded ? 0 : AppSpacing.l,
+                right: padded ? 0 : AppSpacing.l,
+                bottom: AppSpacing.s,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                ),
-                if (trailing != null) trailing!,
-              ],
+                  if (trailing != null) trailing!,
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: padded ? 0 : 0),
-            child: child,
-          ),
-        ],
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: padded ? 0 : 0),
+              child: child,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1248,7 +1477,7 @@ class _RiderSummary extends StatelessWidget {
         if (activeBikeHint != null && activeBikeHint!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.s),
           _SummaryRow(
-            icon: Icons.two_wheeler,
+            mark: const RadNavMark(color: AppColors.muted, size: 20),
             label: activeBikeHint!,
             sub: l10n.profileSubGarage,
           ),
@@ -1271,9 +1500,14 @@ class _RiderSummary extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow(
-      {required this.icon, required this.label, required this.sub});
-  final IconData icon;
+  const _SummaryRow({
+    this.icon,
+    this.mark,
+    required this.label,
+    required this.sub,
+  });
+  final IconData? icon;
+  final Widget? mark;
   final String label;
   final String sub;
 
@@ -1281,7 +1515,9 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.muted),
+        mark ??
+            Icon(icon ?? Icons.circle_outlined,
+                size: 20, color: AppColors.muted),
         const SizedBox(width: AppSpacing.s),
         Expanded(
           child: Text.rich(
@@ -1339,6 +1575,24 @@ class _RiderEditForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: busy ? null : onCancel,
+                child: Text(l10n.cancel),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Expanded(
+              child: FilledButton(
+                onPressed: busy ? null : onSave,
+                child: Text(l10n.save),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.m),
         TextField(
           controller: nameCtrl,
           decoration: InputDecoration(labelText: l10n.profileDisplayName),
@@ -1425,7 +1679,7 @@ class _LegalLink extends StatelessWidget {
   }
 }
 
-/// Uhr und Bosch/CSC — sonst nur in der Werkstatt bzw. unsichtbar auf Start.
+/// Uhr und Bosch/CSC — sonst nur am Rad bzw. unsichtbar auf Start.
 class _ProfileConnectionsCard extends ConsumerStatefulWidget {
   const _ProfileConnectionsCard();
 
@@ -1501,16 +1755,14 @@ class _ProfileConnectionsCardState
     final ble = ref.read(bleCoreProvider);
     final watchLive = ble.isWatchConnected;
     final watchName = (_watch?.name ?? '').trim();
-    final watchLabel =
-        watchName.isEmpty ? l10n.bleWordWatch : watchName;
+    final watchLabel = watchName.isEmpty ? l10n.bleWordWatch : watchName;
     final watchLine = _watch == null
         ? l10n.profileWatchIdle
         : (watchLive
             ? l10n.bleConnectedNamed(watchLabel)
             : l10n.garageBlePairedNamed(watchLabel));
     final bikeName = (_bikeBle?.name ?? '').trim();
-    final bikeLabel =
-        bikeName.isEmpty ? l10n.profileBikeBleTitle : bikeName;
+    final bikeLabel = bikeName.isEmpty ? l10n.profileBikeBleTitle : bikeName;
     final bikeLine = _bikeBle == null
         ? l10n.profileBikeBleIdle
         : l10n.garageBlePairedNamed(bikeLabel);
@@ -1544,14 +1796,8 @@ class _ProfileConnectionsCardState
   }
 }
 
-void openProfileScreen(BuildContext context) {
-  Navigator.of(context).push(
+Future<void> openProfileScreen(BuildContext context) {
+  return Navigator.of(context).push<void>(
     MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
-  );
-}
-
-Future<void> openPrivacyScreen(BuildContext context) {
-  return Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const PrivacyScreen()),
   );
 }

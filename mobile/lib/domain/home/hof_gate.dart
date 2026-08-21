@@ -245,7 +245,7 @@ class HofAgo {
   final bool underHour;
 }
 
-/// Sport-Zeile am Stand. Motor in der Werkstatt zählt als Assist — ohne Flag zu erfinden.
+/// Sport-Zeile am Stand. Motor am Rad zählt als Assist — ohne Flag zu erfinden.
 String hofResidentSport(Bike bike, {bool hasMotor = false}) {
   if (hasMotor && !bike.hasElectricAssist) {
     return bike.copyWith(isEbike: true).categoryLabel;

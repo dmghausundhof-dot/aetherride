@@ -19,6 +19,7 @@ class RideGroupFriendSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final meta = AppColors.meta(context);
     final rel = friendRelLabel(
       mate.rel,
       ahead: l10n.rideGroupAhead,
@@ -26,22 +27,24 @@ class RideGroupFriendSheet extends StatelessWidget {
       left: l10n.rideGroupLeft,
       right: l10n.rideGroupRight,
     );
-    final line = mate.sharing
-        ? friendPinChip(
-            name: mate.label,
-            meters: mate.meters,
-            stale: mate.stale,
-            staleLabel: l10n.rideGroupPinStale,
-            relLabel: mate.stale ? null : rel,
-          )
-        : '${friendPinName(mate.label)} · ${l10n.rideGroupOffline}';
+    final dist = mate.meters == null ? null : friendDistLabel(mate.meters!);
+    final rawDetail = !mate.sharing
+        ? l10n.rideGroupOffline
+        : mate.stale
+            ? l10n.rideGroupPinStale
+            : [
+                if (dist != null) dist,
+                if (rel != null && rel.isNotEmpty) rel,
+              ].join(' ');
+    final detail =
+        rawDetail.trim().isEmpty ? l10n.rideGroupShareOn : rawDetail;
     final canFly = onFlyTo != null && mate.lat != null && mate.lng != null;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          20,
+          AppSpacing.xl,
           0,
-          20,
+          AppSpacing.xl,
           HofThresholdNav.sheetBottomInset(context),
         ),
         child: Column(
@@ -52,29 +55,42 @@ class RideGroupFriendSheet extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor:
-                      mate.sharing ? AppColors.accent : AppColors.overlay,
-                  foregroundColor:
-                      mate.sharing ? AppColors.onAccent : AppColors.muted,
+                  backgroundColor: mate.sharing
+                      ? AppColors.chromeFill(context)
+                      : AppColors.overlay,
+                  foregroundColor: mate.sharing
+                      ? AppColors.inkOnChrome(context)
+                      : meta,
                   child: Text(
                     friendPinInitials(mate.label),
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.m),
                 Expanded(
-                  child: Text(
-                    line,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friendPinName(mate.label),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.sheetInk(context),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        style: TextStyle(fontSize: 13, color: meta),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             if (canFly) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.l),
               FilledButton(
                 key: const Key('ride-group-fly-to'),
                 onPressed: () {

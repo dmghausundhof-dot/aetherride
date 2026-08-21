@@ -16,6 +16,7 @@ class RidePreStartChrome extends StatelessWidget {
     required this.onStart,
     this.starting = false,
     this.onClearRoute,
+    this.netHint,
   });
 
   /// Active route title, or null for freeride.
@@ -29,6 +30,9 @@ class RidePreStartChrome extends StatelessWidget {
 
   /// Optional dismiss for the loaded route chip.
   final VoidCallback? onClearRoute;
+
+  /// Street map needs net — sits with the route chip, not over the puck.
+  final Widget? netHint;
 
   /// Primary CTA label — DE-Fallback für Unit-Tests ohne Locale-Binding.
   static String primaryLabel({required bool hasRoute}) =>
@@ -77,6 +81,13 @@ class RidePreStartChrome extends StatelessWidget {
                       ),
               ),
             ),
+          ),
+        if (netHint != null)
+          Positioned(
+            top: topInset + (hasRoute ? 88 : 12),
+            left: 12,
+            right: 12,
+            child: Center(child: netHint),
           ),
         Positioned(
           left: 16,

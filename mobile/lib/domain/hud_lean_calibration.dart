@@ -5,6 +5,12 @@
 abstract final class HudLeanCalibration {
   static const double resetEpsilonDeg = 0.5;
 
+  /// Rolling faster than this makes a rest-angle zero meaningless.
+  static const double maxCalibrateSpeedKmh = 4;
+
+  /// Gauge bar clamp — the numeral still shows the real display lean.
+  static const double gaugeVisualMaxAbsDeg = 50;
+
   /// HUD lean after subtracting the rider's mount zero.
   static double displayDeg(double rawDeg, double offsetDeg) {
     var d = rawDeg - offsetDeg;
@@ -25,5 +31,26 @@ abstract final class HudLeanCalibration {
 
   static String formatDeg(double displayDeg, {int fractionDigits = 1}) {
     return '${displayDeg.toStringAsFixed(fractionDigits)}°';
+  }
+
+  /// Zero only when the IMU has a sample and the bike is nearly still.
+  static bool canCalibrate({
+    required double? rawLeanDeg,
+    required double speedKmh,
+  }) {
+    if (rawLeanDeg == null) return false;
+    return speedKmh < maxCalibrateSpeedKmh;
+  }
+
+  static double gaugeVisualDeg(double displayDeg) =>
+      displayDeg.clamp(-gaugeVisualMaxAbsDeg, gaugeVisualMaxAbsDeg);
+
+  /// Any fused sample is enough to show the Fahrwerk row (mount is not a gate).
+  static bool hasLiveSample({
+    double? leanDeg,
+    double? gPeak,
+    double? flow,
+  }) {
+    return leanDeg != null || gPeak != null || flow != null;
   }
 }

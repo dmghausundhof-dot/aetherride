@@ -10,15 +10,20 @@ class RideConnectivityChip extends StatelessWidget {
     super.key,
     required this.state,
     this.compact = false,
+    this.mapHintVisible = false,
   });
 
   final ConnectivityChipState state;
   final bool compact;
+  final bool mapHintVisible;
 
   @override
   Widget build(BuildContext context) {
-    final label = context.l10nOrNull?.connectivityChipLabelFor(state) ??
-        connectivityChipLabel(state);
+    final label = context.l10nOrNull?.connectivityChipLabelFor(
+          state,
+          mapHintVisible: mapHintVisible,
+        ) ??
+        connectivityChipLabel(state, mapHintVisible: mapHintVisible);
     final (bg, fg, icon) = switch (state) {
       ConnectivityChipState.live => (
           AppColors.sunSurface,
@@ -34,6 +39,11 @@ class RideConnectivityChip extends StatelessWidget {
           AppColors.mapCautionFill,
           AppColors.charcoal,
           Icons.wifi_off_outlined,
+        ),
+      ConnectivityChipState.routingOffline => (
+          AppColors.mapCautionFill,
+          AppColors.charcoal,
+          Icons.alt_route_outlined,
         ),
       ConnectivityChipState.mapsMissing => (
           AppColors.mapWarnFill,

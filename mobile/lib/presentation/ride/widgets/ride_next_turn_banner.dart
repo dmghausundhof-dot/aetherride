@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
 import '../../map/nav_puck_image.dart';
+import '../../shared/nav_turn_glyph.dart';
 
 /// Compact next-turn pill — one row, glanceable at speed (N-MAP-02).
 /// Glyph · distance · street. Street is secondary; glyph already encodes turn.
@@ -12,9 +13,10 @@ class RideNextTurnBanner extends StatelessWidget {
     required this.distance,
     required this.instruction,
     required this.icon,
+    this.iconName,
     this.street,
     this.maneuver,
-    this.navPuckStyle = NavPuckStyle.chevron,
+    this.navPuckStyle = NavPuckStyle.rider,
   });
 
   final String distance;
@@ -22,6 +24,9 @@ class RideNextTurnBanner extends StatelessWidget {
   /// Fallback 1-line text when [street] is null (legacy call sites).
   final String instruction;
   final IconData icon;
+
+  /// When set, prefers the FlowLine manoeuvre SVG over [icon].
+  final String? iconName;
 
   /// Prefer street name (Komoot-style glance).
   final String? street;
@@ -58,14 +63,16 @@ class RideNextTurnBanner extends StatelessWidget {
           ),
           child: Row(
             children: [
-              icon == Icons.navigation
-                  ? AetherNavMark(
-                      size: glyphDp,
-                      color: ink,
-                      stroke: fill,
-                      style: navPuckStyle,
-                    )
-                  : Icon(icon, color: ink, size: glyphDp),
+              navTurnAssetPath(iconName) != null
+                  ? NavTurnGlyph(iconName!, size: glyphDp, color: ink)
+                  : icon == Icons.navigation
+                      ? AetherNavMark(
+                          size: glyphDp,
+                          color: ink,
+                          stroke: fill,
+                          style: navPuckStyle,
+                        )
+                      : Icon(icon, color: ink, size: glyphDp),
               const SizedBox(width: AppSpacing.s),
               Text(
                 distance,

@@ -82,6 +82,7 @@ const schemaAssetPath = <String, String>{
   'cargo': 'assets/garage/silhouettes/cargo.svg',
   'folding': 'assets/garage/silhouettes/folding.svg',
   'kids': 'assets/garage/silhouettes/kids.svg',
+  'hiking': 'assets/garage/silhouettes/hiking.svg',
 };
 
 const schemaHotspots = <String, Map<String, SchemaAnchor>>{

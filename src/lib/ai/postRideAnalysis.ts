@@ -4,10 +4,12 @@
  */
 
 import type { Bike, Ride, RideFeedback, Setup, Recommendation } from "@/types";
+import { buildRideTelemetry } from "@/lib/ride/rideTelemetry";
 
 export interface PostRideObservation {
   id: string;
   text: string;
+  params?: Record<string, string>;
 }
 
 export interface SetupChangeSuggestion {
@@ -19,6 +21,8 @@ export interface SetupChangeSuggestion {
   confidence: "low" | "medium" | "high";
   adjusterKey?: string;
   suggestedDelta?: number;
+  kind?: "rebound-slow" | "rebound-fast" | "pressure";
+  params?: Record<string, string>;
 }
 
 export interface PostRideAnalysis {
@@ -44,9 +48,14 @@ export function analyzePostRide(input: {
   const m = ride.summaryMetrics;
   const km = ride.distanceM / 1000;
   const hours = ride.durationSec / 3600;
+  const tel = buildRideTelemetry(ride.track);
+  const climbShow = tel.channels.elev ? tel.climbM : ride.elevationGainM;
 
+  const mins = (hours * 60).toFixed(0);
   const facts: string[] = [
-    `${km.toFixed(1)} km · ${ride.elevationGainM} hm · ${(hours * 60).toFixed(0)} min`,
+    tel.channels.elev
+      ? `${km.toFixed(1)} km · ${climbShow} hm ↑ · ${tel.descentM} hm ↓ · ${mins} min`
+      : `${km.toFixed(1)} km · ${climbShow} hm · ${mins} min`,
     `Flow ${m.flowScore} · Peak ${m.gForcePeak} g · ${m.impactCount} Impacts · Lean ${m.leanAngleMax}°`,
   ];
   if (setup) {
@@ -63,11 +72,13 @@ export function analyzePostRide(input: {
     observations.push({
       id: "impacts",
       text: `Viele harte Impacts (${m.impactCount} auf ${km.toFixed(1)} km) — Front/Dämpfer wurden stark belastet.`,
+      params: { count: String(m.impactCount), km: km.toFixed(1) },
     });
   } else if (m.impactCount <= 2 && km >= 10) {
     observations.push({
       id: "smooth",
       text: `Wenige Impacts bei ${km.toFixed(1)} km — eher flowig oder glatter Untergrund.`,
+      params: { km: km.toFixed(1) },
     });
   }
 
@@ -75,11 +86,13 @@ export function analyzePostRide(input: {
     observations.push({
       id: "flow-high",
       text: `Hoher Flow-Score (${m.flowScore}) — Tempo und Linienwahl wirkten stimmig.`,
+      params: { flow: String(m.flowScore) },
     });
   } else if (m.flowScore > 0 && m.flowScore < 45) {
     observations.push({
       id: "flow-low",
       text: `Niedriger Flow-Score (${m.flowScore}) — viele Tempo-Brüche oder Stopps.`,
+      params: { flow: String(m.flowScore) },
     });
   }
 
@@ -87,6 +100,28 @@ export function analyzePostRide(input: {
     observations.push({
       id: "peak-g",
       text: `Peak ${m.gForcePeak} g — einzelne harte Einschläge; Setup und Reifendruck prüfen.`,
+      params: { g: String(m.gForcePeak) },
+    });
+  }
+
+  if (tel.gapKm >= 0.4) {
+    observations.push({
+      id: "elev-gap",
+      text: `Höhenlücken auf ${tel.gapKm.toFixed(1)} km — Neigung dort nicht belastbar.`,
+      params: { gap: tel.gapKm.toFixed(1) },
+    });
+  }
+  if (tel.maxGradePct != null && tel.maxGradePct >= 12) {
+    observations.push({
+      id: "steep",
+      text: `Steile Passagen — max +${tel.maxGradePct.toFixed(1)} %.`,
+      params: { grade: tel.maxGradePct.toFixed(1) },
+    });
+  } else if (tel.minGradePct != null && tel.minGradePct <= -12) {
+    observations.push({
+      id: "steep-down",
+      text: `Steile Abfahrten — max ${tel.minGradePct.toFixed(1)} %.`,
+      params: { grade: tel.minGradePct.toFixed(1) },
     });
   }
 
@@ -95,6 +130,10 @@ export function analyzePostRide(input: {
       observations.push({
         id: "fb-harsh",
         text: `Dein Feedback: Front ${feedback.frontFeel === "too_firm" ? "zu hart" : "ok"} · kleine Schläge ${feedback.smallBump === "harsh" ? "rau" : "—"}.`,
+        params: {
+          front: feedback.frontFeel === "too_firm" ? "too_firm" : "ok",
+          bumps: feedback.smallBump === "harsh" ? "harsh" : "dash",
+        },
       });
     } else if (feedback.frontFeel === "too_soft" || feedback.brakeDive === "dives") {
       observations.push({
@@ -159,6 +198,8 @@ function buildSetupSuggestion(input: {
       confidence: feedback && !feedback.skipped ? "high" : "medium",
       adjusterKey: "fork.rebound",
       suggestedDelta: -2,
+      kind: "rebound-slow",
+      params: { current: String(current), next: String(next) },
     };
   }
 
@@ -179,6 +220,8 @@ function buildSetupSuggestion(input: {
       confidence: feedback && !feedback.skipped ? "high" : "medium",
       adjusterKey: "fork.rebound",
       suggestedDelta: 2,
+      kind: "rebound-fast",
+      params: { current: String(current), next: String(next) },
     };
   }
 
@@ -193,6 +236,7 @@ function buildSetupSuggestion(input: {
       confidence: "low",
       adjusterKey: "tire_front.pressure_psi",
       suggestedDelta: 1.5,
+      kind: "pressure",
     };
   }
 

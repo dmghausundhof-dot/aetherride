@@ -35,5 +35,21 @@ void main() {
     expect(p.toJson()['lng'], 8.2);
     expect(p.toJson()['elev'], 400);
     expect(p.toJson().containsKey('hr'), isFalse);
+    expect(p.toJson().containsKey('lean'), isFalse);
+    expect(p.toJson().containsKey('impact'), isFalse);
+
+    const stamped = TrackPoint(
+      lat: 48.1,
+      lng: 8.2,
+      timeMs: 1000,
+      leanDeg: 12.4,
+      gPeak: 2.15,
+      impact: true,
+      speedKmh: 28.3,
+    );
+    expect(stamped.toJson()['lean'], 12.4);
+    expect(stamped.toJson()['g'], 2.15);
+    expect(stamped.toJson()['impact'], 1);
+    expect(stamped.toJson()['spd'], 28.3);
   });
 }

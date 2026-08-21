@@ -76,7 +76,7 @@ const EN: AboutCopy = {
     title: "Not another timeline on two wheels.",
     paragraphs: [
       "Most cycling apps stack cards: Explore, Club, Shop, Activity. Eventually the start screen is a feed, the ride is a statistic, the bike is an SKU. FlowLine turns that around. Home is the stand. Four doors. One orange button.",
-      "Web is the desk: find tours, plan, look after the bike, share a Mappe. The app is the ride: HUD, GPS in the background, offline packs, sensors, watch. What the browser cannot do reliably is not sold as live GPS in the tab.",
+      "Web is the desk: find tours, plan, look after the bike, share a Mappe. The app is the ride: HUD, GPS in the background, offline routing, sensors, watch. What the browser cannot do reliably is not sold as live GPS in the tab.",
       "The name is the stance: Flow for the cut, Line for the line. Outdoor · Cycling · Flow. No leaderboard that scores your weeknight loop. No dummy kilometre that makes Home look full.",
     ],
   },
@@ -89,7 +89,7 @@ const EN: AboutCopy = {
     },
     {
       title: "No second till",
-      body: "The shop is off for now. The workshop stays for fit and care. We do not invent an address for a checkout.",
+      body: "The shop is off for now. The bike stays for fit and care. We do not invent an address for a checkout.",
     },
     {
       title: "No dummy",
@@ -132,7 +132,7 @@ const FR: AboutCopy = {
     title: "Pas encore un fil d’actualité sur deux roues.",
     paragraphs: [
       "La plupart des applis vélo empilent des cartes : Explore, Club, Shop, Activity. Un jour l’accueil est un fil, la sortie une statistique, le vélo un SKU. FlowLine inverse ça. Home est le stand. Cinq portes. Un bouton orange.",
-      "Le web est le bureau : trouver des sorties, planifier, soigner le vélo, partager une Mappe. L’appli est la sortie : HUD, GPS en arrière-plan, packs hors ligne, capteurs, montre. Ce que le navigateur ne fait pas de façon fiable n’est pas vendu comme GPS live dans l’onglet.",
+      "Le web est le bureau : trouver des sorties, planifier, soigner le vélo, partager une Mappe. L’appli est la sortie : HUD, GPS en arrière-plan, routage hors ligne, capteurs, montre. Ce que le navigateur ne fait pas de façon fiable n’est pas vendu comme GPS live dans l’onglet.",
       "Le nom dit la posture : Flow pour la coupe, Line pour la ligne. Outdoor · Cycling · Flow. Pas de classement qui note ta boucle en semaine. Pas de kilomètre fictif qui fait paraître Home plein.",
     ],
   },
@@ -146,7 +146,7 @@ const FR: AboutCopy = {
     },
     {
       title: "Pas de deuxième caisse",
-      body: "Le magasin est coupé pour l’instant. L’atelier reste pour le fit et l’entretien. On n’invente pas d’adresse pour un checkout.",
+      body: "Le magasin est coupé pour l’instant. Le vélo reste pour le fit et l’entretien. On n’invente pas d’adresse pour un checkout.",
     },
     {
       title: "Pas de simulacre",
@@ -189,7 +189,7 @@ const IT: AboutCopy = {
     title: "Non un’altra timeline su due ruote.",
     paragraphs: [
       "La maggior parte delle app bici impila schede: Explore, Club, Shop, Activity. Alla fine l’inizio è un feed, l’uscita una statistica, la bici uno SKU. FlowLine lo gira. Home è lo stand. Cinque porte. Un pulsante arancione.",
-      "Il web è la scrivania: trovare uscite, pianificare, curare la bici, condividere una Mappe. L’app è l’uscita: HUD, GPS in background, pack offline, sensori, orologio. Ciò che il browser non fa in modo affidabile non viene venduto come GPS live nel tab.",
+      "Il web è la scrivania: trovare uscite, pianificare, curare la bici, condividere una Mappe. L’app è l’uscita: HUD, GPS in background, routing offline, sensori, orologio. Ciò che il browser non fa in modo affidabile non viene venduto come GPS live nel tab.",
       "Il nome è la postura: Flow per il taglio, Line per la linea. Outdoor · Cycling · Flow. Niente classifica che valuta il giro serale. Niente chilometro finto che fa sembrare Home piena.",
     ],
   },
@@ -203,7 +203,7 @@ const IT: AboutCopy = {
     },
     {
       title: "Niente seconda cassa",
-      body: "Il negozio è spento per ora. L’officina resta per fit e cura. Non inventiamo un indirizzo per un checkout.",
+      body: "Il negozio è spento per ora. La bici resta per fit e cura. Non inventiamo un indirizzo per un checkout.",
     },
     {
       title: "Niente finto",
@@ -246,7 +246,7 @@ const NL: AboutCopy = {
     title: "Niet nóg een timeline op twee wielen.",
     paragraphs: [
       "De meeste fietsapps stapelen kaarten: Explore, Club, Shop, Activity. Uiteindelijk is het startscherm een feed, de rit een statistiek, de fiets een SKU. FlowLine draait dat om. Home is de stand. Vier deuren. Eén oranje knop.",
-      "Web is het bureau: tochten vinden, plannen, de fiets verzorgen, een Mappe delen. De app is de rit: HUD, GPS op de achtergrond, offline packs, sensoren, horloge. Wat de browser niet betrouwbaar kan, wordt niet als live GPS in de tab verkocht.",
+      "Web is het bureau: tochten vinden, plannen, de fiets verzorgen, een Mappe delen. De app is de rit: HUD, GPS op de achtergrond, offline-routing, sensoren, horloge. Wat de browser niet betrouwbaar kan, wordt niet als live GPS in de tab verkocht.",
       "De naam is de houding: Flow voor de snede, Line voor de lijn. Outdoor · Cycling · Flow. Geen klassement dat je doordeweekse lus scoort. Geen nepkilometer die Home vol laat lijken.",
     ],
   },
@@ -260,7 +260,7 @@ const NL: AboutCopy = {
     },
     {
       title: "Geen tweede kassa",
-      body: "De winkel is voorlopig uit. De werkplaats blijft voor pasvorm en zorg. We verzinnen geen adres voor een checkout.",
+      body: "De winkel is voorlopig uit. De fiets blijft voor pasvorm en zorg. We verzinnen geen adres voor een checkout.",
     },
     {
       title: "Geen nep",

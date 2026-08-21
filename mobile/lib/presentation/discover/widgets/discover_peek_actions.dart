@@ -10,11 +10,13 @@ class DiscoverPeekActions extends StatelessWidget {
     required this.onNavigate,
     required this.onSave,
     required this.onAkte,
+    this.navigateLabel,
   });
 
   final VoidCallback onNavigate;
   final VoidCallback onSave;
   final VoidCallback onAkte;
+  final String? navigateLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,7 @@ class DiscoverPeekActions extends StatelessWidget {
             ),
             onPressed: onNavigate,
             child: Text(
-              l10n.goRide,
+              navigateLabel ?? l10n.goRide,
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
             ),
           ),

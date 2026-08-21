@@ -29,7 +29,7 @@ export const COMMUNITY_FEATURES: {
   },
   {
     title: "Zusammen raus",
-    body: "Gruppe mit Einladungslink vor dem Tor. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
+    body: "Gruppe mit Einladungslink vor dem Tor. Öffentlich: Treffen-Pin auf der Karte, ohne Live-GPS. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
     href: "/library",
     cta: "Zum Platz",
   },

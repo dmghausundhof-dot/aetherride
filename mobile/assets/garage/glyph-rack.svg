@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Träger">
+  <title>FlowLine Träger</title>
+  <path d="M4.8 16.8 H19.2" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M7.2 16.8 V11.2 H16.8 V16.8" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M9.2 11.2 V8.6 C9.2 7.6 10 6.8 11 6.8 H13 C14 6.8 14.8 7.6 14.8 8.6 V11.2" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

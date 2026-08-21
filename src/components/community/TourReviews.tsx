@@ -35,6 +35,8 @@ type CloudPhoto = {
   id?: string;
   url?: string | null;
   caption?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 function crowdLine(
@@ -128,6 +130,7 @@ export function TourReviews({
       rating,
       body,
       authorLabel: name,
+      tags,
     });
     if ("error" in local) {
       setMsg({
@@ -228,15 +231,30 @@ export function TourReviews({
           {cloudPhotos
             .filter((p) => p.url)
             .slice(0, 8)
-            .map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={p.id || p.url!}
-                src={p.url!}
-                alt={p.caption || s.photoAlt}
-                className="h-20 w-28 rounded-lg object-cover"
-              />
-            ))}
+            .map((p) => {
+              const plat = Number(p.lat);
+              const plng = Number(p.lng);
+              const geo =
+                Number.isFinite(plat) &&
+                Number.isFinite(plng) &&
+                Math.abs(plat) <= 90 &&
+                Math.abs(plng) <= 180;
+              return (
+                <div key={p.id || p.url!} className="relative shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.url!}
+                    alt={p.caption || s.photoAlt}
+                    className="h-20 w-28 rounded-lg object-cover"
+                  />
+                  {geo ? (
+                    <span className="absolute left-1 top-1 text-[10px] font-semibold text-white drop-shadow">
+                      {plat.toFixed(3)}, {plng.toFixed(3)}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
         </div>
       )}
 

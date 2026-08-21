@@ -4,9 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
-import '../export/gpx.dart';
-import '../export/strava_stub.dart';
+import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
+import 'export_trimmed.dart';
+import 'gpx.dart';
+import 'strava_stub.dart';
 
 class StravaClientStatus {
   const StravaClientStatus({
@@ -122,14 +124,18 @@ Future<StravaClientStatus> fetchStravaStatus() async {
   }
 }
 
-Future<({bool ok, String message})> uploadRideToStrava(RideRecord ride) async {
+Future<({bool ok, String message})> uploadRideToStrava(
+  RideRecord ride, {
+  List<PrivacyZone> zones = const [],
+}) async {
   final token = await _bearer();
   if (token == null) {
     return (ok: false, message: 'Nicht eingeloggt');
   }
-  final stub = rideToStravaActivityStub(ride);
-  final hasTrack = rideHasExportableTrack(ride);
-  final gpx = hasTrack ? rideToGpx(ride) : null;
+  final forUpload = rideWithTrimmedTrack(ride, zones);
+  final stub = rideToStravaActivityStub(forUpload);
+  final hasTrack = rideHasExportableTrack(forUpload);
+  final gpx = hasTrack ? rideToGpx(forUpload) : null;
   if (!hasTrack && ((stub['elapsed_time'] as num?)?.toInt() ?? 0) <= 0) {
     return (
       ok: false,

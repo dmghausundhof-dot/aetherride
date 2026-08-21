@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'coverage_graph_ring.dart';
+import 'coverage_label.dart';
 import 'offline_maps_prefs.dart';
 import 'offline_pack_catalog.dart';
 import 'overlay_regions.dart';
@@ -14,6 +17,140 @@ abstract final class OfflinePackDirs {
   static Future<Directory> root() async {
     final docs = await getApplicationDocumentsDirectory();
     return Directory(p.join(docs.path, 'regions'));
+  }
+
+  /// Activated pack path exists and the graph belongs to that region.
+  static Future<bool> hasLegitimateActivatedPack() async {
+    final path = await OfflineMapsPrefs.activatedPackPath();
+    if (path == null || path.isEmpty) return false;
+    try {
+      return directoryIsLegitimate(Directory(path));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Manifest/overlay bbox of the activated graph — not a stale prefs box.
+  static Future<List<double>?> activatedCoverageBbox() async {
+    final path = await OfflineMapsPrefs.activatedPackPath();
+    if (path == null || path.isEmpty) return null;
+    try {
+      final dir = Directory(path);
+      if (!await directoryIsLegitimate(dir)) return null;
+      final disk = await bboxFromDir(dir);
+      final prefs = OfflineMapsPrefs.packBboxFrom(await OfflineMapsPrefs.read());
+      return preferDiskPackBbox(fromDisk: disk, fromPrefs: prefs);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Graph occupancy of the activated pack. Null outline = chamfered bbox.
+  static Future<List<List<double>>?> activatedCoverageRing() async {
+    return (await activatedCoverageRingResult())?.outline;
+  }
+
+  static Future<CoverageRingCache?> activatedCoverageRingResult() async {
+    final path = await OfflineMapsPrefs.activatedPackPath();
+    if (path == null || path.isEmpty) return null;
+    try {
+      final dir = Directory(path);
+      if (!await directoryIsLegitimate(dir)) return null;
+      return coverageRingResultForDir(dir);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<CoverageRingCache?> coverageRingCacheOnly(Directory dir) async {
+    final graph = File(p.join(dir.path, 'offline_graph.json'));
+    if (!await graph.exists()) return null;
+    final bytes = await graph.length();
+    final cache = File(p.join(dir.path, kCoverageRingFileName));
+    if (!await cache.exists()) return null;
+    try {
+      return coverageRingFromCacheJson(
+        await cache.readAsString(),
+        graphBytes: bytes,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<CoverageRingCache?> coverageRingResultForDir(
+    Directory dir,
+  ) async {
+    final graph = File(p.join(dir.path, 'offline_graph.json'));
+    if (!await graph.exists()) return null;
+    final bytes = await graph.length();
+    final cache = File(p.join(dir.path, kCoverageRingFileName));
+    if (await cache.exists()) {
+      try {
+        final hit = coverageRingFromCacheJson(
+          await cache.readAsString(),
+          graphBytes: bytes,
+        );
+        if (hit != null) return hit;
+      } catch (_) {}
+    }
+    final graphPath = graph.path;
+    final payload = await Isolate.run(
+      () => coverageRingEvaluateGraphFile(graphPath),
+    );
+    final hit = coverageRingCacheFromPayload(payload);
+    if (hit == null) return null;
+    try {
+      await cache.writeAsString(
+        coverageRingCacheJson(
+          ring: hit.ring,
+          graphBytes: bytes,
+          solid: hit.solid,
+        ),
+      );
+    } catch (_) {}
+    return hit;
+  }
+
+  static Future<List<List<double>>?> coverageRingForDir(Directory dir) async {
+    return (await coverageRingResultForDir(dir))?.outline;
+  }
+
+  /// Graph on disk and that pack's occupancy cover this GPS point.
+  static Future<bool> legitimateCoversPoint(double lng, double lat) async {
+    final bbox = await activatedCoverageBbox();
+    if (bbox == null) return false;
+    final ring = await activatedCoverageRing();
+    return coveragePointInCoverage(
+      lng: lng,
+      lat: lat,
+      bbox: bbox,
+      ring: ring,
+    );
+  }
+
+  /// Graph on disk and that pack's occupancy cover this A→B (and optional vias).
+  static Future<bool> legitimateCoversRoute({
+    required double fromLng,
+    required double fromLat,
+    required double toLng,
+    required double toLat,
+    List<({double lng, double lat})> vias = const [],
+    List<({double lng, double lat})> along = const [],
+  }) async {
+    final bbox = await activatedCoverageBbox();
+    if (bbox == null) return false;
+    final ring = await activatedCoverageRing();
+    return coverageCoversLngLats(
+      points: [
+        (lng: fromLng, lat: fromLat),
+        (lng: toLng, lat: toLat),
+        ...vias,
+        ...along,
+      ],
+      bbox: bbox,
+      ring: ring,
+    );
   }
 
   static Future<bool> directoryIsLegitimate(Directory dir) async {
@@ -104,7 +241,7 @@ abstract final class OfflinePackDirs {
     return id;
   }
 
-  /// If a legitimate pack covers from+to, make it the active routing pack.
+  /// If a legitimate pack covers from+to (+ vias), make it the active pack.
   /// Returns true when a covering pack is now in prefs (caller should clear
   /// the tiles-path cache).
   static Future<bool> switchToPackCovering({
@@ -112,6 +249,7 @@ abstract final class OfflinePackDirs {
     required double fromLat,
     required double toLng,
     required double toLat,
+    List<({double lng, double lat})> vias = const [],
   }) async {
     try {
       final rootDir = await root();
@@ -119,13 +257,22 @@ abstract final class OfflinePackDirs {
       Directory? hit;
       List<double>? hitBbox;
       var hitArea = double.infinity;
+      final points = <({double lng, double lat})>[
+        (lng: fromLng, lat: fromLat),
+        (lng: toLng, lat: toLat),
+        ...vias,
+      ];
       await for (final e in rootDir.list()) {
         if (e is! Directory) continue;
         if (!await directoryIsLegitimate(e)) continue;
         final bbox = await bboxFromDir(e);
         if (bbox == null || bbox.length < 4) continue;
-        if (!pointInLngLatBbox(bbox, fromLng, fromLat) ||
-            !pointInLngLatBbox(bbox, toLng, toLat)) {
+        final cached = await coverageRingCacheOnly(e);
+        if (!coverageCoversLngLats(
+          points: points,
+          bbox: bbox,
+          ring: cached?.outline,
+        )) {
           continue;
         }
         final area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]);
@@ -149,10 +296,60 @@ abstract final class OfflinePackDirs {
         'regionPack': await nameFromDir(hit),
         'packBbox': hitBbox,
         'engineHint': 'offline_graph',
+        'activatedAt': DateTime.now().toUtc().toIso8601String(),
       });
       return true;
     } catch (_) {
       return false;
     }
+  }
+
+  static Future<String?> builtAtFromDir(Directory dir) async {
+    final manFile = File(p.join(dir.path, 'manifest.json'));
+    if (!await manFile.exists()) return null;
+    try {
+      final man = jsonDecode(await manFile.readAsString());
+      if (man is Map && man['builtAt'] is String) {
+        final s = (man['builtAt'] as String).trim();
+        return s.isEmpty ? null : s;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<Map<String, String>> builtAtById() async {
+    final out = <String, String>{};
+    try {
+      final rootDir = await root();
+      if (!await rootDir.exists()) return out;
+      await for (final e in rootDir.list()) {
+        if (e is! Directory) continue;
+        if (!await directoryIsLegitimate(e)) continue;
+        final built = await builtAtFromDir(e);
+        if (built != null) out[p.basename(e.path)] = built;
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  static Future<int> totalBytes() async {
+    try {
+      final rootDir = await root();
+      if (!await rootDir.exists()) return 0;
+      var n = 0;
+      await for (final e in rootDir.list(recursive: true, followLinks: false)) {
+        if (e is File) n += await e.length();
+      }
+      return n;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  static Future<void> deleteId(String id) async {
+    final safe = id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+    if (safe.isEmpty) return;
+    final dir = Directory(p.join((await root()).path, safe));
+    if (await dir.exists()) await dir.delete(recursive: true);
   }
 }

@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../core/config.dart';
 import '../domain/active_route.dart';
 import '../domain/routing/tour_nav_geometry.dart';
+import '../domain/tours/tour_community_ux.dart';
 import '../presentation/shell/shell_tabs.dart';
 import '../providers/app_providers.dart';
 import '../providers/ride_providers.dart';
@@ -235,9 +236,40 @@ class DeepLinkParse {
     return job == 'replace';
   }
 
-  /// ShopScreen nur mit Laden-Tür. Parse bleibt, Routing landet in der Werkstatt.
+  /// ShopScreen nur mit Laden-Tür. Parse bleibt, Routing landet am Rad.
   static bool opensShopScreen(Uri uri) =>
       kindOf(uri) == DeepLinkKind.shop && AppConfig.shopEnabled;
+
+  /// Spur aus GeoJSON — 3. Koordinate bleibt, wenn sie gemessen ist.
+  static List<List<double>> trackCoordsFromGeometry(dynamic geom) {
+    final coords = <List<double>>[];
+    if (geom is! Map || geom['coordinates'] is! List) return coords;
+    for (final c in geom['coordinates'] as List) {
+      if (c is! List || c.length < 2) continue;
+      final lng = (c[0] as num?)?.toDouble();
+      final lat = (c[1] as num?)?.toDouble();
+      if (lng == null || lat == null || !lng.isFinite || !lat.isFinite) {
+        continue;
+      }
+      final ele = c.length >= 3 ? (c[2] as num?)?.toDouble() : null;
+      coords.add(
+        ele != null && ele.isFinite ? [lng, lat, ele] : [lng, lat],
+      );
+    }
+    return coords;
+  }
+
+  /// 0 = unbekannt. Nie Distanz × Faktor.
+  static double elevationMOf(
+    Map<String, dynamic> json, [
+    List<List<double>> coords = const [],
+  ]) {
+    for (final key in const ['elevationM', 'ascentM', 'elevationGainM']) {
+      final raw = json[key];
+      if (raw is num && raw > 0 && raw.isFinite) return raw.toDouble();
+    }
+    return mappeTrackClimbM(coords) ?? 0;
+  }
 }
 
 /// Handles:
@@ -460,24 +492,16 @@ class DeepLinkHandler {
           .timeout(const Duration(seconds: 25));
       if (res.statusCode == 200) {
         final j = jsonDecode(res.body) as Map<String, dynamic>;
-        final geom = j['geometry'];
-        final coords = <List<double>>[];
-        if (geom is Map && geom['coordinates'] is List) {
-          for (final c in geom['coordinates'] as List) {
-            if (c is List && c.length >= 2) {
-              coords.add([(c[0] as num).toDouble(), (c[1] as num).toDouble()]);
-            }
-          }
-        }
+        final coords = DeepLinkParse.trackCoordsFromGeometry(j['geometry']);
         final name =
             (j['label'] as String?) ?? (j['name'] as String?) ?? routeId;
         _ref.read(activeRouteProvider.notifier).state = ActiveRoute(
           id: routeId,
           name: name,
           distanceKm: ((j['distanceM'] as num?)?.toDouble() ?? 0) / 1000,
-          elevationM: ((j['distanceM'] as num?)?.toDouble() ?? 0) * 0.02,
-          durationMin: (((j['durationS'] as num?)?.toDouble() ?? 0) / 60)
-              .round(),
+          elevationM: DeepLinkParse.elevationMOf(j, coords),
+          durationMin:
+              (((j['durationS'] as num?)?.toDouble() ?? 0) / 60).round(),
           coordinates: coords,
           isLoop: navGeometryIsLoop(coords),
         );

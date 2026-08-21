@@ -12,6 +12,7 @@ import { PARTS_BROWSE_SLOTS, parseSoftFitTags } from "@/lib/shop/softFit";
 import { formatShopPrice } from "@/lib/shop/shopifyLocale";
 import { partsDealerCtaUrl } from "@/lib/shop/partsCatalog";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { ShopImageFallback } from "@/components/shop/ShopImageFallback";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
@@ -228,9 +229,10 @@ export function ShopCatalogPreview({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-[88px] w-[88px] items-center justify-center text-[11px] text-text-secondary">
-                        {copy.shopNoImage}
-                      </div>
+                      <ShopImageFallback
+                        markClassName="h-6 w-6"
+                        label={copy.shopNoImage}
+                      />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">

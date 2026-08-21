@@ -1,6 +1,7 @@
 import '../saved_route.dart';
 import '../saved_route_note.dart';
 import 'tour_akte.dart';
+import 'tour_listing.dart';
 import '../routing/tour_filters.dart';
 
 /// Sichtbarkeit gespeicherter Touren. Default privat. Kein stilles GPS.
@@ -26,7 +27,14 @@ abstract final class RouteVisibility {
     return stimmenTourIdOf(routeId, meta) != null;
   }
 
-  static bool visibleInPublicExplore(SavedRouteMeta? meta) => isShared(meta);
+  /// Explore-Pin erst nach dem Listing-Gate, nicht schon beim Link-Share.
+  static bool visibleInPublicExplore(SavedRouteMeta? meta) {
+    if (meta == null) return false;
+    return listedForPublicExplore(
+      visibility: visibilityOf(meta),
+      listing: parseListingState(meta.listing),
+    );
+  }
 
   static bool mayContributeSavedGeometry(SavedRouteMeta? meta) =>
       isShared(meta);
@@ -74,9 +82,10 @@ abstract final class RouteVisibility {
     }
     if (hasTrack) {
       return 'Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte '
-          'Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die '
-          'Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du '
-          'eingeloggt bist. Ohne Login gilt er nur auf diesem Gerät.';
+          'Spur (Koordinaten), nicht nur den Namen. Auf der Karte erscheint sie '
+          'erst nach 3 Stimmen in 14 Tagen — sonst wieder privat. Zurück auf '
+          'Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem '
+          'Server, wenn du eingeloggt bist. Ohne Login gilt er nur auf diesem Gerät.';
     }
     return 'Freigeben erzeugt einen Link mit Name und Stats — ohne Track, '
         'weil keiner gespeichert ist.';

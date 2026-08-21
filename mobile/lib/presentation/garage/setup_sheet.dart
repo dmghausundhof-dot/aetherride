@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +12,9 @@ import '../../domain/setup.dart';
 import '../../domain/setup/bracketing.dart';
 import '../../domain/setup/templates.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
+import 'garage_chrome.dart';
 
 /// Setup-Versionen, Vorlagen und A/B-Vergleich — einbettbar im Garage-Tab.
 ///
@@ -75,28 +79,45 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
     widget.onChanged?.call();
   }
 
+  Future<void> _bindCreated(BikeSetup setup) async {
+    final store = ref.read(userProfileStoreProvider);
+    await store.assignSetupToActiveRider(setup.id);
+    if (store.activeFamilyRiderId == null) {
+      await store.rememberOwnSetup(widget.bike.id, setup.id);
+    }
+  }
+
   Future<void> _applyTemplate(SetupTemplate tpl) async {
     final l10n = AppLocalizations.of(context);
+    final label = l10n.setupTemplateLabelFor(tpl.id, fallback: tpl.label);
+    final disclaimer = l10n.setupTemplateDisclaimerFor(
+      tpl.id,
+      fallback: tpl.disclaimer,
+    );
     setState(() => _busy = true);
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: l10n.setupTemplateAppliedLabel(tpl.label),
+          label: l10n.setupTemplateAppliedLabel(label),
           values: tpl.toValues(_riderWeight, widget.bike.category),
           conditions: tpl.conditions,
           createdBy: 'template',
-        );
+        ).then(_bindCreated);
     await _load();
     _notify();
     if (mounted) {
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.setupTemplateAppliedSnack(tpl.disclaimer))),
+        SnackBar(content: Text(l10n.setupTemplateAppliedSnack(disclaimer))),
       );
     }
   }
 
   Future<void> _setCurrent(BikeSetup s) async {
     await ref.read(setupRepositoryProvider).setCurrent(widget.bike.id, s.id);
+    final store = ref.read(userProfileStoreProvider);
+    if (store.activeFamilyRiderId == null) {
+      await store.rememberOwnSetup(widget.bike.id, s.id);
+    }
     await _load();
     _notify();
   }
@@ -174,7 +195,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           label: name.isEmpty ? l10n.setupManualFallback : name,
           values: values,
           parentSetupId: current?.id,
-        );
+        ).then(_bindCreated);
     await _load();
     _notify();
   }
@@ -222,7 +243,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           ],
           createdBy: 'user',
           parentSetupId: current?.id,
-        );
+        ).then(_bindCreated);
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
           label: l10n.setupCompareVariantB,
@@ -238,7 +259,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           ],
           createdBy: 'user',
           parentSetupId: current?.id,
-        );
+        ).then(_bindCreated);
 
     final rides = await ref.read(rideRepositoryProvider).listRides(limit: 40);
     var runs = runsFromRides(
@@ -294,18 +315,16 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
     ref.watch(bikeComponentsProvider(widget.bike.id));
+    ref.listen(currentSetupProvider(widget.bike.id), (prev, next) {
+      if (next.hasValue) unawaited(_load());
+    });
     final plan = _plan;
     final tpls = templatesFor(widget.bike.category);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.setupVersionsTitle,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
+        GarageSectionTitle(label: l10n.setupVersionsTitle, mark: 'setup'),
         const SizedBox(height: AppSpacing.xxs),
         Text(
           l10n.setupVersionsHint,
@@ -370,18 +389,15 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           ),
         ],
         const SizedBox(height: AppSpacing.l),
-        Text(
-          l10n.setupSavedVersions,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
+        GarageSectionTitle(label: l10n.setupSavedVersions),
         if (_setups.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-            child: Text(
-              l10n.setupEmpty,
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+            child: GarageInviteCard(
+              title: l10n.setupEmpty,
+              hint: l10n.setupVersionsHint,
+              icon: Icons.tune,
+              onTap: _busy ? null : _manualVersion,
             ),
           )
         else
@@ -516,7 +532,10 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          tpl.label,
+                          l10n.setupTemplateLabelFor(
+                            tpl.id,
+                            fallback: tpl.label,
+                          ),
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 2),

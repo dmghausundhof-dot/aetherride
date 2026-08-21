@@ -13,7 +13,7 @@ class RideGroupCloud {
   static const needLoginNote =
       'Anmelden — sonst sieht der Freund die Gruppe nicht auf dem Server.';
   static const needLoginJoinNote =
-      'Anmelden — sonst sieht der Host dich nicht.';
+      'Anmelden — sonst sieht der Gastgeber dich nicht.';
   static const serverTableNote = 'Server-Tabelle fehlt — nur lokal.';
   static const onServerNote = 'Gruppe auf dem Server.';
 

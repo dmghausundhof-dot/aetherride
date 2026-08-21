@@ -40,21 +40,29 @@ String bikeBleKindLabel(BikeBleKind kind) => switch (kind) {
     };
 
 String bikeBleKindHint(BikeBleKind kind) => switch (kind) {
-      BikeBleKind.bosch =>
-        'Intuvia / Smart System. Akku und Tempo über FlowLine in Bosch Flow, nicht raten.',
-      BikeBleKind.shimano =>
-        'STEPS erkannt. Live-Daten nur, wenn das Display sie sendet.',
-      BikeBleKind.yamaha =>
-        'Yamaha PW erkannt. Tempo über den Sensor am Rad, wenn das System ihn sendet.',
-      BikeBleKind.csc => 'Tempo und Trittfrequenz vom Sensor am Rad.',
-      BikeBleKind.power => 'Leistung vom Powermeter.',
-      BikeBleKind.otherDrive => 'E-Antrieb erkannt. Kein erfundener Akku.',
+      BikeBleKind.bosch => 'Live: Akku und Tempo vom Display. Nichts raten.',
+      BikeBleKind.shimano => 'Kein Live-Akku. Tempo vom Sensor am Rad.',
+      BikeBleKind.yamaha => 'Kein Live-Akku. Tempo vom Sensor am Rad.',
+      BikeBleKind.csc => 'Live: Tempo und Trittfrequenz.',
+      BikeBleKind.power => 'Live: Watt.',
+      BikeBleKind.otherDrive => 'Kein Live-Akku. Tempo vom Sensor am Rad.',
+    };
+
+/// One-line capability on a scan row — what streams, not how to tap.
+String bikeBleCapLine(BikeBleKind kind) => switch (kind) {
+      BikeBleKind.bosch => 'Live: Akku und Tempo vom Display',
+      BikeBleKind.shimano ||
+      BikeBleKind.yamaha ||
+      BikeBleKind.otherDrive =>
+        'Kein Live-Akku — Tempo vom Sensor am Rad',
+      BikeBleKind.csc => 'Live: Tempo und Trittfrequenz',
+      BikeBleKind.power => 'Live: Watt',
     };
 
 /// One-line action on a scan row — how to connect, not capability legal copy.
 String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
       BikeBleKind.bosch =>
-        'Intuvia an · in Flow unter Komponenten FlowLine hinzufügen',
+        'Display an · in der Bosch-App unter Komponenten hinzufügen',
       BikeBleKind.shimano =>
         'E-TUBE schließen · in 15 s nach Power/Taster tippen',
       BikeBleKind.yamaha => 'e-Sync schließen · Tempo über den Sensor am Rad',
@@ -65,8 +73,8 @@ String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
     };
 
 String bikeBlePairLead({required bool isEbike}) => isEbike
-    ? 'Intuvia an, Handy nah — dann in Flow FlowLine hinzufügen.'
-    : 'Intuvia an, oder Tempo-Sensor am Rad wecken — nicht die Uhr.';
+    ? 'Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.'
+    : 'Tempo und Trittfrequenz vom Sensor am Rad. Kein erfundener Akku.';
 
 class BikeBleConnectNote {
   const BikeBleConnectNote({required this.brand, required this.line});
@@ -82,7 +90,7 @@ List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
       BikeBleConnectNote(
         brand: 'Intuvia',
         line:
-            'Display an. In Flow: Komponenten → FlowLine, dann am Display bestätigen.',
+            'Display an. In der Bosch-App: Komponenten, dann am Display bestätigen.',
       ),
       BikeBleConnectNote(
         brand: 'Sensor',
@@ -94,7 +102,7 @@ List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
     BikeBleConnectNote(
       brand: 'Intuvia',
       line:
-          'Display an. In Flow: Einstellungen → Komponenten → FlowLine. Dann am Display bestätigen.',
+          'Display an. In der Bosch-App: Einstellungen → Komponenten. Dann am Display bestätigen.',
     ),
     BikeBleConnectNote(
       brand: 'Shimano',
@@ -540,11 +548,10 @@ String bleGattStatusHint(int? code, {BikeBleKind? kind}) {
       return 'Timeout — E-TUBE zu, in 15 s nach Power/Taster tippen.';
     }
     if (kind == BikeBleKind.bosch) {
-      return 'Timeout — Display wecken, Flow zu, nah halten. '
-          'Motorwerte nur mit CSC oder offiziellem LDI.';
+      return 'Timeout — Display wecken. Akku vom Display, Tempo vom Sensor am Rad.';
     }
     if (kind != null && bikeBleKindIsDrive(kind)) {
-      return 'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.';
+      return 'Timeout — Hersteller-App zu, Display an. Tempo über den Sensor am Rad.';
     }
     if (kind == BikeBleKind.csc || kind == BikeBleKind.power) {
       return 'Timeout — Sensor wecken, näher rangehen.';

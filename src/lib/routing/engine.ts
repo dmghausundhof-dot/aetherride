@@ -8,6 +8,8 @@ import {
   buildValhallaCosting,
   getProfile,
   graphhopperCustomModel,
+  graphhopperCustomModelShouldSend,
+  isGraphhopperCustomModelRejected,
   isRideProfileId,
   type RoutingProfile,
   type ValhallaCosting,
@@ -16,6 +18,13 @@ import {
   cityCyclewaySnapWanted,
   detailShares,
   graphhopperSurfaceWarnings,
+  HONESTY_FARM_MID_DE,
+  HONESTY_FARM_TAIL_DE,
+  polylineLengthM,
+  shouldRetryOrsForFarmGraphhopper,
+  shouldTrimFarmTrackTail,
+  trimFarmTrackEnds,
+  urbanFarmTrackShareTooHigh,
   type GhDetailRange,
 } from "@/lib/routing/graphhopperHints";
 import {
@@ -54,6 +63,10 @@ import {
   variantNeedsValhalla,
   type RouteVariant,
 } from "@/lib/routing/routeVariant";
+import {
+  graphhopperWarmupCell,
+  graphhopperWarmupTo,
+} from "@/lib/routing/graphhopperWarmup";
 
 export type RoutingEngineKind =
   | "valhalla"
@@ -81,6 +94,12 @@ export type ComputeRouteOptions = {
   accessLeg?: boolean;
   /** planned | flatter | unpaved — Valhalla costing only. */
   variant?: string | null;
+  /**
+   * After the engine: fetch OSM and splice trails/cycleways.
+   * Off for Discover A–B — Overpass adds seconds and last-mile
+   * snaps a field pin onto a nearby path.
+   */
+  corridorSnap?: boolean;
 };
 
 export type ResolvedRouteEngine = {
@@ -105,6 +124,8 @@ export type RouteResult = {
   /** Costing variant. Absent = planned. */
   variant?: RouteVariant;
   variantApplied?: boolean;
+  /** Closed OSM round-trip (ORS round_trip). */
+  loop?: boolean;
 };
 
 /** Öffentlicher OSRM (nur mit explizitem Opt-in oder Dev-Fallback) */
@@ -322,9 +343,13 @@ export function nativeCostingFor(
   }
 }
 
+let ghCustomModelRejected = false;
+
 function graphhopperCustomModelAllowed(): boolean {
-  const v = process.env.GRAPHHOPPER_ALLOW_CUSTOM_MODEL;
-  return v === "1" || v === "true";
+  return graphhopperCustomModelShouldSend({
+    env: process.env.GRAPHHOPPER_ALLOW_CUSTOM_MODEL,
+    rejectedThisProcess: ghCustomModelRejected,
+  });
 }
 
 function decodePolyline6(str: string): [number, number][] {
@@ -549,7 +574,10 @@ async function routeGraphhopper(
     });
     data = await res.json();
     if (!res.ok || data.message) {
-      // Paid-flag set on a free account → fall back to standard bike routing.
+      if (isGraphhopperCustomModelRejected(data.message)) {
+        ghCustomModelRejected = true;
+      }
+      // Paid-flag / free account → fall back to standard bike routing.
       data = await fetchGraphhopperGet(
         base,
         key,
@@ -571,15 +599,35 @@ async function routeGraphhopper(
     );
   }
 
-  const coordinates = (path.points.coordinates as number[][]).map(
+  let coordinates = (path.points.coordinates as number[][]).map(
     (c) => [c[0], c[1]] as [number, number]
   );
+  let distanceM = Math.round(path.distance || 0);
+  let durationS = Math.round((path.time || 0) / 1000);
+  let didTrimFarm = false;
+  if (shouldTrimFarmTrackTail(profile)) {
+    const trimmed = trimFarmTrackEnds({
+      coordinates,
+      roadClass: path.details?.road_class,
+      surface: path.details?.surface,
+    });
+    if (trimmed.length >= 2 && trimmed.length < coordinates.length) {
+      const origM = polylineLengthM(coordinates) || 1;
+      const ratio = Math.min(1, polylineLengthM(trimmed) / origM);
+      coordinates = trimmed;
+      distanceM = Math.round(distanceM * ratio);
+      durationS = Math.round(durationS * ratio);
+      didTrimFarm = true;
+    }
+  }
   const geometry: GeoJSON.LineString = {
     type: "LineString",
     coordinates,
   };
   const instructions = Array.isArray(path.instructions)
-    ? path.instructions
+    ? path.instructions.filter(
+        (ins) => (ins.interval?.[0] ?? 0) < coordinates.length
+      )
     : [];
   const steps = stepsFromGraphhopper(instructions, coordinates);
   const warnings: string[] = [];
@@ -597,11 +645,12 @@ async function routeGraphhopper(
     );
   }
   const roadClassShares = detailShares(path.details?.road_class);
+  if (didTrimFarm) warnings.push(HONESTY_FARM_TAIL_DE);
   warnings.push(...graphhopperSurfaceWarnings(profile, roadClassShares));
 
   return {
-    distanceM: Math.round(path.distance || 0),
-    durationS: Math.round((path.time || 0) / 1000),
+    distanceM,
+    durationS,
     geometry,
     engine: "graphhopper",
     profile,
@@ -610,6 +659,68 @@ async function routeGraphhopper(
     roadClassShares:
       Object.keys(roadClassShares).length > 0 ? roadClassShares : undefined,
   };
+}
+
+const ghWarmInflight = new Map<string, Promise<boolean>>();
+
+/**
+ * Compile GraphHopper `custom_model` + open TLS for the rider's region.
+ * Must not change browse engine policy — discard the dummy path.
+ */
+export async function warmGraphhopperFlexible(
+  profile: RoutingProfile,
+  near: [number, number]
+): Promise<boolean> {
+  const key = process.env.GRAPHHOPPER_API_KEY?.trim();
+  if (!key || !isValidLngLat(near)) return false;
+  const cell = graphhopperWarmupCell(profile, near);
+  const hit = ghWarmInflight.get(cell);
+  if (hit) return hit;
+  const run = (async () => {
+    try {
+      const to = graphhopperWarmupTo(near);
+      if (!isValidLngLat(to)) return false;
+      const base = (
+        process.env.GRAPHHOPPER_URL || "https://graphhopper.com/api/1"
+      ).replace(/\/$/, "");
+      const ghProfile = graphhopperProfile(profile);
+      const custom = graphhopperCustomModelAllowed()
+        ? graphhopperCustomModel(profile)
+        : null;
+      const points: [number, number][] = [near, to];
+      if (custom) {
+        const res = await fetch(`${base}/route?key=${encodeURIComponent(key)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profile: ghProfile,
+            points,
+            locale: "de",
+            points_encoded: true,
+            elevation: false,
+            instructions: false,
+            "ch.disable": true,
+            custom_model: custom,
+          }),
+        });
+        const body = (await res.json()) as { message?: string };
+        if (res.ok && !body.message) return true;
+        if (isGraphhopperCustomModelRejected(body.message)) {
+          ghCustomModelRejected = true;
+        }
+      }
+      await fetchGraphhopperGet(base, key, ghProfile, points, "de");
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  ghWarmInflight.set(cell, run);
+  if (ghWarmInflight.size > 48) {
+    const first = ghWarmInflight.keys().next().value;
+    if (first) ghWarmInflight.delete(first);
+  }
+  return run;
 }
 
 async function fetchGraphhopperGet(
@@ -806,8 +917,10 @@ async function maybeEnrichCorridorTrail(
   from: [number, number],
   to: [number, number],
   vias: [number, number][],
-  accessLeg = false
+  accessLeg = false,
+  corridorSnap = false
 ): Promise<RouteResult> {
+  if (!corridorSnap) return result;
   if (accessLeg) return result;
   if (result.profile === "auto") return result;
   if (!trailCorridorSnapEnabled()) return result;
@@ -824,7 +937,7 @@ async function maybeEnrichCorridorTrail(
       lat: (from[1] + to[1]) / 2,
       lon: (from[0] + to[0]) / 2,
       bbox: routeBbox(coords, 0.014, 0.18),
-      timeoutMs: 12_000,
+      timeoutMs: 6_000,
       kinds: "trails",
       limit: 120,
     });
@@ -850,6 +963,43 @@ async function maybeEnrichCorridorTrail(
   } catch {
     return result;
   }
+}
+
+/** City/road GH `bike` used farm TRACK as a large share — try ORS, else honesty. */
+async function maybePreferOrsOverFarmTracks(
+  profile: RoutingProfile,
+  points: [number, number][],
+  language: ChromeLang,
+  result: RouteResult,
+  viasEmpty: boolean,
+): Promise<RouteResult> {
+  const roadClass = result.roadClassShares ?? {};
+  if (
+    shouldRetryOrsForFarmGraphhopper({
+      profile,
+      engine: result.engine,
+      roadClass,
+      viasEmpty,
+      orsConfigured: isOrsConfigured(),
+    })
+  ) {
+    try {
+      return await routeOpenRouteService(profile, points, language);
+    } catch {
+      // Keep GraphHopper; honesty below if still farm-heavy.
+    }
+  }
+  if (
+    result.engine === "graphhopper" &&
+    urbanFarmTrackShareTooHigh(profile, roadClass) &&
+    !(result.warnings ?? []).includes(HONESTY_FARM_TAIL_DE)
+  ) {
+    return {
+      ...result,
+      warnings: [HONESTY_FARM_MID_DE, ...(result.warnings ?? [])],
+    };
+  }
+  return result;
 }
 
 export async function computeRoute(
@@ -910,6 +1060,13 @@ export async function computeRoute(
       }
     } else if (kind === "graphhopper") {
       result = await routeGraphhopper(profile, points, language);
+      result = await maybePreferOrsOverFarmTracks(
+        profile,
+        points,
+        language,
+        result,
+        vias.length === 0,
+      );
     } else if (kind === "valhalla") {
       if (vias.length === 0) {
         result = await routeValhalla(
@@ -978,7 +1135,8 @@ export async function computeRoute(
       from,
       to,
       vias,
-      opts?.accessLeg === true
+      opts?.accessLeg === true,
+      opts?.corridorSnap === true
     );
   } catch (e) {
     // Production: fail-closed — never invent geometry after a live failure.

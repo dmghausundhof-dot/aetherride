@@ -186,6 +186,7 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
 
   Future<void> _onStyleReady(MapLibreMapController c) async {
     await _ensurePinImage(c);
+    await fixBasemapWaterLayers(c);
     await warmBasemapNatureFills(c);
     await _syncOverlay();
   }

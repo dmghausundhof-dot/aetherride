@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="SAG">
+  <title>FlowLine SAG</title>
+  <path d="M8.2 5.6 V10.4" fill="none" stroke="#9CA3AF" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M8.2 12.2 V18.6" fill="none" stroke="#9CA3AF" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M6.4 10.4 H10" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M6.4 12.2 H10" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M13.2 7.2 L16.8 12 L13.2 16.8" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -7,8 +7,8 @@
 class DiscoverBrowseSheetSnaps {
   DiscoverBrowseSheetSnaps._();
 
-  /// Nur Griff. Ohne ausgewählte Tour komplett zu.
-  static const double closed = 0.045;
+  /// Nur Griff + Mappe-Label — 48 dp Hit-Target, nicht in der Systemgeste.
+  static const double closed = 0.10;
 
   /// Eine Tourkarte (Komoot-Peek).
   static const double peek = 0.34;
@@ -66,6 +66,14 @@ class DiscoverBrowseSheetSnaps {
   static double listTarget(double current) {
     if (isClosed(current) || isPeek(current)) return half;
     return full;
+  }
+
+  /// Antippen am Griff — ohne Swipe aus der Systemgeste.
+  /// Zu/Peek → halb, halb → voll, voll → halb.
+  static double handleTapTarget(double current) {
+    if (isHalf(current)) return full;
+    if (isFull(current)) return half;
+    return half;
   }
 
   /// Karte-Taste: Peek mit Tour, sonst ganz zu.

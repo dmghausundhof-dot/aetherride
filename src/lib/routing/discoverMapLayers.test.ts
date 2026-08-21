@@ -4,8 +4,8 @@
  */
 process.env.ALLOW_DEMO_CONTENT = "true";
 
-import { buildDiscoverMapLayers } from "./discoverMapLayers";
-import { emptyDraft, type PlanDraft } from "./planDraft";
+import { buildDiscoverMapLayers, buildPlanGradeOverlayLayers } from "./discoverMapLayers";
+import { emptyDraft, setEnd, setStart, type PlanDraft } from "./planDraft";
 import { SEED_TRAILS } from "./trailSegments";
 import type { ClientRouteResult } from "./profiles";
 import { getProfile } from "./profiles";
@@ -203,11 +203,82 @@ function testRideProfileFiltersAndHighlightsTrails() {
   );
 }
 
+function testPendingAbGhost() {
+  const draft = setEnd(
+    setStart(emptyDraft("gravel"), [8.69, 49.41], "Ich"),
+    [8.7, 49.4],
+    "Ziel"
+  );
+  const pending = buildDiscoverMapLayers({
+    draft,
+    quickOptions: [],
+    trails: [],
+    showTrails: false,
+  });
+  assert(
+    !pending.some((l) => l.id === "pending-ab"),
+    "crow-flies GPS→pin must not look like a field route",
+  );
+
+  const live: PlanDraft = {
+    ...draft,
+    computed: fakeResult(
+      line([
+        [8.69, 49.41],
+        [8.7, 49.4],
+      ])
+    ),
+  };
+  const routed = buildDiscoverMapLayers({
+    draft: live,
+    quickOptions: [],
+    trails: [],
+    showTrails: false,
+  });
+  assert(
+    !routed.some((l) => l.id === "pending-ab"),
+    "live street line replaces the pending ghost"
+  );
+}
+
+function testGradeOverlays() {
+  const line: [number, number][] = [];
+  for (let i = 0; i <= 12; i++) line.push([8.67 + i * 0.008, 49.4]);
+  const elevM = line.map((_, i) => (i >= 4 && i <= 7 ? 100 + (i - 4) * 80 : 100));
+  const layers = buildPlanGradeOverlayLayers({
+    line,
+    elevM,
+    surfaceBands: [
+      { fromKm: 0, toKm: 0.4, surface: "asphalt" },
+      { fromKm: 0.4, toKm: 1.6, surface: "gravel" },
+      { fromKm: 1.6, toKm: 2.4, surface: "dirt" },
+    ],
+  });
+  assert(
+    layers.some((l) => l.role === "steep"),
+    "steep overlay missing"
+  );
+  assert(
+    layers.some((l) => l.role === "paved"),
+    "paved overlay missing"
+  );
+  assert(
+    layers.some((l) => l.role === "gravel"),
+    "gravel overlay missing"
+  );
+  assert(
+    layers.some((l) => l.role === "unpaved"),
+    "unpaved overlay missing"
+  );
+}
+
 async function main() {
   testLayersActiveAndAlt();
   testHybridParts();
   await testAttachAppendPersistsLayers();
   testRideProfileFiltersAndHighlightsTrails();
+  testPendingAbGhost();
+  testGradeOverlays();
   console.log("discoverMapLayers.test.ts: ok");
 }
 

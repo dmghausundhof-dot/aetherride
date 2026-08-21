@@ -2,7 +2,7 @@
  * npx tsx src/lib/routing/tourGeometry.test.ts
  */
 import assert from "node:assert/strict";
-import { waypointsForTour, routingProfileForTour } from "./tourGeometry";
+import { waypointsForTour, routingProfileForTour, tourGeometrySource } from "./tourGeometry";
 import { getPublicTour, listPublicTours } from "@/lib/catalog/publicTours";
 
 const tours = listPublicTours();
@@ -25,5 +25,10 @@ assert.ok(wp2.vias.length >= 1);
 
 assert.equal(routingProfileForTour(city!), "urban");
 assert.equal(routingProfileForTour(road!), "road");
+
+assert.equal(tourGeometrySource("r-freiburg-city"), "catalog");
+assert.equal(tourGeometrySource("seed-loop-tempelhofer-60"), "p0-seed");
+assert.equal(tourGeometrySource("seed-loop-heidelberg-neckar-60"), "p0-seed");
+assert.equal(tourGeometrySource("no-such-tour"), null);
 
 console.log("tourGeometry.test.ts OK");

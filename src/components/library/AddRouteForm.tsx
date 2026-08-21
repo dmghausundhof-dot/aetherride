@@ -13,6 +13,8 @@ export function AddRouteForm({
   onSaved,
   onPickGpx,
   compact = false,
+  label,
+  tone = "accent",
 }: {
   /** [lng, lat] Kartenmitte / GPS */
   defaultStart?: [number, number] | null;
@@ -20,6 +22,8 @@ export function AddRouteForm({
   onSaved?: (name: string) => void;
   onPickGpx?: () => void;
   compact?: boolean;
+  label?: string;
+  tone?: "accent" | "ghost";
 }) {
   const saveRoute = useAppStore((s) => s.saveRoute);
   const p = platzCopy(useChromeLang());
@@ -60,12 +64,14 @@ export function AddRouteForm({
           type="button"
           onClick={() => setOpen(true)}
           className={
-            compact
+            tone === "ghost"
+              ? "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-text-secondary"
+              : compact
               ? "inline-flex items-center gap-1.5 rounded-xl bg-accent px-2.5 py-1.5 text-xs font-semibold text-on-accent"
               : "inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
           }
         >
-          <Plus className="h-3.5 w-3.5" /> {p.keepRoute}
+          {tone === "ghost" ? null : <Plus className="h-3.5 w-3.5" />} {label ?? p.keepRoute}
         </button>
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">

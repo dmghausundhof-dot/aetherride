@@ -5,13 +5,23 @@
  * Recording bleibt app-only.
  */
 import Link from "next/link";
-import { Activity, Bike, ChevronRight, Smartphone } from "lucide-react";
+import { Activity, ChevronRight, Smartphone } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
+import { formatDistance, formatDuration } from "@/lib/utils";
+import { rideSportLabel } from "@/lib/i18n/rideSportLabel";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { rideTelemetryCopy } from "@/lib/i18n/rideTelemetryCopy";
+import { buildRideTelemetry } from "@/lib/ride/rideTelemetry";
+import { terrainCaption } from "@/lib/ride/terrainCaption";
+import { RideTerrainPeek } from "@/components/ride/ActivitySparkline";
 
 export default function ActivitiesPage() {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const tel = rideTelemetryCopy(lang);
+  const dateLocale = chromeDateLocale(lang);
 
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
@@ -34,7 +44,7 @@ export default function ActivitiesPage() {
           href="/download"
           className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium"
         >
-          <Smartphone className="h-3.5 w-3.5 text-chrome" /> App laden
+          <Smartphone className="h-3.5 w-3.5 text-chrome" /> {copy.inTheApp}
         </Link>
       </header>
 
@@ -50,13 +60,13 @@ export default function ActivitiesPage() {
               href="/download"
               className="rounded-xl bg-chrome px-4 py-2.5 text-sm font-semibold text-on-accent"
             >
-              App öffnen
+              {tel.openApp}
             </Link>
             <Link
               href="/discover"
               className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium"
             >
-              Zur Karte
+              {tel.toMap}
             </Link>
           </div>
         </div>
@@ -64,37 +74,60 @@ export default function ActivitiesPage() {
         <ul className="mt-8 space-y-3">
           {sorted.map((ride) => {
             const bike = bikes.find((b) => b.id === ride.bikeId);
+            const telemetry = buildRideTelemetry(ride.track);
+            const chips: string[] = [];
+            if (telemetry.channels.hr) chips.push(tel.hr);
+            if (telemetry.channels.cad) chips.push(tel.cad);
+            if (telemetry.channels.power) chips.push(tel.power);
+            const climb = telemetry.channels.elev
+              ? telemetry.climbM
+              : ride.elevationGainM;
             return (
               <li key={ride.id}>
                 <Link
                   href={`/activities/${ride.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-chrome/40"
+                  className="block rounded-2xl border border-border bg-surface p-4 transition hover:border-chrome/40"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/25 text-chrome">
-                    <Bike className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">
-                        {bikeTypeLabel(ride.sportType)}
-                      </span>
-                      <span className="text-[11px] text-text-secondary">
-                        {new Date(ride.startTime).toLocaleString("de-DE", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
-                      </span>
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold">
+                          {rideSportLabel(ride.sportType, lang)}
+                        </span>
+                        <span className="text-[11px] text-text-secondary">
+                          {new Date(ride.startTime).toLocaleString(dateLocale, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-text-secondary">
+                        {bike?.name ?? tel.freeride} ·{" "}
+                        <span className="tabular-nums">
+                          {formatDistance(ride.distanceM)} · {climb.toFixed(0)}{" "}
+                          {tel.hm} · {formatDuration(ride.durationSec)}
+                        </span>
+                      </p>
+                      {chips.length > 0 ? (
+                        <p className="mt-1.5 flex flex-wrap gap-1.5">
+                          {chips.map((c) => (
+                            <span
+                              key={c}
+                              className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-text-secondary"
+                            >
+                              {c}
+                            </span>
+                          ))}
+                        </p>
+                      ) : null}
                     </div>
-                    <p className="mt-0.5 text-xs text-text-secondary">
-                      {bike?.name ?? "Freeride"} ·{" "}
-                      <span className="tabular-nums">
-                        {formatDistance(ride.distanceM)} ·{" "}
-                        {ride.elevationGainM.toFixed(0)} hm ·{" "}
-                        {formatDuration(ride.durationSec)}
-                      </span>
-                    </p>
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-text-secondary" />
                   </div>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-text-secondary" />
+                  <RideTerrainPeek
+                    telemetry={telemetry}
+                    caption={terrainCaption(telemetry, tel.hm)}
+                    className="mt-3"
+                  />
                 </Link>
               </li>
             );

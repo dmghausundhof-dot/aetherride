@@ -53,7 +53,7 @@ const forkInterval: MaintenanceInterval = {
 // Empty
 const empty = getMaintenanceSummary(null, []);
 assert(empty.status === "empty", "empty status");
-assert(empty.headline.includes("Werkstatt"), "empty headline");
+assert(empty.headline.includes("Stand"), "empty headline");
 assert(empty.href.includes("wizard"), "empty href wizard");
 
 // Ok — low km
@@ -68,8 +68,11 @@ assert(ok.headline.startsWith("Alles ok"), "ok headline");
 assert(ok.headline.includes("letzte Fahrt"), "ok headline last ride");
 assert(ok.href.includes("tab=maintenance"), "ok href");
 
-// Due soon — 820/1000 = 82% on chain
-const soon = getMaintenanceSummary(bike, [chainInterval, forkInterval]);
+// Due soon — 920/1000 = 92% on chain (<10 % Rest)
+const soon = getMaintenanceSummary(
+  { ...bike, totalOdometerKm: 920 },
+  [chainInterval, forkInterval]
+);
 assert(soon.status === "due_soon", `due_soon got ${soon.status}`);
 assert(soon.dueCount >= 1, "due soon count");
 assert(soon.topItem?.shortLabel === "Kette", "top is chain");

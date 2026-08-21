@@ -23,4 +23,25 @@ void main() {
     expect(rideActivityCanDrawTour(activeRouteId: null), isTrue);
     expect(rideActivityCanDrawTour(activeRouteId: 'seed-1'), isFalse);
   });
+
+  test('engine A–B is a navigation recap, not a catalog tour', () {
+    expect(rideIsEngineNav('engine-1787060000'), isTrue);
+    expect(rideIsEngineNav('seed-loop-heidelberg'), isFalse);
+    expect(rideIsEngineNav(null), isFalse);
+  });
+
+  test('short session is honest about missing movement', () {
+    expect(
+      rideIsShortSession(distanceKm: 0.02, trackPoints: 4),
+      isTrue,
+    );
+    expect(
+      rideIsShortSession(distanceKm: 8.2, trackPoints: 1),
+      isTrue,
+    );
+    expect(
+      rideIsShortSession(distanceKm: 8.2, trackPoints: 40),
+      isFalse,
+    );
+  });
 }

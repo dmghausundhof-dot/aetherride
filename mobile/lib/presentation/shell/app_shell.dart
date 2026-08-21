@@ -18,6 +18,7 @@ import '../library/mappe_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
+import '../garage/rad_nav_mark.dart';
 import 'hof_threshold_nav.dart';
 import 'shell_back.dart';
 import 'shell_tabs.dart';
@@ -194,8 +195,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                     showBadge: platzInbox > 0,
                   ),
                   HofThresholdDestination(
-                    icon: Icons.pedal_bike_outlined,
-                    selectedIcon: Icons.pedal_bike,
+                    mark: (color, selected) => RadNavMark(
+                      color: color,
+                      filled: selected,
+                    ),
                     label: l10n.navWorkshop,
                     showBadge: dueCount > 0,
                   ),

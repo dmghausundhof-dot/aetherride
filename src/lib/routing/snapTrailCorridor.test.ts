@@ -11,6 +11,9 @@ import {
   pickTrailAlongRoute,
   snapPointOntoTrails,
   spliceTrailIntoRoute,
+  trailHasRideScale,
+  trailIsCorridorEligible,
+  trailsForViaSnap,
   viaMaySnapOntoTrail,
 } from "./snapTrailCorridor";
 import type { ClientRouteResult } from "./profiles";
@@ -79,7 +82,31 @@ const picked = pickTrailAlongRoute({
   route,
   trails: [far, parallel, onRoute],
 });
-assert.equal(picked?.id, "parallel", "picks the nearby missed trail");
+assert.equal(
+  picked,
+  null,
+  "does not fish S-trails when dest is not on one",
+);
+
+const destOnTrail: [number, number] = [8.718, 49.40072];
+const destHit = pickTrailAlongRoute({
+  profile: "mtb_allmountain",
+  from,
+  to: destOnTrail,
+  route: {
+    ...route,
+    geometry: {
+      type: "LineString",
+      coordinates: [
+        [8.7, 49.4],
+        [8.71, 49.4],
+        destOnTrail,
+      ],
+    },
+  },
+  trails: [parallel],
+});
+assert.equal(destHit?.id, "parallel", "last-mile only when dest sits on the trail");
 
 const skippedOn = pickTrailAlongRoute({
   profile: "mtb_allmountain",
@@ -130,23 +157,6 @@ const skippedEbikeTrail = pickTrailAlongRoute({
 });
 assert.equal(skippedEbikeTrail, null, "E-Bike City does not trail-snap");
 
-const reversed = pickTrailAlongRoute({
-  profile: "mtb_allmountain",
-  from,
-  to,
-  route,
-  trails: [
-    trail("rev", [
-      [8.718, 49.40072],
-      [8.712, 49.40072],
-      [8.705, 49.40072],
-    ]),
-  ],
-});
-assert.ok(reversed, "orients reversed trail toward start");
-const c0 = reversed!.geometry.coordinates[0] as [number, number];
-assert.ok(c0[0] < 8.71, "entry is the western end after orient");
-
 const spliced = spliceTrailIntoRoute(route, parallel);
 assert.ok(spliced, "splices parallel trail into engine line");
 const lats = (spliced!.geometry.coordinates as [number, number][]).map(
@@ -159,6 +169,21 @@ assert.ok(
 assert.ok(
   (spliced!.warnings ?? []).some((w) => w.includes("in die Navi übernommen")),
   "adds rider-facing trail warning",
+);
+
+const genericPfad = trail("generic-path", [
+  [8.705, 49.40072],
+  [8.712, 49.40072],
+  [8.718, 49.40072],
+], { name: "Pfad" });
+const genericSpliced = spliceTrailIntoRoute(route, genericPfad);
+assert.ok(genericSpliced, "still splices a generic path");
+assert.equal(
+  (genericSpliced!.warnings ?? []).some((w) =>
+    w.includes("in die Navi übernommen"),
+  ),
+  false,
+  "generic Pfad is not announced as a named trail",
 );
 assert.ok(
   (spliced!.steps ?? []).some((s) => s.instruction.startsWith("Trail ")),
@@ -439,5 +464,72 @@ assert.equal(
   false,
   "named place stays put"
 );
+
+assert.equal(trailHasRideScale("S2"), true);
+assert.equal(trailHasRideScale("offen"), false);
+assert.equal(
+  trailIsCorridorEligible({ highway: "path", difficulty: "offen" }),
+  false,
+  "untagged field path is not a last-mile target",
+);
+assert.equal(
+  trailIsCorridorEligible({ highway: "path", difficulty: "S1" }),
+  true,
+  "tagged path stays eligible",
+);
+assert.equal(
+  trailIsCorridorEligible({ highway: "cycleway" }),
+  true,
+  "cycleway stays eligible without scale",
+);
+assert.equal(
+  trailIsCorridorEligible({ highway: "track", difficulty: "offen" }),
+  false,
+  "untagged farm track is not a last-mile target",
+);
+assert.equal(
+  trailIsCorridorEligible({ highway: "track", difficulty: "S1" }),
+  true,
+  "tagged MTB track stays eligible",
+);
+
+const farmTrack = trail(
+  "feldweg",
+  [
+    [8.759, 49.4008],
+    [8.76, 49.401],
+    [8.761, 49.4012],
+  ],
+  { highway: "track", difficulty: "offen", surface: "grass" },
+);
+const farmSnap = applyCorridorTrailSnap({
+  profile: "mtb_allmountain",
+  from: [8.74, 49.398],
+  to: destOnS3,
+  route: efficientGh,
+  trails: [farmTrack],
+});
+assert.equal(
+  farmSnap.distanceM,
+  efficientGh.distanceM,
+  "does not splice an untagged farm track onto a map pin",
+);
+const farmPick = pickTrailAlongRoute({
+  profile: "mtb_allmountain",
+  from: [8.74, 49.398],
+  to: destOnS3,
+  route: efficientGh,
+  trails: [farmTrack],
+});
+assert.equal(farmPick, null, "pickTrailAlongRoute skips farm tracks");
+
+const viaPool = trailsForViaSnap([
+  farmTrack,
+  trail("s1-path", [
+    [8.7, 49.401],
+    [8.73, 49.401],
+  ]),
+]);
+assert.equal(viaPool.length, 1, "via snap ignores untagged farm tracks");
 
 console.log("snapTrailCorridor.test.ts OK");

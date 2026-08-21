@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Battery,
-  Bike,
   CircleDot,
   Disc,
   Link2,
@@ -11,6 +10,7 @@ import {
   MoveVertical,
   Cog,
 } from "lucide-react";
+import { RadNavMark } from "@/components/garage/RadNavMark";
 import type { ShopProduct } from "@/lib/shop/catalog";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +47,7 @@ function HintIcon({ hint }: { hint: string }) {
     case "dropper":
       return <MoveVertical className={cls} />;
     case "bike":
-      return <Bike className={cls} />;
+      return <RadNavMark className={cls} />;
     case "tape":
       return <CircleDot className={cls} />;
     default:

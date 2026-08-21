@@ -1,4 +1,4 @@
-import type { BikeCategory } from "@/types";
+import type { BikeCategory, WheelSize } from "@/types";
 
 /** Muskel vs. E-Bike — Parität zu Mobile `bike_assist.dart`. */
 export type BikeAssistMode = "muscle" | "ebike";
@@ -54,6 +54,78 @@ const TRAIL_MUSCLE: BikeCategory[] = [
   "hiking",
 ];
 const TRAIL_EBIKE: BikeCategory[] = ["emtb"];
+
+/** Kurze Typ-Liste beim Anlegen — Feinschnitt später in der Identität. */
+export const ADD_MUSCLE: BikeCategory[] = [
+  "urban",
+  "gravel",
+  "road",
+  "mtb_am",
+  "cargo",
+  "folding",
+];
+
+export const ADD_EBIKE: BikeCategory[] = [
+  "urban",
+  "etrekking",
+  "gravel",
+  "road",
+  "emtb",
+  "cargo",
+];
+
+export function addCategories(mode: BikeAssistMode): BikeCategory[] {
+  return mode === "ebike" ? ADD_EBIKE : ADD_MUSCLE;
+}
+
+/** Enduro/Trail/DH aus Onboarding markieren die MTB-Kachel. */
+export function addTileSelected(
+  tile: BikeCategory,
+  current: BikeCategory,
+  mode: BikeAssistMode
+): boolean {
+  if (tile === current) return true;
+  if (mode === "muscle" && tile === "mtb_am") {
+    return current === "mtb_trail" || current === "mtb_enduro" || current === "dh";
+  }
+  return false;
+}
+
+export function defaultWheelFor(category: BikeCategory): WheelSize {
+  if (category === "gravel") return "650b";
+  if (
+    category === "urban" ||
+    category === "road" ||
+    category === "etrekking" ||
+    category === "cargo" ||
+    category === "folding" ||
+    category === "kids"
+  ) {
+    return "700c";
+  }
+  return "29";
+}
+
+export function persistCategory(
+  uiCategory: BikeCategory,
+  mode: BikeAssistMode
+): BikeCategory {
+  if (mode === "muscle") {
+    if (uiCategory === "emtb") return "mtb_am";
+    if (uiCategory === "etrekking") return "urban";
+    return uiCategory;
+  }
+  if (
+    uiCategory === "mtb_trail" ||
+    uiCategory === "mtb_am" ||
+    uiCategory === "mtb_enduro" ||
+    uiCategory === "dh"
+  ) {
+    return "emtb";
+  }
+  if (uiCategory === "hiking") return "etrekking";
+  return uiCategory;
+}
 
 /** Anlegen: Alltag zuerst, Trail nicht als Default-Welt. */
 export function categoryPickGroups(mode: BikeAssistMode): CategoryPickGroup[] {

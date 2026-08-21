@@ -30,6 +30,8 @@ type TourPhotoRow = {
   caption?: string | null;
   status?: string | null;
   created_at?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 async function signTourPhotoUrls(
@@ -132,7 +134,7 @@ export async function GET(req: Request) {
           .limit(50),
         client
           .from("tour_photos")
-          .select("id, tour_id, storage_path, caption, status, created_at")
+          .select("id, tour_id, storage_path, caption, status, created_at, lat, lng")
           .eq("tour_id", tourId)
           .eq("status", "approved")
           .order("created_at", { ascending: false })
@@ -140,6 +142,8 @@ export async function GET(req: Request) {
       ]);
     let reviews = taggedReviews;
     let rErr = taggedErr;
+    let photoRows = photos;
+    let photoErr = pErr;
     if (rErr) {
       const retry = await client
         .from("tour_reviews")
@@ -152,8 +156,19 @@ export async function GET(req: Request) {
       reviews = retry.data as typeof reviews;
       rErr = retry.error;
     }
-    if (!rErr && !pErr) {
-      const signed = await signTourPhotoUrls(client, photos ?? []);
+    if (photoErr) {
+      const retry = await client
+        .from("tour_photos")
+        .select("id, tour_id, storage_path, caption, status, created_at")
+        .eq("tour_id", tourId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(40);
+      photoRows = retry.data as typeof photoRows;
+      photoErr = retry.error;
+    }
+    if (!rErr && !photoErr) {
+      const signed = await signTourPhotoUrls(client, photoRows ?? []);
       const list = reviews ?? [];
       const difficulty = aggregateDifficulty(
         list.map((r) => (r as { difficulty_delta?: unknown }).difficulty_delta)
@@ -198,7 +213,7 @@ export async function POST(req: Request) {
       pin?: { lat?: unknown; lng?: unknown; alongM?: unknown };
       rideId?: unknown;
       difficultyDelta?: unknown;
-      photos?: { storagePath?: string; caption?: string }[];
+      photos?: { storagePath?: string; caption?: string; lat?: unknown; lng?: unknown }[];
     };
     const tourId = String(body.tourId || "").trim();
     const rating = Number(body.rating);
@@ -268,6 +283,20 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error("[community/tour] persist review", e);
     }
+    if (reviewMod.action === "approved") {
+      try {
+        await supabase.from("tour_listing_confirmations").upsert(
+          {
+            tour_id: tourId,
+            rider_id: user.id,
+            kind: "stimme",
+          },
+          { onConflict: "tour_id,rider_id" }
+        );
+      } catch {
+        /* table optional */
+      }
+    }
 
     const photoRows: { id: string; status: string }[] = [];
     const incoming = Array.isArray(body.photos) ? body.photos.slice(0, 4) : [];
@@ -277,18 +306,37 @@ export async function POST(req: Request) {
       if (!storagePath.startsWith(`${user.id}/`)) {
         continue;
       }
-      const { data: photo, error: pErr } = await supabase
+      const plat = Number(p.lat);
+      const plng = Number(p.lng);
+      const hasGeo =
+        Number.isFinite(plat) &&
+        Number.isFinite(plng) &&
+        Math.abs(plat) <= 90 &&
+        Math.abs(plng) <= 180;
+      const photoInsert = {
+        tour_id: tourId,
+        author_id: user.id,
+        storage_path: storagePath.slice(0, 500),
+        caption: String(p.caption || "").slice(0, 200),
+        status: "pending",
+        review_id: data.id,
+      };
+      let inserted = await supabase
         .from("tour_photos")
         .insert({
-          tour_id: tourId,
-          author_id: user.id,
-          storage_path: storagePath.slice(0, 500),
-          caption: String(p.caption || "").slice(0, 200),
-          status: "pending",
-          review_id: data.id,
+          ...photoInsert,
+          ...(hasGeo ? { lat: plat, lng: plng } : {}),
         })
         .select("id, storage_path, caption")
         .maybeSingle();
+      if (inserted.error && hasGeo) {
+        inserted = await supabase
+          .from("tour_photos")
+          .insert(photoInsert)
+          .select("id, storage_path, caption")
+          .maybeSingle();
+      }
+      const { data: photo, error: pErr } = inserted;
       if (pErr || !photo?.id) continue;
       let imageUrl: string | null = null;
       try {

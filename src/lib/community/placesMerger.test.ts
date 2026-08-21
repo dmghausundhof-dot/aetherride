@@ -66,10 +66,20 @@ const merged = mergeCommunityPlaces({
     lng: 8.66,
     source: "meet",
   },
+  meets: [
+    {
+      id: "meet-2",
+      name: "Bahnhof",
+      kind: "meet",
+      lat: 49.39,
+      lng: 8.68,
+      source: "meet",
+    },
+  ],
 });
-assert.equal(merged.places.length, 4);
+assert.equal(merged.places.length, 5);
 assert.equal(merged.places[0].source, "coverage");
-assert.ok(merged.honesty.includes("4"));
+assert.ok(merged.honesty.includes("5"));
 
 const coord = parseMeetingLatLng("Parkplatz Zoo 49.4076, 8.6908");
 assert.equal(coord?.lat, 49.4076);

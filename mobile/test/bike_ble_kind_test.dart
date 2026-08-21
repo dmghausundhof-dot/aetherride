@@ -323,6 +323,14 @@ void main() {
       contains('15 s'),
     );
     expect(
+      bleGattStatusHint(147, kind: BikeBleKind.bosch).toLowerCase(),
+      isNot(contains('csc')),
+    );
+    expect(
+      bleGattStatusHint(147, kind: BikeBleKind.yamaha).toLowerCase(),
+      isNot(contains('csc')),
+    );
+    expect(
       parseGattErrorCode(
         'FlutterBluePlusException | connect | android-code: 133 | GATT',
       ),
@@ -367,11 +375,15 @@ void main() {
   });
 
   test('connect notes stay short and maker-specific', () {
-    expect(bikeBlePairLead(isEbike: true), contains('Intuvia'));
+    expect(bikeBlePairLead(isEbike: true), contains('Bosch'));
+    expect(bikeBlePairLead(isEbike: true), contains('Shimano'));
     expect(bikeBlePairLead(isEbike: false), contains('Sensor'));
-    expect(bikeBleConnectTip(BikeBleKind.bosch), contains('Flow'));
+    expect(bikeBleConnectTip(BikeBleKind.bosch), contains('Bosch-App'));
     expect(bikeBleConnectTip(BikeBleKind.shimano), contains('15 s'));
     expect(bikeBleConnectTip(BikeBleKind.yamaha), contains('e-Sync'));
+    expect(bikeBleCapLine(BikeBleKind.bosch), contains('Live'));
+    expect(bikeBleCapLine(BikeBleKind.shimano), contains('Kein Live-Akku'));
+    expect(bikeBleCapLine(BikeBleKind.csc), contains('Tempo'));
     final ebike = bikeBleConnectNotes(isEbike: true);
     expect(ebike.map((n) => n.brand), containsAll(['Intuvia', 'Shimano']));
     expect(ebike.every((n) => n.line.length < 140), isTrue);

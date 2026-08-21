@@ -15,6 +15,7 @@ import { useAppStore } from "@/store/useAppStore";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
+import { lineWithApiElevation } from "@/lib/routing/elevationAttach";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
@@ -55,14 +56,45 @@ export function TourActions({ tour }: { tour: PublicTour }) {
   const saved = isRouteSaved(tour.id);
   const suggestion = toSuggestion(tour);
 
-  const toggleSave = useCallback(() => {
+  const toggleSave = useCallback(async () => {
     if (isRouteSaved(tour.id)) {
       unsaveRoute(tour.id);
       setFlash(copy.flashRemoved);
+      setTimeout(() => setFlash(null), 2000);
+      return;
+    }
+    let coords: number[][] | null = null;
+    try {
+      const r = await fetch(
+        `/api/tours/geometry?id=${encodeURIComponent(tour.id)}`,
+      );
+      if (r.ok) {
+        const j = (await r.json()) as { geometry?: GeoJSON.LineString | null };
+        const raw = j?.geometry?.coordinates;
+        if (raw && raw.length >= 2) coords = raw;
+      }
+    } catch {
+      /* pin-only */
+    }
+    if (coords && coords.length >= 2) {
+      const withEle = await lineWithApiElevation(coords);
+      saveRoute({
+        id: suggestion.id,
+        name: suggestion.name,
+        distanceKm: suggestion.distanceKm,
+        elevationM: suggestion.elevationM,
+        durationMin: suggestion.durationMin,
+        mtbScale: suggestion.mtbScale,
+        surface: suggestion.surface,
+        reasons: suggestion.reasons,
+        savedAt: new Date().toISOString(),
+        source: "suggestion",
+        geometry: { type: "LineString", coordinates: withEle },
+      });
     } else {
       saveRoute(suggestion);
-      setFlash(copy.flashSaved);
     }
+    setFlash(copy.flashSaved);
     setTimeout(() => setFlash(null), 2000);
   }, [tour.id, isRouteSaved, unsaveRoute, saveRoute, suggestion, copy]);
 

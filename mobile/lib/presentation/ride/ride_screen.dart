@@ -26,9 +26,11 @@ import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/overview_browse_paint.dart';
 import '../../data/routing/offline_basemap.dart';
-import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_dirs.dart';
+import '../../data/routing/offline_pmtiles_store.dart';
+import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/routing_client.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/active_route.dart';
@@ -59,6 +61,7 @@ import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/nav_map_paint.dart';
 import '../../domain/routing/nav_policy.dart';
+import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/routing/ride_nav_honesty.dart';
 import '../../domain/routing/route_progress.dart';
 import '../../domain/routing/bike_overlay_class.dart';
@@ -77,6 +80,7 @@ import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../map/friend_pin_image.dart';
+import '../map/map_pin_image.dart';
 import '../map/nav_puck_image.dart';
 import '../map/nav_puck_overlay.dart';
 import '../map/rider_map_image.dart';
@@ -90,6 +94,7 @@ import 'widgets/reroute_sheet.dart';
 import 'widgets/ride_auto_lock_overlay.dart';
 import 'widgets/ride_bike_peek.dart';
 import 'widgets/ride_connectivity_chip.dart';
+import 'widgets/ride_street_net_hint.dart';
 import 'widgets/ride_data_strip.dart';
 import 'widgets/ride_draw_tour_chip.dart';
 import 'widgets/ride_media_chip.dart';
@@ -177,6 +182,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
   final List<Symbol> _friendPinSymbols = [];
   final Map<String, String> _friendPinUserBySymbol = {};
   Symbol? _joinMarkSymbol;
+  String? _ridePoiPinsForId;
+  String? _rideNextPoiKey;
+  final List<Symbol> _ridePoiSymbols = [];
+  final Map<String, Symbol> _ridePoiSymbolByKey = {};
+  bool _ridePoiImagesReady = false;
   RideGroupHudSnap? _groupHud;
   bool _skipHudToast = false;
   RideGroupHudNote? _lastHudToast;
@@ -409,15 +419,35 @@ class RideScreenState extends ConsumerState<RideScreen> {
   /// HUD stays on street-level tiles. Local DACH z11 is overview-only
   /// (`maxzoom: 11`) and leaves the ride map black at z15.
   Future<void> _resolveRideHudStyle() async {
+    final online = await rideHasNetwork();
+    final street = await _probeOfflineMapAvailable();
+    if (!mounted) return;
+    await _syncRideHudStyle(online: online, offlineStreetTiles: street);
+  }
+
+  Future<void> _syncRideHudStyle({
+    required bool online,
+    required bool offlineStreetTiles,
+  }) async {
     final live = AppConfig.mapStyleUrl;
     String? resolved;
     try {
       resolved = await AppConfig.resolveMapStyleUrl();
     } catch (_) {}
+    var empty = '';
+    try {
+      empty = await OfflinePmtilesStore.emptyHudStyleUri();
+    } catch (_) {}
     if (!mounted) return;
-    setState(() {
-      _mapStyle = rideHudStyleUrl(liveStyle: live, resolvedStyle: resolved);
-    });
+    final next = rideHudMapStyle(
+      liveStyle: live,
+      resolvedStyle: resolved,
+      online: online,
+      offlineStreetTiles: offlineStreetTiles,
+      emptyStyleUri: empty,
+    );
+    if (next == _mapStyle) return;
+    setState(() => _mapStyle = next);
   }
 
   Future<void> _loadRidePrefs() async {
@@ -427,6 +457,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final routingOk = await _probeOfflineRoutingReady();
     final mediaDismissed = await RidePrefs.hudMediaPromptDismissed();
     final leanOffset = await RidePrefs.leanOffsetDeg();
+    final chassisMounted = await RidePrefs.chassisMounted();
     if (!mounted) return;
     setState(() {
       _batteryPreset = preset;
@@ -436,6 +467,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _mediaPromptDismissed = mediaDismissed || _mediaPromptDismissed;
       _leanOffsetDeg = leanOffset;
     });
+    if (chassisMounted || HudLeanCalibration.isCalibrated(leanOffset)) {
+      ref.read(mountCheckProvider.notifier).state = MountCheck.mounted;
+    }
     final c = _rideMap;
     if (c != null) unawaited(_navPuck.setStyle(c, puck));
   }
@@ -452,6 +486,26 @@ class RideScreenState extends ConsumerState<RideScreen> {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Street HUD is dark at zoom 15 — sit with the nav chrome, not a second pill.
+  Widget? _streetNetHintBanner() {
+    if (!rideHudStreetMapNeedsNet(
+      online: _networkOnline,
+      offlineStreetTiles: _offlineMapAvailable,
+    )) {
+      return null;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: RideStreetNetHint(
+          key: const Key('ride-street-net-hint'),
+          label: _l10n.rideHudStreetNeedsNet,
+        ),
+      ),
+    );
   }
 
   /// Activated region graph — TBT/Dijkstra without street tiles.
@@ -488,6 +542,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         _connectivityState = state;
       });
     }
+    await _syncRideHudStyle(online: online, offlineStreetTiles: mapOk);
   }
 
   Future<void> _applyBatteryPreset(
@@ -669,6 +724,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
     _joinMarkSymbol = null;
     _friendPinSymbols.clear();
     _friendPinUserBySymbol.clear();
+    _ridePoiSymbols.clear();
+    _ridePoiPinsForId = null;
+    _ridePoiImagesReady = false;
   }
 
   void _onRideMapCreated(MapLibreMapController c) {
@@ -689,10 +747,14 @@ class RideScreenState extends ConsumerState<RideScreen> {
       c,
       coarseOverview: styleHasCoarseWaterPolygons(_mapStyle),
     );
-    if (styleNeedsGrayStreetBoost(_mapStyle)) {
-      await boostBasemapStreetContrast(c);
-    } else {
-      await warmBasemapNatureFills(c);
+    if (!isRideHudEmptyStyle(_mapStyle)) {
+      if (styleNeedsGrayStreetBoost(_mapStyle)) {
+        await boostBasemapStreetContrast(c);
+      } else if (styleSkipsNatureFillBoost(_mapStyle)) {
+        await applyOverviewBrowsePaint(c);
+      } else {
+        await warmBasemapNatureFills(c);
+      }
     }
     await _navPuck.attach(c, style: _navPuckStyle);
     Future<void>.delayed(const Duration(milliseconds: 500), () {
@@ -700,7 +762,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
       if (map == null) return;
       unawaited(_navPuck.hideNativePuck(map));
     });
-    await _ensureBikeOverlay();
+    if (!isRideHudEmptyStyle(_mapStyle)) {
+      await _ensureBikeOverlay();
+    }
     await _drawRideMap();
     await _syncNavPuck();
   }
@@ -1153,6 +1217,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       await _drawGroupPins(c);
     }
     await _drawJoinMark(c, ref.read(activeRouteProvider));
+    await _syncRidePoiPins(c, ref.read(activeRouteProvider));
     await _syncNavPuck();
   }
 
@@ -1184,6 +1249,119 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ),
       );
     } catch (_) {}
+  }
+
+  Future<void> _ensureRidePoiImages(MapLibreMapController c) async {
+    if (_ridePoiImagesReady) return;
+    try {
+      for (final kind in MapPoiKind.values) {
+        await c.addImage(poiPinImageId(kind), await loadPoiPinPng(kind));
+      }
+      _ridePoiImagesReady = true;
+    } catch (_) {}
+  }
+
+  Future<void> _syncRidePoiPins(
+    MapLibreMapController c,
+    ActiveRoute? route,
+  ) async {
+    final id = route?.id;
+    if (id == _ridePoiPinsForId && _ridePoiSymbols.isNotEmpty) {
+      await _highlightRideNextPoi(route);
+      return;
+    }
+    for (final s in _ridePoiSymbols) {
+      try {
+        await c.removeSymbol(s);
+      } catch (_) {}
+    }
+    _ridePoiSymbols.clear();
+    _ridePoiSymbolByKey.clear();
+    _rideNextPoiKey = null;
+    _ridePoiPinsForId = id;
+    if (route == null ||
+        route.poiStops.isEmpty ||
+        route.durationMin <= 0 ||
+        route.coordinates.length < 4) {
+      return;
+    }
+    await _ensureRidePoiImages(c);
+    final next = nextPoiStop(
+      stops: [
+        for (final x in route.poiStops)
+          RoutePoiStop(atMin: x.atMin, title: x.title, kind: x.kind),
+      ],
+      alongRouteM: _alongRouteM,
+      totalDistanceM: route.distanceKm * 1000,
+      durationMin: route.durationMin,
+    );
+    final placed = <double>[];
+    var i = 0;
+    for (final poi in route.poiStops) {
+      if (placed.length >= 8) break;
+      i++;
+      if (poi.atMin <= 0) continue;
+      final frac = poi.atMin / route.durationMin;
+      if (!poiFracFitsAlong(frac, placed)) continue;
+      placed.add(frac);
+      final alongM = frac * route.distanceKm * 1000;
+      final p = pointAlongRoute(route.coordinates, alongM);
+      try {
+        final key = '${poi.atMin}|${poi.title}';
+        final selected =
+            next != null && next.atMin == poi.atMin && next.title == poi.title;
+        if (selected) _rideNextPoiKey = key;
+        final sym = await c.addSymbol(
+          SymbolOptions(
+            geometry: LatLng(p[1], p[0]),
+            iconImage: _ridePoiImagesReady
+                ? poiPinImageId(mapPoiKindFromRaw(poi.kind))
+                : null,
+            iconSize: poiStopIconSize(selected: selected),
+            iconAnchor: 'bottom',
+            textField: poiPinLabel(
+              index: i,
+              title: poi.title,
+              zoom: 11,
+            ),
+            textSize: 11,
+            textColor: '#1A120C',
+            textHaloColor: '#F4F1EC',
+            textHaloWidth: 1.6,
+            textOffset: const Offset(0, 1.85),
+          ),
+        );
+        _ridePoiSymbols.add(sym);
+        _ridePoiSymbolByKey[key] = sym;
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _highlightRideNextPoi(ActiveRoute? route) async {
+    final c = _rideMap;
+    if (c == null || _ridePoiSymbolByKey.isEmpty || route == null) return;
+    final next = nextPoiStop(
+      stops: [
+        for (final p in route.poiStops)
+          RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
+      ],
+      alongRouteM: _alongRouteM,
+      totalDistanceM: route.distanceKm * 1000,
+      durationMin: route.durationMin,
+    );
+    final key = next == null ? null : '${next.atMin}|${next.title}';
+    if (key == _rideNextPoiKey) return;
+    _rideNextPoiKey = key;
+    for (final entry in _ridePoiSymbolByKey.entries) {
+      try {
+        await c.updateSymbol(
+          entry.value,
+          SymbolOptions(
+            iconSize: poiStopIconSize(selected: entry.key == key),
+          ),
+        );
+      } catch (_) {}
+    }
   }
 
   LatLng? _selfMapAt() {
@@ -1663,9 +1841,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       acceptLabel: l10n.rideTogetherAccept,
       declineLabel: l10n.rideTogetherDecline,
       askLabel: l10n.rideTogetherInbound(
-        first.label.trim().isEmpty
-            ? l10n.rideTogetherAnon
-            : first.label.trim(),
+        first.label.trim().isEmpty ? l10n.rideTogetherAnon : first.label.trim(),
       ),
     );
   }
@@ -1722,9 +1898,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return _rideGroups.groupForRide(
       route?.id,
       preferGroupId: ref.read(ridePendingGroupIdProvider),
-      catalogTourId: route == null || route.id.isEmpty
-          ? null
-          : catalogTourIdOf(route.id),
+      catalogTourId:
+          route == null || route.id.isEmpty ? null : catalogTourIdOf(route.id),
     );
   }
 
@@ -2377,6 +2552,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       if (mounted) setState(() {});
       _considerNavTts();
       _considerPoiTts();
+      unawaited(_highlightRideNextPoi(ref.read(activeRouteProvider)));
       _mapDrawSkip += 1;
       if (_mapDrawSkip >= 3 || _track.length == 2) {
         _mapDrawSkip = 0;
@@ -2461,6 +2637,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }
       _considerNavTts();
       _considerPoiTts();
+      unawaited(_highlightRideNextPoi(ref.read(activeRouteProvider)));
       final m = _metrics;
       if (m != null) _considerLiveHints(m);
     });
@@ -2610,7 +2787,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
     if (!mounted || _rerouteSheetOpen || !_offRoute) return;
     _rerouteSheetOpen = true;
     try {
-      final action = await showRerouteSheet(context);
+      final action = await showRerouteSheet(
+        context,
+        online: _networkOnline,
+      );
       if (!mounted) return;
       switch (action) {
         case RerouteSheetAction.rejoin:
@@ -2784,16 +2964,27 @@ class RideScreenState extends ConsumerState<RideScreen> {
       if (needApproach) {
         final online = await rideHasNetwork();
         if (!online) {
-          final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
-          final covered = await OfflineMapsPrefs.coversRoute(
+          var covered = await OfflinePackDirs.legitimateCoversRoute(
             fromLng: lastFix.lng,
             fromLat: lastFix.lat,
             toLng: rejoinPt[0],
             toLat: rejoinPt[1],
           );
+          if (!covered) {
+            covered = await OfflinePackDirs.switchToPackCovering(
+              fromLng: lastFix.lng,
+              fromLat: lastFix.lat,
+              toLng: rejoinPt[0],
+              toLat: rejoinPt[1],
+            );
+            if (covered) {
+              OfflineTilesStore.instance.clearCache();
+              unawaited(_refreshConnectivityChip());
+            }
+          }
           if (!canOfflineRejoin(
             needApproach: true,
-            graphReady: graphReady,
+            graphReady: covered,
             routeCovered: covered,
           )) {
             if (mounted) {
@@ -2836,13 +3027,16 @@ class RideScreenState extends ConsumerState<RideScreen> {
             active?.category ?? preferred ?? BikeCategory.mtbAm,
           );
         }
+        final flags = discoverAbEngineChoice(online: online);
         final result = await ref.read(routeRepositoryProvider).planRoute(
               from: GeoPoint(lastFix.lat, lastFix.lng),
               to: GeoPoint(rejoinPt[1], rejoinPt[0]),
               profile: rejoinProfile,
               accessLeg: route.gravitySession,
-              preferOffline: !online,
-              allowOnline: online,
+              preferOffline: flags.preferOffline,
+              allowOfflineFirst: flags.allowOfflineFirst,
+              allowOnline: flags.allowOnline,
+              allowOfflineFallback: flags.allowOfflineFallback,
             );
         approach = result.coordinates.map((p) => [p.lng, p.lat]).toList();
         approachDistM = result.distanceM;
@@ -3368,6 +3562,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         RidePreStartChrome(
           routeName: route?.name,
           starting: _starting,
+          netHint: _streetNetHintBanner(),
           onClearRoute: route == null
               ? null
               : () {
@@ -3644,13 +3839,24 @@ class RideScreenState extends ConsumerState<RideScreen> {
                           ),
                           const SizedBox(width: AppSpacing.xs),
                           if (connectivityChipVisibleInClean(
-                              _connectivityState))
+                                  _connectivityState) &&
+                              connectivityChipVisibleBesideMapHint(
+                                state: _connectivityState,
+                                mapHintVisible: rideHudStreetMapNeedsNet(
+                                  online: _networkOnline,
+                                  offlineStreetTiles: _offlineMapAvailable,
+                                ),
+                              ))
                             Flexible(
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: RideConnectivityChip(
                                   state: _connectivityState,
                                   compact: true,
+                                  mapHintVisible: rideHudStreetMapNeedsNet(
+                                    online: _networkOnline,
+                                    offlineStreetTiles: _offlineMapAvailable,
+                                  ),
                                 ),
                               ),
                             ),
@@ -3694,6 +3900,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
                       distance: navParts.distance,
                       instruction: navParts.instruction,
                       icon: turnIcon(navParts.iconName),
+                      iconName: navParts.iconName,
                       street: navParts.street,
                       maneuver: _l10n.navInstructionFor(
                         maneuverLabelFromInstruction(
@@ -3708,6 +3915,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
                       !_gravityFollowNow(route) &&
                       showTurnByTurn(crossTrackM: _crossTrackM))
                     _buildUpcomingRail(route),
+                  if (!locked) ...[
+                    if (_streetNetHintBanner() case final hint?) hint,
+                  ],
                   // Status: off-route / rejoin why / GPS (one strip only).
                   _buildStatusStrip(theme),
                 ],
@@ -3724,15 +3934,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (!_cleanMode && showLiveDock) ...[
-                  _buildLiveDock(effectiveLayer, mount),
-                  const SizedBox(height: NavHudTokens.islandGapDp),
-                ],
-                if (_togetherInboundBanner() != null) ...[
+                if (!showLiveDock && _togetherInboundBanner() != null) ...[
                   _togetherInboundBanner()!,
                   const SizedBox(height: NavHudTokens.islandGapDp),
                 ],
-                if (_hudSocialIsland(route: route) != null) ...[
+                if (!showLiveDock &&
+                    _hudSocialIsland(route: route) != null) ...[
                   _hudSocialIsland(route: route)!,
                   const SizedBox(height: NavHudTokens.islandGapDp),
                 ],
@@ -3745,6 +3952,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
                         ? l10n.chassisLayerLabelFor(
                             ref.watch(userProfileStoreProvider).preferredSport,
                           )
+                        : null,
+                    body: showLiveDock
+                        ? _buildLiveDock(effectiveLayer, mount)
                         : null,
                     onSelected: (next) {
                       _bumpIdle();
@@ -4113,38 +4323,59 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return HudLeanCalibration.displayDeg(raw, _leanOffsetDeg);
   }
 
+  bool get _canCalibrateLean => HudLeanCalibration.canCalibrate(
+        rawLeanDeg: _metrics?.leanAngleDeg,
+        speedKmh: _effectiveSpeedKmh,
+      );
+
   void _calibrateLean() {
-    final raw = _metrics?.leanAngleDeg;
-    if (raw == null) return;
+    if (!_canCalibrateLean) return;
+    final raw = _metrics!.leanAngleDeg;
     final offset = HudLeanCalibration.offsetFromRaw(raw);
+    HapticFeedback.selectionClick();
     setState(() => _leanOffsetDeg = offset);
     unawaited(RidePrefs.setLeanOffsetDeg(offset));
+    unawaited(RidePrefs.setChassisMounted(true));
+    if (ref.read(mountCheckProvider) != MountCheck.mounted) {
+      ref.read(mountCheckProvider.notifier).state = MountCheck.mounted;
+    }
   }
 
   void _resetLeanCal() {
+    HapticFeedback.selectionClick();
     setState(() => _leanOffsetDeg = 0);
     unawaited(RidePrefs.setLeanOffsetDeg(0));
   }
 
+  void _markChassisMounted() {
+    ref.read(mountCheckProvider.notifier).state = MountCheck.mounted;
+    unawaited(RidePrefs.setChassisMounted(true));
+  }
+
   Widget _buildLiveDock(RideLiveLayer layer, MountCheck mount) {
+    final primed = mount == MountCheck.mounted ||
+        HudLeanCalibration.isCalibrated(_leanOffsetDeg);
     switch (layer) {
       case RideLiveLayer.map:
         return const SizedBox.shrink();
       case RideLiveLayer.data:
         return Semantics(
           label: _l10n.rideLiveData,
-          child: RideHudDataDock(metrics: _liveDataMetrics()),
+          child: RideHudDataDock(
+            embedded: true,
+            metrics: _liveDataMetrics(),
+          ),
         );
       case RideLiveLayer.suspension:
         return RideHudChassisDock(
-          mount: mount,
+          embedded: true,
+          mount: primed ? MountCheck.mounted : mount,
           leanDeg: _displayLeanDeg,
           gPeak: _metrics?.gForcePeak,
           flow: _metrics?.flowContribution,
           calibrated: HudLeanCalibration.isCalibrated(_leanOffsetDeg),
-          onMarkMounted: () {
-            ref.read(mountCheckProvider.notifier).state = MountCheck.mounted;
-          },
+          calibrateEnabled: _canCalibrateLean,
+          onMarkMounted: _markChassisMounted,
           onCalibrate: _calibrateLean,
           onResetCal: _resetLeanCal,
         );
@@ -4156,19 +4387,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final l10n = _l10n;
     final bleConnected = ble.hasWheelLive;
     final driveOnly = ble.isDriveWithoutMetrics;
-    final bleSpeed = _ldi?.speedKmh;
     final bleCadence = _ldi?.cadenceRpm;
-    final out = <HudDockMetric>[
-      HudDockMetric(
-        l10n.rideSpeed,
-        _effectiveSpeedKmh.toStringAsFixed(1),
-      ),
-    ];
-    if (bleConnected && bleSpeed != null && bleSpeed > 0.3) {
-      out.add(
-        HudDockMetric(l10n.rideSensorSpeed, bleSpeed.toStringAsFixed(1)),
-      );
-    }
+    // Tempo sits on the strip — dock only adds what the strip cannot.
+    final out = <HudDockMetric>[];
     out.add(
       HudDockMetric(
         l10n.rideDistance,
@@ -4209,14 +4430,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         HudDockMetric(l10n.rideCadence, bleCadence.toStringAsFixed(0)),
       );
     }
-    if (bleConnected) {
-      out.add(
-        HudDockMetric(
-          l10n.rideBikeSensor,
-          ble.connectedDeviceName ?? l10n.rideConnected,
-        ),
-      );
-    } else if (driveOnly) {
+    if (!bleConnected && driveOnly) {
       out.add(
         HudDockMetric(
           l10n.rideBikeSensor,
@@ -4227,21 +4441,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ),
       );
     }
-    if (ble.isWatchConnected) {
-      out.add(
-        HudDockMetric(
-          l10n.rideWatch,
-          [
-            ble.connectedWatchName ?? l10n.rideConnected,
-            if (_ldi?.heartRateBpm != null)
-              '${_ldi!.heartRateBpm!.round()}'
-            else
-              l10n.rideHeartWaiting,
-          ].join(' · '),
-        ),
-      );
-    }
-    return out;
+    if (out.length <= RideHudLiveDock.maxDataChips) return out;
+    return out.sublist(0, RideHudLiveDock.maxDataChips);
   }
 
   String _fmt(int sec) {

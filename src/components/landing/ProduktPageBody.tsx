@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Map, BookOpen, Wrench, Store, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
+import { DoorIcon } from "@/components/landing/DoorIcon";
 import { ScreenGallery } from "@/components/landing/ScreenGallery";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHomepageCopy } from "@/hooks/useHomepageCopy";
 import { productCopy } from "@/lib/i18n/productCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
-
-const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
 export function ProduktPageBody() {
   const lang = useChromeLang();
@@ -56,14 +55,13 @@ export function ProduktPageBody() {
           <p className="mt-2 max-w-xl text-sm text-text-secondary">{p.ui.doorsLead}</p>
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {p.doors.map((door, i) => {
-              const Icon = DOOR_ICONS[i];
               return (
                 <Link
                   key={door.href}
                   href={door.href}
                   className="rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/50"
                 >
-                  <Icon className="h-5 w-5 text-sage" />
+                  <DoorIcon index={i} />
                   <h3 className="mt-3 font-semibold">{door.title}</h3>
                   <p className="mt-1 text-sm text-text-secondary">{door.body}</p>
                 </Link>

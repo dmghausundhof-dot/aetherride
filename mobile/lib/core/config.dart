@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../data/routing/map_style_url.dart';
 import '../data/routing/offline_maps_prefs.dart';
+import '../data/routing/offline_pack_dirs.dart';
 import '../data/routing/offline_pmtiles_store.dart';
 
 abstract final class AppConfig {
@@ -83,6 +84,8 @@ abstract final class AppConfig {
   );
 
   /// Prefer FFI offline routing before HTTP `/api/route`.
+  /// Unused: Discover and Ride are live-first with net; without net they
+  /// use a covering pack graph. Keep the define so old CI flags still parse.
   static const preferOfflineRouting = bool.fromEnvironment(
     'PREFER_OFFLINE_ROUTING',
     defaultValue: false,
@@ -235,10 +238,13 @@ abstract final class AppConfig {
       );
 
   /// Karte / Discover browse: same CDN catalog as /karten.
-  static String get browseMapStyleUrl => catalogBrowseMapStyleUrl(
+  static String get browseMapStyleUrl => browseMapStyleUrlFor(9.2, 49.0);
+
+  static String browseMapStyleUrlFor(double lng, double lat) =>
+      catalogBrowseMapStyleUrl(
         pmtilesOrStyleUrl: pmtilesUrl,
-        lng: 9.2,
-        lat: 49.0,
+        lng: lng,
+        lat: lat,
       );
 
   /// Runtime: Prefs-Override → lokale PMTiles-Style-Datei → CDN (DACH/FR).
@@ -252,7 +258,8 @@ abstract final class AppConfig {
               override.contains('style.json'))) {
         return override;
       }
-      final bbox = OfflineMapsPrefs.packBboxFrom(m);
+      final bbox = await OfflinePackDirs.activatedCoverageBbox() ??
+          OfflineMapsPrefs.packBboxFrom(m);
       return await OfflinePmtilesStore.resolveStyleUrl(
         remoteFallback: mapStyleUrl,
         packBbox: bbox,
@@ -261,7 +268,10 @@ abstract final class AppConfig {
     return mapStyleUrl;
   }
 
-  static Future<String> resolveBrowseMapStyleUrl() async {
+  static Future<String> resolveBrowseMapStyleUrl({
+    String? currentStyle,
+    List<double>? packBbox,
+  }) async {
     try {
       final m = await OfflineMapsPrefs.read();
       final override = (m['pmtilesUrl'] as String?)?.trim() ?? '';
@@ -271,13 +281,22 @@ abstract final class AppConfig {
               override.contains('style.json'))) {
         return override;
       }
-      final bbox = OfflineMapsPrefs.packBboxFrom(m);
-      return await OfflinePmtilesStore.resolveStyleUrl(
-        remoteFallback: browseMapStyleUrl,
-        packBbox: bbox,
+      final bbox = packBbox ??
+          await OfflinePackDirs.activatedCoverageBbox() ??
+          OfflineMapsPrefs.packBboxFrom(m);
+      final id = basemapArchiveIdForBbox(bbox);
+      final local = await OfflinePmtilesStore.localStyleUri(id);
+      return browseStyleWhenOffline(
+        localStyleUri: local,
+        currentStyle: currentStyle ?? '',
+        streetsFallback: browseMapStyleUrl,
       );
     } catch (_) {}
-    return browseMapStyleUrl;
+    return browseStyleWhenOffline(
+      localStyleUri: null,
+      currentStyle: currentStyle ?? '',
+      streetsFallback: browseMapStyleUrl,
+    );
   }
 
   static bool get usingFreeBasemap => mapStyleUrl.contains('openfreemap.org');

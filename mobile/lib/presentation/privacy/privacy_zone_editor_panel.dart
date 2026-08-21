@@ -55,6 +55,20 @@ class PrivacyZoneEditorPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final preset in kPrivacyZoneRadiusPresetsM)
+                  ChoiceChip(
+                    label: Text(privacyZoneRadiusLabel(preset)),
+                    selected: (r - preset).abs() < 1,
+                    onSelected: (_) {
+                      onRadiusChanged(preset);
+                      onRadiusChangeEnd?.call(preset);
+                    },
+                  ),
+              ],
+            ),
             Row(
               children: [
                 Text(l10n.privacyZoneRadiusWord),

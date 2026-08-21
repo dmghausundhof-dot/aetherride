@@ -6,6 +6,15 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'map_style_url.dart';
+import 'overview_browse_paint.dart';
+
+/// Thrown when the Offline-Routing sheet closes mid-download.
+class OfflineDownloadCancelled implements Exception {
+  const OfflineDownloadCancelled();
+
+  @override
+  String toString() => 'offline download cancelled';
+}
 
 /// Local PMTiles archives (CDN catalog). MapLibre OfflineRegion on
 /// `pmtiles://` stalls — this copies the CDN archive into app documents.
@@ -41,7 +50,7 @@ abstract final class OfflinePmtilesStore {
       '$kOfflinePacksPublicCdnRoot/basemap/$id.pmtiles';
 
   static String cdnStyleUrl(String id) =>
-      '$kOfflinePacksPublicCdnRoot/basemap/$id-style.json';
+      '$kOfflinePacksPublicCdnRoot/basemap/$id-style.json?v=$kBasemapStylePaintRev';
 
   static Future<String> resolveStyleUrl({
     required String remoteFallback,
@@ -63,14 +72,40 @@ abstract final class OfflinePmtilesStore {
     if (!await isReady(id)) return null;
     final style = await styleFile(id);
     if (!await style.exists()) return null;
+    await ensureLocalStyleBrowsePaint(id);
     return style.uri.toString();
+  }
+
+  /// Older downloads kept Bright greens. Sage paper is a JSON rewrite.
+  static Future<void> ensureLocalStyleBrowsePaint(String id) async {
+    final file = await styleFile(id);
+    if (!await file.exists()) return;
+    try {
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! Map) return;
+      final style = Map<String, dynamic>.from(decoded);
+      if (!ensureOverviewBrowseStyle(style)) return;
+      await file.writeAsString(jsonEncode(style));
+    } catch (_) {}
+  }
+
+  /// Charcoal HUD canvas when street tiles cannot load. Not the z11 Blatt.
+  static Future<String> emptyHudStyleUri() async {
+    final file = File(p.join((await dir()).path, kRideHudEmptyStyleFileName));
+    if (!await file.exists()) {
+      await file.parent.create(recursive: true);
+      await file.writeAsString(kRideHudEmptyStyleJson);
+    }
+    return file.uri.toString();
   }
 
   /// Stream CDN archive to documents and rewrite style to `pmtiles://file://…`.
   /// Resumes a `.part` file when the CDN answers 206.
+  /// Closing the sheet sets [isCancelled]; the `.part` file stays for resume.
   static Future<File> downloadArchive({
     required String id,
     void Function(int received, int? total)? onProgress,
+    bool Function()? isCancelled,
   }) async {
     final d = await dir();
     await d.create(recursive: true);
@@ -103,12 +138,18 @@ abstract final class OfflinePmtilesStore {
       try {
         await for (final chunk
             in res.stream.timeout(const Duration(seconds: 90))) {
+          if (isCancelled?.call() == true) {
+            throw const OfflineDownloadCancelled();
+          }
           sink.add(chunk);
           got += chunk.length;
           onProgress?.call(got, total);
         }
       } finally {
         await sink.close();
+      }
+      if (isCancelled?.call() == true) {
+        throw const OfflineDownloadCancelled();
       }
       if (got < minArchiveBytes) {
         await part.delete();
@@ -120,6 +161,9 @@ abstract final class OfflinePmtilesStore {
       client.close();
     }
 
+    if (isCancelled?.call() == true) {
+      throw const OfflineDownloadCancelled();
+    }
     await downloadAssets();
     await writeLocalStyle(id);
     return dest;
@@ -291,7 +335,7 @@ abstract final class OfflinePmtilesStore {
           {
             'id': 'background',
             'type': 'background',
-            'paint': {'background-color': '#e8eee9'},
+            'paint': {'background-color': kOverviewBrowseBg},
           },
         ],
       };
@@ -300,7 +344,22 @@ abstract final class OfflinePmtilesStore {
     if (await assetsReady()) {
       rewriteStyleLocalAssets(style, (await dir()).path);
     }
+    restyleOverviewBrowse(style);
     final out = await styleFile(id);
     await out.writeAsString(jsonEncode(style));
+  }
+
+  static Future<int> totalBytes() async {
+    try {
+      final d = await dir();
+      if (!await d.exists()) return 0;
+      var n = 0;
+      await for (final e in d.list(recursive: true, followLinks: false)) {
+        if (e is File) n += await e.length();
+      }
+      return n;
+    } catch (_) {
+      return 0;
+    }
   }
 }

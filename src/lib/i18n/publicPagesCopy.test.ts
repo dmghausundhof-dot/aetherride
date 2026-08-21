@@ -22,6 +22,23 @@ function testParity() {
     assert.ok(p.pricing.rows.some((r) => r.feature.includes("Platz")), lang);
     assert.ok(p.contact.workshopHint.includes("Werkstatt-Interesse"), lang);
     assert.ok(p.pricing.yearHint.includes("€"), lang);
+    const routing = p.pricing.rows.find((r) =>
+      /routing|routage/i.test(r.feature),
+    );
+    assert.ok(routing, `${lang} offline routing row`);
+    assert.equal(routing!.free, true, `${lang} routing on free`);
+    assert.equal(routing!.pro, true, `${lang} routing on pro`);
+    assert.match(routing!.feature, /pack/i, `${lang} says pack`);
+    assert.doesNotMatch(
+      routing!.feature,
+      /region|région|regio/i,
+      `${lang} no region`,
+    );
+    const offlineReason = p.download.reasons.find((r) =>
+      /offline|hors ligne/i.test(r.title),
+    );
+    assert.ok(offlineReason, `${lang} offline download reason`);
+    assert.match(offlineReason!.body, /pack/i, `${lang} download pack`);
   }
 }
 

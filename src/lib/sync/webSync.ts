@@ -48,6 +48,7 @@ export function sliceFromAppStore(): AppSyncSlice {
     privacyZones: s.privacyZones,
     familyRiders: s.familyRiders,
     activeFamilyRiderId: s.activeFamilyRiderId,
+    ownSetupByBikeId: s.ownSetupByBikeId,
     riderProfile: s.riderProfile,
     subscriptionTier: s.subscriptionTier,
     commerceMode: s.commerceMode,

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'route_progress.dart';
+import 'trail_difficulty.dart';
 
 /// Last mile on an OSM trail when B is a tap on/near that trail.
 ///
@@ -30,6 +31,17 @@ class TrailLastMile {
 
 const double kTrailDestMaxOffM = 90;
 const double kTrailLastMileMaxM = 2000;
+
+/// Cycleway / bridleway, or a way with a real MTB scale.
+/// Untagged path/track is usually a farm or field path.
+bool trailIsCorridorEligible({
+  required String? highway,
+  required TrailDifficulty difficulty,
+}) {
+  final hw = (highway ?? '').toLowerCase();
+  if (hw == 'cycleway' || hw == 'bridleway') return true;
+  return difficulty != TrailDifficulty.open;
+}
 
 /// True when [to] sits on/near the trail (S-grade overlay tap, map B).
 bool destLiesOnTrail(

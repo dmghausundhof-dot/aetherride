@@ -73,7 +73,12 @@ export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
     mtbScale: route.mtbScale,
     surface: route.surface,
     geometry: route.geometry ?? null,
-    source: route.source === "import" ? "import" : "engine",
+    source:
+      route.source === "import"
+        ? "import"
+        : route.source === "recorded"
+          ? "recorded"
+          : "engine",
     setAt: new Date().toISOString(),
   };
 }

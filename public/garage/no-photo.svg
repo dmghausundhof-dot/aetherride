@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140" role="img" aria-label="Noch kein Foto">
+  <title>FlowLine  Rad ohne Foto</title>
+  <desc>Gestricheltes Seitenprofil auf dem Stand. Kein Foto, aber das Rad hat einen Platz.</desc>
+  <rect x="0" y="0" width="240" height="140" rx="16" fill="#121215"/>
+  <path d="M0 104 C40 98 80 102 120 108 C160 114 200 118 240 114 L240 140 L0 140 Z" fill="#1E1E26"/>
+  <ellipse cx="120" cy="116" rx="72" ry="6" fill="#000" opacity="0.26"/>
+  <g fill="none" stroke="#484854" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.4 4.2">
+    <circle cx="78" cy="86" r="22"/>
+    <circle cx="162" cy="86" r="22"/>
+    <path d="M78 86 L104 50 L146 50 L162 86"/>
+    <path d="M104 50 L120 86"/>
+    <path d="M146 50 L120 86"/>
+    <path d="M104 50 L96 36 H84"/>
+  </g>
+  <circle cx="78" cy="86" r="3" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-dasharray="1.6 1.8"/>
+  <circle cx="162" cy="86" r="3" fill="#FF6A00"/>
+</svg>

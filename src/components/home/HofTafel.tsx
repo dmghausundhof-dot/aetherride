@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import type { TafelItem } from "@/lib/tours/tourAkte";
 
-/** Zwei Zeilen-Typen: Pflege → Werkstatt, Mappe/Stimmen → Tour. Kein Hybrid. */
+/** Zwei Zeilen-Typen: Pflege → Rad, Mappe/Stimmen → Tour. Kein Hybrid. */
 export function HofTafel({ items }: { items: TafelItem[] }) {
   const copy = useHofCopy();
 
   const care = items.filter((i) => i.kind === "care");
   const tour = items.filter(
-    (i) => i.kind === "stimmen" || i.kind === "mappe" || i.kind === "gruppe"
+    (i) =>
+      i.kind === "stimmen" ||
+      i.kind === "mappe" ||
+      i.kind === "gruppe" ||
+      i.kind === "listing"
   );
   if (care.length === 0 && tour.length === 0) return null;
 

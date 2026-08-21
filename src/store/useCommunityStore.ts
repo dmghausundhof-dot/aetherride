@@ -13,6 +13,7 @@ import type {
   TourReview,
 } from "@/lib/community/types";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
+import { parseStimmeTags } from "@/lib/community/stimmeTags";
 
 const MAX_BODY = 500;
 
@@ -39,6 +40,7 @@ type CommunityState = {
     rating: 1 | 2 | 3 | 4 | 5;
     body: string;
     authorLabel?: string;
+    tags?: string[];
   }) => TourReview | { error: string };
   removeMyReview: (id: string) => void;
   updatePublicProfile: (patch: Partial<PublicProfileSettings>) => void;
@@ -83,6 +85,7 @@ export const useCommunityStore = create<CommunityState>()(
           return { error: "Bewertung 1–5." };
         }
         const profile = get().publicProfile;
+        const tags = parseStimmeTags(input.tags);
         const review: TourReview = {
           id: `ur-${uuidv4()}`,
           tourId: input.tourId,
@@ -96,6 +99,7 @@ export const useCommunityStore = create<CommunityState>()(
           createdAt: new Date().toISOString(),
           // Lokal: pending = sichtbar nur dir, wartet auf Server-Moderation
           status: "pending",
+          ...(tags.length ? { tags } : {}),
         };
         set((s) => ({ myReviews: [review, ...s.myReviews] }));
         return review;

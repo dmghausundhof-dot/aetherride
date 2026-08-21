@@ -69,6 +69,10 @@ function testParity() {
       p.matrix.some((row) => /Tipp|Tip|Astuce|Consigli/i.test(row.feature)),
       lang,
     );
+    assert.ok(
+      p.matrix.some((row) => /routing|routage/i.test(row.feature)),
+      `${lang} offline routing in matrix`,
+    );
   }
 }
 

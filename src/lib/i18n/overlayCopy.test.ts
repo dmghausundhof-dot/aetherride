@@ -33,11 +33,14 @@ function testParity() {
     assert.ok(!o.empty.includes("Hausbergen"), lang);
     assert.equal(overlayLegendCompactLabel("gravel", lang), "Gravel", lang);
     assert.ok(o.surfaceNote.includes("surface"), lang);
+    assert.ok(o.farmTracks.length > 3, lang);
     assert.ok(o.surfacePaved.length > 2, lang);
   }
   assert.equal(overlayLegendLabel("unrated", "en"), "unrated");
   assert.equal(overlayLegendLabel("paved", "de"), "Asphalt");
   assert.equal(overlayLegendLabel("dirt", "de"), "Naturweg");
+  assert.equal(overlayCopy("de").farmTracks, "Feldwege");
+  assert.equal(overlayCopy("en").farmTracks, "Farm tracks");
   assert.notEqual(overlayCopy("de").unrated, overlayCopy("en").unrated);
 }
 

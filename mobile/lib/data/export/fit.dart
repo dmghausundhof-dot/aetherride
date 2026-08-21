@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../domain/ride.dart';
+import '../../domain/ride/ride_telemetry.dart';
 
 /// Minimal FIT Activity writer — Port of `src/lib/export/fit.ts` (F-ACC-003).
 Uint8List rideToFit(RideRecord ride) {
@@ -49,10 +50,10 @@ Uint8List rideToFit(RideRecord ride) {
     final timeRaw = p['time'] ?? p['timeMs'];
     int t;
     if (timeRaw is num) {
-      if (timeRaw > 1e12) {
+      if (timeRaw >= 1e12) {
         t = ((timeRaw.toInt() - fitEpoch) / 1000).floor();
-      } else if (timeRaw > 1e10) {
-        t = ((timeRaw.toInt() - fitEpoch) / 1000).floor();
+      } else if (timeRaw >= 1e9) {
+        t = (timeRaw.round() - (fitEpoch / 1000).floor());
       } else {
         t = startFit + timeRaw.round();
       }
@@ -83,7 +84,9 @@ Uint8List rideToFit(RideRecord ride) {
   records.u8(2);
   records.u32((ride.movingTimeSec * 1000).round());
   records.u32((ride.distanceKm * 1000 * 100).round());
-  records.u16(ride.elevationM.round().clamp(0, 0xffff));
+  records.u16(
+    honestClimbM(ride.track, ride.elevationM).clamp(0, 0xffff),
+  );
 
   final data = records.bytes();
   final header = _FitBuf();

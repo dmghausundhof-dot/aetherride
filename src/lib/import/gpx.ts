@@ -4,8 +4,8 @@
 
 export type ParsedGpx = {
   name: string;
-  /** GeoJSON [lng, lat] */
-  coordinates: [number, number][];
+  /** GeoJSON [lng, lat] oder [lng, lat, ele] — ele nur aus GPX. */
+  coordinates: number[][];
   distanceKm: number;
   elevationM: number;
   durationMin: number;
@@ -74,7 +74,11 @@ export function parseGpx(
 
   return {
     name,
-    coordinates: pts.map((p) => [p.lng, p.lat]),
+    coordinates: pts.map((p) =>
+      p.elev != null && Number.isFinite(p.elev)
+        ? [p.lng, p.lat, p.elev]
+        : [p.lng, p.lat],
+    ),
     distanceKm: dist / 1000,
     elevationM: elevGain,
     durationMin: Math.max(10, Math.round((dist / 1000 / 12) * 60)),

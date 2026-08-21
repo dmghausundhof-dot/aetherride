@@ -23,4 +23,15 @@ void main() {
     expect(psi, closeTo(65.3, 0.1));
     expect(psiToBar(psi), 4.5);
   });
+
+  test('Nutzer kann psi erzwingen, auch am Citybike', () {
+    expect(
+      resolvePressureUsesBar(BikeCategory.urban, PressureUnitPref.psi),
+      isFalse,
+    );
+    expect(
+      enteredPressureToPsi(26, BikeCategory.urban, PressureUnitPref.psi),
+      26,
+    );
+  });
 }

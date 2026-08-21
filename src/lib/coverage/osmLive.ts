@@ -229,8 +229,8 @@ export async function fetchOsmTrailsNear(opts: {
       ...osmSGradeOverpassParts(loc),
       `way["highway"="path"]["bicycle"~"yes|designated"]${loc}(if:length()>200);`,
       `way["highway"~"path|track"]["sac_scale"]${loc};`,
-      `way["highway"="path"]["surface"~"ground|gravel|dirt|grass|compacted|fine_gravel|earth|unpaved"]["bicycle"!="no"]${loc}(if:length()>200);`,
-      `way["highway"="track"]["tracktype"~"grade2|grade3|grade4|grade5"]["bicycle"!="no"]${loc}(if:length()>200);`
+      // No untagged highway=track / grass field paths.
+      // Tagged MTB tracks stay via mtb:scale above.
     );
   }
   if (kinds !== "trails" && kinds !== "sgrade") {

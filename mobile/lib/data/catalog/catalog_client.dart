@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
 import '../../domain/catalog_bike.dart';
+import '../../domain/garage/bike_receipt.dart';
 import '../local/app_database.dart';
 
 class CatalogClient {
@@ -16,7 +17,7 @@ class CatalogClient {
 
   /// Pseudo-Zeile in `catalogCache` für den gesamten Bike-Katalog —
   /// „Bike anlegen" öffnet damit sofort statt auf die API zu warten.
-  static const _bikesCacheId = '__bikes-catalog-v2__';
+  static const _bikesCacheId = '__bikes-catalog-v3__';
   static const _bikesCacheTtl = Duration(hours: 24);
   static const _bikesTimeout = Duration(seconds: 10);
 
@@ -91,11 +92,11 @@ class CatalogClient {
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final raw = data['manufacturers'];
     if (raw is! List) return const [];
-    return [
+    return mergeCatalogManufacturers([
       for (final e in raw)
         if (e is Map)
           CatalogManufacturer.fromJson(Map<String, dynamic>.from(e)),
-    ];
+    ]);
   }
 
   Future<({List<CatalogManufacturer> list, bool stale})?>
@@ -107,11 +108,11 @@ class CatalogClient {
     try {
       final decoded = jsonDecode(row.payloadJson);
       if (decoded is! List) return null;
-      final list = [
+      final list = mergeCatalogManufacturers([
         for (final e in decoded)
           if (e is Map)
             CatalogManufacturer.fromJson(Map<String, dynamic>.from(e)),
-      ];
+      ]);
       if (list.isEmpty) return null;
       final age = DateTime.now().toUtc().difference(row.fetchedAt);
       return (list: list, stale: age > _bikesCacheTtl);
@@ -134,8 +135,40 @@ class CatalogClient {
         );
   }
 
-  /// Text- oder Foto-Suche gegen den OEM-Katalog.
-  Future<List<CatalogBikeHit>> identify({
+  /// Beleg lesen — derselbe Grok-Vision-Pfad wie Bike-Foto, anderes Prompt.
+  Future<ReceiptScanHint> scanReceipt(String imageBase64) async {
+    final image = imageBase64.trim();
+    if (image.isEmpty) return const ReceiptScanHint();
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/garage/receipt-scan');
+      final res = await _http
+          .post(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'imageBase64': image}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (res.statusCode == 429) {
+        return const ReceiptScanHint(reason: ReceiptScanReason.quota);
+      }
+      if (res.statusCode != 200) {
+        return const ReceiptScanHint(reason: ReceiptScanReason.failed);
+      }
+      final data = jsonDecode(res.body);
+      if (data is! Map) {
+        return const ReceiptScanHint(reason: ReceiptScanReason.failed);
+      }
+      return ReceiptScanHint.fromJson(Map<String, dynamic>.from(data));
+    } catch (_) {
+      return const ReceiptScanHint(reason: ReceiptScanReason.failed);
+    }
+  }
+
+  /// Text- oder Foto-Suche gegen den OEM-Katalog (Grok-Vision wie Beleg-Scan).
+  Future<CatalogIdentifyResult> identify({
     String? q,
     String? imageBase64,
   }) async {
@@ -160,7 +193,12 @@ class CatalogClient {
             );
           }
         }
-        if (local.isNotEmpty) return local.take(8).toList();
+        if (local.isNotEmpty) {
+          return CatalogIdentifyResult(
+            matches: local.take(8).toList(),
+            reason: 'ok',
+          );
+        }
       } catch (_) {}
     }
     try {
@@ -178,19 +216,18 @@ class CatalogClient {
                 'imageBase64': imageBase64,
             }),
           )
-          .timeout(const Duration(seconds: 20));
-      if (res.statusCode != 200) return const [];
+          .timeout(const Duration(seconds: 25));
+      if (res.statusCode == 429) {
+        return const CatalogIdentifyResult(reason: 'quota');
+      }
+      if (res.statusCode != 200) {
+        return const CatalogIdentifyResult(reason: 'failed');
+      }
       final data = jsonDecode(res.body);
-      if (data is! Map) return const [];
-      final raw = data['matches'];
-      if (raw is! List) return const [];
-      return [
-        for (final e in raw)
-          if (e is Map)
-            CatalogBikeHit.fromJson(Map<String, dynamic>.from(e)),
-      ];
+      if (data is! Map) return const CatalogIdentifyResult(reason: 'failed');
+      return CatalogIdentifyResult.fromJson(Map<String, dynamic>.from(data));
     } catch (_) {
-      return const [];
+      return const CatalogIdentifyResult(reason: 'failed');
     }
   }
 

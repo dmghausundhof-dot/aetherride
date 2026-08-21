@@ -29,6 +29,8 @@ export type TourReview = {
   editorial?: boolean;
   /** Sport-Kontext z. B. gravel */
   sportHint?: string;
+  /** Zustand-Tags (nass, zu, …) — nur von der Stimme, nie erfunden. */
+  tags?: string[];
 };
 
 export type PublicProfileSettings = {

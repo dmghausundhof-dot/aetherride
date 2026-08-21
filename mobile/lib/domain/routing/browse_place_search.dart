@@ -27,4 +27,8 @@ abstract final class BrowsePlaceSearch {
     if (q.length < 3) return false;
     return geocodeHitFromCoordinates(q) == null;
   }
+
+  /// Place names need geocoding. Lat,lng typed in the field does not.
+  static bool needsNetwork(String query) =>
+      geocodeHitFromCoordinates(query) == null;
 }

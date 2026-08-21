@@ -32,6 +32,7 @@ export function AuthCard({
   const [password, setPassword] = useState("");
   const [authMsg, setAuthMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const refreshMe = useCallback(async () => {
     try {
@@ -103,6 +104,29 @@ export function AuthCard({
     }
   };
 
+  const resetPassword = async () => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      if (!email.trim()) {
+        setAuthMsg("Bitte zuerst die E-Mail eintragen.");
+        return;
+      }
+      const res = await fetch("/api/auth/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Reset fehlgeschlagen");
+      setAuthMsg("Wenn das Konto existiert, kommt eine E-Mail zum Zurücksetzen.");
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const oauth = async (provider: "google" | "apple") => {
     setBusy(true);
     setAuthMsg(null);
@@ -166,14 +190,23 @@ export function AuthCard({
         onChange={(e) => setEmail(e.target.value)}
         className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2.5 text-sm"
       />
-      <input
-        type="password"
-        placeholder="Passwort (min. 8)"
-        value={password}
-        autoComplete="current-password"
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2.5 text-sm"
-      />
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Passwort (min. 8)"
+          value={password}
+          autoComplete="current-password"
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2.5 pr-16 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((v) => !v)}
+          className="absolute inset-y-0 right-2 text-xs font-semibold text-text-secondary"
+        >
+          {showPassword ? "Verbergen" : "Zeigen"}
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -192,6 +225,14 @@ export function AuthCard({
           Registrieren
         </button>
       </div>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void resetPassword()}
+        className="text-left text-xs font-medium text-text-secondary underline-offset-2 hover:underline"
+      >
+        Passwort vergessen?
+      </button>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"

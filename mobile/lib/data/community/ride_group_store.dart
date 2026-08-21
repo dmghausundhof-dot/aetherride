@@ -366,17 +366,14 @@ class RideGroupStore {
       return const RideGroupJoinOut.fail(RideGroupJoinFail.needLink);
     }
     final session = await RideGroupCloud.sessionState();
-    if (session == 'signedOut') {
-      return const RideGroupJoinOut.fail(
-        RideGroupJoinFail.needLogin,
-        note: RideGroupCloud.needLoginJoinNote,
+    RideGroupCloudResult? cloud;
+    if (session == 'signedIn') {
+      cloud = await RideGroupCloud.join(
+        code: asCode ? normalized : null,
+        groupId: asId ? raw : null,
+        token: token,
       );
     }
-    final cloud = await RideGroupCloud.join(
-      code: asCode ? normalized : null,
-      groupId: asId ? raw : null,
-      token: token,
-    );
     if (cloud != null && cloud.ok && cloud.bundle!.groups.isNotEmpty) {
       lastNote = RideGroupCloud.onServerNote;
       await _save(_mergeCloud(await _load(), cloud.bundle!));
@@ -384,6 +381,18 @@ class RideGroupStore {
       return cloud.bundle!.already
           ? RideGroupJoinOut.already(g, note: 'Schon dabei: ${g.title}. ${RideGroupCloud.onServerNote}')
           : RideGroupJoinOut.ok(g, note: 'Dabei: ${g.title}. ${RideGroupCloud.onServerNote}');
+    }
+    if (cloud != null &&
+        asCode &&
+        (token == null || token.isEmpty) &&
+        (cloud.status == 403 ||
+            cloud.status == 400 ||
+            cloud.status == 404)) {
+      return RideGroupJoinOut.fail(
+        RideGroupJoinFail.needLink,
+        note: cloud.note ??
+            'Privat — nur mit Einladungslink. Kein Code zum Abtippen.',
+      );
     }
     if (cloud != null && cloud.status == 403) {
       return RideGroupJoinOut.fail(
@@ -409,17 +418,11 @@ class RideGroupStore {
         note: cloud.note,
       );
     }
-    if (cloud != null && cloud.status == 401) {
-      return RideGroupJoinOut.fail(
-        RideGroupJoinFail.needLogin,
-        note: cloud.note ?? RideGroupCloud.needLoginJoinNote,
-      );
-    }
     if (cloud != null && cloud.status == 404 && (token == null || token.isEmpty)) {
       return RideGroupJoinOut.fail(
-        RideGroupJoinFail.unknown,
+        RideGroupJoinFail.needLink,
         note: cloud.note ??
-            'Kein offener Link auf dem Server. Nur lokal angelegte Gruppen brauchen den Einladungslink.',
+            'Privat — nur mit Einladungslink. Kein Code zum Abtippen.',
       );
     }
     final snap = await _load();
@@ -437,7 +440,7 @@ class RideGroupStore {
         !snap.members.any(
           (m) => m.groupId == hit!.id && m.userId == snap.localUserId,
         )) {
-      return RideGroupJoinOut.fail(
+      return const RideGroupJoinOut.fail(
         RideGroupJoinFail.needLink,
         note: 'Privat — nur mit Einladungslink.',
       );
@@ -483,14 +486,7 @@ class RideGroupStore {
         RideGroupJoinFail.unknown,
         note: session == 'signedOut'
             ? RideGroupCloud.needLoginJoinNote
-            : cloud?.note ??
-                'Kein offener Link auf dem Server.',
-      );
-    }
-    if (session == 'signedIn') {
-      return RideGroupJoinOut.fail(
-        RideGroupJoinFail.unknown,
-        note: cloud?.note ?? 'Beitritt auf dem Server fehlgeschlagen.',
+            : cloud?.note ?? 'Kein offener Link auf dem Server.',
       );
     }
     return tryJoinFromInvite(
@@ -530,9 +526,16 @@ class RideGroupStore {
     final cloud = await RideGroupCloud.listPublic();
     if (cloud == null || !cloud.ok) return const [];
     final mine = {for (final g in await activeGroups()) g.id};
+    final now = DateTime.now();
     return [
       for (final g in cloud.bundle!.groups)
-        if (!mine.contains(g.id)) g,
+        if (!mine.contains(g.id) &&
+            RideGroupPolicy.canJoin(
+              now: now,
+              end: g.startWindowEnd,
+              status: g.status,
+            ))
+          g,
     ];
   }
 

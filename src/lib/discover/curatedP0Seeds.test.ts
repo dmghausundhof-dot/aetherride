@@ -27,7 +27,13 @@ assert(
   "Heidelberg: nearby RN seed within 35 km"
 );
 assert(
-  hdSixty.some((r) => r.id.includes("hd-") || r.id.includes("ma-")),
+  hdSixty.some(
+    (r) =>
+      r.id.includes("heidelberg") ||
+      r.id.includes("mannheim") ||
+      r.id.includes("hd-") ||
+      r.id.includes("ma-")
+  ),
   "RN seed ids present"
 );
 assert(
@@ -46,8 +52,22 @@ assert(
   "catalog includes Tempelhofer"
 );
 assert(
-  catalog.some((r) => r.id.includes("hd-") || r.id.includes("ma-")),
+  catalog.some(
+    (r) =>
+      r.id.includes("heidelberg") ||
+      r.id.includes("mannheim") ||
+      r.id.includes("hd-") ||
+      r.id.includes("ma-")
+  ),
   "catalog includes RN"
+);
+
+const hdLoop = hdSixty.find(
+  (r) => r.id.includes("heidelberg") || r.id.includes("hd-")
+);
+assert(
+  (hdLoop?.poiStops?.length ?? 0) >= 4,
+  "Heidelberg ~60 loop keeps poi_stops"
 );
 
 console.log("curatedP0Seeds.test.ts OK");

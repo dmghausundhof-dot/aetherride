@@ -21,6 +21,7 @@ import {
   httpsAppLink,
   rideOpenPath,
 } from "@/lib/web/appLinks";
+import { formatDistanceElevation } from "@/lib/discover/elevationGuard";
 
 export default function RideAppBridgePage() {
   const copy = useHofCopy();
@@ -78,11 +79,18 @@ export default function RideAppBridgePage() {
                   {activeRoute.name}
                 </h2>
                 <p className="mt-1 text-sm tabular-nums text-text-secondary">
-                  {activeRoute.distanceKm} km · {activeRoute.elevationM} hm ·{" "}
-                  {activeRoute.durationMin} min
-                  {activeRoute.mtbScale && activeRoute.mtbScale !== "—"
-                    ? ` · ${activeRoute.mtbScale}`
-                    : ""}
+                  {[
+                    formatDistanceElevation(
+                      activeRoute.distanceKm,
+                      activeRoute.elevationM,
+                    ),
+                    `${activeRoute.durationMin} min`,
+                    activeRoute.mtbScale && activeRoute.mtbScale !== "—"
+                      ? activeRoute.mtbScale
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
                 {activeRoute.surface && (
                   <p className="mt-1 text-xs text-text-secondary">

@@ -374,6 +374,11 @@ class TourFilters {
     return km <= maxKm + 0.05;
   }
 
+  /// Umkreis: Abstand Tour-Mitte → Standort. Nicht die Tourlänge.
+  static bool awayMatches(double awayKm, double? maxAwayKm) {
+    return distanceMatches(awayKm, maxAwayKm);
+  }
+
   /// Weiche Sport-Präferenz: true wenn Tour zur Kategorie passt.
   static bool softSportMatch(
     List<BikeCategory> tourCategories,
@@ -696,12 +701,44 @@ class TourFilters {
     return '$durationMin′';
   }
 
-  /// Unselected starts stay silent; selected may show time.
-  static bool browseTourShowsTime({
+  /// Zoom-Stufen, die Pin-Dichte und Beschriftung wechseln.
+  /// 0 unter 10, 1 ab 10, 2 ab 11, 3 ab 12, 4 ab 13.
+  static int browsePinZoomBand(double zoom) {
+    if (zoom < 10) return 0;
+    if (zoom < 11) return 1;
+    if (zoom < 12) return 2;
+    if (zoom < 13) return 3;
+    return 4;
+  }
+
+  /// Band 0 toggles unselected tour-start pins. 11–13 only change labels.
+  static bool browsePinZoomBandNeedsFullResync(int from, int to) {
+    if (from == to) return false;
+    return from == 0 || to == 0;
+  }
+
+  /// Dauer ab Zoom 11 — ungewählt und gewählt, sonst Pin-Wald.
+  static bool browseTourShowsTime({required double zoom}) => zoom >= 11;
+
+  static const int _browseTourNameMax = 16;
+
+  /// Ungewählt: nur Dauer. Gewählt ab Zoom 13: Dauer · Kurzname.
+  static String browseTourPinText({
+    required int durationMin,
     required bool selected,
     required double zoom,
-  }) =>
-      selected && zoom >= 11;
+    String? name,
+  }) {
+    if (!browseTourShowsTime(zoom: zoom)) return '';
+    final time = browseTourTimeLabel(durationMin);
+    if (!selected || zoom < 13) return time;
+    final n = name?.trim() ?? '';
+    if (n.isEmpty) return time;
+    final short = n.length <= _browseTourNameMax
+        ? n
+        : '${n.substring(0, _browseTourNameMax - 1)}…';
+    return time.isEmpty ? short : '$time · $short';
+  }
 
   static String pinHalo(TourSportKey sport) => switch (sport) {
         TourSportKey.mtb || TourSportKey.emtb => '#1B5E20',

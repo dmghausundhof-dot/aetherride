@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
+import { pinGlyphForCategory, coveragePlacePoiKind } from "@/lib/map/mapPinSvg";
+import { browseCoveragePinText } from "@/lib/map/tourPoiStops";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { tourLiveMapStatus } from "@/lib/tours/tourLiveMapStatus";
@@ -23,17 +25,20 @@ export function TourLiveMap({
   center,
   name,
   profile,
+  category,
 }: {
   tourId: string;
   center: [number, number];
   name: string;
   profile?: RoutingProfile;
+  category?: string;
 }) {
   const lang = useChromeLang();
   const [data, setData] = useState<GeometryPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [placeMarkers, setPlaceMarkers] = useState<MapMarker[]>([]);
+  const [mapZoom, setMapZoom] = useState(11);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,16 +83,34 @@ export function TourLiveMap({
         };
         if (cancelled || !Array.isArray(j.places)) return;
         const extra: MapMarker[] = [];
-        for (const p of j.places.slice(0, 24)) {
+        let plates = 0;
+        let stimme = 0;
+        for (const p of j.places) {
           const lat = Number(p.lat);
           const lng = Number(p.lng);
           const id = String(p.id || "").trim();
           if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+          if (p.source === "stimme") {
+            if (stimme >= 3) continue;
+            stimme += 1;
+            extra.push({
+              id: `place-${id}`,
+              lngLat: [lng, lat],
+              color: "#6D4C41",
+              kind: "stimme",
+              label: (p.name || "").slice(0, 14),
+            });
+            continue;
+          }
+          const poiKind = coveragePlacePoiKind(p.kind);
+          if (!poiKind || plates >= 8) continue;
+          plates += 1;
           extra.push({
             id: `place-${id}`,
             lngLat: [lng, lat],
-            color: p.source === "stimme" ? "#7C5CFF" : "#2BB0ED",
-            label: (p.kind || p.name || "·").slice(0, 1).toUpperCase(),
+            kind: "poi",
+            poiKind,
+            label: p.name || "",
           });
         }
         setPlaceMarkers(extra);
@@ -103,6 +126,14 @@ export function TourLiveMap({
   const hasLine =
     data?.geometry?.coordinates && data.geometry.coordinates.length >= 2;
 
+  const pinAt = useMemo((): [number, number] => {
+    const c0 = data?.geometry?.coordinates?.[0];
+    if (Array.isArray(c0) && c0.length >= 2) {
+      return [Number(c0[0]), Number(c0[1])];
+    }
+    return center;
+  }, [data, center]);
+
   const routes: MapRouteLayer[] = hasLine
     ? [
         {
@@ -116,15 +147,21 @@ export function TourLiveMap({
       ]
     : [];
 
-  const markers: MapMarker[] = [
-    {
+  const markers: MapMarker[] = useMemo(() => {
+    const pin: MapMarker = {
       id: "tour-pin",
-      lngLat: center,
+      lngLat: pinAt,
       color: "#FF6A00",
-      label: "T",
-    },
-    ...placeMarkers,
-  ];
+      kind: "tour",
+      glyph: pinGlyphForCategory(category),
+    };
+    const extras = placeMarkers.map((m) =>
+      m.kind === "poi"
+        ? { ...m, label: browseCoveragePinText(m.label ?? "", mapZoom) }
+        : m
+    );
+    return [pin, ...extras];
+  }, [pinAt, placeMarkers, mapZoom, category]);
 
   return (
     <div className="relative h-full min-h-[280px] w-full">
@@ -136,6 +173,7 @@ export function TourLiveMap({
         routes={routes}
         fitRoute={Boolean(hasLine)}
         interactiveSelect={false}
+        onZoomChange={setMapZoom}
       />
       <div className="pointer-events-none absolute bottom-3 left-3 right-3 z-10">
         {loading && (
@@ -150,7 +188,10 @@ export function TourLiveMap({
         )}
         {!loading && hasLine && data && (
           <p className="rounded-lg bg-black/70 px-3 py-1.5 text-[11px] text-white">
-            {tourLiveMapStatus(data, lang)}
+            {tourLiveMapStatus(
+              { ...data, profile: (data.profile as RoutingProfile) || "gravel" },
+              lang
+            )}
           </p>
         )}
       </div>

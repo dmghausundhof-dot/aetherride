@@ -61,6 +61,12 @@ void main() {
       expect(TourFilters.distanceMatches(40.1, 40), isFalse);
       expect(TourFilters.distanceMatches(100, null), isTrue);
     });
+
+    test('away is Umkreis, not tour length', () {
+      expect(TourFilters.awayMatches(12, 20), isTrue);
+      expect(TourFilters.awayMatches(80, 40), isFalse);
+      expect(TourFilters.awayMatches(200, null), isTrue);
+    });
   });
 
   group('TourFilters form / downhill / S-scale', () {
@@ -399,12 +405,59 @@ void main() {
       expect(TourFilters.browseTourTimeLabel(0), '');
       expect(TourFilters.pinLabel(TourSportKey.gravel), 'GR');
       expect(
-        TourFilters.browseTourShowsTime(selected: true, zoom: 12),
+        TourFilters.browseTourShowsTime(zoom: 12),
         isTrue,
       );
       expect(
-        TourFilters.browseTourShowsTime(selected: false, zoom: 14),
+        TourFilters.browseTourShowsTime(zoom: 14),
+        isTrue,
+      );
+      expect(
+        TourFilters.browseTourShowsTime(zoom: 10),
         isFalse,
+      );
+      expect(TourFilters.browsePinZoomBand(9.5), 0);
+      expect(TourFilters.browsePinZoomBand(10.5), 1);
+      expect(TourFilters.browsePinZoomBand(11.5), 2);
+      expect(TourFilters.browsePinZoomBand(12.5), 3);
+      expect(TourFilters.browsePinZoomBand(13), 4);
+      expect(TourFilters.browsePinZoomBandNeedsFullResync(0, 1), isTrue);
+      expect(TourFilters.browsePinZoomBandNeedsFullResync(2, 3), isFalse);
+      expect(TourFilters.browsePinZoomBandNeedsFullResync(3, 4), isFalse);
+      expect(
+        TourFilters.browseTourPinText(
+          durationMin: 45,
+          selected: false,
+          zoom: 11,
+        ),
+        '45′',
+      );
+      expect(
+        TourFilters.browseTourPinText(
+          durationMin: 45,
+          selected: true,
+          zoom: 12,
+          name: 'Neckarwiese',
+        ),
+        '45′',
+      );
+      expect(
+        TourFilters.browseTourPinText(
+          durationMin: 45,
+          selected: true,
+          zoom: 13,
+          name: 'Neckarwiese',
+        ),
+        '45′ · Neckarwiese',
+      );
+      expect(
+        TourFilters.browseTourPinText(
+          durationMin: 45,
+          selected: true,
+          zoom: 13,
+          name: 'Neckarwiese-Runde am Fluss',
+        ),
+        '45′ · Neckarwiese-Run…',
       );
     });
   });

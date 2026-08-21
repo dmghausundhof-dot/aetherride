@@ -96,9 +96,9 @@ export function getMaintenanceSummary(
       totalIntervals: 0,
       topItem: null,
       items: [],
-      headline: "Noch kein Rad in der Werkstatt.",
-      detail: "Rad abstellen → Service-Check in 2 Min",
-      href: "/garage?wizard=catalog",
+      headline: "Noch kein Rad am Stand.",
+      detail: "Rad anlegen → Service-Check in 2 Min",
+      href: "/garage?wizard=1",
     };
   }
 

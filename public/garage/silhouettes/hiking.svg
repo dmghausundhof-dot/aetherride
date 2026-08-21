@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500"
+     data-bike-id="hiking" data-family="hiking"
+     data-geo-source="kit_silhouette" fill="none">
+  <title>FlowLine Wander-Kit</title>
+  <desc>Rucksack und Stöcke auf dem Stand. Kein Rad  ehrliches Tour-Kit.</desc>
+  <ellipse cx="500" cy="438" rx="180" ry="8" fill="#000" opacity="0.12"/>
+  <g stroke="#8A8F96" stroke-width="7" stroke-linecap="round">
+    <line x1="338" y1="128" x2="292" y2="404"/>
+    <line x1="662" y1="128" x2="708" y2="404"/>
+  </g>
+  <g fill="#4B5060">
+    <circle cx="338" cy="122" r="8"/>
+    <circle cx="662" cy="122" r="8"/>
+  </g>
+  <g fill="#2C2C32">
+    <rect x="284" y="392" width="18" height="22" rx="3"/>
+    <rect x="698" y="392" width="18" height="22" rx="3"/>
+  </g>
+  <path d="M412 168 H588 C610 168 624 186 624 210 V348 C624 372 606 390 580 390 H420 C394 390 376 372 376 348 V210 C376 186 390 168 412 168 Z"
+        fill="#1A1A1E" stroke="#8A8F96" stroke-width="6"/>
+  <path d="M404 214 H596" stroke="#4B5060" stroke-width="4" stroke-linecap="round"/>
+  <rect x="436" y="148" width="128" height="28" rx="10" fill="#2C2C32" stroke="#8A8F96" stroke-width="4"/>
+  <path d="M456 176 C456 132 544 132 544 176" fill="none" stroke="#8A8F96" stroke-width="7" stroke-linecap="round"/>
+  <path d="M500 214 V286" stroke="#FF6A00" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="500" cy="302" r="11" fill="#FF6A00"/>
+  <path d="M430 348 H570" stroke="#4B5060" stroke-width="5" stroke-linecap="round"/>
+</svg>

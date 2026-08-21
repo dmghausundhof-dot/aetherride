@@ -63,6 +63,24 @@ const TOOLS = [
       required: ["tourId"],
     },
   },
+  {
+    name: "weather",
+    description:
+      "Point weather via AetherRide /api/weather (Open-Meteo). trailHint plus optional daylight rideWindow for gravel/MTB. No invented millimetres.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        lat: { type: "number" },
+        lon: { type: "number" },
+        profile: {
+          type: "string",
+          description: "Routing profile, e.g. gravel, mtb_enduro, road",
+        },
+        lang: { type: "string", description: "de | en | fr | it | nl" },
+      },
+      required: ["lat", "lon"],
+    },
+  },
 ];
 
 async function callTool(name, args = {}) {
@@ -104,6 +122,18 @@ async function callTool(name, args = {}) {
     const res = await fetch(
       `${BASE}/api/community/tour?tourId=${encodeURIComponent(tourId)}`
     );
+    return await res.json();
+  }
+  if (name === "weather") {
+    const lat = args.lat;
+    const lon = args.lon ?? args.lng;
+    const q = new URLSearchParams({
+      lat: String(lat),
+      lon: String(lon),
+    });
+    if (args.profile) q.set("profile", String(args.profile));
+    if (args.lang) q.set("lang", String(args.lang));
+    const res = await fetch(`${BASE}/api/weather?${q}`);
     return await res.json();
   }
   throw new Error(`unknown tool ${name}`);

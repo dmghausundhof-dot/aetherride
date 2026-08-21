@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Akku">
+  <title>FlowLine Akku</title>
+  <rect x="4.2" y="7.8" width="13.8" height="8.4" rx="1.8" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M18 10.4 H19.6 C20.2 10.4 20.6 10.8 20.6 11.4 V12.6 C20.6 13.2 20.2 13.6 19.6 13.6 H18" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M7 12 H9.6 L8.4 15.2 L13.4 10.6 H10.6 L11.8 7.8 Z" fill="#FF6A00"/>
+</svg>

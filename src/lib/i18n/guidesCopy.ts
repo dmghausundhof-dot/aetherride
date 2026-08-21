@@ -80,7 +80,7 @@ const EN: Record<string, Overlay> = {
       "Plan demanding tours (e.g. e-MTB alpine) with reserve: aim under 70–80 % of the upper span. Think charging infrastructure and Eco modes for the way back.",
       "Under tours, e-bikes show range notes on tour ideas. Navigation and sensors stay app-only.",
     ],
-    relatedLabels: ["Pro & range", "Get the app", "E-bike in the workshop"],
+    relatedLabels: ["Pro & range", "Get the app", "E-bike on the bike"],
   },
   "setup-koerpergewicht": {
     title: "Setup by body weight — honest, and as a starting point",
@@ -88,10 +88,10 @@ const EN: Record<string, Overlay> = {
       "OEM tables, SAG and bracketing: how you set suspension without fake precision.",
     body: [
       "Pressure and rebound depend on system weight (rider + packs + bike) and travel. Manufacturer charts are starting points, not laws.",
-      "In the workshop you find SAG hints and setup versions. Bracketing (Pro) compares series systematically — with the rule that “no significant difference” is shown honestly.",
+      "On the bike you find SAG hints and setup versions. Bracketing (Pro) compares series systematically — with the rule that “no significant difference” is shown honestly.",
       "Post-ride feedback (≤3 taps in the app) feeds into suggestions. On the desktop you deepen setups and export service reports for the workshop.",
     ],
-    relatedLabels: ["Workshop", "Pro for bracketing", "Activities"],
+    relatedLabels: ["Bike", "Pro for bracketing", "Activities"],
   },
   "wartung-intervalle": {
     title: "Service intervals, plainly: chain, pads, fork",
@@ -99,7 +99,7 @@ const EN: Record<string, Overlay> = {
       "Kilometres vs. hours, wear spans, and when the shop helps with a compatibility verdict.",
     body: [
       "Chains: often replace from ~0.5 % elongation (manufacturer/Park Tool). Pads: remaining compound and noise. Fork/shock: service intervals in hours or seasons.",
-      "FlowLine stores intervals per bike and warns in the workshop. The shop suggests spare parts — only with consent and with a compatibility verdict for the active bike.",
+      "FlowLine stores intervals per bike and warns on the bike. The shop suggests spare parts — only with consent and with a compatibility verdict for the active bike.",
       "Road and city need different emphases (punctures, chain, brakes) than enduro (suspension, pads, tyres). Discipline filters in the shop help.",
     ],
     relatedLabels: ["Service", "Shop: replace"],
@@ -110,7 +110,7 @@ const EN: Record<string, Overlay> = {
       "The Komoot pattern, explained: desktop plans, phone navigates — and why the browser is not a GPS ride.",
     body: [
       "Large outdoor products split clearly: web for inspiration, SEO tours and desktop planning; app for offline, turn-by-turn and sensors.",
-      "FlowLine follows that: tours, planning, tour pages, workshop and Platz in the browser. Live riding, BLE and background GPS only native.",
+      "FlowLine follows that: tours, planning, tour pages, Bike and Home in the browser. Live riding, BLE and background GPS only native.",
       "When you see “Ride out”, you land on the app bridge — save the tour and open it on the device.",
     ],
     relatedLabels: [
@@ -124,10 +124,10 @@ const EN: Record<string, Overlay> = {
   "hof-fuenf-tueren": {
     title: "Home: four doors, no Ride tab",
     teaser:
-      "Why FlowLine does not look like a feed — and what Home, Map, Platz and workshop are for.",
+      "Why FlowLine does not look like a feed — and what Home, Map, Tours and Bike are for.",
     body: [
       "Many cycling apps stack cards: Home, Explore, Activity, Club, Shop. FlowLine has four doors at Home. Ride is the orange button, not a fifth tab. The shop is not a door in the bar.",
-      "Home is the stand: sky, an hour at the gate, ride out. The map shows nearby and planning. Platz holds Mappe, Stimmen and groups. The workshop knows the bike. The shop is off for now.",
+      "Home is the stand: sky, an hour at the gate, ride out. The map shows nearby and planning. Tours holds Mappe, Stimmen and groups. The bike knows its stand. The shop is off for now.",
       "What is missing in the browser stays empty: no live GPS, no HUD, no dummy kilometres. The app takes navigation, offline and sensors.",
     ],
     relatedLabels: ["To Home", "Product map", "About FlowLine", "The shop"],
@@ -165,11 +165,11 @@ const EN: Record<string, Overlay> = {
     teaser:
       "Parts and merch sit behind a door — closed for now. No till in FlowLine.",
     body: [
-      "The shop is not a fifth door in the bar. The workshop stays for the bike, setup and service. Catalogue and till are off for now — there is no cart that charges here.",
+      "The shop is not a fifth door in the bar. The bike stays for setup and service. Catalogue and till are off for now — there is no cart that charges here.",
       "Without an imprint on file (name and a serviceable address), checkout stays locked anyway. That is intentional: we do not invent TMG details so something can say “buy”.",
       "When the shop reopens, the till sits outside FlowLine. Spare parts would match the parked bike, no invented SKUs. App store listings are independent of that and appear once they are live.",
     ],
-    relatedLabels: ["To the workshop", "Workshop", "Imprint", "Product map"],
+    relatedLabels: ["To the bike", "Bike", "Imprint", "Product map"],
   },
 };
 
@@ -207,7 +207,7 @@ const FR: Record<string, Overlay> = {
       "Planifie les sorties exigeantes (p. ex. e-MTB alpin) avec de la réserve : vise sous 70–80 % de la fourchette haute. Pense infra de charge et modes Eco pour le retour.",
       "Sous les sorties, les e-bikes montrent des hints d’autonomie sur les idées. Navigation et capteurs restent app-only.",
     ],
-    relatedLabels: ["Pro et autonomie", "Télécharger l’appli", "E-bike à l’atelier"],
+    relatedLabels: ["Pro et autonomie", "Télécharger l’appli", "E-bike sur le vélo"],
   },
   "setup-koerpergewicht": {
     title: "Setup selon le poids — honnête, et comme point de départ",
@@ -215,10 +215,10 @@ const FR: Record<string, Overlay> = {
       "Tableaux OEM, SAG et bracketing : comment tu règles la suspension sans fausse précision.",
     body: [
       "Pression et rebound dépendent du poids système (cycliste + packs + vélo) et du débattement. Les charts constructeur sont des points de départ, pas des lois.",
-      "À l’atelier tu trouves des hints SAG et des versions de setup. Le bracketing (Pro) compare des séries de façon systématique — avec la règle qu’« aucune différence significative » s’affiche honnêtement.",
+      "Sur le vélo tu trouves des hints SAG et des versions de setup. Le bracketing (Pro) compare des séries de façon systématique — avec la règle qu’« aucune différence significative » s’affiche honnêtement.",
       "Le feedback post-ride (≤3 taps dans l’appli) alimente les suggestions. Sur le bureau tu approfondis les setups et tu exportes des rapports d’entretien pour l’atelier.",
     ],
-    relatedLabels: ["Atelier", "Pro pour le bracketing", "Activités"],
+    relatedLabels: ["Vélo", "Pro pour le bracketing", "Activités"],
   },
   "wartung-intervalle": {
     title: "Intervalles d’entretien, clairement : chaîne, plaquettes, fourche",
@@ -226,7 +226,7 @@ const FR: Record<string, Overlay> = {
       "Kilomètres vs. heures, fourchettes d’usure, et quand le magasin aide avec un verdict de compatibilité.",
     body: [
       "Chaînes : souvent à changer dès ~0,5 % d’allongement (constructeur/Park Tool). Plaquettes : garniture restante et bruits. Fourche/amortisseur : intervalles en heures ou saisons.",
-      "FlowLine enregistre les intervalles par vélo et avertit à l’atelier. Le magasin propose des pièces — seulement avec consentement et avec un verdict de compatibilité pour le vélo actif.",
+      "FlowLine enregistre les intervalles par vélo et avertit sur le vélo. Le magasin propose des pièces — seulement avec consentement et avec un verdict de compatibilité pour le vélo actif.",
       "Route et ville ont d’autres priorités (crevaisons, chaîne, freins) que l’enduro (suspension, plaquettes, pneus). Les filtres discipline dans le magasin aident.",
     ],
     relatedLabels: ["Entretien", "Magasin : remplacer"],
@@ -237,7 +237,7 @@ const FR: Record<string, Overlay> = {
       "Le schéma Komoot expliqué : le bureau planifie, le téléphone navigue — et pourquoi le navigateur n’est pas une sortie GPS.",
     body: [
       "Les grands produits outdoor séparent clairement : web pour l’inspiration, les sorties SEO et la planification bureau ; appli pour le hors ligne, le guidage et les capteurs.",
-      "FlowLine suit ça : sorties, planifier, pages de sorties, atelier et Platz dans le navigateur. Sortie live, BLE et GPS en arrière-plan seulement en natif.",
+      "FlowLine suit ça : sorties, planifier, pages de sorties, Vélo et Home dans le navigateur. Sortie live, BLE et GPS en arrière-plan seulement en natif.",
       "Quand tu vois « Sortir », tu arrives sur le pont appli — enregistre la sortie et ouvre-la sur l’appareil.",
     ],
     relatedLabels: [
@@ -251,10 +251,10 @@ const FR: Record<string, Overlay> = {
   "hof-fuenf-tueren": {
     title: "Home : quatre portes, pas d’onglet Ride",
     teaser:
-      "Pourquoi FlowLine ne ressemble pas à un fil — et à quoi servent Home, Carte, Platz et atelier.",
+      "Pourquoi FlowLine ne ressemble pas à un fil — et à quoi servent Home, Carte, Parcours et Vélo.",
     body: [
       "Beaucoup d’applis vélo empilent des cartes : Home, Explore, Activity, Club, Shop. FlowLine a quatre portes à Home. Ride est le bouton orange, pas un cinquième onglet. Le magasin n’est pas une porte dans la barre.",
-      "Home est le stand : ciel, une heure devant la porte, sortir. La carte montre le proche et Planifier. Le Platz tient Mappe, Stimmen et groupes. L’atelier connaît le vélo. Le magasin est coupé pour l’instant.",
+      "Home est le stand : ciel, une heure devant la porte, sortir. La carte montre le proche et Planifier. Les parcours tiennent Mappe, Stimmen et groupes. Le vélo connaît son stand. Le magasin est coupé pour l’instant.",
       "Ce qui manque dans le navigateur reste vide : pas de GPS live, pas de HUD, pas de kilomètres fictifs. L’appli prend navigation, hors ligne et capteurs.",
     ],
     relatedLabels: ["Vers Home", "Carte produit", "À propos de FlowLine", "Le magasin"],
@@ -292,11 +292,11 @@ const FR: Record<string, Overlay> = {
     teaser:
       "Pièces et merch sont derrière une porte — fermée pour l’instant. Pas de caisse dans FlowLine.",
     body: [
-      "Le magasin n’est pas une cinquième porte dans la barre. L’atelier reste pour le vélo, le setup et l’entretien. Catalogue et caisse sont coupés pour l’instant — il n’y a pas de panier qui encaisse ici.",
+      "Le magasin n’est pas une cinquième porte dans la barre. Le vélo reste pour le setup et l’entretien. Catalogue et caisse sont coupés pour l’instant — il n’y a pas de panier qui encaisse ici.",
       "Sans mentions légales déposées (nom et adresse de signification), le checkout reste bloqué de toute façon. C’est voulu : on n’invente pas d’indications TMG pour que quelque chose dise « acheter ».",
       "Quand le magasin rouvre, la caisse reste hors de FlowLine. Les pièces iraient au vélo garé, pas de SKU inventés. Les listings store de l’appli sont indépendants et apparaissent dès qu’ils sont en ligne.",
     ],
-    relatedLabels: ["Vers l’atelier", "Atelier", "Mentions légales", "Carte produit"],
+    relatedLabels: ["Vers le vélo", "Vélo", "Mentions légales", "Carte produit"],
   },
 };
 
@@ -334,7 +334,7 @@ const IT: Record<string, Overlay> = {
       "Pianifica uscite impegnative (es. e-MTB alpino) con riserva: punta sotto il 70–80 % della fascia alta. Pensa a ricarica e modi Eco per il ritorno.",
       "Sotto le uscite, le e-bike mostrano note di autonomia sulle idee. Navigazione e sensori restano app-only.",
     ],
-    relatedLabels: ["Pro e autonomia", "Scarica l’app", "E-bike in officina"],
+    relatedLabels: ["Pro e autonomia", "Scarica l’app", "E-bike sulla bici"],
   },
   "setup-koerpergewicht": {
     title: "Setup in base al peso — onesto, e come punto di partenza",
@@ -342,10 +342,10 @@ const IT: Record<string, Overlay> = {
       "Tabelle OEM, SAG e bracketing: come regoli le sospensioni senza falsa precisione.",
     body: [
       "Pressione e rebound dipendono dal peso di sistema (ciclista + pack + bici) e dall’escursione. Le tabelle del produttore sono punti di partenza, non leggi.",
-      "In officina trovi hint SAG e versioni di setup. Il bracketing (Pro) confronta serie in modo sistematico — con la regola che «nessuna differenza significativa» viene mostrata onestamente.",
+      "Sulla bici trovi hint SAG e versioni di setup. Il bracketing (Pro) confronta serie in modo sistematico — con la regola che «nessuna differenza significativa» viene mostrata onestamente.",
       "Il feedback post-ride (≤3 tap nell’app) entra nei suggerimenti. Sul desktop approfondisci i setup ed esporti report di servizio per l’officina.",
     ],
-    relatedLabels: ["Officina", "Pro per il bracketing", "Attività"],
+    relatedLabels: ["Bici", "Pro per il bracketing", "Attività"],
   },
   "wartung-intervalle": {
     title: "Intervalli di manutenzione, chiari: catena, pastiglie, forcella",
@@ -353,7 +353,7 @@ const IT: Record<string, Overlay> = {
       "Chilometri vs. ore, fasce di usura e quando il negozio aiuta con un verdetto di compatibilità.",
     body: [
       "Catene: spesso cambiare da ~0,5 % di allungamento (produttore/Park Tool). Pastiglie: materiale residuo e rumori. Forcella/ammortizzatore: intervalli in ore o stagioni.",
-      "FlowLine salva gli intervalli per bici e avvisa in officina. Il negozio propone ricambi — solo con consenso e con un verdetto di compatibilità per la bici attiva.",
+      "FlowLine salva gli intervalli per bici e avvisa sulla bici. Il negozio propone ricambi — solo con consenso e con un verdetto di compatibilità per la bici attiva.",
       "Strada e città hanno altri pesi (forature, catena, freni) rispetto all’enduro (sospensioni, pastiglie, gomme). I filtri disciplina nel negozio aiutano.",
     ],
     relatedLabels: ["Manutenzione", "Negozio: sostituisci"],
@@ -364,7 +364,7 @@ const IT: Record<string, Overlay> = {
       "Lo schema Komoot spiegato: il desktop pianifica, il telefono naviga — e perché il browser non è un’uscita GPS.",
     body: [
       "I grandi prodotti outdoor separano chiaro: web per ispirazione, uscite SEO e pianificazione desktop; app per offline, turn-by-turn e sensori.",
-      "FlowLine segue questo: uscite, pianifica, pagine uscite, officina e Platz nel browser. Uscita live, BLE e GPS in background solo nativi.",
+      "FlowLine segue questo: uscite, pianifica, pagine uscite, Bici e Home nel browser. Uscita live, BLE e GPS in background solo nativi.",
       "Quando vedi «Esci», atterri sul ponte app — salva l’uscita e aprila sul dispositivo.",
     ],
     relatedLabels: [
@@ -378,10 +378,10 @@ const IT: Record<string, Overlay> = {
   "hof-fuenf-tueren": {
     title: "Home: quattro porte, nessuna scheda Ride",
     teaser:
-      "Perché FlowLine non sembra un feed — e a cosa servono Home, Mappa, Platz e officina.",
+      "Perché FlowLine non sembra un feed — e a cosa servono Home, Mappa, Percorsi e Bici.",
     body: [
       "Molte app bici impilano schede: Home, Explore, Activity, Club, Shop. FlowLine ha quattro porte a Home. Ride è il pulsante arancione, non la quinta scheda. Il negozio non è una porta nella barra.",
-      "Home è lo stand: cielo, un’ora davanti al cancello, esci. La mappa mostra il vicino e Pianifica. Il Platz tiene Mappe, Stimmen e gruppi. L’officina conosce la bici. Il negozio è spento per ora.",
+      "Home è lo stand: cielo, un’ora davanti al cancello, esci. La mappa mostra il vicino e Pianifica. I percorsi tengono Mappe, Stimmen e gruppi. La bici conosce il suo stand. Il negozio è spento per ora.",
       "Ciò che manca nel browser resta vuoto: niente GPS live, niente HUD, niente chilometri finti. L’app prende navigazione, offline e sensori.",
     ],
     relatedLabels: ["Verso Home", "Mappa prodotto", "Su FlowLine", "Il negozio"],
@@ -419,11 +419,11 @@ const IT: Record<string, Overlay> = {
     teaser:
       "Ricambi e merch stanno dietro una porta — chiusa per ora. Niente cassa in FlowLine.",
     body: [
-      "Il negozio non è una quinta porta nella barra. L’officina resta per bici, setup e manutenzione. Catalogo e cassa sono spenti per ora — non c’è un carrello che incassa qui.",
+      "Il negozio non è una quinta porta nella barra. La bici resta per setup e manutenzione. Catalogo e cassa sono spenti per ora — non c’è un carrello che incassa qui.",
       "Senza Impressum depositato (nome e indirizzo notificabile) il checkout resta bloccato comunque. È voluto: non inventiamo dati TMG perché qualcosa dica «compra».",
       "Quando il negozio riapre, la cassa resta fuori da FlowLine. I ricambi andrebbero alla bici parcheggiata, niente SKU inventati. I listing store dell’app sono indipendenti e compaiono quando sono live.",
     ],
-    relatedLabels: ["Verso l’officina", "Officina", "Impressum", "Mappa prodotto"],
+    relatedLabels: ["Verso la bici", "Bici", "Impressum", "Mappa prodotto"],
   },
 };
 
@@ -461,7 +461,7 @@ const NL: Record<string, Overlay> = {
       "Plan veeleisende tochten (bijv. e-MTB alpin) met reserve: mik onder 70–80 % van de bovenste spreiding. Denk aan laadinfra en Eco-modi voor de terugweg.",
       "Onder tochten tonen e-bikes actieradiusnotities bij tochtideeën. Navigatie en sensoren blijven app-only.",
     ],
-    relatedLabels: ["Pro & actieradius", "App downloaden", "E-bike in de werkplaats"],
+    relatedLabels: ["Pro & actieradius", "App downloaden", "E-bike aan de fiets"],
   },
   "setup-koerpergewicht": {
     title: "Setup naar lichaamsgewicht — eerlijk, en als startpunt",
@@ -469,10 +469,10 @@ const NL: Record<string, Overlay> = {
       "OEM-tabellen, SAG en bracketing: hoe je vering zet zonder valse precisie.",
     body: [
       "Druk en rebound hangen af van systeemgewicht (rijder + packs + fiets) en veerweg. Fabrikanttabellen zijn startpunten, geen wetten.",
-      "In de werkplaats vind je SAG-hints en setup-versies. Bracketing (Pro) vergelijkt series systematisch — met de regel dat “geen significant verschil” eerlijk getoond wordt.",
+      "Aan de fiets vind je SAG-hints en setup-versies. Bracketing (Pro) vergelijkt series systematisch — met de regel dat “geen significant verschil” eerlijk getoond wordt.",
       "Feedback na de rit (≤3 taps in de app) voedt suggesties. Op de desktop verdiep je setups en exporteer je servicerapporten voor de werkplaats.",
     ],
-    relatedLabels: ["Werkplaats", "Pro voor bracketing", "Activiteiten"],
+    relatedLabels: ["Fiets", "Pro voor bracketing", "Activiteiten"],
   },
   "wartung-intervalle": {
     title: "Onderhoudsintervallen, helder: ketting, remblokken, vork",
@@ -480,7 +480,7 @@ const NL: Record<string, Overlay> = {
       "Kilometers vs. uren, slijtagespreidingen, en wanneer de winkel helpt met een compatibiliteitsverdict.",
     body: [
       "Kettingen: vaak vervangen vanaf ~0,5 % rek (fabrikant/Park Tool). Remblokken: resterende compound en geluid. Vork/demper: service-intervallen in uren of seizoenen.",
-      "FlowLine slaat intervallen per fiets op en waarschuwt in de werkplaats. De winkel stelt onderdelen voor — alleen met toestemming en met een compatibiliteitsverdict voor de actieve fiets.",
+      "FlowLine slaat intervallen per fiets op en waarschuwt aan de fiets. De winkel stelt onderdelen voor — alleen met toestemming en met een compatibiliteitsverdict voor de actieve fiets.",
       "Weg en city hebben andere accenten (lekken, ketting, remmen) dan enduro (vering, remblokken, banden). Disciplinefilters in de winkel helpen.",
     ],
     relatedLabels: ["Onderhoud", "Winkel: vervangen"],
@@ -491,7 +491,7 @@ const NL: Record<string, Overlay> = {
       "Het Komoot-patroon, uitgelegd: desktop plant, telefoon navigeert — en waarom de browser geen GPS-rit is.",
     body: [
       "Grote outdoorproducten splitsen helder: web voor inspiratie, SEO-tochten en desktopplanning; app voor offline, turn-by-turn en sensoren.",
-      "FlowLine volgt dat: tochten, plannen, tochtpagina’s, werkplaats en Platz in de browser. Live rijden, BLE en achtergrond-GPS alleen native.",
+      "FlowLine volgt dat: tochten, plannen, tochtpagina’s, Fiets en Home in de browser. Live rijden, BLE en achtergrond-GPS alleen native.",
       "Als je “Naar buiten” ziet, land je op de app-brug — sla de tocht op en open hem op het apparaat.",
     ],
     relatedLabels: [
@@ -505,10 +505,10 @@ const NL: Record<string, Overlay> = {
   "hof-fuenf-tueren": {
     title: "Home: vier deuren, geen Ride-tab",
     teaser:
-      "Waarom FlowLine niet op een feed lijkt — en waarvoor Home, Kaart, Platz en werkplaats zijn.",
+      "Waarom FlowLine niet op een feed lijkt — en waarvoor Home, Kaart, Tochten en Fiets zijn.",
     body: [
       "Veel fietsapps stapelen kaarten: Home, Explore, Activity, Club, Shop. FlowLine heeft vier deuren bij Home. Ride is de oranje knop, geen vijfde tab. De winkel is geen deur in de balk.",
-      "Home is de stand: lucht, een uur bij de poort, naar buiten. De kaart toont nabij en plannen. Platz houdt Mappe, Stimmen en groepen. De werkplaats kent de fiets. De winkel is voorlopig uit.",
+      "Home is de stand: lucht, een uur bij de poort, naar buiten. De kaart toont nabij en plannen. Tochten houdt Mappe, Stimmen en groepen. De fiets kent zijn stand. De winkel is voorlopig uit.",
       "Wat in de browser ontbreekt, blijft leeg: geen live GPS, geen HUD, geen nepkilometers. De app neemt navigatie, offline en sensoren.",
     ],
     relatedLabels: ["Naar Home", "Productkaart", "Over FlowLine", "De winkel"],
@@ -546,11 +546,11 @@ const NL: Record<string, Overlay> = {
     teaser:
       "Onderdelen en merch zitten achter een deur — voorlopig dicht. Geen kassa in FlowLine.",
     body: [
-      "De winkel is geen vijfde deur in de balk. De werkplaats blijft voor de fiets, setup en onderhoud. Catalogus en kassa zijn voorlopig uit — er is hier geen winkelwagen die afrekent.",
+      "De winkel is geen vijfde deur in de balk. De fiets blijft voor setup en onderhoud. Catalogus en kassa zijn voorlopig uit — er is hier geen winkelwagen die afrekent.",
       "Zonder Impressum op dossier (naam en een betekenbaar adres) blijft checkout sowieso op slot. Dat is bewust: we verzinnen geen TMG-gegevens zodat iets “kopen” kan zeggen.",
       "Als de winkel heropent, zit de kassa buiten FlowLine. Onderdelen zouden bij de geparkeerde fiets passen, geen verzonnen SKUs. App-storelistings zijn daarvan onafhankelijk en verschijnen zodra ze live zijn.",
     ],
-    relatedLabels: ["Naar de werkplaats", "Werkplaats", "Impressum", "Productkaart"],
+    relatedLabels: ["Naar de fiets", "Fiets", "Impressum", "Productkaart"],
   },
 };
 

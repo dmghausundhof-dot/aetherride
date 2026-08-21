@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 26" width="48" height="26" role="img" aria-label="urban">
+  <title>FlowLine urban</title>
+  <circle cx="10" cy="18" r="6.2" fill="#3A4046"/><circle cx="10" cy="18" r="2.48" fill="#F4F1EC"/><circle cx="38" cy="18" r="6.2" fill="#3A4046"/><circle cx="38" cy="18" r="2.48" fill="#F4F1EC"/><path d="M10 18 L19.6 18 L23.2 10 H34.6 L38 18" fill="none" stroke="#3A4046" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M34.6 10 L34.6 3.6 H41" fill="none" stroke="#3A4046" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.8 10 H26" fill="none" stroke="#FF6A00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

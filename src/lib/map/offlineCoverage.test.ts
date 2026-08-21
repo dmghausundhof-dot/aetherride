@@ -31,6 +31,7 @@ const summary = summarizeOfflinePacks([
     downloadable: true,
     status: "ready",
     bytes: 100,
+    graphBytes: null,
     cdn: null,
   },
 ]);

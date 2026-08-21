@@ -1,4 +1,5 @@
 import 'package:aetherride_mobile/domain/ble.dart';
+import 'package:aetherride_mobile/domain/ble/bike_ble_kind.dart';
 import 'package:aetherride_mobile/domain/ble/garage_ble_live.dart';
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -163,6 +164,68 @@ void main() {
           batterySocPercent: 64,
         ),
         isFalse,
+      );
+    });
+  });
+
+  group('garageBleRiderHint', () {
+    test('empty e-bike states Bosch vs Shimano up front', () {
+      expect(
+        garageBleRiderHint(
+          isEbike: true,
+          bindingEmpty: true,
+          live: false,
+          hasWheel: false,
+          driveKind: null,
+          spin: false,
+          batterySocPercent: null,
+        ),
+        GarageBleRiderHint.emptyEbike,
+      );
+    });
+
+    test('Shimano without wheel asks for the sensor, not Intuvia', () {
+      expect(
+        garageBleRiderHint(
+          isEbike: true,
+          bindingEmpty: false,
+          live: false,
+          hasWheel: false,
+          driveKind: BikeBleKind.shimano,
+          spin: false,
+          batterySocPercent: null,
+        ),
+        GarageBleRiderHint.driveNeedsWheel,
+      );
+    });
+
+    test('Shimano with CSC and no SoC does not claim Intuvia', () {
+      expect(
+        garageBleRiderHint(
+          isEbike: true,
+          bindingEmpty: false,
+          live: true,
+          hasWheel: true,
+          driveKind: BikeBleKind.shimano,
+          spin: false,
+          batterySocPercent: null,
+        ),
+        GarageBleRiderHint.driveNoSoc,
+      );
+    });
+
+    test('Bosch without SoC keeps the Intuvia line', () {
+      expect(
+        garageBleRiderHint(
+          isEbike: true,
+          bindingEmpty: false,
+          live: true,
+          hasWheel: false,
+          driveKind: BikeBleKind.bosch,
+          spin: false,
+          batterySocPercent: null,
+        ),
+        GarageBleRiderHint.boschNoSoc,
       );
     });
   });

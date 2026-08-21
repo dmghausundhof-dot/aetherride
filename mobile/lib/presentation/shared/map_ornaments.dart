@@ -31,6 +31,12 @@ abstract final class MapOrnaments {
   /// Luft zwischen Kompass und Location-FAB.
   static const double controlGap = 10;
 
+  /// HUD: GPS-FAB über der Tempo-Leiste (Pause sitzt rechts).
+  static const double hudLocateAboveStrip = 108;
+
+  /// © / Logo über dem Browse-Griff, nicht auf der Android-Gestenleiste.
+  static const double browseSheetHandleClearance = 88;
+
   static Point compassMargins(
     BuildContext context, {
     double extraBelowSafe = 0,
@@ -48,5 +54,28 @@ abstract final class MapOrnaments {
   }) {
     final c = compassMargins(context, extraBelowSafe: extraBelowSafe);
     return Point(c.x, c.y + compassSlot + controlGap);
+  }
+
+  /// Attribution unten rechts, über dem Sheet-Griff.
+  static Point attributionMargins(BuildContext context) {
+    final pad = MediaQuery.paddingOf(context);
+    return Point(max(pad.right, sideMin), browseSheetHandleClearance);
+  }
+
+  /// Logo unten links, gleiche Höhe wie Attribution.
+  static Point logoMargins(BuildContext context) {
+    final pad = MediaQuery.paddingOf(context);
+    return Point(max(pad.left, sideMin), browseSheetHandleClearance);
+  }
+
+  /// Ride-HUD locate: links, über Tempo/Pause — nicht in der Zielzeile.
+  static Point hudLocateMargins(
+    BuildContext context, {
+    bool paused = false,
+  }) {
+    final pad = MediaQuery.paddingOf(context);
+    final x = max(pad.left, sideMin);
+    final above = hudLocateAboveStrip + (paused ? 72 : 0);
+    return Point(x, pad.bottom + above);
   }
 }

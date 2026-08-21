@@ -7,11 +7,16 @@ import '../../domain/routing/engine_steps_along.dart';
 import '../../domain/routing/live_engine.dart';
 import '../../domain/routing/route_variant.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
+import '../../domain/routing/track_elevation.dart';
 import '../../domain/saved_route.dart';
+import '../../domain/tours/tour_community_ux.dart';
+import '../../domain/tours/tour_line.dart';
 import '../local/app_database.dart';
 import '../local/ride_prefs.dart';
 import 'elevation_client.dart';
 import 'offline_maps_prefs.dart';
+import 'offline_pack_catalog.dart';
+import 'offline_pack_dirs.dart';
 import 'routing_client.dart';
 
 List<List<double>> _geoPointsToLngLat(List<GeoPoint> points) => [
@@ -34,6 +39,16 @@ class RouteRepository {
 
   /// Last elevation gain from online `/api/elevation` (nullable if offline/fail).
   double? lastElevationGainM;
+
+  /// Last profile points from `/api/elevation` — never a demo curve.
+  ElevationProfile? lastElevationProfile;
+
+  Future<void> warmupLiveRouting({
+    required GeoPoint near,
+    required RoutingProfile profile,
+  }) {
+    return _client.warmupLiveRouting(near: near, profile: profile);
+  }
 
   Future<List<SavedRouteEntry>> listSaved() async {
     final rows = await (_db.select(_db.savedRoutes)
@@ -62,6 +77,7 @@ class RouteRepository {
                 approach: entry.approach,
                 tour: entry.tour,
                 trail: entry.trail,
+                engine: entry.engine,
               ),
             ),
             savedAt: entry.savedAt,
@@ -78,18 +94,29 @@ class RouteRepository {
     List<GeoPoint> trail = const [],
     String source = 'engine',
     double? elevationGainM,
+    List<Map<String, dynamic>>? elevationPoints,
+    String? elevationSource,
   }) async {
+    final profile = lastElevationProfile;
+    final points = elevationPoints ?? profile?.points ?? const [];
+    final elevSrc = elevationSource ?? profile?.source;
+    final coords = attachRealElevToTrack(
+      trackLngLat: _geoPointsToLngLat(result.coordinates),
+      samples: trackElevSamplesFromMaps(points),
+      source: elevSrc,
+    );
     final entry = SavedRouteEntry(
       id: 'saved-${_uuid.v4()}',
       name: name,
       distanceKm: result.distanceM / 1000,
       elevationM: elevationGainM != null && elevationGainM > 0
           ? elevationGainM
-          : result.distanceM * 0.03,
+          : 0,
       durationMin: (result.durationS / 60).round(),
       savedAt: DateTime.now().toUtc(),
       source: source,
-      coordinates: _geoPointsToLngLat(result.coordinates),
+      engine: result.engine,
+      coordinates: coords,
       waypoints: waypoints,
       approach: _geoPointsToLngLat(approach),
       tour: _geoPointsToLngLat(tour),
@@ -99,8 +126,57 @@ class RouteRepository {
     return entry;
   }
 
+  /// Altbestand: echte Höhe an 2D-Spuren, 3-%-hm durch Messung ersetzen.
+  Future<SavedRouteEntry?> backfillTrackElevation(SavedRouteEntry entry) async {
+    final coords = trackCoordsOf(
+      coordinates: entry.coordinates,
+      tour: entry.tour,
+    );
+    if (coords.length < 2) return null;
+    if (trackHasRealElev(coords)) {
+      if (!mappeStoredHmNeedsReplace(
+        entry.elevationM,
+        entry.distanceKm,
+        source: entry.source,
+        hasRealElev: true,
+      )) {
+        return null;
+      }
+      final climb = mappeTrackClimbM(coords);
+      if (climb == null || climb <= 0) return null;
+      final updated = entry.copyWith(elevationM: climb);
+      await saveEntry(updated);
+      return updated;
+    }
+    final profile = await _elevation.fetchForTrack([
+      for (final p in coords) GeoPoint(p[1], p[0]),
+    ]);
+    if (profile == null || elevationSourceIsDemo(profile.source)) return null;
+    final next = attachRealElevToTrack(
+      trackLngLat: coords,
+      samples: trackElevSamplesFromMaps(profile.points),
+      source: profile.source,
+    );
+    final updated = applyElevBackfill(
+      entry: entry,
+      nextCoords: next,
+      climbM: profile.gainM,
+    );
+    if (updated == null) return null;
+    await saveEntry(updated);
+    return updated;
+  }
+
   Future<void> deleteSaved(String id) async {
     await (_db.delete(_db.savedRoutes)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> renameSaved(String id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    await (_db.update(_db.savedRoutes)..where((t) => t.id.equals(id))).write(
+      SavedRoutesCompanion(name: Value(trimmed)),
+    );
   }
 
   /// Plant A–B (optional Vias): Cache hit zuerst, sonst Client + Cache schreiben.
@@ -110,17 +186,20 @@ class RouteRepository {
     RoutingProfile profile = RoutingProfile.mtbTrail,
     List<GeoPoint> vias = const [],
     bool preferOffline = false,
+    bool allowOnline = true,
     bool fetchElevation = true,
     LiveRoutingEngine? engine,
     bool accessLeg = false,
     RouteVariant variant = RouteVariant.planned,
+    bool allowOfflineFirst = true,
+    bool allowOfflineFallback = true,
   }) async {
     final choice = engine ?? await RidePrefs.routingEngine();
     final key = _cacheKey(from, to, profile, vias, choice, accessLeg, variant);
     final cached = await _readCache(key);
     if (cached != null &&
         !isImplausibleAbDetour(
-          distanceM: cached.distanceM,
+          distanceM: cached.result.distanceM,
           fromLat: from.lat,
           fromLng: from.lng,
           toLat: to.lat,
@@ -129,8 +208,26 @@ class RouteRepository {
             for (final v in vias) (lat: v.lat, lng: v.lng),
           ],
         )) {
-      lastElevationGainM = null;
-      return cached;
+      final skipLive = skipLiveCacheForOfflinePack(
+        cacheFetchedAt: cached.fetchedAt,
+        packActivatedAt: await OfflineMapsPrefs.activatedAt(),
+        cachedEngine: cached.result.engine,
+        ffiAvailable: _client.nativeOfflineAvailable,
+        viasEmpty: vias.isEmpty,
+        planned: variant == RouteVariant.planned,
+      ) ||
+          skipLiveCacheWhenOffline(
+            allowOnline: allowOnline,
+            cachedEngine: cached.result.engine,
+          );
+      if (!skipLive) {
+        if (allowOfflineFirst ||
+            !isOfflineRoutingEngine(cached.result.engine)) {
+          lastElevationGainM = null;
+          lastElevationProfile = null;
+          return cached.result;
+        }
+      }
     }
     if (cached != null) {
       await invalidateRoute(
@@ -150,21 +247,31 @@ class RouteRepository {
       profile: profile,
       vias: vias,
       preferOffline: variant == RouteVariant.planned && preferOffline,
+      allowOnline: allowOnline,
       engine: choice,
       accessLeg: accessLeg,
       variant: variant,
+      allowOfflineFirst: allowOfflineFirst,
+      allowOfflineFallback: allowOfflineFallback,
     );
-    final packCovers = await OfflineMapsPrefs.coversRoute(
+    final packCovers = await OfflinePackDirs.legitimateCoversRoute(
       fromLng: from.lng,
       fromLat: from.lat,
       toLng: to.lng,
       toLat: to.lat,
+      vias: [for (final v in vias) (lng: v.lng, lat: v.lat)],
+      along: sampleLngLats([
+        for (final p in result.coordinates) (lng: p.lng, lat: p.lat),
+      ]),
     );
     if (fetchElevation && !preferOffline && !packCovers) {
       final elev = await _elevation.fetchForTrack(result.coordinates);
       lastElevationGainM = elev?.gainM;
+      lastElevationProfile =
+          elevationSourceIsDemo(elev?.source) ? null : elev;
     } else {
       lastElevationGainM = null;
+      lastElevationProfile = null;
     }
     // Fallback-/Näherungs-Geometrie (Live-Routing lieferte keine echte
     // Route) nicht persistent cachen — sonst überlebt ein einmaliger
@@ -200,6 +307,34 @@ class RouteRepository {
       preferOffline: false,
       fetchElevation: false,
     );
+  }
+
+  /// OSM round-trip around [from]. Online only.
+  Future<RouteResult> planLoop({
+    required GeoPoint from,
+    required RoutingProfile profile,
+    int minutes = 60,
+    int seed = 1,
+    double? lengthKm,
+    bool fetchElevation = true,
+  }) async {
+    final result = await _client.requestLoop(
+      from: from,
+      profile: profile,
+      minutes: minutes,
+      seed: seed,
+      lengthKm: lengthKm,
+    );
+    if (fetchElevation) {
+      final elev = await _elevation.fetchForTrack(result.coordinates);
+      lastElevationGainM = elev?.gainM;
+      lastElevationProfile =
+          elevationSourceIsDemo(elev?.source) ? null : elev;
+    } else {
+      lastElevationGainM = null;
+      lastElevationProfile = null;
+    }
+    return result;
   }
 
   Future<({double? startM, double? endM})> endpointElevations(
@@ -241,7 +376,7 @@ class RouteRepository {
     final viaPart = vias.map((v) => '${v.lng},${v.lat}').join('|');
     final eng = engine.apiId ?? 'hybrid';
     final access = accessLeg ? '1' : '0';
-    return '${profile.apiId}|$eng|a$access|${variant.apiId}|${from.lng},${from.lat}|${to.lng},${to.lat}|$viaPart';
+    return '${profile.apiId}|$eng|a$access|${variant.apiId}|ab3|${from.lng},${from.lat}|${to.lng},${to.lat}|$viaPart';
   }
 
   /// Kein zeitloser Cache: eine Route, die heute stimmt, kann durch
@@ -252,7 +387,9 @@ class RouteRepository {
   /// Alt-Einträge aus einer Zeit vor diesem Fix).
   static const _cacheTtl = Duration(hours: 6);
 
-  Future<RouteResult?> _readCache(String key) async {
+  Future<({RouteResult result, DateTime fetchedAt})?> _readCache(
+    String key,
+  ) async {
     final row = await (_db.select(_db.routeCache)
           ..where((t) => t.cacheKey.equals(key)))
         .getSingleOrNull();
@@ -287,12 +424,15 @@ class RouteRepository {
           if (w is String && w.trim().isNotEmpty) warnings.add(w.trim());
         }
       }
-      return RouteResult(
-        coordinates: coords,
-        distanceM: (data['distanceM'] as num?)?.toDouble() ?? 0,
-        durationS: (data['durationS'] as num?)?.toDouble() ?? 0,
-        engine: engine ?? 'cache',
-        warnings: warnings,
+      return (
+        result: RouteResult(
+          coordinates: coords,
+          distanceM: (data['distanceM'] as num?)?.toDouble() ?? 0,
+          durationS: (data['durationS'] as num?)?.toDouble() ?? 0,
+          engine: engine ?? 'cache',
+          warnings: warnings,
+        ),
+        fetchedAt: row.fetchedAt.toUtc(),
       );
     } catch (_) {
       return null;
@@ -334,6 +474,7 @@ class RouteRepository {
       durationMin: row.durationMin,
       savedAt: row.savedAt,
       source: row.source,
+      engine: layers.engine,
       coordinates: coordsFromJson(row.geometryJson),
       waypoints: waypointsFromJson(row.waypointsJson),
       approach: layers.approach,

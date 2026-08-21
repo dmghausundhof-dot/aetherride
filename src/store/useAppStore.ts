@@ -21,6 +21,9 @@ import {
   createImmutableSetup,
 } from "@/lib/setup/ranges";
 import { templatesForCategory } from "@/lib/setup/templates";
+import { presentSetupTemplate } from "@/lib/i18n/setupTemplateCopy";
+import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   type RangeCalibration,
 } from "@/lib/ebike/range";
@@ -46,6 +49,8 @@ import {
 } from "@/lib/privacy/consents";
 import {
   createFamilyRider,
+  snapshotOwnSetup,
+  setupToApplyOnFamilySwitch,
   type FamilyRider,
 } from "@/lib/garage/family";
 import type { CommerceMode } from "@/lib/shop/marketplace";
@@ -76,6 +81,7 @@ import {
   trackDistanceM,
   trackElevationGainM,
 } from "@/lib/geo/trackMath";
+import { honestClimbM } from "@/lib/ride/rideTelemetry";
 import { activeDurationSec } from "@/lib/ride/activeDuration";
 
 export type SubscriptionTier = "free" | "pro";
@@ -125,6 +131,8 @@ interface AppState {
   privacyZones: PrivacyZone[];
   familyRiders: FamilyRider[];
   activeFamilyRiderId: string | null;
+  /** bikeId → last setup while "Ich" was selected */
+  ownSetupByBikeId: Record<string, string>;
   commerceMode: CommerceMode;
   /** First-Run Flow A abgeschlossen oder übersprungen */
   onboardingDone: boolean;
@@ -133,6 +141,8 @@ interface AppState {
   coachMeta: Record<string, import("@/lib/ai/coachInbox").CoachMeta>;
 
   setActiveBike: (id: string) => void;
+  setPrimarySport: (sport: BikeCategory) => void;
+  togglePreferredSport: (sport: BikeCategory) => void;
   addBikeFromCatalog: (input: {
     catalogBikeId: string;
     frameSize: string;
@@ -211,13 +221,17 @@ interface AppState {
   submitRideFeedback: (feedback: Omit<RideFeedback, "createdAt">) => void;
   updateRiderProfile: (patch: Partial<RiderProfile>) => void;
   setSubscriptionTier: (tier: SubscriptionTier) => void;
-  applySetupTemplate: (bikeId: string, templateId: string) => string;
+  applySetupTemplate: (
+    bikeId: string,
+    templateId: string,
+    lang?: ChromeLang
+  ) => string;
   canUseProFeature: (feature: "multi_bike" | "bracketing" | "range" | "offline") => boolean;
   setConsent: (purpose: ConsentPurpose, granted: boolean) => void;
   addPrivacyZone: (zone: Omit<PrivacyZone, "id">) => void;
   removePrivacyZone: (id: string) => void;
   addFamilyRider: (name: string, weightKg: number) => string;
-  setActiveFamilyRider: (id: string | null) => void;
+  setActiveFamilyRider: (id: string | null, bikeId?: string) => void;
   assignSetupToRider: (riderId: string, setupId: string) => void;
   setCommerceMode: (mode: CommerceMode) => void;
   snoozeCoachNotice: (id: string, fingerprint: string, days?: number) => void;
@@ -241,6 +255,13 @@ interface AppState {
     lng: number;
     elev?: number;
     time?: number;
+    hr?: number;
+    cad?: number;
+    power?: number;
+    lean?: number;
+    g?: number;
+    impact?: number;
+    spd?: number;
   }) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
   updateBoschLive: (
@@ -397,6 +418,52 @@ function installFromModel(
   };
 }
 
+type WebTrackStamp = NonNullable<Ride["track"]>[number];
+
+function inRange(v: number | undefined, min: number, max: number): number | undefined {
+  if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
+  if (v < min || v > max) return undefined;
+  return v;
+}
+
+/** Web-Recording: nur live vorhandene Sensoren stempeln — nie Summary-Maxima. */
+function stampWebTrackPoint(
+  point: {
+    lat: number;
+    lng: number;
+    elev?: number;
+    time?: number;
+    hr?: number;
+    cad?: number;
+    power?: number;
+    lean?: number;
+    g?: number;
+    impact?: number;
+    spd?: number;
+  },
+  bosch: { speed: number; riderPower: number; cadence: number } | null
+): WebTrackStamp {
+  const hr = inRange(point.hr, 1, 239);
+  const cad = inRange(point.cad ?? bosch?.cadence, 1, 254);
+  const power = inRange(point.power ?? bosch?.riderPower, 1, 2500);
+  const lean = inRange(point.lean, -80, 80);
+  const g = inRange(point.g, 0.01, 20);
+  const spd = inRange(point.spd ?? bosch?.speed, 0.4, 85);
+  return {
+    lat: point.lat,
+    lng: point.lng,
+    elev: point.elev,
+    time: point.time ?? Date.now(),
+    ...(hr != null ? { hr: Math.round(hr) } : {}),
+    ...(cad != null ? { cad: Math.round(cad) } : {}),
+    ...(power != null ? { power: Math.round(power) } : {}),
+    ...(lean != null ? { lean: Math.round(lean * 10) / 10 } : {}),
+    ...(g != null ? { g: Math.round(g * 100) / 100 } : {}),
+    ...(point.impact === 1 ? { impact: 1 } : {}),
+    ...(spd != null ? { spd: Math.round(spd * 10) / 10 } : {}),
+  };
+}
+
 function ensureSingleActive(bikes: Bike[], activeId: string): Bike[] {
   return bikes.map((b) => ({ ...b, isActive: b.id === activeId }));
 }
@@ -444,6 +511,7 @@ export const useAppStore = create<AppState>()(
       privacyZones: DEFAULT_PRIVACY_ZONES,
       familyRiders: [],
       activeFamilyRiderId: null,
+      ownSetupByBikeId: {},
       commerceMode: "affiliate",
       onboardingDone: false,
       preferredSport: null,
@@ -463,6 +531,33 @@ export const useAppStore = create<AppState>()(
           preferredSports: sport
             ? [sport]
             : get().preferredSports,
+        }),
+
+      setPrimarySport: (sport) =>
+        set((s) => ({
+          preferredSport: sport,
+          preferredSports: [
+            sport,
+            ...s.preferredSports.filter((x) => x !== sport),
+          ],
+        })),
+
+      togglePreferredSport: (sport) =>
+        set((s) => {
+          const has = s.preferredSports.includes(sport);
+          if (has) {
+            if (s.preferredSports.length <= 1) return s;
+            const next = s.preferredSports.filter((x) => x !== sport);
+            return {
+              preferredSports: next,
+              preferredSport:
+                s.preferredSport === sport ? next[0] ?? null : s.preferredSport,
+            };
+          }
+          return {
+            preferredSports: [...s.preferredSports, sport],
+            preferredSport: s.preferredSport ?? sport,
+          };
         }),
 
       updateRiderProfile: (patch) =>
@@ -525,7 +620,34 @@ export const useAppStore = create<AppState>()(
         return rider.id;
       },
 
-      setActiveFamilyRider: (id) => set({ activeFamilyRiderId: id }),
+      setActiveFamilyRider: (id, bikeId) => {
+        const bid = bikeId || get().activeBikeId;
+        const bike = get().bikes.find((b) => b.id === bid);
+        const current = bike?.setups.find((s) => s.isCurrent);
+        const snap = snapshotOwnSetup({
+          activeRiderId: get().activeFamilyRiderId,
+          currentSetupId: current?.id,
+        });
+        const own = { ...get().ownSetupByBikeId };
+        if (bike && snap) own[bike.id] = snap;
+        const rider = id
+          ? get().familyRiders.find((r) => r.id === id)
+          : undefined;
+        const next = bike
+          ? setupToApplyOnFamilySwitch({
+              nextRiderId: id,
+              rememberedOwnId: own[bike.id],
+              nextRiderSetupIds: rider?.setupIds ?? [],
+              existingSetupIds: bike.setups.map((s) => s.id),
+              familyOwnedSetupIds: get().familyRiders.flatMap((r) => r.setupIds),
+              currentSetupId: current?.id,
+            })
+          : undefined;
+        set({ activeFamilyRiderId: id, ownSetupByBikeId: own });
+        if (bike && next && next !== current?.id) {
+          get().setCurrentSetup(bike.id, next);
+        }
+      },
 
       assignSetupToRider: (riderId, setupId) =>
         set((s) => ({
@@ -543,7 +665,7 @@ export const useAppStore = create<AppState>()(
 
       setCommerceMode: (mode) => set({ commerceMode: mode }),
 
-      applySetupTemplate: (bikeId, templateId) => {
+      applySetupTemplate: (bikeId, templateId, lang = "de") => {
         const bike = get().bikes.find((b) => b.id === bikeId);
         if (!bike) return "";
         const tpl = templatesForCategory(bike.category).find(
@@ -552,11 +674,13 @@ export const useAppStore = create<AppState>()(
         if (!tpl) return "";
         const weight = get().riderProfile.riderWeightKg ?? 78;
         const overrides = tpl.resolve(weight, bike.category);
+        const presented = presentSetupTemplate(tpl.id, lang, tpl);
+        const tab = garageTabCopy(lang);
         return get().createSetupVersion({
           bikeId,
-          label: `${tpl.label} (Vorlage)`,
+          label: tab.setupTemplateApplied(presented.label),
           conditions: tpl.conditions,
-          description: `${tpl.disclaimer} Quelle: ${tpl.sourceLabel}`,
+          description: `${presented.disclaimer} ${tpl.sourceLabel}`,
           valueOverrides: overrides,
         });
       },
@@ -572,7 +696,7 @@ export const useAppStore = create<AppState>()(
           );
         }
         const found = findCatalogBike(catalogBikeId);
-        if (!found) throw new Error("Katalog-Bike nicht gefunden");
+        if (!found) throw new Error("Katalog-Rad nicht gefunden");
         const { bike: cat, manufacturer } = found;
         const id = uuidv4();
         const type = categoryToBikeType(cat.category);
@@ -675,17 +799,15 @@ export const useAppStore = create<AppState>()(
 
       addBikeFromImport: ({ name, note }) => {
         const id = get().addBikeBasic({
-          name: name || "Import-Bike",
+          name: name || "Import-Rad",
           category: "urban",
         });
         if (note) {
-          get().updateBike(id, {
-            // store note in color field fallback? use update with description via name suffix
-          });
+          get().updateBike(id, { notes: note });
           get().addMaintenanceLog({
             bikeId: id,
             date: new Date().toISOString().slice(0, 10),
-            activity: "GPX/FIT-Import: Platzhalter-Bike angelegt",
+            activity: "GPX/FIT-Import: Platzhalter-Rad angelegt",
             performer: "self",
             notes: note,
           });
@@ -899,13 +1021,17 @@ export const useAppStore = create<AppState>()(
         const bike = get().bikes.find((b) => b.id === bikeId);
         if (!bike) return "";
         const values = buildSetupValuesFromBike(bike, valueOverrides);
+        const rider = get().familyRiders.find(
+          (r) => r.id === get().activeFamilyRiderId
+        );
         const setup = createImmutableSetup({
           id: uuidv4(),
           bike,
           label,
           conditions,
           description,
-          riderWeightKg: get().riderProfile.riderWeightKg,
+          riderWeightKg:
+            rider?.weightKg ?? get().riderProfile.riderWeightKg,
           values,
           createdBy: "user",
         });
@@ -935,12 +1061,22 @@ export const useAppStore = create<AppState>()(
             };
           }),
         }));
+        const riderId = get().activeFamilyRiderId;
+        if (riderId) get().assignSetupToRider(riderId, setup.id);
+        else {
+          set({
+            ownSetupByBikeId: {
+              ...get().ownSetupByBikeId,
+              [bikeId]: setup.id,
+            },
+          });
+        }
         return setup.id;
       },
 
       setCurrentSetup: (bikeId, setupId) =>
-        set((s) => ({
-          bikes: s.bikes.map((b) => {
+        set((s) => {
+          const bikes = s.bikes.map((b) => {
             if (b.id !== bikeId) return b;
             const setup = b.setups.find((su) => su.id === setupId);
             if (!setup) return b;
@@ -964,8 +1100,13 @@ export const useAppStore = create<AppState>()(
                   : c;
               }),
             };
-          }),
-        })),
+          });
+          const own =
+            s.activeFamilyRiderId == null
+              ? { ...s.ownSetupByBikeId, [bikeId]: setupId }
+              : s.ownSetupByBikeId;
+          return { bikes, ownSetupByBikeId: own };
+        }),
 
       addMaintenanceLog: (entry) => {
         const id = uuidv4();
@@ -1112,7 +1253,9 @@ export const useAppStore = create<AppState>()(
                 ? "engine"
                 : route.source === "import"
                   ? "import"
-                  : "suggestion"
+                  : route.source === "recorded"
+                    ? "recorded"
+                    : "suggestion"
               : "suggestion";
           const catalogTourId =
             "catalogTourId" in route && route.catalogTourId
@@ -1140,6 +1283,12 @@ export const useAppStore = create<AppState>()(
               "visibility" in route && route.visibility === "shared"
                 ? "shared"
                 : "private",
+            shareEpoch:
+              "shareEpoch" in route ? route.shareEpoch : undefined,
+            listing: "listing" in route ? route.listing : undefined,
+            candidateSince:
+              "candidateSince" in route ? route.candidateSince : undefined,
+            listedAt: "listedAt" in route ? route.listedAt : undefined,
             geometry:
               "geometry" in route ? (route.geometry ?? null) : undefined,
             waypoints:
@@ -1201,7 +1350,7 @@ export const useAppStore = create<AppState>()(
         const activeSetup = bike?.setups.find((s) => s.isCurrent);
         const route = get().activeRoute;
         const freerideNote = !bike
-          ? "Freeride ohne Bike — Garage später ergänzen"
+          ? "Freeride ohne Rad — Stand später ergänzen"
           : undefined;
         set({
           isRiding: true,
@@ -1258,14 +1407,10 @@ export const useAppStore = create<AppState>()(
       },
 
       appendTrackPoint: (point) => {
-        const { isRiding, isPaused, currentRide, pauseAccumMs } = get();
+        const { isRiding, isPaused, currentRide, pauseAccumMs, boschLive } =
+          get();
         if (!isRiding || isPaused || !currentRide) return;
-        const nextPoint = {
-          lat: point.lat,
-          lng: point.lng,
-          elev: point.elev,
-          time: point.time ?? Date.now(),
-        };
+        const nextPoint = stampWebTrackPoint(point, boschLive);
         const track = [...(currentRide.track ?? []), nextPoint];
         const distanceM = Math.round(trackDistanceM(track));
         const elevFromTrack = trackElevationGainM(track);
@@ -1342,8 +1487,6 @@ export const useAppStore = create<AppState>()(
         });
         const track = currentRide.track ?? [];
         const fromTrack = track.length >= 2 ? trackDistanceM(track) : 0;
-        const elevFromTrack =
-          track.length >= 2 ? trackElevationGainM(track) : 0;
 
         const distanceM = honestRideDistanceM({
           recordedM: currentRide.distanceM,
@@ -1358,8 +1501,7 @@ export const useAppStore = create<AppState>()(
           startTime: currentRide.startTime!,
           endTime,
           distanceM,
-          elevationGainM:
-            currentRide.elevationGainM || Math.round(elevFromTrack) || 0,
+          elevationGainM: honestClimbM(track, currentRide.elevationGainM),
           durationSec,
           track: track.length > 0 ? track : undefined,
           notes: currentRide.notes,
@@ -1683,6 +1825,7 @@ export const useAppStore = create<AppState>()(
             : DEFAULT_PRIVACY_ZONES,
           familyRiders: base.familyRiders ?? [],
           activeFamilyRiderId: base.activeFamilyRiderId ?? null,
+          ownSetupByBikeId: base.ownSetupByBikeId ?? {},
           commerceMode: base.commerceMode ?? "affiliate",
           activeRoute: base.activeRoute ?? null,
           savedRoutes: base.savedRoutes ?? [],
@@ -1718,6 +1861,7 @@ export const useAppStore = create<AppState>()(
         privacyZones: s.privacyZones,
         familyRiders: s.familyRiders,
         activeFamilyRiderId: s.activeFamilyRiderId,
+        ownSetupByBikeId: s.ownSetupByBikeId,
         commerceMode: s.commerceMode,
         onboardingDone: s.onboardingDone,
         preferredSport: s.preferredSport,

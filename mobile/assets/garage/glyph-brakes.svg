@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Bremsen">
+  <title>FlowLine Bremsen</title>
+  <circle cx="12" cy="12" r="7.2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <circle cx="12" cy="12" r="3.2" fill="none" stroke="#9CA3AF" stroke-width="1.4"/>
+  <path d="M12 5.2 V8.4" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M6.8 15.8 L8.8 14.2" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M17.2 15.8 L15.2 14.2" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

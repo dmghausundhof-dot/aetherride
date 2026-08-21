@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Links">
+  <title>FlowLine Links abbiegen</title>
+  <path d="M15.4 20 V11.2 C15.4 9.4 14 8 12.2 8 H6.4" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10.2 4.4 L5.2 8 L10.2 11.6" fill="none" stroke="#FF6A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

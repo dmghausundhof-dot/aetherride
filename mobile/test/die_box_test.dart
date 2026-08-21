@@ -1,4 +1,5 @@
 import 'package:aetherride_mobile/domain/bike.dart';
+import 'package:aetherride_mobile/domain/bike_owner.dart';
 import 'package:aetherride_mobile/domain/component.dart';
 import 'package:aetherride_mobile/domain/garage/die_box.dart';
 import 'package:aetherride_mobile/domain/garage/werkstatt_setup.dart';
@@ -62,6 +63,23 @@ BikeSetup _setup({
     );
 
 void main() {
+  test('Ausweis chip only when Rahmennummer is set', () {
+    final empty = planDieBox(
+      bike: _bike(id: 'c1', name: 'City', category: BikeCategory.urban),
+    );
+    expect(empty.chips.map((c) => c.label), isNot(contains('Ausweis')));
+    final withSerial = planDieBox(
+      bike: Bike(
+        id: 'c2',
+        name: 'City',
+        category: BikeCategory.urban,
+        isActive: true,
+        owner: const BikeOwner(serialNumber: 'WS-1'),
+      ),
+    );
+    expect(withSerial.chips.map((c) => c.label), contains('Ausweis'));
+  });
+
   test('City never sees sag or travel; lights/lock/rack are first-class', () {
     final plan = planDieBox(
       bike: _bike(
@@ -292,7 +310,7 @@ void main() {
     expect(plan.chips.map((c) => c.label), contains('CSC'));
   });
 
-  test('Am Rad lists core slots, not the OEM dump', () {
+  test('Am Rad lists installed checklist parts, ghosts stay addable', () {
     final bike = _bike(
       id: 'j1',
       name: 'JAM2',
@@ -316,6 +334,9 @@ void main() {
     expect(slots, contains(ComponentSlot.lock));
     expect(slots, isNot(contains(ComponentSlot.headset)));
     expect(slots, isNot(contains(ComponentSlot.saddle)));
+    expect(plan.addableSlots, contains(ComponentSlot.headset));
+    expect(plan.addableSlots, contains(ComponentSlot.frontHub));
+    expect(plan.addableSlots, isNot(contains(ComponentSlot.saddle)));
     expect(
       listedWorkshopParts(
         installed: parts,
@@ -325,6 +346,41 @@ void main() {
     );
     expect(plan.sentence.toLowerCase(), contains('e-antrieb'));
     expect(plan.chips.where((c) => !c.known), isEmpty);
+  });
+
+  test('Rider drivetrain stays, catalog headset dump does not', () {
+    final bike = _bike(
+      id: 'k1',
+      name: 'Konflikt',
+      category: BikeCategory.mtbTrail,
+      travelF: 140,
+      travelR: 140,
+    );
+    final parts = [
+      BikeComponent(
+        id: 'k1-cass',
+        bikeId: 'k1',
+        slot: ComponentSlot.cassette,
+        manufacturer: 'SRAM',
+        model: 'XO Eagle',
+        installedAt: DateTime.utc(2026, 1, 1),
+      ),
+      BikeComponent(
+        id: 'k1-hub',
+        bikeId: 'k1',
+        slot: ComponentSlot.rearHub,
+        manufacturer: 'DT Swiss',
+        model: '350',
+        installedAt: DateTime.utc(2026, 1, 1),
+      ),
+      _part('k1', ComponentSlot.headset, catalogModelId: 'cm-headset'),
+    ];
+    final plan = planDieBox(bike: bike, components: parts);
+    expect(
+      plan.onBike.map((c) => c.slot),
+      containsAll([ComponentSlot.cassette, ComponentSlot.rearHub]),
+    );
+    expect(plan.onBike.map((c) => c.slot), isNot(contains(ComponentSlot.headset)));
   });
 
   test('Heute rest does not repeat the primary', () {
@@ -436,5 +492,37 @@ void main() {
     expect(cityPlan.setup.showsFahrwerk, isFalse);
     expect(cityPlan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isFalse);
     expect(cityPlan.addableSlots, isNot(contains(ComponentSlot.fork)));
+  });
+
+  test('bikeHealthLine names readiness and km', () {
+    expect(
+      bikeHealthLine(
+        readiness: DieBoxReadiness.ready,
+        odometerKm: 412.4,
+        readyLabel: 'Bereit',
+        almostLabel: 'Fast',
+        unknownLabel: 'Unklar',
+      ),
+      'Bereit · 412 km',
+    );
+  });
+
+  test('ghostSlotsFor hides quiet fit slots and schema slots', () {
+    final ghosts = ghostSlotsFor(
+      addable: [
+        ComponentSlot.tireFront,
+        ComponentSlot.chain,
+        ComponentSlot.headset,
+        ComponentSlot.frontHub,
+        ComponentSlot.lock,
+      ],
+      installed: {ComponentSlot.tireFront},
+      schemaSlots: [ComponentSlot.chain],
+    );
+    expect(ghosts, contains(ComponentSlot.lock));
+    expect(ghosts, isNot(contains(ComponentSlot.headset)));
+    expect(ghosts, isNot(contains(ComponentSlot.frontHub)));
+    expect(ghosts, isNot(contains(ComponentSlot.chain)));
+    expect(ghosts, isNot(contains(ComponentSlot.tireFront)));
   });
 }

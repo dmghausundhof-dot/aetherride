@@ -13,6 +13,17 @@ const NEED_TOUR_DE =
   "Zuerst eine Tour wählen oder selbst planen.";
 const WINDOW_EXTENDED_DE = "Fenster verlängert.";
 const EXTEND_INVALID_DE = "Zeit liegt außerhalb des Rahmens.";
+const PRIVATE_CODE_DE =
+  "Privat — nur mit Einladungslink. Kein Code zum Abtippen.";
+const JOIN_EXPIRED_DE = "Fenster zu — der Link gilt nicht mehr.";
+const JOIN_CLOSED_DE = "Gruppe ist aufgelöst.";
+const JOIN_NEED_LINK_DE = "Beitritt nur über den Einladungslink.";
+const JOIN_HOST_DE = "Anmelden — sonst sieht der Host dich nicht.";
+const JOIN_HOST_DE_ROLE = "Anmelden — sonst sieht der Gastgeber dich nicht.";
+const JOIN_UNKNOWN_DE =
+  "Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst den Einladungslink einfügen.";
+const JOIN_BAD_LINK_DE = "Einladungslink ungültig.";
+const JOIN_CODE_LEN_DE = "Code hat 6 Zeichen.";
 const LISTED_DE =
   "Auf dem Platz gelistet — wer den Link hat, kann beitreten.";
 const LISTED_CODE_DE = "Auf dem Platz gelistet — Link oder Code reicht.";
@@ -60,7 +71,9 @@ export type PlatzCopy = {
   unlistedNote: string;
   pinsOff: string;
   pinsHud: string;
+  shareInRide: string;
   pinsHint: string;
+  joinPrivateCode: string;
   friendN: (n: number) => string;
   extendHour: string;
   extend30m: string;
@@ -84,6 +97,9 @@ export type PlatzCopy = {
   joinHint: string;
   joinEmpty: string;
   joinInvalid: string;
+  joinExpired: string;
+  joinClosed: string;
+  joinUnknown: string;
   startLabel: string;
   startNow: string;
   startIn1h: string;
@@ -109,13 +125,22 @@ export type PlatzCopy = {
   mappeEmptyTitle: string;
   noTrackLabel: string;
   loopTag: string;
+  sourceImport: string;
+  sourcePlanned: string;
+  sourceRecorded: string;
+  startAwayKm: (km: number) => string;
   mappeFilterEmpty: string;
+  showAll: string;
+  keepOnMap: string;
+  showOnMap: string;
+  removeFromMappe: string;
   shared: string;
   privateTour: string;
   openInApp: string;
   joinOnDevice: string;
   stimmenTitle: string;
   stimmenEmpty: string;
+  stimmeUntitled: string;
   pending: string;
   collectionsTitle: string;
   collectionName: string;
@@ -140,6 +165,9 @@ export type PlatzCopy = {
   serverTableNote: string;
   addRoute: string;
   keepRoute: string;
+  keepName: string;
+  lastRidden: (when: string) => string;
+  renameTour: string;
   searchTours: string;
   sortRecent: string;
   sortDistance: string;
@@ -180,7 +208,7 @@ export type PlatzCopy = {
 
 const DE: PlatzCopy = {
   inviteHint:
-    "Einladen teilt den Link. Offene Gruppen: auch der Code. Deine Gruppen bleiben. Offene Gruppen stehen immer auf dem Platz und als Treffen-Pin auf der Karte — kein Feed. Freunde auf der Karte nur in der App, nach Opt-in.",
+    "Einladen teilt den Link. Deine Gruppen bleiben — kein Feed. Freunde auf der Karte nur in der App, nach Opt-in.",
   pickTour: "Tour wählen",
   pickMine: "Meine Touren",
   pickNearby: "Touren in der Nähe",
@@ -206,7 +234,7 @@ const DE: PlatzCopy = {
   emptyPublic: "Keine offenen Gruppen.",
   emptyPrivate: "Keine privaten Gruppen in diesem Filter.",
   emptyAll: "Noch keine Gruppe. Einladen teilt den Link.",
-  host: "Host",
+  host: "Gastgeber",
   guest: "Gast",
   you: "Du",
   selfSuffix: " · du",
@@ -227,7 +255,10 @@ const DE: PlatzCopy = {
   unlistedNote: "Nur per Link — nicht auf dem Platz.",
   pinsOff: "Freunde auf der Karte · aus",
   pinsHud: "Freunde nur während der Fahrt",
+  shareInRide: "Teilen in der Fahrt",
   pinsHint: "Nur während der Fahrt, nicht auf der öffentlichen Karte.",
+  joinPrivateCode:
+    "Privat — nur mit Einladungslink. Kein Code zum Abtippen.",
   friendN: (n) => `Freund ${n}`,
   extendHour: "Fenster verlängern",
   extend30m: "+30 Min",
@@ -241,8 +272,8 @@ const DE: PlatzCopy = {
   joined: (title) => `Dabei: ${title}`,
   joinWithLink: "Verbinden",
   joinLocalCta: "Auf diesem Gerät merken",
-  joinUnsignedHint: "Ohne Anmeldung sieht der Host dich nicht.",
-  joinSignInFirst: "Anmelden — sonst sieht der Host dich nicht",
+  joinUnsignedHint: "Ohne Anmeldung sieht der Gastgeber dich nicht.",
+  joinSignInFirst: "Anmelden — sonst sieht der Gastgeber dich nicht",
   joinField: "Link oder 6-stelliger Code",
   more: "Mehr",
   timeTapHint: "Tippen zum Ändern",
@@ -252,6 +283,10 @@ const DE: PlatzCopy = {
     "Link aus WhatsApp oder Messages einfügen — oder den 6-stelligen Code einer offenen Gruppe. Privat bleibt nur der Einladungslink.",
   joinEmpty: "Link oder Code fehlt.",
   joinInvalid: "Kein gültiger Link oder Code.",
+  joinExpired: "Fenster zu — der Link gilt nicht mehr.",
+  joinClosed: "Gruppe ist aufgelöst.",
+  joinUnknown:
+    "Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst den Einladungslink einfügen.",
   startLabel: "Start",
   startNow: "Jetzt",
   startIn1h: "In 1 h",
@@ -264,7 +299,7 @@ const DE: PlatzCopy = {
   windowCapHint: "Start bis 14 Tage voraus. Dauer 15 Min bis 12 Stunden.",
   pinsOn: "Freunde auf der Karte · an",
   collectionsHint:
-    "Anlegen unter Freigeben. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.",
+    "Anlegen in der Akte. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.",
   shareTitle: (title) => `Zusammen raus: ${title}`,
   shareMeet: (point) => `Treffpunkt: ${point}`,
   shareProfile: (url) => `Mein Profil: ${url}`,
@@ -280,27 +315,36 @@ const DE: PlatzCopy = {
   mappeEmptyTitle: "Noch keine Linie",
   noTrackLabel: "Kein Track",
   loopTag: "Runde",
+  sourceImport: "Import",
+  sourcePlanned: "Geplant",
+  sourceRecorded: "Aufgezeichnet",
+  startAwayKm: (km) => `${km} km entfernt`,
   mappeFilterEmpty: "Keine Touren in diesem Filter.",
+  showAll: "Alle zeigen",
+  keepOnMap: "Auf der Karte merken",
+  showOnMap: "Auf Karte",
+  removeFromMappe: "Aus der Mappe nehmen",
   shared: "freigegeben",
   privateTour: "privat",
   openInApp: "In der App öffnen",
   joinOnDevice:
-    " — In der App merken. Ohne Anmeldung sieht der Host dich nicht.",
+    " — In der App merken. Ohne Anmeldung sieht der Gastgeber dich nicht.",
   stimmenTitle: "Stimmen",
   stimmenEmpty:
     "Noch keine Stimmen zu deinen Touren. Nach Freigabe können andere schreiben.",
+  stimmeUntitled: "Stimme",
   pending: "In Prüfung",
   collectionsTitle: "Sammlungen",
   collectionName: "Name der Sammlung",
   collectionCreate: "Anlegen",
   collectionCreated: "Sammlung angelegt",
-  collectionEmpty: "Noch keine Sammlung — unter Freigeben bei einer Tour anlegen.",
+  collectionEmpty: "Noch keine Sammlung — in der Akte bei einer Tour anlegen.",
   collectionTours: (n) => (n === 1 ? "1 Tour" : `${n} Touren`),
   gpxNoTrack: "GPX ohne Track",
   gpxUnreadable: "GPX konnte nicht gelesen werden",
   gpxImported: (name) => `Importiert: ${name}`,
   joinNotOnServer: (note) =>
-    `Nicht auf dem Server — ${note} Unter Profil anmelden, dann den Link nochmal öffnen. Sonst sieht der Host dich nicht.`,
+    `Nicht auf dem Server — ${note} Unter Profil anmelden, dann den Link nochmal öffnen. Sonst sieht der Gastgeber dich nicht.`,
   joinOk: (title, note) =>
     `Dabei: ${title}${note ? ` — ${note}` : ""}. Wer den Link hat, kann beitreten, solange die Gruppe offen ist.`,
   shareCopied: "Kopiert",
@@ -316,6 +360,9 @@ const DE: PlatzCopy = {
   serverTableNote: SERVER_TABLE_DE,
   addRoute: "Route hinzufügen",
   keepRoute: "Merken",
+  keepName: "Nur den Namen merken",
+  lastRidden: (when) => `zuletzt ${when}`,
+  renameTour: "Umbenennen",
   searchTours: "Tour suchen",
   sortRecent: "Zuletzt",
   sortDistance: "Länge",
@@ -361,7 +408,7 @@ const DE: PlatzCopy = {
 
 const EN: PlatzCopy = {
   inviteHint:
-    "Invite shares the link. Your groups stay. Open groups always sit on Platz and as a meeting pin on Browse — not a feed. Friends on the map only in the app, after opt-in.",
+    "Invite shares the link. Your groups stay — not a feed. Friends on the map only in the app, after opt-in.",
   pickTour: "Pick a tour",
   pickMine: "My tours",
   pickNearby: "Tours nearby",
@@ -407,7 +454,9 @@ const EN: PlatzCopy = {
   unlistedNote: "Link only — not listed on Platz.",
   pinsOff: "Friends on the map · off",
   pinsHud: "Friends only while riding",
+  shareInRide: "Share while riding",
   pinsHint: "Only while riding, not on the public map.",
+  joinPrivateCode: "Private — invitation link only. No code to type.",
   friendN: (n) => `Friend ${n}`,
   extendHour: "Extend window",
   extend30m: "+30 min",
@@ -432,6 +481,10 @@ const EN: PlatzCopy = {
     "Paste the invitation link from WhatsApp or Messages, or type the 6-character code of a listed group. Private groups still need the invitation link.",
   joinEmpty: "Link or code missing.",
   joinInvalid: "Not a valid invite link or code.",
+  joinExpired: "Window closed — the link is no longer valid.",
+  joinClosed: "The group has been closed.",
+  joinUnknown:
+    "No open link. Without sign-in this stays on this device; otherwise paste the invitation link.",
   startLabel: "Start",
   startNow: "Now",
   startIn1h: "In 1 h",
@@ -444,7 +497,7 @@ const EN: PlatzCopy = {
   windowCapHint: "Start up to 14 days ahead. Duration 15 min to 12 hours.",
   pinsOn: "Friends on the map · on",
   collectionsHint:
-    "Create under Share. Sharing only includes released or catalogue tours — private GPX stays out.",
+    "Create in Tour. Sharing only includes released or catalogue tours — private GPX stays out.",
   shareTitle: (title) => `Ride together: ${title}`,
   shareMeet: (point) => `Meeting point: ${point}`,
   shareProfile: (url) => `My profile: ${url}`,
@@ -460,7 +513,15 @@ const EN: PlatzCopy = {
   mappeEmptyTitle: "No line yet",
   noTrackLabel: "No track",
   loopTag: "Loop",
+  sourceImport: "Import",
+  sourcePlanned: "Planned",
+  sourceRecorded: "Recorded",
+  startAwayKm: (km) => `${km} km away`,
   mappeFilterEmpty: "No tours in this filter.",
+  showAll: "Show all",
+  keepOnMap: "Save from the map",
+  showOnMap: "Show on map",
+  removeFromMappe: "Remove from the Mappe",
   shared: "shared",
   privateTour: "private",
   openInApp: "Open in the app",
@@ -469,12 +530,13 @@ const EN: PlatzCopy = {
   stimmenTitle: "Stimmen",
   stimmenEmpty:
     "No Stimmen on your tours yet. After you share, others can write.",
+  stimmeUntitled: "Voice",
   pending: "In review",
   collectionsTitle: "Collections",
   collectionName: "Collection name",
   collectionCreate: "Create",
   collectionCreated: "Collection created",
-  collectionEmpty: "No collection yet — create one under Share on a tour.",
+  collectionEmpty: "No collection yet — create one in Tour on a saved ride.",
   collectionTours: (n) => (n === 1 ? "1 tour" : `${n} tours`),
   gpxNoTrack: "GPX without a track",
   gpxUnreadable: "GPX could not be read",
@@ -497,6 +559,9 @@ const EN: PlatzCopy = {
   serverTableNote: "Server table missing — local only.",
   addRoute: "Add a route",
   keepRoute: "Save",
+  keepName: "Save the name only",
+  lastRidden: (when) => `last ${when}`,
+  renameTour: "Rename",
   searchTours: "Search tours",
   sortRecent: "Recent",
   sortDistance: "Length",
@@ -542,7 +607,7 @@ const EN: PlatzCopy = {
 
 const FR: PlatzCopy = {
   inviteHint:
-    "Inviter partage le lien. Tes groupes restent. Les groupes ouverts sont toujours sur le Platz et comme pin de rendez-vous sur la carte — pas un fil. Amis sur la carte seulement dans l’appli, après opt-in.",
+    "Inviter partage le lien. Tes groupes restent — pas un fil. Amis sur la carte seulement dans l’appli, après opt-in.",
   pickTour: "Choisir une sortie",
   pickMine: "Mes sorties",
   pickNearby: "Sorties à proximité",
@@ -589,7 +654,10 @@ const FR: PlatzCopy = {
   unlistedNote: "Lien seulement — pas sur Platz.",
   pinsOff: "Amis sur la carte · off",
   pinsHud: "Amis seulement pendant la sortie",
+  shareInRide: "Partager pendant la sortie",
   pinsHint: "Seulement pendant la sortie, pas sur la carte publique.",
+  joinPrivateCode:
+    "Privé — uniquement le lien d’invitation. Pas de code à taper.",
   friendN: (n) => `Ami ${n}`,
   extendHour: "Prolonger la fenêtre",
   extend30m: "+30 min",
@@ -614,6 +682,10 @@ const FR: PlatzCopy = {
     "Colle le lien d’invitation depuis WhatsApp ou Messages, ou saisis le code à 6 caractères d’un groupe listé. Privé a encore besoin du lien d’invitation.",
   joinEmpty: "Lien ou code manquant.",
   joinInvalid: "Lien ou code invalide.",
+  joinExpired: "Fenêtre fermée — le lien n’est plus valable.",
+  joinClosed: "Le groupe est dissous.",
+  joinUnknown:
+    "Pas de lien ouvert. Sans connexion ça reste sur cet appareil ; sinon colle le lien d’invitation.",
   startLabel: "Départ",
   startNow: "Maintenant",
   startIn1h: "Dans 1 h",
@@ -626,7 +698,7 @@ const FR: PlatzCopy = {
   windowCapHint: "Départ jusqu’à 14 jours. Durée 15 min à 12 heures.",
   pinsOn: "Amis sur la carte · on",
   collectionsHint:
-    "Créer sous Partager. Le partage ne prend que les sorties partagées ou catalogue — le GPX privé reste dehors.",
+    "Créer dans la fiche. Le partage ne prend que les sorties partagées ou catalogue — le GPX privé reste dehors.",
   shareTitle: (title) => `Sortir ensemble : ${title}`,
   shareMeet: (point) => `Rendez-vous : ${point}`,
   shareProfile: (url) => `Mon profil : ${url}`,
@@ -642,7 +714,15 @@ const FR: PlatzCopy = {
   mappeEmptyTitle: "Pas encore de ligne",
   noTrackLabel: "Pas de trace",
   loopTag: "Boucle",
+  sourceImport: "Import",
+  sourcePlanned: "Planifiée",
+  sourceRecorded: "Enregistré",
+  startAwayKm: (km) => `${km} km jusqu’au départ`,
   mappeFilterEmpty: "Pas de sorties dans ce filtre.",
+  showAll: "Tout afficher",
+  keepOnMap: "Garder depuis la carte",
+  showOnMap: "Sur la carte",
+  removeFromMappe: "Retirer de la Mappe",
   shared: "partagé",
   privateTour: "privé",
   openInApp: "Ouvrir dans l’app",
@@ -651,12 +731,13 @@ const FR: PlatzCopy = {
   stimmenTitle: "Stimmen",
   stimmenEmpty:
     "Pas encore de Stimmen sur tes sorties. Après partage, les autres peuvent écrire.",
+  stimmeUntitled: "Avis",
   pending: "En relecture",
   collectionsTitle: "Collections",
   collectionName: "Nom de la collection",
   collectionCreate: "Créer",
   collectionCreated: "Collection créée",
-  collectionEmpty: "Pas encore de collection — crée-en une sous Partager sur une sortie.",
+  collectionEmpty: "Pas encore de collection — crée-en une dans la fiche d’une sortie.",
   collectionTours: (n) => (n === 1 ? "1 sortie" : `${n} sorties`),
   gpxNoTrack: "GPX sans trace",
   gpxUnreadable: "GPX illisible",
@@ -679,6 +760,9 @@ const FR: PlatzCopy = {
   serverTableNote: "Table serveur absente — local seulement.",
   addRoute: "Ajouter une route",
   keepRoute: "Garder",
+  keepName: "Garder seulement le nom",
+  lastRidden: (when) => `dernier ${when}`,
+  renameTour: "Renommer",
   searchTours: "Chercher une sortie",
   sortRecent: "Récent",
   sortDistance: "Longueur",
@@ -724,7 +808,7 @@ const FR: PlatzCopy = {
 
 const IT: PlatzCopy = {
   inviteHint:
-    "Invitare condivide il link. I tuoi gruppi restano. I gruppi aperti sono sempre sul Platz e come pin di ritrovo sulla mappa — non un feed. Amici sulla mappa solo nell’app, dopo opt-in.",
+    "Invitare condivide il link. I tuoi gruppi restano — non un feed. Amici sulla mappa solo nell’app, dopo opt-in.",
   pickTour: "Scegli un’uscita",
   pickMine: "Le mie uscite",
   pickNearby: "Uscite vicine",
@@ -750,7 +834,7 @@ const IT: PlatzCopy = {
   emptyPublic: "Nessun gruppo pubblico.",
   emptyPrivate: "Nessun gruppo privato in questo filtro.",
   emptyAll: "Ancora nessun gruppo. Invitare condivide il link.",
-  host: "Host",
+  host: "Organizzatore",
   guest: "Ospite",
   you: "Tu",
   selfSuffix: " · tu",
@@ -771,7 +855,9 @@ const IT: PlatzCopy = {
   unlistedNote: "Solo link — non sul Platz.",
   pinsOff: "Amici sulla mappa · off",
   pinsHud: "Amici solo in uscita",
+  shareInRide: "Condividi in uscita",
   pinsHint: "Solo in uscita, non sulla mappa pubblica.",
+  joinPrivateCode: "Privato — solo il link di invito. Niente codice da copiare.",
   friendN: (n) => `Amico ${n}`,
   extendHour: "Prolunga finestra",
   extend30m: "+30 min",
@@ -796,6 +882,10 @@ const IT: PlatzCopy = {
     "Incolla il link di invito da WhatsApp o Messages, oppure il codice a 6 caratteri di un gruppo in elenco. Il privato serve ancora il link di invito.",
   joinEmpty: "Manca link o codice.",
   joinInvalid: "Link o codice non valido.",
+  joinExpired: "Finestra chiusa — il link non vale più.",
+  joinClosed: "Il gruppo è stato chiuso.",
+  joinUnknown:
+    "Nessun link aperto. Senza accesso resta su questo dispositivo; altrimenti incolla il link di invito.",
   startLabel: "Partenza",
   startNow: "Ora",
   startIn1h: "Tra 1 h",
@@ -808,7 +898,7 @@ const IT: PlatzCopy = {
   windowCapHint: "Partenza fino a 14 giorni. Durata da 15 min a 12 ore.",
   pinsOn: "Amici sulla mappa · on",
   collectionsHint:
-    "Crea sotto Condividi. Si condividono solo uscite condivise o di catalogo — il GPX privato resta fuori.",
+    "Crea nella scheda. Si condividono solo uscite condivise o di catalogo — il GPX privato resta fuori.",
   shareTitle: (title) => `Uscire insieme: ${title}`,
   shareMeet: (point) => `Ritrovo: ${point}`,
   shareProfile: (url) => `Il mio profilo: ${url}`,
@@ -824,7 +914,15 @@ const IT: PlatzCopy = {
   mappeEmptyTitle: "Ancora nessuna linea",
   noTrackLabel: "Nessuna traccia",
   loopTag: "Anello",
+  sourceImport: "Import",
+  sourcePlanned: "Pianificato",
+  sourceRecorded: "Registrato",
+  startAwayKm: (km) => `${km} km fino al via`,
   mappeFilterEmpty: "Nessuna uscita in questo filtro.",
+  showAll: "Mostra tutti",
+  keepOnMap: "Segna sulla mappa",
+  showOnMap: "Sulla mappa",
+  removeFromMappe: "Togli dalla Mappe",
   shared: "condiviso",
   privateTour: "privato",
   openInApp: "Apri nell’app",
@@ -833,12 +931,13 @@ const IT: PlatzCopy = {
   stimmenTitle: "Stimmen",
   stimmenEmpty:
     "Ancora nessuna Stimme sulle tue uscite. Dopo la condivisione gli altri possono scrivere.",
+  stimmeUntitled: "Voce",
   pending: "In revisione",
   collectionsTitle: "Raccolte",
   collectionName: "Nome della raccolta",
   collectionCreate: "Crea",
   collectionCreated: "Raccolta creata",
-  collectionEmpty: "Ancora nessuna raccolta — creala sotto Condividi su un’uscita.",
+  collectionEmpty: "Ancora nessuna raccolta — creala nella scheda di un’uscita.",
   collectionTours: (n) => (n === 1 ? "1 uscita" : `${n} uscite`),
   gpxNoTrack: "GPX senza traccia",
   gpxUnreadable: "GPX illeggibile",
@@ -861,6 +960,9 @@ const IT: PlatzCopy = {
   serverTableNote: "Tabella server assente — solo locale.",
   addRoute: "Aggiungi una route",
   keepRoute: "Tieni",
+  keepName: "Tieni solo il nome",
+  lastRidden: (when) => `ultimo ${when}`,
+  renameTour: "Rinomina",
   searchTours: "Cerca un percorso",
   sortRecent: "Recenti",
   sortDistance: "Lunghezza",
@@ -906,7 +1008,7 @@ const IT: PlatzCopy = {
 
 const NL: PlatzCopy = {
   inviteHint:
-    "Uitnodigen deelt de link. Je groepen blijven. Open groepen staan altijd op Platz en als trefpunt-pin op de kaart — geen feed. Vrienden op de kaart alleen in de app, na opt-in.",
+    "Uitnodigen deelt de link. Je groepen blijven — geen feed. Vrienden op de kaart alleen in de app, na opt-in.",
   pickTour: "Tocht kiezen",
   pickMine: "Mijn tochten",
   pickNearby: "Tochten in de buurt",
@@ -953,7 +1055,10 @@ const NL: PlatzCopy = {
   unlistedNote: "Alleen via link — niet op Platz.",
   pinsOff: "Vrienden op de kaart · uit",
   pinsHud: "Vrienden alleen tijdens de rit",
+  shareInRide: "Delen tijdens de rit",
   pinsHint: "Alleen tijdens de rit, niet op de openbare kaart.",
+  joinPrivateCode:
+    "Privé — alleen de uitnodigingslink. Geen code om over te typen.",
   friendN: (n) => `Vriend ${n}`,
   extendHour: "Venster verlengen",
   extend30m: "+30 min",
@@ -978,6 +1083,10 @@ const NL: PlatzCopy = {
     "Plak de uitnodigingslink uit WhatsApp of Berichten, of typ de 6-tekencode van een open groep. Privé heeft nog de uitnodigingslink nodig.",
   joinEmpty: "Link of code ontbreekt.",
   joinInvalid: "Geen geldige link of code.",
+  joinExpired: "Venster dicht — de link geldt niet meer.",
+  joinClosed: "De groep is opgeheven.",
+  joinUnknown:
+    "Geen open link. Zonder login blijft dit op dit apparaat; anders de uitnodigingslink plakken.",
   startLabel: "Start",
   startNow: "Nu",
   startIn1h: "Over 1 h",
@@ -990,7 +1099,7 @@ const NL: PlatzCopy = {
   windowCapHint: "Start tot 14 dagen vooruit. Duur 15 min tot 12 uur.",
   pinsOn: "Vrienden op de kaart · aan",
   collectionsHint:
-    "Aanmaken onder Delen. Delen alleen met gedeelde of catalogustochten — privé-GPX blijft buiten.",
+    "Aanmaken in het dossier. Delen alleen met gedeelde of catalogustochten — privé-GPX blijft buiten.",
   shareTitle: (title) => `Samen eruit: ${title}`,
   shareMeet: (point) => `Trefpunt: ${point}`,
   shareProfile: (url) => `Mijn profiel: ${url}`,
@@ -1006,7 +1115,15 @@ const NL: PlatzCopy = {
   mappeEmptyTitle: "Nog geen lijn",
   noTrackLabel: "Geen track",
   loopTag: "Ronde",
+  sourceImport: "Import",
+  sourcePlanned: "Gepland",
+  sourceRecorded: "Opgenomen",
+  startAwayKm: (km) => `${km} km naar de start`,
   mappeFilterEmpty: "Geen tochten in dit filter.",
+  showAll: "Alles tonen",
+  keepOnMap: "Op de kaart bewaren",
+  showOnMap: "Toon op de kaart",
+  removeFromMappe: "Uit Die Mappe halen",
   shared: "gedeeld",
   privateTour: "privé",
   openInApp: "Openen in de app",
@@ -1015,13 +1132,14 @@ const NL: PlatzCopy = {
   stimmenTitle: "Stimmen",
   stimmenEmpty:
     "Nog geen Stimmen bij je tochten. Na delen kunnen anderen schrijven.",
+  stimmeUntitled: "Stem",
   pending: "In beoordeling",
   collectionsTitle: "Verzamelingen",
   collectionName: "Naam van de verzameling",
   collectionCreate: "Aanmaken",
   collectionCreated: "Verzameling aangemaakt",
   collectionEmpty:
-    "Nog geen verzameling — onder Delen bij een tocht aanmaken.",
+    "Nog geen verzameling — in het dossier bij een tocht aanmaken.",
   collectionTours: (n) => (n === 1 ? "1 tocht" : `${n} tochten`),
   gpxNoTrack: "GPX zonder track",
   gpxUnreadable: "GPX kon niet worden gelezen",
@@ -1044,6 +1162,9 @@ const NL: PlatzCopy = {
   serverTableNote: "Servertabel ontbreekt — alleen lokaal.",
   addRoute: "Route toevoegen",
   keepRoute: "Bewaren",
+  keepName: "Alleen de naam bewaren",
+  lastRidden: (when) => `laatst ${when}`,
+  renameTour: "Hernoemen",
   searchTours: "Tocht zoeken",
   sortRecent: "Recent",
   sortDistance: "Lengte",
@@ -1122,6 +1243,19 @@ export function platzNote(
   if (raw === UNLISTED_DE) return g.unlistedNote;
   if (raw === WINDOW_EXTENDED_DE) return g.windowExtended;
   if (raw === EXTEND_INVALID_DE) return g.extendInvalid;
+  if (raw === PRIVATE_CODE_DE) return g.joinPrivateCode;
+  if (raw.startsWith("Privat — nur mit Einladungslink")) {
+    return g.joinPrivateCode;
+  }
+  if (raw === JOIN_EXPIRED_DE || raw.startsWith("Fenster zu")) {
+    return g.joinExpired;
+  }
+  if (raw === JOIN_CLOSED_DE) return g.joinClosed;
+  if (raw === JOIN_NEED_LINK_DE || raw === JOIN_BAD_LINK_DE) {
+    return g.joinPrivateCode;
+  }
+  if (raw === JOIN_HOST_DE || raw === JOIN_HOST_DE_ROLE) return g.joinSignInFirst;
+  if (raw === JOIN_UNKNOWN_DE || raw === JOIN_CODE_LEN_DE) return g.joinUnknown;
   return raw;
 }
 

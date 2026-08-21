@@ -46,7 +46,7 @@ void main() {
       expect(de.hudSpeedCaptionFor('Speed'), 'Tempo');
       expect(de.rideRestKm, 'noch km');
       expect(de.rideEta, 'Ziel');
-      expect(de.hudPeekLabelFor('Lean'), 'Neig.');
+      expect(de.hudPeekLabelFor('Lean'), 'Neigung');
       final en = AppLocalizationsEn();
       expect(en.hudSpeedCaptionFor('Tempo'), 'Speed');
       expect(en.rideRestKm, 'km left');
@@ -137,10 +137,12 @@ void main() {
       expect(label.style?.fontWeight, NavHudTokens.statLabelWeight);
 
       final fill = tester.widget<Material>(
-        find.descendant(
-          of: find.byType(RideDataStrip),
-          matching: find.byType(Material),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(RideDataStrip),
+              matching: find.byType(Material),
+            )
+            .first,
       );
       expect(fill.color, AppColors.accent);
     });

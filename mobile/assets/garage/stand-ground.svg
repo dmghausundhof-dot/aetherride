@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140" role="img" aria-hidden="true">
+  <title>FlowLine Stand-Boden</title>
+  <rect x="0" y="0" width="240" height="140" rx="16" fill="#121215"/>
+  <path d="M0 98 C36 90 68 94 108 100 C148 106 186 116 240 112 L240 140 L0 140 Z" fill="#1E1E26"/>
+  <path d="M0 112 C42 108 86 114 132 118 C178 122 210 126 240 124 L240 140 L0 140 Z" fill="#18181C"/>
+  <ellipse cx="120" cy="118" rx="78" ry="7" fill="#000" opacity="0.28"/>
+</svg>

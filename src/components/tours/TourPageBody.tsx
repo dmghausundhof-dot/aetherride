@@ -20,6 +20,7 @@ import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
 import { guideFor } from "@/lib/i18n/guidesCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
+import { formatDistanceElevation, sanitizeElevationM } from "@/lib/discover/elevationGuard";
 
 export function TourPageBody({ id }: { id: string }) {
   const lang = useChromeLang();
@@ -30,6 +31,7 @@ export function TourPageBody({ id }: { id: string }) {
 
   const region = getRegion(tour.regionSlug);
   const related = relatedTours(tour, 4);
+  const tourElev = sanitizeElevationM(tour.elevationM, tour.distanceKm);
   const guides = relatedGuidesForTour(tour)
     .map((g) => guideFor(g.slug, lang))
     .filter((g): g is NonNullable<typeof g> => g != null);
@@ -75,7 +77,7 @@ export function TourPageBody({ id }: { id: string }) {
               />
               <Stat
                 label={copy.tour.elevation}
-                value={`${tour.elevationM} hm`}
+                value={tourElev != null ? `${tourElev} hm` : "—"}
               />
               <Stat
                 label={copy.tour.duration}
@@ -117,6 +119,7 @@ export function TourPageBody({ id }: { id: string }) {
               center={tour.center}
               name={tour.name}
               profile={profileForBikeCategory(tour.primaryCategory)}
+              category={tour.primaryCategory}
             />
           </div>
         </div>
@@ -140,7 +143,11 @@ export function TourPageBody({ id }: { id: string }) {
           </section>
         </div>
         <aside className="space-y-4">
-          <WeatherPanel lat={tour.center[1]} lng={tour.center[0]} />
+          <WeatherPanel
+            lat={tour.center[1]}
+            lng={tour.center[0]}
+            profile={profileForBikeCategory(tour.primaryCategory)}
+          />
           {region && (
             <div className="rounded-2xl border border-border bg-surface p-4">
               <h2 className="text-sm font-semibold">{copy.tour.region}</h2>
@@ -203,7 +210,7 @@ export function TourPageBody({ id }: { id: string }) {
                   </p>
                   <h3 className="mt-1 font-semibold">{r.name}</h3>
                   <p className="mt-1 text-xs text-text-secondary">
-                    {r.distanceKm} km · {r.elevationM} hm
+                    {formatDistanceElevation(r.distanceKm, r.elevationM)}
                   </p>
                   <div className="mt-2">
                     <TourCommunityChip tourId={r.id} />

@@ -95,7 +95,6 @@ abstract final class RideTogetherPolicy {
   }) {
     final freeride = isFreerideRide(rideRouteId);
     RideGroup? newestSession;
-    RideGroup? newestPlanned;
     RideGroup? routeHit;
     final rideId = rideRouteId?.trim() ?? '';
     final catalogId = catalogTourId?.trim() ?? '';
@@ -119,14 +118,9 @@ abstract final class RideTogetherPolicy {
           (ids.contains(g.savedRouteId) ||
               (g.catalogTourId != null && ids.contains(g.catalogTourId)));
       if (match && routeHit == null) routeHit = g;
-      if (g.onServer &&
-          (newestPlanned == null ||
-              g.createdAt.isAfter(newestPlanned.createdAt))) {
-        newestPlanned = g;
-      }
     }
     if (freeride) return newestSession;
-    return routeHit ?? newestPlanned;
+    return routeHit;
   }
 }
 

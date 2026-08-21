@@ -3,7 +3,7 @@
   "appTitle": "FlowLine",
   "appTagline": "Ride further. Flow better — MTB, gravel, race, city & e-bike.",
   "navHome": "Start",
-  "navGarage": "Garage",
+  "navGarage": "Fiets",
   "navRide": "Rijden",
   "navDiscover": "Tochten",
   "navParts": "Onderdelen",
@@ -39,7 +39,7 @@
       }
     }
   },
-  "shopForYourBikeEmpty": "Zet een fiets op de stand — dan openen we passende onderdelen in de winkel.",
+  "shopForYourBikeEmpty": "Voeg een fiets toe op de stand — dan openen we passende onderdelen in de winkel.",
   "shopMerchHint": "Kleding en klein spul. Nooit gefilterd op fietspassing.",
   "shopMerchTitle": "Kleding",
   "shopMerchEmpty": "Geen merch in het schap. Kleding blijft in de winkel, nooit gefilterd op de fiets.",
@@ -79,7 +79,7 @@
   "shopFeaturedBikes": "Fietsen in de winkel",
   "garageSetupTabHintTires": "Grove bandenspanning naar gewicht — meet op de fiets, geen OEM-tabel.",
   "werkstattSetupTires": "Banden / grove spanning",
-  "werkstattSetupSuspension": "Vering — SAG en lucht uit veerweg",
+  "werkstattSetupSuspension": "Vering — inzinken en lucht uit veerweg",
   "werkstattSetupSuspensionUnknown": "Vering — veerweg niet vastgelegd",
   "werkstattSetupDropper": "Dropper (vastgelegd)",
   "werkstattSetupWheel": "Wielen {size}",
@@ -95,8 +95,8 @@
   "werkstattSetupLightsRack": "Verlichting en rek — alleen als vastgelegd",
   "werkstattSetupDrivetrain": "Aandrijving",
   "werkstattBatteryHonest": "Accu alleen met een echte sensor",
-  "werkstattBatteryHonestHint": "Geen percentage zonder gekoppelde sensor. Bosch SoC via LDI (Flow → Components) of standaard GATT.",
-  "werkstattSensorEbike": "Wielsensor (CSC) — snelheid en cadans. Accu alleen met een echte sensor.",
+  "werkstattBatteryHonestHint": "Geen percentage zonder gekoppelde sensor. Accu van het display, niet van de temposensor.",
+  "werkstattSensorEbike": "Temposensor — snelheid en cadans. Accu alleen met een echt display.",
   "werkstattSensorAnalog": "Wielsensor — snelheid en cadans op de fiets.",
   "hofYourWatch": "Jouw horloge",
   "hofWatchHint": "Hartslag van een echte sensor.",
@@ -104,7 +104,7 @@
   "hofWatchReconnect": "Verbinden",
   "hofWatchRemove": "Verwijderen",
   "hofWatchConnect": "Horloge verbinden",
-  "werkstattWatchEbike": "Horloge — hartslag naast CSC. Geen verzonnen SoC.",
+  "werkstattWatchEbike": "Horloge — hartslag naast de temposensor. Geen verzonnen accustand.",
   "werkstattWatchAnalog": "Smartwatch / fitnesstracking",
   "setupTirePressureLabel": "Voorband (psi)",
   "setupCompareHintTires": "Maakt twee blinde bandenspanningen. Na een paar ritten zie je wat beter voelt.",
@@ -149,6 +149,7 @@
   "profile": "Profiel",
   "chat": "Chat",
   "hofRideOut": "Rijden",
+  "hofRideGroupHint": "Een groep start op de tourkaart, niet hier.",
   "hofOpenBike": "Fiets openen",
   "hofParkBike": "Fiets toevoegen",
   "hofRideWithoutBike": "Rijden zonder fiets",
@@ -156,6 +157,7 @@
   "hofAtGate": "bij de poort",
   "hofEmptyStand": "Lege stand",
   "hofSkyUnknown": "Hemel onbekend",
+  "hofSkyNeedNet": "Hemel heeft net nodig.",
   "hofNoHonestLoop": "Geen lus in de buurt",
   "hofGateWetClosed": "Trails nat — geen eerlijke verharde lus in de buurt",
   "hofNotYetOut": "nog niet weg",
@@ -187,6 +189,12 @@
   },
   "hofLoadOfflineMap": "Offline-routing voor {name} laden",
   "@hofLoadOfflineMap": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofPackReadyRideMap": "{name} · Routing offline. Ritkaart: net.",
+  "@hofPackReadyRideMap": {
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -322,6 +330,8 @@
   "filterSurfaceGroup": "Ondergrond",
   "filterExertion": "Moeilijkheid",
   "filterDistance": "Afstand",
+  "filterTourLength": "Tourlengte",
+  "filterSportDh": "DH-fiets",
   "filterElevation": "Hoogte",
   "filterForm": "Vorm",
   "filterFormAll": "Alle",
@@ -363,10 +373,11 @@
   "computeRoute": "Route berekenen",
   "adaptTour": "Bewerken",
   "adaptTourTitle": "Tocht bewerken",
-  "adaptTourHint": "Wijzig start, einde of stops — dan bereken je de route.",
-  "planRouteTitle": "Route plannen",
-  "planRouteCta": "Navigeren",
+  "adaptTourHint": "Wijzig start, einde of stops — de route past zich aan.",
+  "planRouteTitle": "Plannen",
+  "planRouteCta": "Plannen",
   "discoverSearchHint": "Plaats of tocht",
+  "discoverPlaceHoldForDest": "Vasthouden: als bestemming",
   "filterAroundKm": "binnen {km} km",
   "discoverAroundIdle": "Omgeving",
   "discoverAroundAwayKm": "{km} km verder",
@@ -395,7 +406,7 @@
   },
   "discoverPeekAwayNear": "onder 1 km naar de start",
   "discoverPeekSave": "Bewaren",
-  "discoverPeekAkte": "Dossier",
+  "discoverPeekAkte": "Akte",
   "@filterAroundKm": {
     "placeholders": {
       "km": {
@@ -406,28 +417,56 @@
   "mapToggleFab": "Kaart",
   "communityWriteReview": "Schrijf een recensie",
   "discoverModeExplore": "Ontdekken",
-  "discoverModeNavigate": "Navigeren",
+  "discoverModeNavigate": "Plannen",
   "discoverModeMine": "Tochten",
   "navigateTitle": "Navigeren",
   "navigateSubtitle": "Tik op bestemming of typ een adres",
+  "navigateSubtitleShape": "Tik of sleep de lijn voor een stop. Tik ernaast trekt de route door. Lang drukken: nieuw doel.",
   "navigateStartLabel": "Start",
   "navigateEndLabel": "Bestemming",
   "navigateStartHint": "Adres, plaats, of tik op de kaart",
   "navigateEndHint": "Waarheen?",
+  "discoverOnMapPlace": "Punt op de kaart",
+  "discoverTapStart": "Tik start",
+  "discoverSetEndCta": "Zet bestemming",
+  "discoverReplaceDest": "Bestemming vervangen",
+  "discoverReplaceStart": "Start vervangen",
+  "discoverRecently": "Recent",
+  "discoverBackToGps": "Terug naar GPS",
+  "discoverMapArea": "Kaartuitsnede",
+  "discoverRoutingAdapts": "Route past zich aan…",
+  "discoverWeatherAlong": "Weer",
+  "discoverPhotosAlong": "Foto’s langs de route",
   "navigateMyLocation": "Mijn locatie",
   "navigateSwap": "Wissel start en bestemming",
   "navigatePickStart": "Tik start op de kaart",
   "navigatePickEnd": "Tik bestemming op de kaart",
   "navigateAddVia": "Stop toevoegen",
+  "navigateViaHint": "Tik op de lijn, kaart of het hoogteprofiel voor een stop. Lang drukken zet anders het einde.",
+  "planEditLineHint": "Tik = stop. Vasthouden = bestemming. Sleep de schijven.",
+  "planAlongKm": "{km} km op de route",
+  "planTickKm": "{km} km",
+  "planUndo": "Ongedaan maken",
+  "planRedo": "Opnieuw",
+  "planLineCoach": "Sleep de lijn of de schijven voor een stop. Vasthouden: nieuwe bestemming.",
+  "planLineCoachOk": "Begrepen",
+  "planMapSteep": "Steil",
+  "planMapUnknown": "Onbekend",
+  "planStopSetHint": "Stop gezet. Sleep het punt om bij te sturen.",
+  "planElevSteepHint": "Rood steil · Oranje vlak · Blauw af · Bruin pad",
+  "discoverPlaceOnRoute": "Op de route",
+  "navigateSubtitleVia": "Tik op de kaart voor de stop",
+  "navigateCloseLoop": "Terug naar start",
+  "navigateCloseLoopHint": "Ronde: bestemming wordt start.",
   "navigateNeedStartEnd": "Zet start en bestemming",
-  "navigateComputeNeedBoth": "Route berekenen (start & bestemming nodig)",
+  "navigateComputeNeedBoth": "Zet start en bestemming",
   "navigateBackToExplore": "Terug naar Ontdekken",
   "mineSheetHint": "Dezelfde lijst als Tochten — hier op de kaart.",
   "mineEmptyCtaNavigate": "Plan A naar B",
   "gpxImportAction": "GPX importeren",
   "exploreOpenNavigate": "A→B navigeren",
   "sheetDragHandleMine": "Tochtenblad slepen",
-  "sheetDragHandleNavigate": "Navigatieblad slepen",
+  "sheetDragHandleNavigate": "Planblad slepen",
   "browseMap": "Kaart",
   "browseList": "Lijst",
   "quickFilter1h": "1 u",
@@ -480,9 +519,9 @@
   "trailDiffOpen": "open",
   "durationAny": "alle",
   "duration2to3h": "2–3 u",
-  "garageTitle": "Garage",
+  "garageTitle": "Fiets",
   "garageFabBike": "Fiets toevoegen",
-  "garageEmptyTitle": "Nog geen fiets hier",
+  "garageEmptyTitle": "Nog geen fiets aan de stand",
   "garageEmptyMessage": "Naam en type volstaan. Merk en onderdelen kunnen later.",
   "garageAddBike": "Fiets toevoegen",
   "garageAddAnother": "Nog een fiets",
@@ -531,8 +570,32 @@
   "garageParts": "Onderdelen",
   "garageMaintenance": "Onderhoud",
   "garageSetup": "Setup",
+  "garageTabOverview": "Overzicht",
+  "garageSchemaHint": "Tik op een punt — toevoegen of wijzigen.",
+  "garageSchemaLegendOk": "er",
+  "garageSchemaLegendOpen": "open",
+  "garageSchemaLegendDue": "due",
+  "garageFamilyYou": "Ik",
+  "garageFamilyHint": "Gewicht en setup voor deze rijder.",
+  "garageFamilyHintEmpty": "Gewicht voor kind of partner — hier aanmaken.",
+  "garageFamilyAdd": "Rijder toevoegen",
+  "garageSchemaMoreOnDots": "Verdere gaten op de punten.",
+  "garageCreatedAtStand": "{name} staat hier.",
+  "@garageCreatedAtStand": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "garageLastServiceTitle": "Laatste bezoek",
+  "garageLastServiceEmpty": "Nog geen bezoek bewaard.",
+  "garageLastServiceDate": "Datum",
+  "garageLastServiceWork": "Wat er gedaan is",
+  "garageLastServiceAmount": "Bedrag (€)",
+  "garageLastServiceNote": "Notitie",
+  "garageInvoicePhoto": "Factuur",
+  "garageInvoiceAdd": "Foto van de factuur",
+  "garageInvoiceRemove": "Foto verwijderen",
   "garageInstall": "Onderdeel toevoegen",
-  "garageOtherBikes": "Andere fietsen",
   "garageTechDetails": "Technische details",
   "garageTechHint": "Veerweg, frame, setup-basics — voor liefhebbers",
   "garageCtaMaintenance": "Onderhoud bekijken",
@@ -629,6 +692,26 @@
   "setupSourceManual": "Handmatig",
   "setupTemplatesTitle": "Startsjablonen",
   "setupTemplatesHint": "Startpunt — geen persoonlijk advies.",
+  "setupTplFoxOem": "Fox OEM-basis (gewichtstabel)",
+  "setupTplFoxOemHint": "Startpunt uit de Fox-starttabel — geen persoonlijk advies. Meet daarna SAG en gelijk de kamers.",
+  "setupTplFoxX2": "Fox Float X2 OEM (lbs→psi + clicks)",
+  "setupTplFoxX2Hint": "Fox X2: startdruk ≈ gewicht in lbs, SAG ~30 %, daarna dempertabel. Heverhouding niet inbegrepen — startpunt.",
+  "setupTplRockShox": "RockShox SAG-start (TrailHead-benadering)",
+  "setupTplRockShoxHint": "RockShox: demperstart ≈ lichaamsgewicht in lbs; vork via been-chart/TrailHead. Daarna op 25–30 % SAG trimmen. Geen vervanging van de TrailHead-app met serienummer.",
+  "setupTplWetRoots": "Redactioneel: natte roots",
+  "setupTplWetRootsHint": "Redactioneel preset als startpunt — geen vervanging van bracketing op jouw trail.",
+  "setupTplBikepark": "Redactioneel: bikepark",
+  "setupTplBikeparkHint": "Startpunt voor park — meer support, minder SAG-speling.",
+  "setupTplMarathon": "Redactioneel: marathon / lange tocht",
+  "setupTplMarathonHint": "Efficiënter startpunt voor lange ritten — minder SAG, meer pedaalplatform.",
+  "setupTplRace": "Redactioneel: enduro-race",
+  "setupTplRaceHint": "Race-startpunt — agressievere support. Alleen een start vóór bracketing op de recce.",
+  "setupTplGravel": "Gravel-basisdruk",
+  "setupTplGravelHint": "Ruwe startdrukken voor 40–45 mm gravelbanden — let op tubeless.",
+  "setupTplRoad": "Racefiets-basisdruk",
+  "setupTplRoadHint": "Ruwe startdruk voor 700c — let op bandbreedte en tubeless.",
+  "setupTplUrban": "City / trekking-basisdruk",
+  "setupTplUrbanHint": "Ruwe startdruk — op de band nameten, geen OEM-waarde.",
   "setupApplyTemplate": "Toepassen",
   "setupNewVersionTitle": "Nieuwe setupversie",
   "setupNewVersionHint": "Geef een naam die je herkent — bijv. “Droge trail”.",
@@ -777,7 +860,7 @@
   "myRoutesShowOnMap": "Eigen op de kaart",
   "myRoutesHideOnMap": "Eigen verbergen",
   "myRouteNotesTitle": "Privénotitie",
-  "myRouteNotesHint": "Alleen voor jou. Tips na delen — onder Tips.",
+  "myRouteNotesHint": "Alleen voor jou. Na delen — onder Stimmen.",
   "myRouteNotesEmpty": "Nog geen notitie.",
   "myRouteNotesPlaceholder": "Alleen voor jou — geen Stimme.",
   "myRouteNotesAdd": "Opslaan",
@@ -862,7 +945,7 @@
   "billingTitle": "FlowLine Pro",
   "billingYouHavePro": "Je hebt Pro.",
   "billingFreeToPro": "Free → Pro",
-  "billingMoreBikes": "Meer fietsen, sync-voordelen en offlineregio’s.",
+  "billingMoreBikes": "Meer fietsen en sync-voordelen. Offline-routing blijft in Free en Pro.",
   "billingAlreadyPro": "Pro is al actief — niet opnieuw kopen.",
   "billingForceProDebug": "Debug: Force-Pro. Stripe/Play blijven verborgen.",
   "billingCommerceClosed": "Ontwikkelstand — geen aankopen. Geen openbaar abonnement.",
@@ -962,8 +1045,8 @@
   "chatToolAuto": "Auto",
   "chatPromptWatch": "Wat is toe?",
   "chatPromptWatchQuery": "Wat is toe?",
-  "chatPromptGarage": "Garage",
-  "chatPromptGarageQuery": "Wat staat er in mijn garage?",
+  "chatPromptGarage": "Fiets",
+  "chatPromptGarageQuery": "Wat staat er aan mijn fiets?",
   "chatPromptRange": "Bereik",
   "chatPromptRangeQuery": "Welk bereik heb ik met de huidige accu?",
   "chatPromptSetups": "Setups",
@@ -972,6 +1055,8 @@
   "chatPromptRidesQuery": "Samenvatting van mijn recente ritten",
   "chatPromptRoutes": "Routes",
   "chatPromptRoutesQuery": "Welke routes passen bij mij?",
+  "chatPromptWindow": "Droger venster",
+  "chatPromptWindowQuery": "Wanneer is het vandaag droger?",
   "chatPromptShop": "Winkel",
   "chatPromptShopQuery": "Heb ik binnenkort slijtageonderdelen nodig?",
   "chatToolWatch": "Wat is toe",
@@ -1024,7 +1109,7 @@
     }
   },
   "privacyZoneDelete": "Zone verwijderen",
-  "privacyFamilyHint": "Gezin / extra rijders: onder Profiel → Gezinsgarage rijders toevoegen met eigen gewicht.",
+  "privacyFamilyHint": "Gezin / extra rijders: onder Profiel → Gezin aan de fiets rijders toevoegen met eigen gewicht.",
   "privacyExportTitle": "Exporteren (art. 20)",
   "privacyExportGpx": "Laatste rit als GPX",
   "privacyExportFit": "Laatste rit als FIT",
@@ -1201,9 +1286,15 @@
   "profileNameUnset": "Nog geen naam",
   "profilePublic": "Openbaar",
   "profileAccountSync": "Account & sync",
+  "profileConnections": "Verbindingen",
+  "profileWatchTitle": "Horloge / hartslag",
+  "profileWatchIdle": "Geen horloge gekoppeld — Garmin, Polar, Wahoo.",
+  "profileBikeBleTitle": "Fiets / display",
+  "profileBikeBleIdle": "Display of temposensor op de actieve fiets.",
+  "profileBikeBleNeedBike": "Voeg eerst een fiets toe op de stand.",
   "profileCloudBilling": "Cloudsync & facturatie",
   "profileSignedIn": "Ingelogd",
-  "profileFamilyGarage": "Gezinsgarage",
+  "profileFamilyGarage": "Gezin aan de fiets",
   "profileFamilyHint": "Meer rijders met eigen gewicht — bijv. partner of kind.",
   "profileLegal": "Juridisch",
   "profilePrivacyPolicy": "Privacybeleid",
@@ -1247,7 +1338,7 @@
   "profileSkillAdvanced": "Gevorderd",
   "profileSkillExperienced": "Ervaren",
   "profileSkillPro": "Pro",
-  "profileSubGarage": "Garage",
+  "profileSubGarage": "Fiets",
   "profileSubWeight": "Rijdersgewicht",
   "profileSubSkill": "Niveau ({skill} / 5)",
   "@profileSubSkill": {
@@ -1320,7 +1411,7 @@
   },
   "onboardSensorsHint": "Locatie voor de GPS-track. Bluetooth-sensoren later onder Fiets — voor elk fietstype.",
   "onboardNextRide": "Door naar de rit",
-  "onboardParkBikeFirst": "Zet eerst een fiets neer",
+  "onboardParkBikeFirst": "Voeg eerst een fiets toe",
   "onboardLater": "Later instellen",
   "offlineMapsChip": "Routing",
   "profileOfflineMaps": "Offline-routing",
@@ -1330,10 +1421,21 @@
   "navigateOfflineHint": "Geen net? Laad routing voor deze route.",
   "navigateOfflineHintPack": "{name} — routing in dit vak",
   "navigateOfflineHintPackSized": "{name} · {size} — routing in dit vak",
+  "navigateOfflineHintPackEnvelope": "{name} — routing op het landvlak",
+  "navigateOfflineHintPackEnvelopeSized": "{name} · {size} — routing op het landvlak",
   "offlineCoverageLabel": "{name} · routing",
+  "offlineCoverageLabelEnvelope": "{name} · routing · landvlak",
   "offlineCoverageSuggested": "Laden · {name}",
+  "offlineCoverageOutside": "Buiten {name}",
+  "offlineCoverageShowOnMap": "Toon regio op de kaart",
+  "offlineCoverageOverview": "{name} · overzicht",
+  "offlineCoverageMapNeedsNet": "{name} · kaart: net",
+  "offlineGraphReadySnack": "Routing in het oranje vak. Ride-kaart heeft net nodig.",
+  "offlineBrowseOverviewSnack": "Overzicht op de kaart (zoom 0–11). Straatzoom heeft net nodig.",
+  "offlineSketchRouting": "Routing",
+  "offlineSketchOverview": "Overzicht",
   "offlineMapsTitle": "Offline-routing",
-  "offlineMapsHint": "Downloadt een routing-graaf. De overzichtskaart (zoom 0–11) is een aparte, grote download. Navigatie in de rit blijft op straat-tegels — vaak is net nodig.",
+  "offlineMapsHint": "Downloadt een routing-graaf. De overzichtskaart (zoom 0–11) is een aparte, grote download. Navigatie in de rit heeft een straatkaart nodig — vaak is net nodig.",
   "offlineRegionActive": "Routing actief",
   "offlineNoRegion": "Geen routing actief",
   "offlineReadyBoth": "Routing klaar. Overzicht geladen (geen straatzoom in de rit).",
@@ -1344,14 +1446,14 @@
   "offlineOverviewOn": "Overzicht aan",
   "offlineOverviewOff": "Geen overzicht",
   "offlineOverviewCta": "Overzicht {id} laden ({size})",
-  "offlineOverviewExplain": "Overzicht tot zoom 11. Navigatie in de rit blijft op straat-tegels en heeft vaak net nodig.",
+  "offlineOverviewExplain": "Overzicht tot zoom 11. In de rit heeft de straatkaart vaak net nodig.",
   "offlineStorageLine": "Op het toestel: {size}",
   "offlineSuggested": "Routing hier",
   "offlineInstalledSection": "Geïnstalleerd",
   "offlineCities": "Steden",
   "offlineEurope": "Europa",
   "offlineEnvelopes": "Landvlakken",
-  "offlineEnvelopesHint": "Grote bounding box, dunne graaf — geen volledig landnet.",
+  "offlineEnvelopesHint": "Groot landvlak, dunne graaf — geen volledig landnet.",
   "offlineCountryDE": "Duitsland",
   "offlineCountryCH": "Zwitserland",
   "offlineCountryAT": "Oostenrijk",
@@ -1362,7 +1464,7 @@
   "offlineCountryDACH": "Bodenmeer / DACH",
   "offlineCountryOther": "Overig",
   "offlineCountryMorePacks": "Meer ({count})",
-  "offlineCountryPacks": "{count} regio’s",
+  "offlineCountryPacks": "{count} packs",
   "@offlineCountryPacks": {
     "placeholders": { "count": { "type": "int" } }
   },
@@ -1370,7 +1472,7 @@
   "@offlineCountryEnvelopes": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "offlineCountryPacksAndEnvelopes": "{packs} regio’s · {envelopes} landvlakken",
+  "offlineCountryPacksAndEnvelopes": "{packs} packs · {envelopes} landvlakken",
   "@offlineCountryPacksAndEnvelopes": {
     "placeholders": {
       "packs": { "type": "int" },
@@ -1386,7 +1488,7 @@
     }
   },
   "offlineConfirmOverviewTitle": "Overzichtskaart laden?",
-  "offlineConfirmOverviewBody": "{id} is {size} en alleen zoom 0–11. Navigatie in de rit blijft op straat-tegels en heeft vaak net nodig.",
+  "offlineConfirmOverviewBody": "{id} is {size} en alleen zoom 0–11. In de rit heeft de straatkaart nog vaak net nodig.",
   "@offlineConfirmOverviewBody": {
     "placeholders": {
       "id": { "type": "String" },
@@ -1415,8 +1517,8 @@
   "offlineOverviewReady": "Overzichtskaart opgeslagen (zoom 0–11).",
   "offlineRegions": "Regio’s",
   "offlineSearchRegion": "Pack zoeken",
-  "offlineNoneFound": "Geen regio gevonden",
-  "offlineNoPacks": "Nu geen packs om te laden. Regio’s die nog niet klaar zijn staan hieronder.",
+  "offlineNoneFound": "Geen pack gevonden",
+  "offlineNoPacks": "Nu geen packs om te laden. Packs die nog niet klaar zijn staan hieronder.",
   "offlineNotBuilt": "Nog niet klaar ({count})",
   "@offlineNotBuilt": {
     "placeholders": {
@@ -1459,7 +1561,7 @@
   "offlineRemoved": "Routing uit. Pack blijft op het apparaat.",
   "offlineNoRemoteDach": "Geen remote packs — DACH-fallback actief",
   "offlineNoBuiltPacks": "Geen gebouwde packs op deze server",
-  "offlineDachCatalog": "Offline — DACH-regio’s uit de appcatalogus",
+  "offlineDachCatalog": "Offline — DACH-packs uit de appcatalogus",
   "offlineReadyMapRouting": "Kaart + routing klaar",
   "offlineRoutingBg": "Routing klaar, kaart laadt op de achtergrond",
   "offlineBasemapFail": "Routing klaar — basemap-download mislukt, kaart heeft de CDN nodig",
@@ -1483,7 +1585,7 @@
   },
   "platzTogetherKicker": "Groep",
   "platzTogetherTitle": "Samen rijden",
-  "platzTogetherHint": "Uitnodigen deelt de link. Jouw groepen blijven. Open groepen: link of code — op Platz en als pin, geen feed.",
+  "platzTogetherHint": "Uitnodigen deelt de link. Jouw groepen blijven — geen feed.",
   "platzTogetherListHint": "Groep. Ingelogd: op de server. Anders alleen dit apparaat — de host ziet je niet. Vrienden op de kaart alleen tijdens het rijden, na opt-in.",
   "platzCreateGroup": "Groep maken",
   "platzJoinCode": "Code",
@@ -1547,6 +1649,10 @@
   "platzJoinLinkHint": "Plak de uitnodigingslink uit WhatsApp of Berichten, of typ de 6-tekencode van een open groep. Privé heeft nog de uitnodigingslink nodig.",
   "platzJoinEmpty": "Link of code ontbreekt.",
   "platzJoinInvalid": "Geen geldige link of code.",
+  "platzJoinExpired": "Venster dicht — de link geldt niet meer.",
+  "platzJoinClosed": "De groep is opgeheven.",
+  "platzJoinUnknown": "Geen open link. Zonder login blijft dit op dit apparaat; anders de uitnodigingslink plakken.",
+  "platzJoinPrivateCode": "Privé — alleen de uitnodigingslink. Geen code om over te typen.",
   "platzJoin": "Meedoen",
   "platzStartLabel": "Start",
   "platzStartNow": "Nu",
@@ -1804,6 +1910,7 @@
   },
   "rerouteTitle": "Van de route.",
   "rerouteHint": "Blijf kalm — jij beslist.",
+  "rerouteHintOffline": "Opnieuw plannen heeft net nodig. Terug naar de geladen route niet.",
   "rerouteRejoin": "Terug naar de route",
   "rerouteStay": "Blijven",
   "rerouteSkip": "Dit stuk overslaan",
@@ -1823,6 +1930,9 @@
   "watchNoHr": "Geen hartslagsignaal — check broadcast op het horloge.",
   "watchNoDeviceId": "Verbonden, maar geen apparaat-ID",
   "bleBikeTitle": "Fiets koppelen",
+  "blePairLeadAny": "Bosch: accu van het display. Shimano en andere: alleen naam, tempo via de wielsensor.",
+  "bleFlowRowName": "Bosch",
+  "bleFlowRowKind": "Flow",
   "bleBikeHint": "Bosch: accu van het display. Shimano en andere: alleen naam, tempo via de wielsensor.",
   "bleRememberAnyway": "Toch onthouden",
   "bleScanningDrive": "Aandrijving en sensoren zoeken…",
@@ -1834,6 +1944,15 @@
   "dieBoxUnknown": "Net aangekomen",
   "dieBoxNothingDueMonday": "Maandag-klaar — lichten en ketting staan.",
   "dieBoxNothingDue": "Klaar — niets in de wacht.",
+  "dieBoxServiceOverdue": "Onderhoudsafspraak te laat",
+  "dieBoxServiceToday": "Onderhoudsafspraak vandaag",
+  "dieBoxServiceOnDate": "Afspraak op {date}",
+  "@dieBoxServiceOnDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "dieBoxServiceCta": "Openen",
   "dieBoxCscHint": "Koppel hier de fietssensor. Het horloge blijft bij jou als je rijdt.",
   "dieBoxPairCscTitle": "Tempo-sensor koppelen",
   "dieBoxPairCscHint": "STEPS onthoudt alleen de naam. Tempo komt van de sensor op het wiel.",
@@ -1849,9 +1968,9 @@
   "dieBoxPressureLogged": "Spanning vastgelegd",
   "dieBoxSagTitle": "Vering vastleggen",
   "dieBoxSagHint": "Procent op vork en demper. SAG is hoe ver de vering inzakt met jou erop.",
-  "dieBoxSagFork": "Vork-SAG %",
-  "dieBoxSagShock": "Demper-SAG %",
-  "dieBoxSagLogged": "SAG vastgelegd",
+  "dieBoxSagFork": "Vork %",
+  "dieBoxSagShock": "Demper %",
+  "dieBoxSagLogged": "Vering vastgelegd",
   "dieBoxTravelTitle": "Veerweg vastleggen",
   "dieBoxTravelHint": "Alleen de veerweg die op de fiets zit.",
   "dieBoxTravelFront": "Voor mm",
@@ -1905,9 +2024,9 @@
   "dieBoxChipBrakes": "Remmen",
   "dieBoxChipParkTrail": "Park | Trail",
   "dieBoxChipTravel": "Veerweg",
-  "dieBoxChipCsc": "CSC",
+  "dieBoxChipCsc": "Tempo",
   "dieBoxChipBatteryHonest": "Eerlijke accu",
-  "dieBoxChipSag": "SAG",
+  "dieBoxChipSag": "Vering",
   "dieBoxChipChain": "Ketting",
   "dieBoxChipPressure": "Spanning",
   "dieBoxChipCockpit": "Cockpit",
@@ -1959,8 +2078,8 @@
   "dieBoxBitChainNo": "Ketting nog niet gemeten",
   "dieBoxBitPressureToday": "Spanning vandaag nog open",
   "dieBoxSentencePark": "Park-setup",
-  "dieBoxSagLoggedShort": "SAG vastgelegd",
-  "dieBoxSagMissingShort": "SAG niet gemeten",
+  "dieBoxSagLoggedShort": "Vering vastgelegd",
+  "dieBoxSagMissingShort": "Vering niet gemeten",
   "dieBoxSentenceNoTravel": "{name} woont hier",
   "@dieBoxSentenceNoTravel": {
     "placeholders": {
@@ -2001,7 +2120,7 @@
   "garageDeleteBikeTitle": "Deze fiets verwijderen?",
   "garageDeleteBikeBody": "Componenten en setups van deze fiets gaan lokaal weg.",
   "garageRemovePartTitle": "Dit onderdeel verwijderen?",
-  "garageRemovePartBody": "{slot}: {name} wordt uit de garage gehaald.",
+  "garageRemovePartBody": "{slot}: {name} wordt van de fiets gehaald.",
   "@garageRemovePartBody": {
     "placeholders": {
       "slot": {
@@ -2279,7 +2398,7 @@
     }
   },
   "garageSagGuideHint": "Startpunt — meet op de fiets, daarna fijnstellen.",
-  "garageMeasureSag": "SAG meten",
+  "garageMeasureSag": "Vering vastleggen",
   "garageShowMeasureSteps": "Stappen tonen",
   "garageOdometer": "Kilometerteller",
   "garageOperatingHours": "Uren",
@@ -2386,6 +2505,21 @@
   "discoverLoopsNearby": "Lussen bij jou",
   "discoverNearbySection": "Dichtbij",
   "discoverNoLoop90": "Geen lus binnen 90 km — volgende regio’s",
+  "discoverAroundYouCta": "Hier rondom",
+  "discoverAroundYouAnother": "Andere lus",
+  "discoverAroundYouLoop": "Lus om je heen · OSM-wegen",
+  "discoverAroundYouHint": "Lus over OSM-wegen — geen Trailforks-trail",
+  "discoverAroundYouBusy": "Lus wordt gelegd…",
+  "discoverAroundYouFail": "Geen gesloten lus hier — wijzig plaats of duur.",
+  "discoverAroundYouSport": "Lusgenerator voor gravel, race, stad en e-trekking.",
+  "discoverAroundYouNeedGps": "Zet een locatie — dan een lus om je heen.",
+  "discoverAroundYouOffline": "Lusgenerator heeft netwerk nodig.",
+  "discoverAroundYouUncertain": "Lengte ongeveer — zo’n ±12 %",
+  "discoverAroundYouStats": "{km} km · {min} min",
+  "discoverAroundYouUncertainShort": "±12 %",
+  "discoverLoopReasonDuration": "Duur {got} min · doel {want} min",
+  "discoverLoopReasonSurface": "Vooral {surface}",
+  "discoverLoopReasonOsmTags": "Ondergrond volgens OSM-tags",
   "discoverRecommendedNoGps": "Aanbevolen tochten · ook zonder GPS",
   "discoverRecommended": "Aanbevolen ({count})",
   "@discoverRecommended": {
@@ -2417,7 +2551,7 @@
       }
     }
   },
-  "discoverTrailOffline": "Trailnetwerk offline",
+  "discoverTrailOffline": "Trailnet heeft net nodig.",
   "discoverOsmLivePath": "OSM-livepad",
   "discoverOsmTags": "Tags van OpenStreetMap",
   "discoverTapMapTrails": "Tik op de kaart om trails te kiezen.",
@@ -2428,7 +2562,7 @@
   "discoverApproachOnFoot": "Naar de ingang lopen",
   "discoverAtTrailStart": "Ik ben bij de start",
   "discoverApproachByBike": "Erheen rijden",
-  "discoverTrailUnsuitableForBike": "Niet met {bike} op deze trail. Wissel fietsen in de garage — geen stiekeme MTB-route.",
+  "discoverTrailUnsuitableForBike": "Niet met {bike} op deze trail. Wissel aan de stand — geen stiekeme MTB-route.",
   "@discoverTrailUnsuitableForBike": {
     "placeholders": {
       "bike": {
@@ -2471,7 +2605,7 @@
   "discoverHighwayCycle": "Fietspad",
   "discoverHighwayBridle": "Ruiterpad",
   "discoverHighwayFoot": "Voetpad",
-  "discoverSetStartEnd": "Zet start en einde — dan bereken je de route",
+  "discoverSetStartEnd": "Zet start en einde — de route volgt vanzelf",
   "discoverAdjustStops": "Pas start, einde of een stop aan",
   "discoverNoHitsFor": "Geen treffers voor “{query}”",
   "@discoverNoHitsFor": {
@@ -2482,6 +2616,9 @@
     }
   },
   "discoverGeocodeFailed": "Adreszoeken mislukt",
+  "discoverSearchNeedNet": "Zoeken heeft net nodig.",
+  "discoverViasNeedNet": "Tussenstops hebben net nodig.",
+  "discoverViasDropAndGo": "Verder zonder tussenstops",
   "discoverStartEndHit": "{kind}: {label}",
   "@discoverStartEndHit": {
     "placeholders": {
@@ -2493,11 +2630,11 @@
       }
     }
   },
-  "discoverIdeaStartSet": "Tochtidee: start = plaatspin, einde voorgesteld — bereken de route.",
+  "discoverIdeaStartSet": "Tochtidee: start = plaatspin, einde voorgesteld — de lijn volgt vanzelf.",
   "discoverSuggestEnd": "Voorgesteld einde (bewerkbaar)",
   "discoverTourInPlan": "Tocht in Navigeren — wijzig start, einde of stop",
   "discoverNeedLocationTours": "Zet locatie of start voor tochten",
-  "discoverOaOffline": "Tochten nu onbereikbaar",
+  "discoverOaOffline": "Live-tochten hebben net nodig.",
   "discoverOaNoLive": "Geen live-tochten in de buurt",
   "discoverOaCount": "{count, plural, =1{1 tocht in de buurt} other{{count} tochten in de buurt}}",
   "@discoverOaCount": {
@@ -2556,6 +2693,9 @@
   "discoverSavedRouteLoaded": "Opgeslagen route geladen",
   "discoverStartSetPickEnd": "Start gezet — kies nu het einde",
   "discoverEndSetComputing": "Einde gezet — route berekenen",
+  "discoverDestSetWaitingGps": "Einde gezet — start is je locatie",
+  "discoverBrowseNeedsNetwork": "Geen verbinding — de route heeft net nodig.",
+  "discoverLoadMapPack": "Kaartpack laden",
   "discoverFromHere": "Vanaf hier",
   "discoverNearbyPhotos": "Foto’s in de buurt",
   "discoverToMyTours": "Naar Mijn tochten",
@@ -2633,7 +2773,7 @@
   "discoverTourGone": "Tocht niet meer beschikbaar",
   "discoverTourGoneBody": "Deze tocht staat nu niet in de lijst — een filter kan hem verbergen.",
   "discoverTourTimeline": "Onderweg",
-  "discoverNoTrackYet": "Nog geen track — Route berekenen bouwt hem live.",
+  "discoverNoTrackYet": "Nog geen track — zet start en einde, dan bouwt de lijn live.",
   "discoverDuration": "Duur",
   "discoverLength": "Lengte",
   "discoverAscent": "Klim",
@@ -2672,8 +2812,8 @@
     }
   },
   "discoverPinIdea": "Tochtidee — alleen plaatspin op de kaart",
-  "discoverStartEndReady": "Start/einde gezet. Bereken de route of pas het einde aan.",
-  "discoverComputeAndSave": "Berekenen & opslaan",
+  "discoverStartEndReady": "Start/einde gezet. De route past zich aan — het einde blijft bewerkbaar.",
+  "discoverComputeAndSave": "Opslaan",
   "discoverChangePlaceSearch": "Plaats wijzigen — zoek een stad of adres",
   "discoverDemoRegion": "Demoregio: {name}",
   "@discoverDemoRegion": {
@@ -2703,7 +2843,7 @@
   "discoverMapillarySample": "Voorbeeld — Mapillary niet beschikbaar",
   "discoverNoTrackOnMap": "Geen track — laad hem eerst op de kaart of GPX.",
   "discoverNoClosedLoop": "Geen gesloten lustrack — kies de tocht opnieuw of Bewerken.",
-  "discoverNoLiveTrackPlan": "Geen live-track — Route berekenen opent Plan met een voorgesteld einde.",
+  "discoverNoLiveTrackPlan": "Geen live-track — Plan opent met een voorgesteld einde.",
   "discoverNotClosedLoopNav": "Geometrie is geen gesloten lus — navigatie geannuleerd.",
   "discoverNoRealPolyline": "Geen echte track — opnieuw berekenen of GPX.",
   "discoverPoiIdeaHint": "Aanrijden naar de plaatspin — geen tochttrack. Blijf het einde plannen of GPX.",
@@ -2732,7 +2872,7 @@
       }
     }
   },
-  "discoverNotLoopAb": "Geen lus — A→B-voorstel gezet. Route berekenen of tik op het einde.",
+  "discoverNotLoopAb": "Geen lus — A→B-voorstel gezet. Tik of pas het einde aan.",
   "discoverApproxAb": "Geschatte A→B · pas het einde op de kaart aan, bereken daarna opnieuw.",
   "discoverRoutingFailedRetry": "Routing mislukt — tik op het einde en probeer opnieuw.",
   "discoverUnplausibleDropped": "Onaannemelijk routingresultaat weggelaten",
@@ -2783,15 +2923,15 @@
   "discoverLocateLongPress": "Mijn locatie · lang indrukken: nav-symbool",
   "discoverNavHonestyBike": "Fietsprofielen: dezelfde route",
   "discoverNavHonestyFoot": "Nav: lopen",
-  "stimmenTitle": "Tips",
-  "stimmenHint": "Sterren, tekst en foto’s — cloud na delen. Geen verzonnen tips.",
+  "stimmenTitle": "Stimmen",
+  "stimmenHint": "Sterren, tekst en foto’s — cloud na delen. Geen verzonnen Stimmen.",
   "stimmenWrite": "Stimme schrijven",
   "stimmenHowWas": "Hoe was de tocht?",
   "stimmenEmptyName": "Leeg blijft jij",
   "stimmenAddPhoto": "Foto toevoegen",
   "stimmenSaving": "Opslaan …",
   "stimmenShareSubject": "Tocht delen",
-  "stimmenEmpty": "Nog geen tips.",
+  "stimmenEmpty": "Nog geen Stimmen.",
   "stimmenLabel": "Stimme",
   "stimmenCloudApproved": "Opgeslagen — zichtbaar (AI-delen)",
   "stimmenCloudRejected": "Lokaal opgeslagen — cloud wees de tekst af",
@@ -2869,6 +3009,8 @@
   "discoverLayerTours": "Tochten",
   "discoverLayerTrails": "Trails",
   "discoverLayerWays": "Fietspaden",
+  "discoverLayerFarmTracks": "Landwegen",
+  "discoverLayerFarmTracksHint": "Paden over akkers. Zet uit als ze op de route lijken.",
   "discoverLayerHeight": "Hoogte",
   "discoverLayerHeightHint": "Alleen reliëf — geen hoogtelijnen op deze kaart.",
   "browseMapLegendPaved": "Asfalt",
@@ -2883,15 +3025,27 @@
   "discoverLayerHeatOff": "Heat uit",
   "discoverMapContentsTitle": "Kaartinhoud",
   "discoverMapContentsLayers": "Op de kaart",
+  "discoverLayersNeedNet": "Trails, heat en plekken hebben net nodig.",
   "discoverMapContentsTools": "Meer",
   "discoverLayerHeatLocked": "Toestemming nodig",
   "discoverVariantPlanned": "Zoals gepland",
   "discoverVariantFlatter": "Minder klim",
   "discoverVariantUnpaved": "Meer onverhard",
-  "discoverVariantValhallaOnly": "Geen varianten zonder live-route",
+  "discoverVariantValhallaOnly": "Minder hm en meer grind alleen met live-route — dit is de geplande lijn.",
   "discoverGhMinuteLimit": "Suggesties en tijden zijn beperkt — wacht even of plan spaarzaam.",
   "discoverHonestyRoad": "Route volgt vooral wegen — tik een trail op de kaart en koppel hem.",
   "discoverHonestyCycleway": "Weinig eigen fietspad — de live-route blijft vaak op de weg.",
+  "discoverHonestyFarmTail": "Geen pad tot de pin — het doel ligt aan de straat.",
+  "discoverHonestyFarmMid": "Delen van de route volgen landwegen — zet het doel dichter bij een straat.",
+  "discoverLastDestChip": "Laatste doel: {name}",
+  "@discoverLastDestChip": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "discoverLastDestChipGeneric": "Laatste doel herhalen",
+  "discoverLastDestApplied": "Laatste doel overgenomen.",
+  "discoverLastDestUndo": "Ongedaan maken",
   "discoverTrailWet": "waarschijnlijk nat",
   "discoverTrailDamp": "misschien vochtig",
   "discoverTrailDry": "waarschijnlijk droog",
@@ -2901,13 +3055,27 @@
   "discoverOfflineAfterSave": "Routing voor deze route laden?",
   "discoverOfflineAfterSavePack": "{name} · routing laden?",
   "discoverOfflineAfterSavePackSized": "{name} · {size} voor routing laden?",
+  "discoverOfflineAfterSavePackEnvelope": "{name} · routing op het landvlak laden?",
+  "@discoverOfflineAfterSavePackEnvelope": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "discoverOfflineAfterSavePackEnvelopeSized": "{name} · {size} — landvlak laden?",
+  "@discoverOfflineAfterSavePackEnvelopeSized": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "discoverOfflineNoRoute": "Geen net: het pack moet start en doel dekken.",
   "discoverOfflineAfterSaveAction": "Routing laden",
   "discoverRoundTrip": "Heen en terug",
   "discoverOutboundOnly": "alleen heen",
   "discoverOsmNoHitsSuffix": " · geen paden in de buurt",
   "discoverLiveRoutingUnavailable": " · live-routing niet beschikbaar",
   "discoverUnplausibleLive": " · live-routing gaf niets aannemelijks",
-  "discoverTapEndCompute": "Tik een bestemming of adres — dan bereken je de route.",
+  "discoverTapEndCompute": "Tik een bestemming of typ een adres.",
   "discoverPlanYourself": "Plan de route zelf — zet start en einde",
   "discoverLoopBadge": "⟲ Lus",
   "discoverElevMin": "Min {min}",
@@ -3031,6 +3199,7 @@
   "rideWaitingSensors": "Wachten op sensoren…",
   "rideCalibrateLean": "Kalibreren",
   "rideCalibrateLeanHint": "Houd het stuur recht — zet de huidige helling op 0°.",
+  "rideCalibrateLeanHold": "Even stoppen om te kalibreren",
   "rideResetLeanCal": "Nulpunt terug",
   "rideLeanCalibrated": "genuld",
   "rideThereafter": "Volgende",
@@ -3074,6 +3243,8 @@
   "rideChipOfflineMapOk": "Offline · straatkaart · Reroute: net",
   "rideChipMapsMissing": "Kaarten ontbreken",
   "rideChipRoutingOffline": "Routing offline · kaart: net",
+  "rideChipRoutingOfflineShort": "Routing offline",
+  "rideHudStreetNeedsNet": "Straatkaart heeft net nodig",
   "rideCardinalN": "N",
   "rideCardinalNE": "NO",
   "rideCardinalE": "O",
@@ -3118,6 +3289,28 @@
     }
   },
   "maintNoInterval": "Geen interval",
+  "maintAnnual": "Jaarlijkse inspectie",
+  "maintAnnualEbike": "Jaarlijkse e-bike-inspectie",
+  "maintFirst": "Eerste inspectie",
+  "maintFirstEbike": "Eerste e-bike-inspectie",
+  "maintTires": "Banden controleren",
+  "maintBearings": "Lagers controleren (balhoofd/naven/trapas)",
+  "maintBleed": "Remmen: drukpunt / ontluchten",
+  "maintBattery": "Accucheck (contacten, capaciteit)",
+  "maintNeverLogged": "nog geen inspectie onthouden",
+  "maintDueNow": "verschuldigd",
+  "maintKmLeft": "{n} km",
+  "@maintKmLeft": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
+  "maintHoursLeft": "{n} h",
+  "@maintHoursLeft": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
   "compatTitleDrv011": "Cassette vraagt passende freehub-body",
   "compatTitleFrm004": "Achteras-afstand moet bij de naaf passen",
   "compatTitleSus007": "Dempermaat moet bij de framespec passen",
@@ -3472,10 +3665,10 @@
       }
     }
   },
-  "postRideSugReboundFastEffect": "Stabieler remmen, minder bottom-out-gevoel.",
+  "postRideSugReboundFastEffect": "Stabieler remmen, minder gevoel van doorslaan.",
   "postRideSugPressureTitle": "Voorluchtdruk checken",
   "postRideSugPressureContent": "Zeer hoge piek-g — houd druk en volume spacers tegen de fabrikantentabel.",
-  "postRideSugPressureEffect": "Minder bottom-out-risico, duidelijker feedback.",
+  "postRideSugPressureEffect": "Minder risico op doorslaan, duidelijker feedback.",
   "postRideSugLimitsClicks": "Fabrikantenbereik typisch 0–14 clicks vanaf dicht.",
   "postRideSugLimitsPressure": "Alleen binnen het goedgekeurde drukbereik van band/vork.",
   "postRideReasonHarshBumps": "Feedback “kleine klappen hard”",
@@ -3491,7 +3684,7 @@
       }
     }
   },
-  "postRideReasonRms": "RMS {rms} g",
+  "postRideReasonRms": "gemiddelde g {rms}",
   "@postRideReasonRms": {
     "placeholders": {
       "rms": {
@@ -3578,7 +3771,7 @@
       }
     }
   },
-  "postRideFactMetricsLean": "Flow {flow} · Piek {g} g · {impacts} klappen · Lean {lean}°",
+  "postRideFactMetricsLean": "Flow {flow} · Piek {g} g · {impacts} klappen · Helling {lean}°",
   "@postRideFactMetricsLean": {
     "placeholders": {
       "flow": {
@@ -3603,7 +3796,7 @@
       }
     }
   },
-  "postRideFactSoc": "SOC {soc}%",
+  "postRideFactSoc": "Accu {soc}%",
   "@postRideFactSoc": {
     "placeholders": {
       "soc": {
@@ -3611,8 +3804,30 @@
       }
     }
   },
-  "rideGPeak": "G-piek",
-  "rideLean": "Lean",
+  "postRideFactSetup": "Setup “{label}” ({conditions})",
+  "@postRideFactSetup": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "conditions": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFactMotor": "Gem. accu {soc}% · rider {power} W",
+  "@postRideFactMotor": {
+    "placeholders": {
+      "soc": {
+        "type": "String"
+      },
+      "power": {
+        "type": "String"
+      }
+    }
+  },
+  "rideGPeak": "g-piek",
+  "rideLean": "Helling",
   "rideFlow": "Flow",
   "garageSetNamed": "{name} zetten",
   "@garageSetNamed": {
@@ -3632,7 +3847,7 @@
   "garageBleHintNoSocDrive": "Geen live-accu bij deze aandrijving. Tempo via de wielsensor.",
   "bleTipBosch": "Display aan · in de Bosch-app onder Components toevoegen",
   "bleTipShimano": "E-TUBE sluiten · tik binnen 15 s na power/knop",
-  "bleTipYamaha": "e-Sync sluiten · snelheid via CSC-sensor",
+  "bleTipYamaha": "e-Sync sluiten · snelheid via de sensor op de fiets",
   "bleTipOtherDrive": "Maker-app sluiten · display aan, dichtbij houden",
   "bleTipCsc": "Sensor op de fiets wekken, dichtbij houden",
   "bleTipPower": "Powermeter aanzetten, dichtbij houden",
@@ -3642,8 +3857,8 @@
   "bleNoteSensorLine": "Magneet of crank, dicht bij de sensor — niet het horloge.",
   "bleNoteBoschLine": "Display aan. In de Bosch-app: Settings → Components. Daarna bevestigen op het display.",
   "bleNoteShimanoLine": "E-TUBE sluiten. Na power of knop vaak maar 15 s — dan tikken.",
-  "bleNoteYamahaLine": "e-Sync of de TQ-app sluiten. Livesnelheid meestal alleen via CSC.",
-  "bleNoteFazuaLine": "Remote aan — CSC en vermogen als een normale sensor.",
+  "bleNoteYamahaLine": "e-Sync of de TQ-app sluiten. Livesnelheid meestal alleen via de sensor op de fiets.",
+  "bleNoteFazuaLine": "Remote aan — snelheid en vermogen als een normale sensor.",
   "bleNoteOtherBrand": "Overig",
   "bleNoteOtherLine": "RideControl / Mission Control sluiten. Eén telefoon, display aan.",
   "bleGattWatchRejected": "Verbinding geweigerd — sluit de andere fitness-app, houd het horloge dichtbij.",
@@ -3654,26 +3869,26 @@
   "bleGattRejectedGeneric": "Verbinding geweigerd — sluit Bosch Flow / Shimano E-TUBE, display aan, dichtbij houden.",
   "bleLdiPairCta": "Bosch-display koppelen",
   "bleLdiPairHint": "Fiets aan, open Flow → Settings → Components → Add device. Bevestig op het display. Besturingsfirmware 19+.",
-  "bleLdiTimeout": "Geen LDI-link. Firmware ≥19? Voeg FlowLine opnieuw toe onder Components in Flow.",
+  "bleLdiTimeout": "Geen link. Zet het display aan en voeg FlowLine opnieuw toe in Flow.",
   "bleLdiWaitingFlow": "Wachten op de fiets — voeg “FlowLine” toe in Flow.",
-  "bleLdiNeedAndroid12": "Bosch LDI vraagt Android 12 of nieuwer.",
-  "bleLdiIosPending": "Bosch LDI is op dit apparaat nog niet gekoppeld.",
-  "bleGattTimeoutBosch": "Timeout — wek het display. SoC via LDI in Flow, snelheid via CSC.",
+  "bleLdiNeedAndroid12": "De Intuvia-verbinding vraagt Android 12 of nieuwer.",
+  "bleLdiIosPending": "De Intuvia-verbinding is op dit apparaat nog niet gekoppeld.",
+  "bleGattTimeoutBosch": "Timeout — wek het display. Accu van het display, snelheid van de sensor op de fiets.",
   "bleGattTimeoutShimano": "Timeout — sluit E-TUBE, tik binnen 15 s na power/knop.",
-  "bleGattTimeoutDrive": "Timeout — sluit de maker-app, display aan. Snelheid via CSC-sensor.",
+  "bleGattTimeoutDrive": "Timeout — sluit de maker-app, display aan. Snelheid via de sensor op de fiets.",
   "bleGattTimeoutSensor": "Timeout — wek de sensor, kom dichterbij.",
-  "bleDriveFailBosch": "Bosch zonder live-SoC. Voeg in Flow FlowLine toe onder Components, of koppel een wielsensor (CSC).",
-  "bleDriveFailShimano": "Shimano gevonden, geen live-motorwaarden. Koppel daarna een wielsensor (CSC).",
-  "bleDriveFailYamaha": "Yamaha gevonden, geen live-motorwaarden. Koppel snelheid via een CSC-sensor.",
-  "bleDriveFailGeneric": "Aandrijving gevonden, geen live-motorwaarden. Koppel daarna een wielsensor (CSC).",
+  "bleDriveFailBosch": "Intuvia gevonden, nog geen live-waarden. Voeg in Flow FlowLine toe onder Components.",
+  "bleDriveFailShimano": "Shimano gevonden, geen live-motorwaarden. Koppel daarna een temposensor.",
+  "bleDriveFailYamaha": "Yamaha gevonden, geen live-motorwaarden. Koppel snelheid via de sensor op de fiets.",
+  "bleDriveFailGeneric": "Aandrijving gevonden, geen live-motorwaarden. Koppel daarna een temposensor.",
   "bleStatusBtOff": "Bluetooth uit",
   "bleStatusScanFailed": "Wielsensorscan mislukt",
   "bleStatusNoSensor": "Geen wielsensor gevonden",
   "bleStatusNoneInRange": "Geen fiets, aandrijving of sensor in bereik",
-  "bleStatusDriveSeen": "Aandrijving gezien — koppelen in de werkplaats (Bosch/Shimano)",
+  "bleStatusDriveSeen": "Aandrijving gezien — koppelen aan de fiets (Bosch/Shimano)",
   "bleStatusNoCscInRange": "Geen wielsensor in bereik",
   "bleStatusSensorDisconnected": "Wielsensor verbroken",
-  "bleStatusReconnectLost": "Verbinding verloren — check het display, sluit Flow/E-TUBE, koppel opnieuw in de werkplaats.",
+  "bleStatusReconnectLost": "Verbinding verloren — check het display, sluit Flow/E-TUBE, koppel opnieuw aan de fiets.",
   "bleStatusRetry": "Verbinden … poging {n}/{max}",
   "@bleStatusRetry": {
     "placeholders": {
@@ -3707,7 +3922,7 @@
       }
     }
   },
-  "bleStatusDriveNoLive": "{who} · gevonden — snelheid via CSC, accu alleen met standaard GATT",
+  "bleStatusDriveNoLive": "{who} · gevonden — snelheid via de sensor op de fiets",
   "@bleStatusDriveNoLive": {
     "placeholders": {
       "who": {
@@ -3717,7 +3932,7 @@
   },
   "bleStatusNeedBond": "Display vraagt Bluetooth-koppeling voor de accu.",
   "bleStatusBonding": "Systeemkoppeling …",
-  "bleStatusDriveNeedBond": "{who} · gevonden — accu na Bluetooth-koppeling in de werkplaats",
+  "bleStatusDriveNeedBond": "{who} · gevonden — accu na Bluetooth-koppeling aan de fiets",
   "@bleStatusDriveNeedBond": {
     "placeholders": {
       "who": {
@@ -3820,6 +4035,38 @@
   "bleSemanticsLive": "Bluetooth live",
   "bleTooltipSaved": "Gekoppeld, niet verbonden",
   "bleLinkEmpty": "Intuvia of tempo-sensor koppelen",
+  "bleRemoveDriveNamed": "Intuvia verwijderen ({name})",
+  "@bleRemoveDriveNamed": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "bleRemoveWheelNamed": "Snelheidssensor verwijderen ({name})",
+  "@bleRemoveWheelNamed": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "bleLinkLiveNamed": "{name} · live",
+  "@bleLinkLiveNamed": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "bleLinkSavedNamed": "{name} · opgeslagen, niet live",
+  "@bleLinkSavedNamed": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "bleLdiWizardTitle": "Bosch Intuvia",
+  "bleLdiWizardLead": "Drie stappen. FlowLine wordt zichtbaar voor het display.",
+  "bleLdiStep1": "Zet Intuvia 100 aan, telefoon dichtbij",
+  "bleLdiStep2": "Bosch Flow: Instellingen → Componenten → FlowLine",
+  "bleLdiStep3": "Bevestig op het display",
+  "bleLdiWizardWaitingHint": "Tik nu op „FlowLine” in Flow. Het display vraagt.",
+  "bleLdiWizardRetry": "Opnieuw",
+  "rideLdiWaiting": "Wachten op Intuvia — voeg FlowLine toe in Flow",
   "watchOtherWatch": "Ander horloge",
   "bikeCatMtbTrail": "MTB trail",
   "bikeCatMtb": "MTB",
@@ -4046,7 +4293,7 @@
       }
     }
   },
-  "offlineInvalidGraphFolder": "Map {id} heeft geen geldige graaf voor deze regio",
+  "offlineInvalidGraphFolder": "Map {id} heeft geen geldige graaf voor dit pack",
   "@offlineInvalidGraphFolder": {
     "placeholders": {
       "id": {
@@ -4068,13 +4315,22 @@
   "offlineInvalidUrl": "Ongeldige URL",
   "offlineExpectStyleJson": "Verwacht een stijl-JSON-URL (*.json of /styles/…), geen tegelbestand.",
   "offlineSubActive": "Actief",
-  "offlineSubInstalled": "Geïnstalleerd — tik om te activeren",
+  "offlineSubInstalled": "Geïnstalleerd",
   "offlineSubDemoGraph": "Demograaf in de app (geen remote pack)",
   "offlineSubNotBuilt": "Nog niet gebouwd",
   "offlineSubLoad": "Routing laden",
   "offlineSubLoadSized": "{size} · routing",
-  "offlineSubValhalla": "Routing (Valhalla)",
-  "offlineSubValhallaSized": "{size} · routing (Valhalla)",
+  "offlineSubEnvelope": "Routing · landvlak",
+  "offlineSubEnvelopeSized": "{size} · routing · landvlak",
+  "@offlineSubEnvelopeSized": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineSubValhalla": "Routing",
+  "offlineSubValhallaSized": "{size} · routing",
   "@offlineSubLoadSized": {
     "placeholders": {
       "size": {
@@ -4496,7 +4752,19 @@
   "mappeEmptyTitle": "Nog geen lijn",
   "noTrackLabel": "Geen track",
   "loopTag": "Ronde",
-  "mappeStimmenEmpty": "Nog geen tips bij jouw tochten. Na delen kunnen anderen schrijven.",
+  "mappeShowAll": "Alles tonen",
+  "mappeKeepOnMap": "Op de kaart bewaren",
+  "mappeKeepName": "Alleen de naam bewaren",
+  "mappeLastRidden": "laatst {when}",
+  "@mappeLastRidden": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "mappeRename": "Hernoemen",
+  "akteMein": "Akte",
+  "stimmeInboxUntitled": "Stem",
+  "mappeStimmenEmpty": "Nog geen Stimmen bij jouw tochten. Na delen kunnen anderen schrijven.",
   "myRoutesSourceOwn": "Eigen",
   "privacyZoneTitle": "Privacyzone",
   "privacyZoneEdit": "Zone bewerken",
@@ -4510,7 +4778,7 @@
   "hofSupabaseMissingHint": "Cloudsync is niet ingesteld — inloggen en sync staan uit.",
   "hofSyncSessionExpired": "Sync: sessie verlopen",
   "hofSyncLoginOnly": "Sync alleen met login",
-  "hofSyncLocalHint": "Garage/ritten blijven lokaal — account voor cloudsync.",
+  "hofSyncLocalHint": "Fiets en ritten blijven lokaal — account voor cloudsync.",
   "hofSystemNotice": "Systeemstatus — melding aanwezig",
   "hofSystemHint": "Systeemstatus — melding",
   "hofSystemOkTooltip": "Systeemstatus: oké",
@@ -4587,6 +4855,10 @@
   },
   "garageStatService": "Beurt",
   "garageStatDash": "—",
+  "garageStatCare": "Zorg",
+  "garageStatDueNow": "Nu",
+  "garageStandTitle": "Kilometers en uren",
+  "garageStandHint": "Stand van computer of teller. Uren rekenen we niet uit km.",
   "garagePartsEmptyTitle": "Nog geen onderdelen",
   "garagePartsEmptyHint": "Voeg er een toe — dan herinneren we je aan onderhoud.",
   "garageMissingInvite": "Nog open",
@@ -4683,7 +4955,8 @@
   "garageWorkshopAddress": "Adres",
   "garageWorkshopPhone": "Telefoon",
   "garageMaintEmptyLowKm": "Nog weinig km — drempels komen met de teller. Geen inspectie onthouden.",
-  "garageSagWeightHint": "SAG-doel in % blijft. De luchtdrukrichtlijn volgt je gewicht ({kg} kg){fork}.",
+  "garageMaintEmptyNoInspection": "Geen inspectie onthouden — niet alles groen. Zet een datum of check.",
+  "garageSagWeightHint": "Inzink-doel in % blijft. De luchtdrukrichtlijn volgt je gewicht ({kg} kg){fork}.",
   "@garageSagWeightHint": {
     "placeholders": {
       "kg": { "type": "String" },
@@ -4697,11 +4970,44 @@
     }
   },
   "garagePressureChange": "Spanning onthouden / wijzigen",
+  "garageUnitBar": "bar",
+  "garageUnitPsi": "psi",
+  "garageSagPartFork": "vork",
+  "garageSagPartShock": "demper",
+  "garageSagStepExtend": "{part} volledig uitveren, O-ring tegen de seal schuiven.",
+  "@garageSagStepExtend": {
+    "placeholders": {
+      "part": { "type": "String" }
+    }
+  },
+  "garageSagStepBounce": "Opstappen rijklaar, 3× licht inveren.",
+  "garageSagStepDismount": "Voorzichtig afstappen zonder de O-ring te verschuiven.",
+  "garageSagStepRatio": "Negatieve veerweg meten ÷ totale veerweg → SAG %.",
+  "garageSagStepAir": "Lucht bijpompen of laten ontsnappen tot het doel.",
   "garageAddPhotoHint": "Grok vult lege specs alleen bij een catalogustreffer. Onderdelen alleen na een vinkje — ook zonder catalogus-ID.",
   "garageAddPhotoPartsPending": "{count} onderdelen na het aanmaken invoeren.",
   "@garageAddPhotoPartsPending": {
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "garagePhotoKept": "Foto bewaard",
+  "garagePhotoRetake": "Opnieuw maken",
+  "garagePhotoRetakeHint": "Cover blijft. Maak opnieuw, dan staat de fiets op de stand.",
+  "identifyReasonNoKey": "Geen Vision-sleutel. Foto bewaren, merk en model typen.",
+  "identifyReasonQuota": "Scanquota leeg. Merk en model typen.",
+  "identifyReasonFailed": "Foto niet gelezen. Merk en model typen.",
+  "identifyReasonUnreadable": "Fiets niet herkend. Andere foto of typen.",
+  "identifyReasonNoCatalog": "Geen catalogustreffer. Gelezen tekst checken of typen.",
+  "identifyReasonFallback": "Geen catalogustreffer. Merk en model typen.",
+  "receiptScanOk": "Scan heeft velden ingevuld — even controleren.",
+  "receiptScanNoKey": "Geen Vision-sleutel op de server. Foto bewaren, tekst later.",
+  "receiptScanQuota": "Scanquota leeg. Foto bewaren, tekst later.",
+  "receiptScanFailed": "Scan niet bereikbaar. Foto bewaren, tekst later.",
+  "receiptScanUnreadable": "Bon niet herkend. Velden zelf invullen.",
+  "receiptScanNone": "Foto bewaren. Tekst later aanvullen.",
+  "garageReceiptKindWorkshop": "Werkplaats",
+  "garageReceiptKindParts": "Onderdeel",
+  "garageReceiptKindWarranty": "Garantie",
+  "garageReceiptKindOther": "Bon"
 }

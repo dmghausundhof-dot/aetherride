@@ -7,6 +7,8 @@ void main() {
   test('bikeCategoryFromName resolves known enums', () {
     expect(bikeCategoryFromName('emtb'), BikeCategory.emtb);
     expect(bikeCategoryFromName('mtbAm'), BikeCategory.mtbAm);
+    expect(bikeCategoryFromName('mtb_am'), BikeCategory.mtbAm);
+    expect(bikeCategoryFromName('mtb_trail'), BikeCategory.mtbTrail);
     expect(bikeCategoryFromName('nope'), isNull);
     expect(bikeCategoryFromName(null), isNull);
   });

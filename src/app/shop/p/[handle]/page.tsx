@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { ShopImageFallback } from "@/components/shop/ShopImageFallback";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
 import type { PartsProduct } from "@/lib/shop/partsCatalog";
@@ -164,9 +165,7 @@ function ProductPageInner() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-text-secondary">
-              {copy.shopNoImage}
-            </div>
+            <ShopImageFallback label={copy.shopNoImage} />
           )}
         </div>
         <div className="space-y-3 p-5">

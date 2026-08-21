@@ -8,6 +8,7 @@ import type { RankedPartsProduct } from "@/lib/shop/partsCatalog";
 import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { ShopImageFallback } from "@/components/shop/ShopImageFallback";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { formatShopPrice } from "@/lib/shop/shopifyLocale";
@@ -55,9 +56,7 @@ export function PartsProductCard({
             onError={() => setImgBroken(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-text-secondary">
-            {copy.shopNoImage}
-          </div>
+          <ShopImageFallback label={copy.shopNoImage} />
         )}
         {!hideFit ? (
         <span

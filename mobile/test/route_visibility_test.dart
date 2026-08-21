@@ -37,7 +37,16 @@ void main() {
     expect(shared.isEmpty, isFalse);
     expect(shared.toJson()['visibility'], 'shared');
     expect(RouteVisibility.isShared(shared), isTrue);
-    expect(RouteVisibility.visibleInPublicExplore(shared), isTrue);
+    expect(RouteVisibility.visibleInPublicExplore(shared), isFalse);
+    expect(
+      RouteVisibility.visibleInPublicExplore(
+        const SavedRouteMeta(
+          visibility: RouteVisibility.shared,
+          listing: 'listed',
+        ),
+      ),
+      isTrue,
+    );
     expect(RouteVisibility.mayContributeSavedGeometry(shared), isTrue);
     expect(
       RouteVisibility.mayContributeSavedGeometry(SavedRouteMeta.empty),
@@ -133,6 +142,7 @@ void main() {
     );
     expect(text, contains('Server'));
     expect(text, contains('eingeloggt'));
+    expect(text, contains('3 Stimmen'));
   });
 
   test('catalog honesty avoids öffentlich and Akte', () {

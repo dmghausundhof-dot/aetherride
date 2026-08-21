@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  buildChatRecommendation,
   detectTool,
   formulateDeterministic,
   numericGuard,
   type ChatToolName,
+  resolveChatRecommendation,
 } from "@/lib/ai/chat";
 import {
   dayResetAt,
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
     const tool =
       toolHint && toolHint !== "auto" ? toolHint : detectTool(query);
-    const set = buildChatRecommendation(tool, query, {
+    const ctx = {
       bike,
       bikes,
       rides,
@@ -126,7 +126,21 @@ export async function POST(req: Request) {
       intervals,
       rideFeedbacks,
       notices,
-    });
+      lang,
+      lat: Number.isFinite(Number(body.lat)) ? Number(body.lat) : null,
+      lon: Number.isFinite(
+        Number(body.lon ?? body.lng)
+      )
+        ? Number(body.lon ?? body.lng)
+        : null,
+      routingProfile:
+        typeof body.routingProfile === "string"
+          ? body.routingProfile
+          : typeof body.routing_profile === "string"
+            ? body.routing_profile
+            : undefined,
+    };
+    const set = await resolveChatRecommendation(tool, query, ctx);
 
     // Anonymous: never call Grok; IP soft-cap on deterministic fallback
     if (tier === "anonymous" || limits.maxTokensOut === 0) {

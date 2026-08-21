@@ -170,6 +170,6 @@ export function mapGarageBikeToShopify(
     wheelSizes,
     isEbike,
     drivetrain,
-    descriptionHtml: `<p>Garage-Fit-Profil für die Werkstatt — kein Verkaufsartikel, keine OEM-Teilenummer.</p><p>${facts.join(" · ") || "Felder folgen, sobald sie am Rad stehen."}</p>`,
+    descriptionHtml: `<p>Garage-Fit-Profil für das Rad — kein Verkaufsartikel, keine OEM-Teilenummer.</p><p>${facts.join(" · ") || "Felder folgen, sobald sie am Rad stehen."}</p>`,
   };
 }

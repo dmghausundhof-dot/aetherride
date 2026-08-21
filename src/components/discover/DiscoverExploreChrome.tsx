@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Bike, Locate, Search, SlidersHorizontal } from "lucide-react";
+import { Download, History, Locate, Search, SlidersHorizontal } from "lucide-react";
+import { RadNavMark } from "@/components/garage/RadNavMark";
 import {
   DistanceMaxChips,
   FilterChips,
@@ -29,10 +30,16 @@ type ExploreSheet = "around" | "filter";
  * Navi-Profilchip (≥2), Umkreis, Filter mit Badge. Distanz und Filter
  * sind zwei Flächen. Disziplin liegt im Filter-Sheet.
  */
+type PlaceHit = { label: string; lat: number; lng: number };
+
 export function DiscoverExploreChrome({
   searchQuery,
   onSearchQuery,
-  onPlanRoute,
+  onSearchSubmit,
+  placeHits,
+  recents,
+  onPlaceHit,
+  browsePlace,
   aroundKm,
   filterCount,
   profileMenu,
@@ -44,9 +51,16 @@ export function DiscoverExploreChrome({
   onFilters,
   routingProfile,
   resultCount,
+  onOfflineMaps,
+  onPlanRoute,
 }: {
   searchQuery: string;
   onSearchQuery: (q: string) => void;
+  onSearchSubmit?: () => void;
+  placeHits?: PlaceHit[];
+  recents?: PlaceHit[];
+  onPlaceHit?: (hit: PlaceHit) => void;
+  browsePlace?: { label: string } | null;
   onPlanRoute: () => void;
   aroundKm: number;
   filterCount: number;
@@ -59,17 +73,19 @@ export function DiscoverExploreChrome({
   onFilters: (next: RouteFilterState) => void;
   routingProfile: RoutingProfile;
   resultCount: number;
+  onOfflineMaps?: () => void;
 }) {
   const lang = useChromeLang();
   const d = discoverCopy(lang);
-  const closeLabel = discoverUi(lang).close;
+  const ui = discoverUi(lang);
+  const closeLabel = ui.close;
   const aroundTitleId = useId();
   const filterTitleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [sheet, setSheet] = useState<ExploreSheet | null>(null);
   const profileVisible = discoverNavProfileChipVisible(profileMenu);
   const filterActive = filterCount > 0;
-  const aroundActive = aroundFilterActive(filters.maxDistanceKm);
+  const aroundActive = aroundFilterActive(filters.maxAwayKm ?? null);
   const profileOptions = profileMenu.includes(activeProfile)
     ? profileMenu
     : [activeProfile, ...profileMenu];
@@ -89,6 +105,13 @@ export function DiscoverExploreChrome({
     };
   }, [sheet]);
 
+  const showPlaceHits = Boolean(placeHits?.length && onPlaceHit);
+  const showRecents =
+    !showPlaceHits &&
+    searchQuery.trim().length < 2 &&
+    Boolean(recents?.length && onPlaceHit);
+  const chipHits = showPlaceHits ? placeHits! : showRecents ? recents! : [];
+
   return (
     <div data-testid="discover-explore-chrome" className="space-y-2">
       <div className="rounded-xl border border-border bg-surface-elevated/80 p-2">
@@ -100,6 +123,11 @@ export function DiscoverExploreChrome({
               type="search"
               value={searchQuery}
               onChange={(e) => onSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                onSearchSubmit?.();
+              }}
               placeholder={d.searchHint}
               className="w-full rounded-full border-0 bg-background py-2 pl-8 pr-3 text-[13px] outline-none ring-1 ring-border focus:ring-chrome"
             />
@@ -116,13 +144,50 @@ export function DiscoverExploreChrome({
             {d.planRouteCta}
           </button>
         </div>
+        {chipHits.length > 0 ? (
+          <div className="mt-2 space-y-1">
+            {showRecents ? (
+              <p className="px-0.5 text-[11px] font-semibold text-text-secondary">
+                {ui.recently}
+              </p>
+            ) : null}
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            {chipHits.map((hit) => (
+              <button
+                key={`${hit.label}-${hit.lat}`}
+                type="button"
+                data-testid="discover-explore-place-chip"
+                onClick={() => onPlaceHit?.(hit)}
+                className="inline-flex max-w-[14rem] shrink-0 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12px] font-semibold"
+              >
+                {showRecents ? (
+                  <History className="h-3 w-3 shrink-0 text-text-secondary" />
+                ) : (
+                  <Search className="h-3 w-3 shrink-0 text-text-secondary" />
+                )}
+                <span className="truncate">{hit.label}</span>
+              </button>
+            ))}
+            </div>
+          </div>
+        ) : null}
+        {browsePlace ? (
+          <div className="mt-2">
+            <div
+              data-testid="discover-back-to-gps"
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[12px] font-semibold text-text-secondary"
+            >
+              <span className="truncate">{browsePlace.label}</span>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {profileVisible ? (
             <label
               data-testid="discover-nav-profile-chip"
               className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-background px-2 py-1 text-[12.5px] font-semibold"
             >
-              <Bike className="h-3.5 w-3.5 shrink-0 text-text-secondary" />
+              <RadNavMark className="h-3.5 w-3.5 shrink-0 text-text-secondary" />
               <select
                 value={activeProfile}
                 onChange={(e) => onProfile(e.target.value as RoutingProfile)}
@@ -165,6 +230,17 @@ export function DiscoverExploreChrome({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             {filterActive ? `${d.filter} ${filterCount}` : d.filter}
           </button>
+          {onOfflineMaps ? (
+            <button
+              type="button"
+              data-testid="discover-offline-chip"
+              onClick={onOfflineMaps}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px] font-semibold text-text-secondary"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {ui.offlineMapsChip}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -172,7 +248,7 @@ export function DiscoverExploreChrome({
         <ExploreSheetFrame
           testId="discover-around-sheet"
           titleId={aroundTitleId}
-          title={d.distance}
+          title={d.around}
           closeLabel={closeLabel}
           closeRef={closeRef}
           compact
@@ -198,8 +274,8 @@ export function DiscoverExploreChrome({
           }
         >
           <DistanceMaxChips
-            maxDistanceKm={filters.maxDistanceKm}
-            onChange={(km) => onFilters({ ...filters, maxDistanceKm: km })}
+            maxDistanceKm={filters.maxAwayKm ?? null}
+            onChange={(km) => onFilters({ ...filters, maxAwayKm: km })}
           />
         </ExploreSheetFrame>
       ) : null}
@@ -244,7 +320,8 @@ export function DiscoverExploreChrome({
             onChange={onFilters}
             profile={routingProfile}
             showReset={false}
-            showDistance={false}
+            showDistance
+            showVisibility={false}
           />
         </ExploreSheetFrame>
       ) : null}
