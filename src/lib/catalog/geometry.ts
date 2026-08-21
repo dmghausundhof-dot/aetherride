@@ -49,8 +49,19 @@ const CANYON_STRIVE =
   "https://www.canyon.com/en-de/productpdf/geometry/?pid=3416";
 const CANYON_GRAIL =
   "https://www.canyon.com/en-us/productpdf/geometry/?pid=3577";
+const CANYON_ULTIMATE =
+  "https://www.canyon.com/en-us/productpdf/geometry/?pid=3075";
+const CANYON_GRIZL =
+  "https://www.canyon.com/en-au/productpdf/geometry/?pid=3785";
 const CANYON_SPECTRAL =
   "https://www.canyon.com/en-gb/mountain-bikes/trail-bikes/spectral/cf/spectral-cf-8/4023.html";
+const YT_JEFFSY = "https://www.yt-industries.com/";
+const SPEC_STUMPJUMPER =
+  "https://www.specialized.com/us/en/stumpjumper-comp-sram-gx-eagle-fox-rhythm/p/200519";
+const TREK_FUEL_EX =
+  "https://www.trekbikes.com/us/en_US/bikes/mountain-bikes/trail-mountain-bikes/all-mountain-bikes/fuel/fuel-ex/fuel-ex-8-gen-6/p/36348/";
+const CUBE_ONE44 =
+  "https://www.cube.eu/de-en/cube-stereo-one44-c-62-race-29-blackline/836200";
 const SIMPLON_RAPCON =
   "https://www.simplon.com/en/Bikes/Mountain-Bikes/Rapcon_b_292368";
 const SIMPLON_RAPCON_E =
@@ -848,6 +859,192 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 75.5,
       chainstayMm: 442,
       wheelbaseMm: 1284,
+    }),
+  ],
+  // YT Jeffsy MK3 low flip-chip (Enduro MTB / BikeRadar Core 3 table).
+  "cat-yt-jeffsy-2024": [
+    g("S", 435, 613, YT_JEFFSY, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 437,
+      wheelbaseMm: 1191,
+    }),
+    g("M", 455, 620, YT_JEFFSY, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 437,
+      wheelbaseMm: 1214,
+    }),
+    g("L", 475, 627, YT_JEFFSY, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 437,
+      wheelbaseMm: 1238,
+    }),
+    g("XL", 495, 634, YT_JEFFSY, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 442,
+      wheelbaseMm: 1266,
+    }),
+  ],
+  // Canyon Ultimate CF SL geometry PDF (pid=3075).
+  "cat-canyon-ultimate-2024": [
+    g("XS", 378, 522, CANYON_ULTIMATE, {
+      headAngleDeg: 71,
+      seatAngleEffectiveDeg: 73.8,
+      chainstayMm: 415,
+      wheelbaseMm: 988,
+    }),
+    g("S", 385, 546, CANYON_ULTIMATE, {
+      headAngleDeg: 72.25,
+      seatAngleEffectiveDeg: 73.8,
+      chainstayMm: 415,
+      wheelbaseMm: 993,
+    }),
+    g("M", 391, 567, CANYON_ULTIMATE, {
+      headAngleDeg: 73.25,
+      seatAngleEffectiveDeg: 73.8,
+      chainstayMm: 415,
+      wheelbaseMm: 996,
+    }),
+    g("L", 399, 592, CANYON_ULTIMATE, {
+      headAngleDeg: 73.25,
+      seatAngleEffectiveDeg: 73.8,
+      chainstayMm: 415,
+      wheelbaseMm: 1011,
+    }),
+    g("XL", 418, 613, CANYON_ULTIMATE, {
+      headAngleDeg: 73.5,
+      seatAngleEffectiveDeg: 73.8,
+      chainstayMm: 415,
+      wheelbaseMm: 1034,
+    }),
+  ],
+  // Canyon Grizl CF SL published size chart (XS–XL).
+  "cat-canyon-grizl-2024": [
+    g("XS", 382, 537, CANYON_GRIZL, {
+      headAngleDeg: 71,
+      seatAngleEffectiveDeg: 73.5,
+      chainstayMm: 420,
+      wheelbaseMm: 1007,
+    }),
+    g("S", 397, 556, CANYON_GRIZL, {
+      headAngleDeg: 71,
+      seatAngleEffectiveDeg: 73.5,
+      chainstayMm: 435,
+      wheelbaseMm: 1036,
+    }),
+    g("M", 402, 579, CANYON_GRIZL, {
+      headAngleDeg: 72.25,
+      seatAngleEffectiveDeg: 73.5,
+      chainstayMm: 435,
+      wheelbaseMm: 1037,
+    }),
+    g("L", 409, 605, CANYON_GRIZL, {
+      headAngleDeg: 72.5,
+      seatAngleEffectiveDeg: 73.5,
+      chainstayMm: 435,
+      wheelbaseMm: 1050,
+    }),
+    g("XL", 427, 626, CANYON_GRIZL, {
+      headAngleDeg: 72.75,
+      seatAngleEffectiveDeg: 73.5,
+      chainstayMm: 435,
+      wheelbaseMm: 1072,
+    }),
+  ],
+  // Specialized Stumpjumper Comp low BB (OEM geometry table).
+  "cat-specialized-stumpjumper-2024": [
+    g("S2", 430, 613, SPEC_STUMPJUMPER, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 432,
+      wheelbaseMm: 1175,
+    }),
+    g("S3", 450, 622, SPEC_STUMPJUMPER, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 432,
+      wheelbaseMm: 1200,
+    }),
+    g("S4", 475, 632, SPEC_STUMPJUMPER, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 432,
+      wheelbaseMm: 1228,
+    }),
+    g("S5", 500, 641, SPEC_STUMPJUMPER, {
+      setting: "low",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1268,
+    }),
+  ],
+  // Trek Fuel EX 8 Gen 6 — 29" sizes (MinoLink low / published chart).
+  "cat-trek-fuel-ex-2024": [
+    g("S", 425, 612, TREK_FUEL_EX, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 78.6,
+      chainstayMm: 435,
+      wheelbaseMm: 1186,
+    }),
+    g("M", 450, 617, TREK_FUEL_EX, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 78.2,
+      chainstayMm: 435,
+      wheelbaseMm: 1213,
+    }),
+    g("L", 485, 621, TREK_FUEL_EX, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 440,
+      wheelbaseMm: 1250,
+    }),
+    g("XL", 515, 635, TREK_FUEL_EX, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.6,
+      chainstayMm: 445,
+      wheelbaseMm: 1287,
+    }),
+  ],
+  // Cube Stereo ONE44 C:62 slack setting (cube.eu geometry table).
+  "cat-cube-stereo-one44-2024": [
+    g("S", 429, 615, CUBE_ONE44, {
+      setting: "slack",
+      headAngleDeg: 65.4,
+      seatAngleEffectiveDeg: 75.9,
+      chainstayMm: 434,
+      wheelbaseMm: 1177,
+    }),
+    g("M", 449, 624, CUBE_ONE44, {
+      setting: "slack",
+      headAngleDeg: 65.4,
+      seatAngleEffectiveDeg: 75.9,
+      chainstayMm: 434,
+      wheelbaseMm: 1201,
+    }),
+    g("L", 474, 633, CUBE_ONE44, {
+      setting: "slack",
+      headAngleDeg: 65.4,
+      seatAngleEffectiveDeg: 75.9,
+      chainstayMm: 434,
+      wheelbaseMm: 1230,
+    }),
+    g("XL", 502, 651, CUBE_ONE44, {
+      setting: "slack",
+      headAngleDeg: 65.4,
+      seatAngleEffectiveDeg: 75.9,
+      chainstayMm: 434,
+      wheelbaseMm: 1266,
     }),
   ],
 };
