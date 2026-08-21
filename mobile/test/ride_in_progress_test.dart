@@ -27,7 +27,7 @@ void main() {
       const p = TrackPoint(
         lat: 49.41,
         lng: 8.69,
-        timeMs: 1_700_000_000_000,
+        timeMs: 1700000000000,
         elev: 112,
         heartRateBpm: 142,
         cadenceRpm: 78,
@@ -41,7 +41,7 @@ void main() {
       expect(parsed, isNotNull);
       expect(parsed!.lat, closeTo(49.41, 1e-9));
       expect(parsed.lng, closeTo(8.69, 1e-9));
-      expect(parsed.timeMs, 1_700_000_000_000);
+      expect(parsed.timeMs, 1700000000000);
       expect(parsed.elev, 112);
       expect(parsed.heartRateBpm, 142);
       expect(parsed.cadenceRpm, 78);
@@ -77,7 +77,7 @@ void main() {
       flowN: 4,
       routeId: 'route-9',
       routeName: 'Neckar-Schleife',
-      journal: const RideJournal(photoPaths: ['/tmp/a.jpg']),
+      journal: RideJournal(photoPaths: const ['/tmp/a.jpg']),
       track: const [
         TrackPoint(lat: 49.40, lng: 8.67, timeMs: 1, elev: 100),
         TrackPoint(lat: 49.41, lng: 8.67, timeMs: 20000, elev: 108),
