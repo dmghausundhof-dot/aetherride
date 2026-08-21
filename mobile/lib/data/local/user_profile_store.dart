@@ -201,7 +201,15 @@ class UserProfileStore {
       };
 
   /// Haupt immer in der Liste und vorn; Liste leer ↔ keine Haupt.
+  /// Hiking ist keine wählbare Rad-Disziplin mehr.
   void normalizePreferredSports() {
+    preferredSports = [
+      for (final s in preferredSports)
+        if (s != BikeCategory.hiking) s,
+    ];
+    if (preferredSport == BikeCategory.hiking) {
+      preferredSport = preferredSports.isNotEmpty ? preferredSports.first : null;
+    }
     final seen = <BikeCategory>{};
     preferredSports = [
       for (final s in preferredSports)

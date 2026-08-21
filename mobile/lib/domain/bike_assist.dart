@@ -23,7 +23,6 @@ class BikeAssistUx {
     BikeCategory.mtbAm,
     BikeCategory.mtbEnduro,
     BikeCategory.dh,
-    BikeCategory.hiking,
   ];
 
   /// UI-Untertypen unter E-Bike (1:1 mit Persistenz + isEbike).
@@ -63,7 +62,6 @@ class BikeAssistUx {
     BikeCategory.mtbAm,
     BikeCategory.mtbEnduro,
     BikeCategory.dh,
-    BikeCategory.hiking,
   ];
 
   static const trailEbike = <BikeCategory>[BikeCategory.emtb];
@@ -116,20 +114,17 @@ class BikeAssistUx {
         _ => WheelSize.w29,
       };
 
-  /// Anlegen: Trail zuerst (Katalog-Schwerpunkt). Zu Fuß ist kein Rad.
+  /// Anlegen: Trail zuerst (Katalog-Schwerpunkt). Zu Fuß ist keine Rad-Kategorie.
+  static bool isSelectable(BikeCategory c) => c != BikeCategory.hiking;
+
   static List<({String id, String label, List<BikeCategory> categories})>
-      pickGroups(
-    BikeAssistMode mode, {
-    bool includeHiking = false,
-  }) {
+      pickGroups(BikeAssistMode mode) {
     final allowed = mode == BikeAssistMode.ebike
         ? ebikeCategories
         : muscleCategories;
     List<BikeCategory> take(List<BikeCategory> raw) => [
           for (final c in raw)
-            if (allowed.contains(c) &&
-                (includeHiking || c != BikeCategory.hiking))
-              c,
+            if (allowed.contains(c) && isSelectable(c)) c,
         ];
     return [
       (
@@ -231,6 +226,7 @@ class BikeAssistUx {
     if (mode == BikeAssistMode.muscle) {
       if (uiCategory == BikeCategory.emtb) return BikeCategory.mtbAm;
       if (uiCategory == BikeCategory.etrekking) return BikeCategory.urban;
+      if (uiCategory == BikeCategory.hiking) return BikeCategory.urban;
       return uiCategory;
     }
     return switch (uiCategory) {

@@ -1349,8 +1349,13 @@ function hydrate(t: TourInput): PublicTour {
 
 const TOURS: PublicTour[] = RAW.map(hydrate);
 
+/** Hiking-Touren bleiben im Rohkatalog für Deep-Links, erscheinen nicht in Listen. */
+function isListedPublicTour(t: PublicTour): boolean {
+  return t.primaryCategory !== "hiking";
+}
+
 export function listPublicTours(): PublicTour[] {
-  return TOURS;
+  return TOURS.filter(isListedPublicTour);
 }
 
 /** Startseite / Regionen-Teaser — echte Katalog-IDs, keine Dummy-Karten. */
@@ -1372,16 +1377,16 @@ export function getPublicTour(id: string): PublicTour | null {
 }
 
 export function listPublicTourIds(): string[] {
-  return TOURS.map((t) => t.id);
+  return listPublicTours().map((t) => t.id);
 }
 
 export function listToursByRegion(regionSlug: string): PublicTour[] {
-  return TOURS.filter((t) => t.regionSlug === regionSlug);
+  return listPublicTours().filter((t) => t.regionSlug === regionSlug);
 }
 
 export function listToursBySport(sport: string): PublicTour[] {
   const s = sport.toLowerCase();
-  return TOURS.filter((t) => {
+  return listPublicTours().filter((t) => {
     if (s === "mtb")
       return t.categories.some((c) =>
         ["mtb_trail", "mtb_am", "mtb_enduro", "dh", "emtb"].includes(c)

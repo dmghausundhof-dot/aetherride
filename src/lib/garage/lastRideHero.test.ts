@@ -64,4 +64,13 @@ assert(
   "e-trail is emtb"
 );
 
+assert(
+  !muscle.some((g) => g.categories.includes("hiking")),
+  "hiking nicht in Pick-Gruppen"
+);
+assert(
+  !addCategories("muscle").includes("hiking"),
+  "hiking nicht beim Anlegen"
+);
+
 console.log("lastRideHero.test.ts ok");

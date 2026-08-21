@@ -470,6 +470,7 @@ export const SLOT_GROUPS: { id: string; label: string; slots: ComponentSlot[] }[
   {
     id: "hiking",
     label: "Wander-Ausrüstung",
+    /** Legacy only — Kategorie ist in der UI ausgeblendet. */
     slots: ["hiking_shoes", "hiking_pack", "hiking_poles"],
   },
 ];

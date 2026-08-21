@@ -159,6 +159,11 @@ for (const m of BIKE_CATALOG) {
   }
 }
 
+assert(
+  !BIKE_CATALOG.some((m) => m.bikes.some((b) => b.category === "hiking")),
+  "Hiking-Kategorie: kein OEM-Rad (UI ausgeblendet)"
+);
+
 console.log(
   JSON.stringify(
     {

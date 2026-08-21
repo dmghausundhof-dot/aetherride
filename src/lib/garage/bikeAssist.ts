@@ -3,6 +3,11 @@ import type { BikeCategory, WheelSize } from "@/types";
 /** Muskel vs. E-Bike — Parität zu Mobile `bike_assist.dart`. */
 export type BikeAssistMode = "muscle" | "ebike";
 
+/** Zu Fuß bleibt im Typ-System für Alt-Daten, ist aber keine wählbare Rad-Kategorie. */
+export function isSelectableBikeCategory(category: BikeCategory): boolean {
+  return category !== "hiking";
+}
+
 export const MUSCLE_CATEGORIES: BikeCategory[] = [
   "urban",
   "cargo",
@@ -14,7 +19,6 @@ export const MUSCLE_CATEGORIES: BikeCategory[] = [
   "mtb_am",
   "mtb_enduro",
   "dh",
-  "hiking",
 ];
 
 /** UI-Untertypen unter E-Bike (Web persistiert category + isEbike). */
@@ -51,7 +55,6 @@ const TRAIL_MUSCLE: BikeCategory[] = [
   "mtb_am",
   "mtb_enduro",
   "dh",
-  "hiking",
 ];
 const TRAIL_EBIKE: BikeCategory[] = ["emtb"];
 
@@ -113,6 +116,7 @@ export function persistCategory(
   if (mode === "muscle") {
     if (uiCategory === "emtb") return "mtb_am";
     if (uiCategory === "etrekking") return "urban";
+    if (uiCategory === "hiking") return "urban";
     return uiCategory;
   }
   if (
@@ -127,12 +131,13 @@ export function persistCategory(
   return uiCategory;
 }
 
-/** Anlegen: Alltag zuerst, Trail nicht als Default-Welt. */
+/** Anlegen: Alltag zuerst, Trail nicht als Default-Welt. Hiking nie in der UI. */
 export function categoryPickGroups(mode: BikeAssistMode): CategoryPickGroup[] {
   const allowed = new Set(
     mode === "ebike" ? EBIKE_CATEGORIES : MUSCLE_CATEGORIES
   );
-  const take = (ids: BikeCategory[]) => ids.filter((c) => allowed.has(c));
+  const take = (ids: BikeCategory[]) =>
+    ids.filter((c) => allowed.has(c) && isSelectableBikeCategory(c));
   const groups: CategoryPickGroup[] = [
     { id: "everyday", label: "Alltag", categories: take(mode === "ebike" ? EVERYDAY_EBIKE : EVERYDAY_MUSCLE) },
     { id: "tour", label: "Tour", categories: take(TOUR) },

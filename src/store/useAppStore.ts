@@ -1838,12 +1838,27 @@ export const useAppStore = create<AppState>()(
           savedRoutes: base.savedRoutes ?? [],
           routeCollections: base.routeCollections ?? [],
           onboardingDone: base.onboardingDone ?? false,
-          preferredSport: base.preferredSport ?? null,
-          preferredSports: Array.isArray(base.preferredSports)
-            ? base.preferredSports
-            : base.preferredSport
-              ? [base.preferredSport]
-              : [],
+          preferredSport: (() => {
+            const sports = (
+              Array.isArray(base.preferredSports)
+                ? base.preferredSports
+                : base.preferredSport
+                  ? [base.preferredSport]
+                  : []
+            ).filter((c): c is BikeCategory => c !== "hiking");
+            const primary =
+              base.preferredSport === "hiking" ? null : (base.preferredSport ?? null);
+            return primary && sports.includes(primary)
+              ? primary
+              : (sports[0] ?? null);
+          })(),
+          preferredSports: (
+            Array.isArray(base.preferredSports)
+              ? base.preferredSports
+              : base.preferredSport
+                ? [base.preferredSport]
+                : []
+          ).filter((c): c is BikeCategory => c !== "hiking"),
           coachMeta: base.coachMeta ?? {},
           storageVersion: STORAGE_VERSION,
         } as AppState;
