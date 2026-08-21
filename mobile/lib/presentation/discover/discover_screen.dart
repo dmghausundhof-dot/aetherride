@@ -1200,6 +1200,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     return _planInitialSnap;
   }
 
+  /// Peek snap including the system inset so chrome is not clipped.
+  double get _planPeekSnap {
+    final mq = MediaQuery.of(context);
+    return PlanSheetSnaps.peekSize(
+      height: mq.size.height,
+      bottomInset: mq.padding.bottom,
+    );
+  }
+
+  bool get _planSheetIsPeek => PlanSheetSnaps.isPeek(_planSheetExtent);
+
   void _syncPlanSheetExtent(double extent) {
     final h = extent * MediaQuery.sizeOf(context).height;
     _panelInset = h;
@@ -1213,7 +1224,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   Future<void> _snapPlanSheet(double size) async {
-    final target = PlanSheetSnaps.nearest(size);
+    final target = PlanSheetSnaps.nearest(size, peekSnap: _planPeekSnap);
     _planInitialSnap = target;
     if (!_planSheetCtrl.isAttached) {
       if (mounted) setState(() {});
@@ -1355,7 +1366,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final adapting = adaptingTourName != null ||
         (!clearAdapting && _adaptingTourName != null);
     if (mode == DiscoverShellMode.navigate) {
-      _planInitialSnap = PlanSheetSnaps.openTarget(adapting: adapting);
+      _planInitialSnap = PlanSheetSnaps.openTarget(
+        adapting: adapting,
+        peekSnap: _planPeekSnap,
+      );
       _planSheetExtentLogged = _planInitialSnap;
     }
     setState(() {
@@ -1524,7 +1538,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
     if (_surface == _Surface.detail) {
       if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
-        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+        unawaited(_snapPlanSheet(_planPeekSnap));
         return true;
       }
       _closeDetail();
@@ -1536,7 +1550,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
     if (_shellMode == DiscoverShellMode.navigate) {
       if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
-        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+        unawaited(_snapPlanSheet(_planPeekSnap));
         return true;
       }
       _closePlan();
@@ -1774,14 +1788,23 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       label: hit.label,
       kind: hit.kind,
     );
+    final dismissCoach = _planLineCoach;
     setState(() {
       _vias
         ..clear()
         ..addAll(next.labeledVias);
       _addrHits = const [];
+      _addrTarget = null;
       _pick = _PickMode.none;
       _geocodeRecents = _pushGeocodeRecentList(hit);
+      _trailOverlay = null;
+      _tourLayer = null;
+      if (dismissCoach) _planLineCoach = false;
     });
+    if (dismissCoach) {
+      unawaited(RidePrefs.setPlanLineCoachDismissed(true));
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
     unawaited(_persistGeocodeRecents(_geocodeRecents));
     unawaited(_syncMarkers());
     _schedulePlanReshape();
@@ -3520,6 +3543,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final dismissCoach = _planLineCoach;
     setState(() {
       _insertPlanViaAlongInState(raw, label: label);
+      _trailOverlay = null;
+      _tourLayer = null;
       if (dismissCoach) _planLineCoach = false;
     });
     if (dismissCoach) {
@@ -3671,21 +3696,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   bool _tryInsertViaFromMapTap(GeoPoint tap, {bool onLine = false}) {
     if (_surface == _Surface.detail) return false;
-    final computed = _computed;
-    if (!planLineTapInsertsVia(
+    if (!planEditorMapTapAddsVia(
       editorActive: _planEditorActive,
       hasStart: _start != null,
       hasEnd: _end != null,
-      hasLiveLine: _hasLivePlanLine,
       pickingStartOrEnd: _pick == _PickMode.start || _pick == _PickMode.end,
     )) {
       return false;
     }
     // Ribbon already parked the finger; free-map tap must not reuse a stale one.
     if (!onLine) _planShapeHintAt = null;
-    final line = [
-      for (final p in computed!.coordinates) [p.lng, p.lat],
-    ];
+    final computed = _computed;
+    final line = computed != null && computed.coordinates.length >= 2
+        ? [
+            for (final p in computed.coordinates) [p.lng, p.lat],
+          ]
+        : null;
+    if (line == null) {
+      _insertPlanViaAlong(tap);
+      return true;
+    }
     final radius = plannedRouteTapRadiusM(_mapZoom);
     final snap = plannedRouteTapSnap(
       lineLngLat: line,
@@ -3694,15 +3724,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       maxOffsetM: onLine ? math.max(radius, 420) : radius,
     );
     if (snap == null) {
-      if (!planFarTapInsertsVia(
-        startSet: _start != null,
-        endSet: _end != null,
-        pickingStart: _pick == _PickMode.start,
-        pickingEnd: _pick == _PickMode.end,
-      ) &&
-          _pick != _PickMode.via) {
-        return false;
-      }
       _insertPlanViaAlong(tap);
       return true;
     }
@@ -3798,7 +3819,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         if (scrub != null) _planElevScrubT = scrub;
       });
       if (!PlanSheetSnaps.isPeek(_planSheetExtent)) {
-        unawaited(_snapPlanSheet(PlanSheetSnaps.peek));
+        unawaited(_snapPlanSheet(_planPeekSnap));
       }
       if (_planHintScreen.value != null) _planHintScreen.value = null;
     } else {
@@ -4021,7 +4042,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (line != null &&
         planReshapeHandlesReady(
           hasVia: _vias.isNotEmpty || _planLineTouched,
-          coachVisible: _planLineCoach,
+          coachVisible: false,
         )) {
       for (final h in planReshapeHandles(
         lineLngLat: line,
@@ -6916,6 +6937,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         _computed = null;
         _approach = null;
         _trailOverlay = null;
+      } else {
+        _trailOverlay = null;
+        _tourLayer = null;
       }
       _ideaPin = null;
       _selectedTourId = null;
@@ -8329,7 +8353,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           );
         }
       }
-      if (_trailOverlay != null && _trailOverlay!.length >= 2) {
+      if (_trailOverlay != null &&
+          _trailOverlay!.length >= 2 &&
+          planPaintsTrailLastMileOverlay(
+            hasVias: _vias.isNotEmpty,
+            reshaping: _routeLineStale,
+          )) {
         await _addKomootLine(
           c,
           _trailOverlay!.map((p) => LatLng(p.lat, p.lng)).toList(),
@@ -10980,8 +11009,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           planning: _shellMode == DiscoverShellMode.navigate,
         ) &&
         (_showTrailsLayer || _showBikeWaysLayer);
-    final planCoachOn =
-        _planLineCoach && _hasLivePlanLine && _surface == _Surface.plan;
+    // Coach lives in the sheet (peek subtitle / form hint), never on the line.
+    const planCoachOn = false;
     final showLocateFab = !_hofChoice &&
         !planCoachOn &&
         !_planWaitHidesChrome &&
@@ -11124,100 +11153,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                       ),
                     ),
                   ),
-                )
-              else if (_planLineCoach &&
-                  _hasLivePlanLine &&
-                  _surface == _Surface.plan &&
-                  _planDragAlongLabel == null &&
-                  !_planWaitHintOnMap)
-                Positioned(
-                  left: AppSpacing.m,
-                  right: showLocateFab ? 56 : AppSpacing.m,
-                  bottom: _panelInset + AppSpacing.s,
-                  child: Builder(
-                    builder: (context) {
-                      final l10n = AppLocalizations.of(context);
-                      final compact = planLineCoachIsCompact(size.height);
-                      final xCompact = planLineCoachIsXCompact(size.height);
-                      final copy = planLineCoachCopy(
-                        adopting: _adaptingTourName != null,
-                        compact: compact,
-                        full: l10n.planLineCoach,
-                        short: l10n.planLineCoachShort,
-                        adopt: l10n.planLineCoachAdopt,
-                      );
-                      return Material(
-                        color: const Color(0xF21A120C),
-                        elevation: 6,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        child: Padding(
-                          padding: xCompact
-                              ? const EdgeInsets.fromLTRB(8, 4, 2, 4)
-                              : compact
-                                  ? const EdgeInsets.fromLTRB(10, 6, 4, 6)
-                                  : const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                          child: Row(
-                            children: [
-                              if (!compact) ...[
-                                const ChromeGlyph(
-                                  'layers',
-                                  size: 18,
-                                  color: Color(0xFFFFB080),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  copy,
-                                  maxLines: xCompact ? 2 : 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: xCompact
-                                        ? 10
-                                        : compact
-                                            ? 11
-                                            : 12,
-                                    height: 1.25,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                style: xCompact
-                                    ? TextButton.styleFrom(
-                                        visualDensity: VisualDensity.compact,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      )
-                                    : null,
-                                onPressed: () {
-                                  setState(() => _planLineCoach = false);
-                                  unawaited(
-                                      RidePrefs.setPlanLineCoachDismissed(
-                                          true));
-                                },
-                                child: Text(
-                                  l10n.planLineCoachOk,
-                                  style: TextStyle(
-                                    color: const Color(0xFFFFB080),
-                                    fontSize: xCompact ? 11 : 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ),
               if (_surface == _Surface.plan &&
                   _planLegendKinds.isNotEmpty &&
                   !_showPlanRoutingWait &&
                   !_planRibbonDimmed &&
-                  _planDragAlongLabel == null &&
-                  !_planLineCoach)
+                  _planDragAlongLabel == null)
                 Positioned(
                   left: AppSpacing.m,
                   right: showPlanHistoryFabs ? 72 : AppSpacing.m,
@@ -11357,7 +11298,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                   ),
                                 ),
                                 onPressed: () => unawaited(
-                                  _snapPlanSheet(PlanSheetSnaps.peek),
+                                  _snapPlanSheet(_planPeekSnap),
                                 ),
                                 icon: const ChromeGlyph('karte', size: 18),
                                 label: Text(
@@ -11482,7 +11423,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                       expand: false,
                       controller: _planSheetCtrl,
                       initialChildSize: _planInitialSnap,
-                      minChildSize: PlanSheetSnaps.peek,
+                      minChildSize: _planPeekSnap,
                       maxChildSize: PlanSheetSnaps.full,
                       snap: true,
                       snapSizes: PlanSheetSnaps.sheetSnapSizes,
@@ -11991,6 +11932,29 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       if ((h - _exploreChromeHeight).abs() < 1) return;
       setState(() => _exploreChromeHeight = h);
     });
+  }
+
+  Widget _planGeocodeHitTile(GeocodeHit hit, {required bool recent}) {
+    final l10n = _l10n;
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: ChromeGlyph(recent ? 'recent' : 'karte', size: 18),
+      title: Text(hit.label, style: const TextStyle(fontSize: 13)),
+      onTap: () => unawaited(_applyAddressHit(hit)),
+      onLongPress: () => _addGeocodeHitAsVia(hit),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: _planDestFlagTooltip(l10n),
+            icon: const ChromeGlyph('flag', size: 18),
+            onPressed: () => unawaited(_routeToGeocodeHit(hit)),
+          ),
+          if (_start != null) _planHitOverflow(hit, l10n),
+        ],
+      ),
+    );
   }
 
   Widget _planHitOverflow(GeocodeHit hit, AppLocalizations l10n) {
@@ -12656,6 +12620,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       clipBehavior: Clip.antiAlias,
       child: SafeArea(
         top: false,
+        bottom: !(_planSheetActive && _planSheetIsPeek),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 260),
           switchInCurve: Curves.easeOutCubic,
@@ -12715,7 +12680,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           if (planning) {
             unawaited(
               _snapPlanSheet(
-                PlanSheetSnaps.handleTapTarget(_planSheetExtent),
+                PlanSheetSnaps.handleTapTarget(
+                  _planSheetExtent,
+                  peekSnap: _planPeekSnap,
+                ),
               ),
             );
             return;
@@ -14256,56 +14224,69 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final stats = _planStickyKmMin();
     final title = _adaptingTourName ?? l10n.planRouteTitle;
     final canGo = _computed != null && _start != null && _end != null;
+    final canVia = _start != null && _end != null;
     final viaArmed = _pick == _PickMode.via;
+    final coach = _planLineCoach && canVia;
+    final inset = MediaQuery.paddingOf(context).bottom;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.m,
         0,
         AppSpacing.m,
-        AppSpacing.s,
+        AppSpacing.s + inset,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 2),
           Text(
             viaArmed
                 ? l10n.navigateViaHint
-                : [
-                    if (stats.isNotEmpty) stats,
-                    destLabel,
-                  ].join(' · '),
+                : coach
+                    ? l10n.planLineCoachShort
+                    : [
+                        if (stats.isNotEmpty) stats,
+                        destLabel,
+                      ].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: viaArmed ? const Color(0xFFE65100) : AppColors.muted,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(
             children: [
               IconButton(
                 tooltip: l10n.save,
+                visualDensity: VisualDensity.compact,
                 onPressed: canGo ? () => unawaited(_saveCurrent()) : null,
-                icon: const ChromeGlyph('merken', size: 22),
+                icon: const ChromeGlyph('merken', size: 20),
               ),
-              if (canGo) ...[
+              if (canVia) ...[
                 IconButton(
                   key: const Key('plan-peek-via'),
                   tooltip: l10n.navigateAddVia,
+                  visualDensity: VisualDensity.compact,
                   onPressed: () {
                     FocusManager.instance.primaryFocus?.unfocus();
+                    final dismiss = _planLineCoach;
                     setState(() {
                       _pick = viaArmed ? _PickMode.none : _PickMode.via;
+                      if (dismiss) _planLineCoach = false;
                     });
+                    if (dismiss) {
+                      unawaited(RidePrefs.setPlanLineCoachDismissed(true));
+                    }
                   },
                   style: IconButton.styleFrom(
                     foregroundColor: viaArmed
@@ -14315,7 +14296,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                         ? const Color(0x22E65100)
                         : null,
                   ),
-                  icon: const ChromeGlyph('add', size: 22),
+                  icon: const ChromeGlyph('add', size: 20),
                 ),
               ],
               const SizedBox(width: 4),
@@ -14324,7 +14305,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: AppColors.onAccent,
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: const Size.fromHeight(40),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   onPressed: canGo
                       ? () => unawaited(_startRide())
@@ -14334,7 +14316,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                         },
                   icon: ChromeGlyph(
                     canGo ? 'play' : 'flag',
-                    size: 20,
+                    size: 18,
                     color: AppColors.onAccent,
                   ),
                   label: Text(canGo ? l10n.goRide : l10n.discoverSetEndCta),
@@ -14408,13 +14390,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final km = detail.distanceKm;
     final kmLabel = km < 10 ? km.toStringAsFixed(1) : km.round().toString();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.m,
         0,
         AppSpacing.m,
-        AppSpacing.s,
+        AppSpacing.s + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
@@ -15164,10 +15147,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   Widget _withLoadingVeil(Widget body) {
     if (!_loading) return body;
+    final peek = _planSheetActive && _planSheetIsPeek;
     return Column(
       children: [
         const LinearProgressIndicator(minHeight: 2),
-        if (_surface == _Surface.plan)
+        if (_surface == _Surface.plan && !peek)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.m,
@@ -15490,19 +15474,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           ),
           const SizedBox(height: AppSpacing.s),
         ],
-        if (_offerLastPlanDest) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: InputChip(
-              key: const Key('last-plan-dest-chip'),
-              avatar: const ChromeGlyph('recent', size: 16),
-              label: Text(_lastPlanDestChipText()),
-              onPressed: _applyLastPlanDest,
-              onDeleted: _dismissLastPlanDestChip,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s),
-        ],
         PlanWaypointStack(
           startController: _startAddrCtrl,
           endController: _endAddrCtrl,
@@ -15596,31 +15567,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               unawaited(_searchAddress('via:$i', query: q)),
         ),
         _panelMessages(),
+        if (_offerLastPlanDest) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InputChip(
+              key: const Key('last-plan-dest-chip'),
+              avatar: const ChromeGlyph('recent', size: 16),
+              label: Text(_lastPlanDestChipText()),
+              onPressed: _applyLastPlanDest,
+              onDeleted: _dismissLastPlanDestChip,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s),
+        ],
         if (_addrBusy)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
             child: LinearProgressIndicator(),
           ),
-        for (final h in _addrHits)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const ChromeGlyph('karte', size: 18),
-            title: Text(h.label, style: const TextStyle(fontSize: 13)),
-            onTap: () => _applyAddressHit(h),
-            onLongPress: () => _addGeocodeHitAsVia(h),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: _planDestFlagTooltip(l10n),
-                  icon: const ChromeGlyph('flag', size: 18),
-                  onPressed: () => unawaited(_routeToGeocodeHit(h)),
-                ),
-                if (_start != null) _planHitOverflow(h, l10n),
-              ],
-            ),
-          ),
+        for (final h in _addrHits) _planGeocodeHitTile(h, recent: false),
         if (_addrHits.isEmpty && _geocodeRecents.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 2),
@@ -15634,13 +15599,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             ),
           ),
           for (final h in _geocodeRecents)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const ChromeGlyph('recent', size: 18),
-              title: Text(h.label, style: const TextStyle(fontSize: 13)),
-              onTap: () => unawaited(_applyAddressHit(h)),
-            ),
+            _planGeocodeHitTile(h, recent: true),
         ],
         if (_error != null && _start != null && _end != null)
           Wrap(

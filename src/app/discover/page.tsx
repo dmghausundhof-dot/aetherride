@@ -200,7 +200,7 @@ import { MappeEmpty } from "@/components/tours/MappeEmpty";
 import { MappeGlyph } from "@/components/tours/MappeGlyph";
 import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { SavedMappeTile } from "@/components/tours/SavedMappeTile";
-import { mappeSourceChip } from "@/lib/tours/mappeList";
+import { mappeSourceChip, mappeRoutePlanCenter, savedRouteTrackCoords } from "@/lib/tours/mappeList";
 import {
   formatMappeDay,
   joinMappeCaption,
@@ -255,6 +255,9 @@ import {
   beginNavigateIntent,
   discoverExploreMapTapOpensPlan,
   discoverTourDeepLinkOpensPlan,
+  discoverTourDeepLinkStripTour,
+  discoverMappeRouteOpensPlan,
+  discoverMappeDeepLinkStripRoute,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -1180,11 +1183,11 @@ function DiscoverPageInner() {
   }, [holdMapFit, draft]);
 
   useEffect(() => {
-    if (highlightRouteId) {
-      setDetailId(highlightRouteId);
-      setSheetMode("tours");
-    }
-  }, [highlightRouteId]);
+    if (!highlightRouteId) return;
+    if (panelParam === "plan" || sheetParam === "plan") return;
+    setDetailId(highlightRouteId);
+    setSheetMode("tours");
+  }, [highlightRouteId, panelParam, sheetParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2413,11 +2416,70 @@ function DiscoverPageInner() {
       adoptIntoPlanModeRef.current(base);
       setPickTarget(geometry && geometry.coordinates.length >= 2 ? null : "end");
       setAddrTarget("end");
+      // Drop ?tour= so remounts / edits are not wiped by re-adopt.
+      try {
+        const next = discoverTourDeepLinkStripTour(window.location.href);
+        const cur = `${window.location.pathname}${window.location.search}`;
+        if (next !== cur) {
+          window.history.replaceState({}, "", next);
+        }
+      } catch {
+        /* ignore */
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [tourParam]);
+
+  useEffect(() => {
+    if (
+      !discoverMappeRouteOpensPlan({
+        panelPlan: panelParam === "plan" || sheetParam === "plan",
+        hasRouteId: Boolean(highlightRouteId),
+      })
+    ) {
+      return;
+    }
+    const saved = savedRoutes.find((r) => r.id === highlightRouteId);
+    if (!saved) return;
+    const coords = savedRouteTrackCoords(saved) as [number, number][];
+    const pin = mappeRoutePlanCenter(saved) ?? origin;
+    const geometry =
+      coords.length >= 2
+        ? ({ type: "LineString", coordinates: coords } as GeoJSON.LineString)
+        : null;
+    const base: BaseTour = {
+      id: saved.id,
+      name: saved.name,
+      provider: "seed",
+      geometry,
+      distanceKm: saved.distanceKm,
+      elevationM: saved.elevationM,
+      durationMin: saved.durationMin,
+      mtbScale: saved.mtbScale,
+      surface: saved.surface,
+      loop: Boolean(saved.loop),
+      center: pin,
+    };
+    adoptIntoPlanModeRef.current(base);
+    setPickTarget(geometry ? null : "end");
+    setAddrTarget("end");
+    setDetailId(null);
+    try {
+      const next = discoverMappeDeepLinkStripRoute(window.location.href);
+      const cur = `${window.location.pathname}${window.location.search}`;
+      if (next !== cur) window.history.replaceState({}, "", next);
+    } catch {
+      /* ignore */
+    }
+  }, [
+    highlightRouteId,
+    origin,
+    panelParam,
+    savedRoutes,
+    sheetParam,
+  ]);
 
   const runHybridSnap = async (tour: BaseTour) => {
     setRoutingBusy(true);

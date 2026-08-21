@@ -38,6 +38,30 @@ export function savedRouteHasTrack(route: SavedRoute): boolean {
   return savedRouteTrackCoords(route).length >= 2;
 }
 
+/**
+ * Library "Losfahren": real track → ride bridge; pin-only → Discover Plan
+ * (no silent no-op).
+ */
+export function mappeGoRideDiscoverHref(route: SavedRoute): string | null {
+  if (savedRouteHasTrack(route)) return null;
+  return `/discover?panel=plan&route=${encodeURIComponent(route.id)}`;
+}
+
+/** Start pin for Mappe → Plan handoff (waypoints first, else track). */
+export function mappeRoutePlanCenter(
+  route: SavedRoute
+): [number, number] | null {
+  const start = route.waypoints?.find((w) => w.role === "start");
+  if (start?.lngLat?.length === 2) return start.lngLat;
+  const end = route.waypoints?.find((w) => w.role === "end");
+  if (end?.lngLat?.length === 2) return end.lngLat;
+  const first = savedRouteTrackCoords(route)[0];
+  if (first && first.length >= 2) {
+    return [Number(first[0]), Number(first[1])];
+  }
+  return null;
+}
+
 /** Runde nur aus der echten Spur — nie aus einem gesetzten Flag ohne Track. */
 export function savedRouteIsLoop(route: SavedRoute): boolean {
   return fitTourLine(savedRouteTrackCoords(route))?.loop === true;

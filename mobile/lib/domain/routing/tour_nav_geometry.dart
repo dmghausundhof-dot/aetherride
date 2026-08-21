@@ -487,6 +487,14 @@ bool planLeftoverTourWipesOnTap({
   return true;
 }
 
+/// Orange last-mile overlay is the current dest. Via / reshape drops it
+/// so a leftover trail does not sit on the new street line.
+bool planPaintsTrailLastMileOverlay({
+  required bool hasVias,
+  required bool reshaping,
+}) =>
+    !hasVias && !reshaping;
+
 /// While the engine is in flight, far taps stay vias — dest only via pick/hold.
 bool planBusyBlocksDestReplace({
   required bool routingBusy,
@@ -773,7 +781,7 @@ bool planLineTapInsertsVia({
 /// Finger radius in metres — tighter when zoomed in.
 double plannedRouteTapRadiusM(double zoom) {
   final z = zoom.clamp(9.0, 18.0);
-  return (140 * math.pow(2, 14 - z)).toDouble().clamp(48.0, 420.0);
+  return (140 * math.pow(2, 14 - z)).toDouble().clamp(64.0, 420.0);
 }
 
 /// Snap a map tap onto the live line when it is close enough.
@@ -2259,7 +2267,7 @@ bool planMapPointerHitsRibbon({
   required List<List<double>> lineLngLat,
   Iterable<List<double>> pinLngLat = const [],
   double pinAvoidPx = 28,
-  double hitPx = 22,
+  double hitPx = 36,
 }) {
   if (lineLngLat.length < 2) return false;
   final ll = planMapScreenToLngLat(
@@ -2563,7 +2571,7 @@ bool planMapPointerHitsScreenRibbon({
   required List<({double x, double y})> lineScreen,
   List<({double x, double y})> pinScreen = const [],
   double pinAvoidPx = 28,
-  double hitPx = 22,
+  double hitPx = 36,
 }) {
   if (lineScreen.length < 2) return false;
   final avoid2 = pinAvoidPx * pinAvoidPx;

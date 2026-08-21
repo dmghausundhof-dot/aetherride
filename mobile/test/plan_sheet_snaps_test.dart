@@ -48,6 +48,28 @@ void main() {
       expect(PlanSheetSnaps.nearest(0.48), PlanSheetSnaps.form);
       expect(PlanSheetSnaps.nearest(0.79), PlanSheetSnaps.full);
     });
+
+    test('peekSize absorbs the system inset so chrome is not clipped', () {
+      expect(
+        PlanSheetSnaps.peekSize(height: 900, bottomInset: 0),
+        PlanSheetSnaps.peek,
+      );
+      final withInset = PlanSheetSnaps.peekSize(height: 900, bottomInset: 48);
+      expect(withInset, greaterThan(PlanSheetSnaps.peek));
+      expect(withInset, lessThanOrEqualTo(0.34));
+      expect(
+        PlanSheetSnaps.nearest(PlanSheetSnaps.peek, peekSnap: withInset),
+        closeTo(withInset, 1e-9),
+      );
+      expect(
+        PlanSheetSnaps.handleTapTarget(PlanSheetSnaps.full, peekSnap: withInset),
+        withInset,
+      );
+      expect(
+        PlanSheetSnaps.openTarget(adapting: true, peekSnap: withInset),
+        withInset,
+      );
+    });
   });
 
   testWidgets('plan sheet attaches at form and animates to peek',

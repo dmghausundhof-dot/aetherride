@@ -59,6 +59,44 @@ export function discoverTourDeepLinkOpensPlan(opts: {
   return opts.hasTourId;
 }
 
+/** Strip `tour` after a one-shot deep-link adopt so remounts do not wipe edits. */
+export function discoverTourDeepLinkStripTour(href: string): string {
+  try {
+    const url = new URL(href, "https://aetherride.local");
+    if (!url.searchParams.has("tour")) {
+      return `${url.pathname}${url.search}`;
+    }
+    url.searchParams.delete("tour");
+    const q = url.searchParams.toString();
+    return q ? `${url.pathname}?${q}` : url.pathname;
+  } catch {
+    return href;
+  }
+}
+
+/** Mappe pin-only „Losfahren“: `?panel=plan&route=` opens Plan, not Tour-Detail. */
+export function discoverMappeRouteOpensPlan(opts: {
+  panelPlan: boolean;
+  hasRouteId: boolean;
+}): boolean {
+  return opts.panelPlan && opts.hasRouteId;
+}
+
+/** Strip `route` after Mappe→Plan adopt (keep panel=plan). */
+export function discoverMappeDeepLinkStripRoute(href: string): string {
+  try {
+    const url = new URL(href, "https://aetherride.local");
+    if (!url.searchParams.has("route")) {
+      return `${url.pathname}${url.search}`;
+    }
+    url.searchParams.delete("route");
+    const q = url.searchParams.toString();
+    return q ? `${url.pathname}?${q}` : url.pathname;
+  } catch {
+    return href;
+  }
+}
+
 /**
  * Navigieren öffnen: Ziel tippen/suchen, optional letzter Ort als B.
  * Start bleibt, wenn schon gesetzt — sonst übernimmt der Caller den Origin.

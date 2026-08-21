@@ -431,6 +431,21 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     return p.basename(path) == r.id;
   }
 
+  /// Clear sticky overview override + foreign Street prefs when activating [packId].
+  Future<void> _honestyAfterPackActivate(String packId) async {
+    final prev = await OfflineMapsPrefs.read();
+    final prevStreet = OfflineMapsPrefs.streetHudPackIdFrom(prev);
+    await OfflineMapsPrefs.merge({
+      'pmtilesUrl': null,
+      if (prevStreet != null && prevStreet != packId) ...{
+        'streetHudAt': null,
+        'streetHudBbox': null,
+        'streetHudKind': null,
+        'streetHudPackId': null,
+      },
+    });
+  }
+
   Future<void> _activateExisting(OfflinePackRow region) async {
     final docs = await getApplicationDocumentsDirectory();
     final regionDir = Directory(p.join(docs.path, 'regions', region.id));
@@ -451,6 +466,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       packBbox: region.bbox,
       basemapReady: mapOk,
     );
+    await _honestyAfterPackActivate(region.id);
     OfflineTilesStore.instance.clearCache();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     if (mounted) {
@@ -474,6 +490,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _streetReady = street.ready;
       _streetBbox = street.bbox;
       _streetKind = street.kind;
+      if (_urlCtrl.text.trim().isNotEmpty) {
+        // Sticky override cleared — show pack-aware resolve next open.
+        _urlCtrl.clear();
+      }
     });
   }
 
@@ -487,7 +507,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     if (await OfflinePmtilesStore.isReady(archiveId)) {
       final local = await OfflinePmtilesStore.localStyleUri(archiveId);
       if (local != null) {
-        await _savePrefs(pmtilesUrl: local, basemapReady: true);
+        // Don't sticky-override style — resolve uses pack bbox → archive.
+        await _savePrefs(basemapReady: true);
+        await OfflineMapsPrefs.merge({'pmtilesUrl': null});
         if (mounted) {
           setState(() {
             _urlCtrl.text = local;
@@ -522,7 +544,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       );
       final local = await OfflinePmtilesStore.localStyleUri(archiveId);
       if (local != null) {
-        await _savePrefs(pmtilesUrl: local, basemapReady: true);
+        await _savePrefs(basemapReady: true);
+        await OfflineMapsPrefs.merge({'pmtilesUrl': null});
         if (mounted) {
           setState(() {
             _urlCtrl.text = local;
@@ -856,6 +879,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         packBbox: bbox,
         basemapReady: false,
       );
+      await _honestyAfterPackActivate(region.id);
       await downloadBikeOverlayIntoPack(regionDir, region.id);
       OfflineTilesStore.instance.clearCache();
       final status = await OfflineTilesStore.instance.valhallaLinkStatus();
@@ -962,7 +986,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       }
       return;
     }
-    await _savePrefs(pmtilesUrl: url);
+    _prefsChanged = true;
+    await OfflineMapsPrefs.merge({
+      'pmtilesUrl': url.isEmpty ? null : url,
+    });
     if (!mounted) return;
     final resolved = await AppConfig.resolveMapStyleUrl();
     if (!mounted) return;

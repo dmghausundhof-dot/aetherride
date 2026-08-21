@@ -1384,7 +1384,7 @@ void main() {
     });
 
     test('tap radius tightens when zoomed in', () {
-      expect(plannedRouteTapRadiusM(18), 48);
+      expect(plannedRouteTapRadiusM(18), 64);
       expect(plannedRouteTapRadiusM(9), 420);
     });
 
@@ -2029,6 +2029,18 @@ void main() {
           hasEnd: false,
         ),
         isTrue,
+      );
+      expect(
+        planPaintsTrailLastMileOverlay(hasVias: false, reshaping: false),
+        isTrue,
+      );
+      expect(
+        planPaintsTrailLastMileOverlay(hasVias: true, reshaping: false),
+        isFalse,
+      );
+      expect(
+        planPaintsTrailLastMileOverlay(hasVias: false, reshaping: true),
+        isFalse,
       );
       expect(
         planBusyBlocksDestReplace(

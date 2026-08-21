@@ -20,6 +20,8 @@ import {
   savedRouteIsLoop,
   savedRouteNeedsElevBackfill,
   savedRouteTrackCoords,
+  mappeGoRideDiscoverHref,
+  mappeRoutePlanCenter,
   sortMappe,
 } from "./mappeList";
 import type { SavedRoute } from "@/types/route";
@@ -73,6 +75,19 @@ assert.equal(mappeCardStats(b), "");
 assert.equal(mappeCardStatParts(b), null);
 assert.equal(savedRouteHasTrack(a), true);
 assert.equal(savedRouteHasTrack(b), false);
+assert.equal(mappeGoRideDiscoverHref(a), null);
+assert.equal(
+  mappeGoRideDiscoverHref(b),
+  `/discover?panel=plan&route=${encodeURIComponent(b.id)}`,
+);
+assert.equal(mappeRoutePlanCenter(b), null);
+assert.deepEqual(
+  mappeRoutePlanCenter({
+    ...b,
+    waypoints: [{ role: "start", lngLat: [8.67, 49.4], label: "A" }],
+  }),
+  [8.67, 49.4]
+);
 assert.equal(savedRouteTrackCoords(a).length, 2);
 assert.equal(savedRouteTrackCoords(b).length, 0);
 assert.deepEqual(

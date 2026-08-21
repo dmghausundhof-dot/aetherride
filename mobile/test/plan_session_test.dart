@@ -143,9 +143,47 @@ void main() {
         planFarTapInsertsVia(
           startSet: true,
           endSet: true,
+          hasLiveLine: false,
+          pickingStart: false,
+          pickingEnd: false,
+        ),
+        isTrue,
+        reason: 'A+B is enough — waiting on the engine still inserts via',
+      );
+      expect(
+        planFarTapInsertsVia(
+          startSet: true,
+          endSet: true,
           hasLiveLine: true,
           pickingStart: false,
           pickingEnd: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planEditorMapTapAddsVia(
+          editorActive: true,
+          hasStart: true,
+          hasEnd: true,
+          pickingStartOrEnd: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planEditorMapTapAddsVia(
+          editorActive: true,
+          hasStart: true,
+          hasEnd: true,
+          pickingStartOrEnd: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planEditorMapTapAddsVia(
+          editorActive: false,
+          hasStart: true,
+          hasEnd: true,
+          pickingStartOrEnd: false,
         ),
         isFalse,
       );
@@ -262,6 +300,18 @@ void main() {
         endFieldFocused: false,
       ),
       PlanWaypointRole.start,
+    );
+    expect(
+      planGeocodeHitSlot(
+        hasStart: true,
+        hasEnd: true,
+        pickingVia: false,
+        pickingEnd: false,
+        pickingStart: false,
+        startFieldFocused: false,
+        endFieldFocused: true,
+      ),
+      PlanWaypointRole.end,
     );
   });
 

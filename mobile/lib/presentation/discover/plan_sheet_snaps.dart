@@ -23,6 +23,15 @@ abstract final class PlanSheetSnaps {
   static const double minSize = peek;
   static const double maxSize = full;
 
+  /// Peek plus system inset so SafeArea does not clip the compact chrome.
+  static double peekSize({
+    required double height,
+    required double bottomInset,
+  }) {
+    if (height <= 1 || bottomInset <= 0) return peek;
+    return (peek + bottomInset / height).clamp(peek, 0.34);
+  }
+
   static const double _peekFormMid = (peek + form) / 2;
   static const double _formFullMid = (form + full) / 2;
 
@@ -32,10 +41,11 @@ abstract final class PlanSheetSnaps {
 
   static bool isForm(double extent) => !isPeek(extent) && !isFull(extent);
 
-  static double nearest(double extent) {
-    var best = snapSizes.first;
+  static double nearest(double extent, {double? peekSnap}) {
+    final snaps = [peekSnap ?? peek, form, full];
+    var best = snaps.first;
     var bestDist = (extent - best).abs();
-    for (final s in snapSizes) {
+    for (final s in snaps) {
       final d = (extent - s).abs();
       if (d < bestDist) {
         best = s;
@@ -46,13 +56,13 @@ abstract final class PlanSheetSnaps {
   }
 
   /// Griff-Tipp: Peek → Formular → voll → Peek (wieder 80 % Karte).
-  static double handleTapTarget(double current) {
+  static double handleTapTarget(double current, {double? peekSnap}) {
     if (isPeek(current)) return form;
     if (isForm(current)) return full;
-    return peek;
+    return peekSnap ?? peek;
   }
 
   /// Beim Öffnen: Anpassen braucht die Linie auf der Karte.
-  static double openTarget({required bool adapting}) =>
-      adapting ? peek : form;
+  static double openTarget({required bool adapting, double? peekSnap}) =>
+      adapting ? (peekSnap ?? peek) : form;
 }

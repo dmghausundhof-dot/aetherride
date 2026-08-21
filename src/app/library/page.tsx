@@ -42,6 +42,7 @@ import {
   mappeSourceChip,
   mappeStartAwayKm,
   mappeTrackClimbM,
+  mappeGoRideDiscoverHref,
   savedRouteNeedsElevBackfill,
   savedRouteTrackCoords,
   sortMappe,
@@ -328,9 +329,13 @@ export default function LibraryPage() {
               const hit = savedRoutes.find((s) => s.id === meet.savedRouteId);
               if (!hit) return;
               const route = activeRouteFromSaved(hit);
-              if (!route) return;
-              setActiveRoute(route);
-              router.push("/ride");
+              if (route) {
+                setActiveRoute(route);
+                router.push("/ride");
+                return;
+              }
+              const planHref = mappeGoRideDiscoverHref(hit);
+              if (planHref) router.push(planHref);
             }}
             aria-label={g.goRide}
           >
@@ -487,9 +492,13 @@ export default function LibraryPage() {
               );
               const goRide = () => {
                 const route = activeRouteFromSaved(r);
-                if (!route) return;
-                setActiveRoute(route);
-                router.push("/ride");
+                if (route) {
+                  setActiveRoute(route);
+                  router.push("/ride");
+                  return;
+                }
+                const planHref = mappeGoRideDiscoverHref(r);
+                if (planHref) router.push(planHref);
               };
               return (
                 <MappeTourCard

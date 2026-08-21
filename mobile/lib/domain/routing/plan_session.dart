@@ -318,6 +318,18 @@ bool planFarTapInsertsVia({
   return startSet && endSet;
 }
 
+/// Plan editor: any map tap after A+B is a via — line optional.
+/// Pick-start / pick-end still place those pins.
+bool planEditorMapTapAddsVia({
+  required bool editorActive,
+  required bool hasStart,
+  required bool hasEnd,
+  required bool pickingStartOrEnd,
+}) {
+  if (!editorActive || pickingStartOrEnd) return false;
+  return hasStart && hasEnd;
+}
+
 /// Komoot “Set as destination”: long-press / Alt-hold after A+B.
 /// Short tap on the line remains via. Explicit via/start pick keeps that pin.
 bool planLongPressSetsDest({

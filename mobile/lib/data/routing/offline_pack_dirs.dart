@@ -362,6 +362,8 @@ abstract final class OfflinePackDirs {
         'engineHint': 'offline_graph',
         'activatedAt': DateTime.now().toUtc().toIso8601String(),
         'basemapReady': mapOk,
+        // Pack-aware overview resolve — drop sticky archive override.
+        'pmtilesUrl': null,
         if (prevStreetId != null && prevStreetId != hitId) ...{
           'streetHudAt': null,
           'streetHudBbox': null,

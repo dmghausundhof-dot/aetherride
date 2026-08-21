@@ -6,6 +6,9 @@ import {
   beginNavigateIntent,
   discoverExploreMapTapOpensPlan,
   discoverTourDeepLinkOpensPlan,
+  discoverTourDeepLinkStripTour,
+  discoverMappeRouteOpensPlan,
+  discoverMappeDeepLinkStripRoute,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -76,6 +79,34 @@ assert.equal(
 assert.equal(
   discoverTourDeepLinkOpensPlan({ hasTourId: false }),
   false
+);
+assert.equal(
+  discoverTourDeepLinkStripTour("/discover?panel=plan&tour=r-heidelberg-city"),
+  "/discover?panel=plan"
+);
+assert.equal(
+  discoverTourDeepLinkStripTour(
+    "/discover?panel=plan&tour=idea-koenigstuhl&profile=gravel"
+  ),
+  "/discover?panel=plan&profile=gravel"
+);
+assert.equal(
+  discoverTourDeepLinkStripTour("/discover?panel=plan"),
+  "/discover?panel=plan"
+);
+assert.equal(
+  discoverMappeRouteOpensPlan({ panelPlan: true, hasRouteId: true }),
+  true
+);
+assert.equal(
+  discoverMappeRouteOpensPlan({ panelPlan: false, hasRouteId: true }),
+  false
+);
+assert.equal(
+  discoverMappeDeepLinkStripRoute(
+    "/discover?panel=plan&route=mappe-1&profile=gravel"
+  ),
+  "/discover?panel=plan&profile=gravel"
 );
 
 const frankfurt = {
