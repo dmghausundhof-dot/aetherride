@@ -57,6 +57,23 @@ assert.equal(extras.steepnessHint, "hügelig");
 assert.equal(extras.trailDifficultyMax, 1);
 assert.deepEqual(extras.waytypes, []);
 
+const extrasWithRanges = parseOrsExtras(
+  {
+    surface: {
+      summary: [{ value: 3, distance: 8000 }],
+      values: [
+        [0, 12, 3],
+        [12, 20, 9],
+      ],
+    },
+  },
+  10000
+);
+assert.deepEqual(extrasWithRanges.surfaceRanges, [
+  [0, 12, 3],
+  [12, 20, 9],
+]);
+
 assert.ok(orsDirectionsOptions("urban")?.avoid_features);
 assert.ok(
   JSON.stringify(orsDirectionsOptions("mtb_enduro")).includes("highways")

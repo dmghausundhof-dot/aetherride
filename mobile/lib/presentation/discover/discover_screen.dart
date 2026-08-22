@@ -93,6 +93,7 @@ import '../../domain/routing/plan_line_points.dart';
 import '../../domain/routing/track_elevation.dart';
 import '../../domain/routing/live_routing_warmup.dart';
 import '../../domain/routing/osm_surface_label.dart';
+import '../../domain/routing/route_honesty.dart';
 import '../../domain/routing/route_variant.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
@@ -676,6 +677,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       warnings: r.warnings,
       variant: r.variant,
       variantApplied: r.variantApplied,
+      surfaceBands: r.surfaceBands,
+      scaleBands: r.scaleBands,
     );
   }
 
@@ -5557,15 +5560,23 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final profile = await _elevationClient.fetchForTrack(result.coordinates);
     if (!mounted) return;
     if (profile == null) {
+      final honestyBands = [
+        for (final b in result.surfaceBands)
+          (fromKm: b.fromKm, toKm: b.toKm, surface: b.surface),
+      ];
       setState(() {
         _elevationGainM = null;
         _planElevSamples = const [];
         _planElevKm = const [];
         _planElevPoints = const [];
         _planElevSource = null;
-        _planSurfaceBands = const [];
-        _planSurfaceMix = const [];
-        _planLegendKinds.clear();
+        _planSurfaceBands = honestyBands;
+        _planSurfaceMix = surfaceSharesFromBands(honestyBands);
+        _planLegendKinds
+          ..clear()
+          ..addAll(
+            planRibbonLegendKinds(bands: honestyBands, hasSteep: false),
+          );
         _elevationSummary = null;
       });
       await _refreshPlanExtras(result, null);
@@ -5573,7 +5584,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
     final samples = elevationSamplesOf(profile);
     final km = elevationDistKmOf(profile);
-    final bands = elevationSurfaceBandsOf(profile.points);
+    final apiBands = elevationSurfaceBandsOf(profile.points);
+    final honestyBands = [
+      for (final b in result.surfaceBands)
+        (fromKm: b.fromKm, toKm: b.toKm, surface: b.surface),
+    ];
+    final bands = honestyBands.isNotEmpty ? honestyBands : apiBands;
     final track = [
       for (final p in result.coordinates) [p.lng, p.lat],
     ];
@@ -5592,7 +5608,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _planElevPoints = profile.points;
       _planElevSource = profile.source;
       _planSurfaceBands = bands;
-      _planSurfaceMix = surfaceSharesFromElevPoints(profile.points);
+      _planSurfaceMix = honestyBands.isNotEmpty
+          ? surfaceSharesFromBands(honestyBands)
+          : surfaceSharesFromElevPoints(profile.points);
       _planLegendKinds
         ..clear()
         ..addAll(legend);
@@ -14313,10 +14331,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   String? _planSurfaceCell(AppLocalizations l10n) {
+    final scale = dominantHonestScale(_computed?.scaleBands ?? const []);
     if (_planSurfaceMix.isNotEmpty) {
       final s = _planSurfaceMix.first;
-      return '${osmSurfaceDisplay(s.key, l10n)} ${(s.share * 100).round()}%';
+      final mix =
+          '${osmSurfaceDisplay(s.key, l10n)} ${(s.share * 100).round()}%';
+      return scale == null ? mix : '$mix · $scale';
     }
+    if (scale != null) return scale;
     return _planOfflineSurfaceLine(l10n);
   }
 

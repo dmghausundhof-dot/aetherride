@@ -697,6 +697,10 @@ export type ClientRouteResult = {
   variantApplied?: boolean;
   /** Closed OSM round-trip from /api/route/loop. */
   loop?: boolean;
+  /** OSM surface along the line — GraphHopper/ORS, never weather. */
+  surfaceBands?: { fromKm: number; toKm: number; surface: string | null }[];
+  /** OSM mtb:scale along the line — never SAC / weather. */
+  scaleBands?: { fromKm: number; toKm: number; scale: string | null }[];
 };
 
 export type RequestRouteFailure = {

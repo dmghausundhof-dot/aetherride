@@ -99,6 +99,28 @@ class SurfaceShare {
   final double share;
 }
 
+/// Mix from honesty / elevation bands — unknown/null surfaces dropped.
+List<SurfaceShare> surfaceSharesFromBands(
+  Iterable<({double fromKm, double toKm, String? surface})> bands,
+) {
+  final kmBy = <String, double>{};
+  var known = 0.0;
+  for (final b in bands) {
+    final key = (b.surface ?? '').trim().toLowerCase();
+    if (key.isEmpty) continue;
+    final km = b.toKm - b.fromKm;
+    if (km <= 0) continue;
+    kmBy[key] = (kmBy[key] ?? 0) + km;
+    known += km;
+  }
+  if (known <= 0) return const [];
+  final out = [
+    for (final e in kmBy.entries)
+      SurfaceShare(key: e.key, share: e.value / known),
+  ]..sort((a, b) => b.share.compareTo(a.share));
+  return out;
+}
+
 /// Mix from elevation points — unknown/null surfaces dropped.
 List<SurfaceShare> surfaceSharesFromElevPoints(List<Map<String, dynamic>> points) {
   if (points.length < 2) return const [];

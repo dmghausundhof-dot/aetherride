@@ -21,6 +21,7 @@ import {
   osmSurfaceGroup,
   type OsmSurfaceGroup,
 } from "@/lib/routing/osmSurfaceLabel";
+import { attachRouteHonesty } from "@/lib/routing/routeHonesty";
 
 export type QuickOption = {
   id: string;
@@ -937,6 +938,7 @@ export const PLAN_RIBBON_UNKNOWN_MIN_KM = 0.08;
 
 export function planRibbonLegendKinds(opts: {
   bands?: { surface?: string | null; fromKm?: number; toKm?: number }[];
+  scaleBands?: { scale?: string | null; fromKm?: number; toKm?: number }[];
   hasSteep?: boolean;
   unknownMinKm?: number;
 }): string[] {
@@ -956,6 +958,12 @@ export function planRibbonLegendKinds(opts: {
   }
   if (unknownKm >= min || (unknownBare && unknownKm === 0)) kinds.add("unknown");
   if (opts.hasSteep) kinds.add("steep");
+  for (const b of opts.scaleBands ?? []) {
+    const s = (b.scale ?? "").trim();
+    if (s === "S0" || s === "S1" || s === "S2" || s === "S3" || s === "S3+") {
+      kinds.add(s);
+    }
+  }
   return [...kinds];
 }
 
@@ -1663,6 +1671,57 @@ export function planSurfaceLineSlices(opts: {
   for (const m of merged) {
     const coords = planLineSlice(opts.line, m.fromM, m.toM);
     if (coords.length >= 2) out.push({ kind: m.kind, coords });
+  }
+  if (out.length <= maxSlices) return out;
+  return [...out]
+    .sort((a, b) => lineLengthM(b.coords) - lineLengthM(a.coords))
+    .slice(0, maxSlices);
+}
+
+export type PlanScaleSlice = {
+  scale: "S0" | "S1" | "S2" | "S3" | "S3+";
+  coords: [number, number][];
+};
+
+/** Honest OSM mtb:scale stretches — unmatched stays off the ribbon. */
+export function planScaleLineSlices(opts: {
+  line: [number, number][];
+  bands: { fromKm: number; toKm: number; scale: string | null }[];
+  minSegM?: number;
+  maxSlices?: number;
+  mergeGapM?: number;
+}): PlanScaleSlice[] {
+  const minSegM = opts.minSegM ?? 50;
+  const maxSlices = opts.maxSlices ?? 18;
+  const mergeGapM = opts.mergeGapM ?? PLAN_SURFACE_MERGE_GAP_M;
+  const merged: { scale: PlanScaleSlice["scale"]; fromM: number; toM: number }[] =
+    [];
+  const bands = [...opts.bands].sort((a, b) => a.fromKm - b.fromKm);
+  for (const b of bands) {
+    const raw = (b.scale ?? "").trim();
+    if (
+      raw !== "S0" &&
+      raw !== "S1" &&
+      raw !== "S2" &&
+      raw !== "S3" &&
+      raw !== "S3+"
+    ) {
+      continue;
+    }
+    const fromM = b.fromKm * 1000;
+    const toM = b.toKm * 1000;
+    if (!(toM - fromM >= minSegM)) continue;
+    const last = merged[merged.length - 1];
+    if (last && last.scale === raw && fromM <= last.toM + mergeGapM) {
+      last.toM = Math.max(last.toM, toM);
+    } else {
+      merged.push({ scale: raw, fromM, toM });
+    }
+  }
+  const out: PlanScaleSlice[] = [];
+  for (const m of merged) {
+    const coords = planLineSlice(opts.line, m.fromM, m.toM);
+    if (coords.length >= 2) out.push({ scale: m.scale, coords });
   }
   if (out.length <= maxSlices) return out;
   return [...out]
@@ -2620,7 +2679,7 @@ export async function resolvePointToPointDraft(
     ...draft,
     waypoints,
     mode: "point_to_point",
-    computed: engine,
+    computed: attachRouteHonesty(engine, { trails: opts?.trails }),
     layers: undefined,
   };
 }

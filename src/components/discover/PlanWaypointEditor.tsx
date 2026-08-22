@@ -15,6 +15,8 @@ import {
   type PlanSlot,
 } from "@/lib/routing/planDraft";
 import type { discoverUi } from "@/lib/i18n/discoverUi";
+import { plannerCopy } from "@/lib/i18n/plannerCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { PlanPinMark } from "@/components/discover/PlanPinMark";
 
 type Hit = { label: string; lat: number; lng: number };
@@ -67,6 +69,7 @@ export function PlanWaypointEditor({
   canUndo?: boolean;
   canRedo?: boolean;
 }) {
+  const tourLead = plannerCopy(useChromeLang()).tourLead;
   const waypoints = orderedWaypoints(draft);
   const start = waypoints.find((w) => w.role === "start");
   const dest = waypoints.find((w) => w.role === "end");
@@ -76,14 +79,17 @@ export function PlanWaypointEditor({
   const endVal = addrTarget === "end" ? addrQuery : dest?.label ?? "";
   const showEnd = Boolean(start || dest || pickTarget === "end");
   const showStops = Boolean(start && dest);
+  const emptyTour = !start && !dest;
   const hint =
     pickTarget === "via"
       ? copy.nextPickVia
-      : !start
-        ? copy.tapStart
-        : !dest
-          ? copy.nextPickEnd
-          : copy.tapLineVia;
+      : emptyTour
+        ? tourLead
+        : !start
+          ? copy.tapStart
+          : !dest
+            ? copy.nextPickEnd
+            : copy.tapLineVia;
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const showRecents =
     recents &&

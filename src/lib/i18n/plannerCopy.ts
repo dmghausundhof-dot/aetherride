@@ -18,6 +18,7 @@ export type PlannerCopy = {
   hitFallback: string;
   exploreLead: string;
   routingProfile: string;
+  tourLead: string;
   addrSearch: string;
   ok: string;
   via: string;
@@ -33,8 +34,9 @@ const DE: PlannerCopy = {
   noRoute: PLANNER_STATUS_DE.noRoute,
   inMappe: PLANNER_STATUS_DE.inMappe,
   hitFallback: PLANNER_STATUS_DE.hitFallback,
-  exploreLead: "Einheitliches Explore-Modell: ",
-  routingProfile: "Routing-Profil",
+  exploreLead: "Wohin? Start und Ziel setzen — die Tour entsteht.",
+  routingProfile: "Bike",
+  tourLead: "Wohin? Start und Ziel auf der Karte — die Tour entsteht.",
   addrSearch: "Adresse suchen…",
   ok: "OK",
   via: "Via",
@@ -50,8 +52,9 @@ const EN: PlannerCopy = {
   noRoute: "No route — check profile or points",
   inMappe: "In Die Mappe",
   hitFallback: "Result",
-  exploreLead: "Same explore model: ",
-  routingProfile: "Routing profile",
+  exploreLead: "Where to? Set start and finish — the tour appears.",
+  routingProfile: "Bike",
+  tourLead: "Where to? Tap start and finish on the map — the tour appears.",
   addrSearch: "Search address…",
   ok: "OK",
   via: "Via",
@@ -67,8 +70,9 @@ const FR: PlannerCopy = {
   noRoute: "Pas de route — vérifie le profil ou les points",
   inMappe: "Dans Die Mappe",
   hitFallback: "Résultat",
-  exploreLead: "Même modèle Explore : ",
-  routingProfile: "Profil de routing",
+  exploreLead: "Où aller ? Départ et arrivée — la sortie apparaît.",
+  routingProfile: "Vélo",
+  tourLead: "Où aller ? Départ et arrivée sur la carte — la sortie apparaît.",
   addrSearch: "Chercher une adresse…",
   ok: "OK",
   via: "Via",
@@ -84,8 +88,9 @@ const IT: PlannerCopy = {
   noRoute: "Nessuna route — controlla profilo o punti",
   inMappe: "In Die Mappe",
   hitFallback: "Risultato",
-  exploreLead: "Stesso modello Explore: ",
-  routingProfile: "Profilo di routing",
+  exploreLead: "Dove? Partenza e arrivo — il tour compare.",
+  routingProfile: "Bici",
+  tourLead: "Dove? Tocca partenza e arrivo sulla mappa — il tour compare.",
   addrSearch: "Cerca indirizzo…",
   ok: "OK",
   via: "Via",
@@ -101,8 +106,9 @@ const NL: PlannerCopy = {
   noRoute: "Geen route — check profiel of punten",
   inMappe: "In Die Mappe",
   hitFallback: "Resultaat",
-  exploreLead: "Zelfde Explore-model: ",
-  routingProfile: "Routingprofiel",
+  exploreLead: "Waarheen? Start en finish — de tocht verschijnt.",
+  routingProfile: "Fiets",
+  tourLead: "Waarheen? Tik start en finish op de kaart — de tocht verschijnt.",
   addrSearch: "Adres zoeken…",
   ok: "OK",
   via: "Via",
