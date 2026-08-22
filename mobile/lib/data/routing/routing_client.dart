@@ -10,6 +10,7 @@ import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/live_engine.dart';
 import '../../domain/routing/nav_policy.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/routing/route_honesty.dart';
 import '../../domain/routing/route_variant.dart';
 import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
@@ -406,6 +407,8 @@ RouteResult routeResultFromJson(
     warnings: warnings,
     variant: parseRouteVariant(data['variant'] as String? ?? 'planned'),
     variantApplied: data['variantApplied'] == true,
+    surfaceBands: parseHonestyBands(data['surfaceBands'], scale: false),
+    scaleBands: parseHonestyBands(data['scaleBands'], scale: true),
   );
 }
 
@@ -419,6 +422,8 @@ class RouteResult {
     this.warnings = const [],
     this.variant = RouteVariant.planned,
     this.variantApplied = false,
+    this.surfaceBands = const [],
+    this.scaleBands = const [],
   });
 
   final List<GeoPoint> coordinates;
@@ -429,6 +434,8 @@ class RouteResult {
   final List<String> warnings;
   final RouteVariant variant;
   final bool variantApplied;
+  final List<HonestyBand> surfaceBands;
+  final List<HonestyBand> scaleBands;
 
   /// First rider-facing warning (skips GraphHopper Basic / engine debug).
   String? get riderWarning {

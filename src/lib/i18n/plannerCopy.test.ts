@@ -12,6 +12,9 @@ function testDe() {
   const p = plannerCopy("de");
   assert.equal(p.needStartEnd, "Start und Ziel setzen");
   assert.equal(p.inMappe, "In der Mappe");
+  assert.ok(p.tourLead.includes("Tour"));
+  assert.ok(!p.exploreLead.toLowerCase().includes("explore-modell"));
+  assert.ok(!p.routingProfile.toLowerCase().includes("routing"));
   assert.ok(p.tourIdeaLoaded("Alster").includes("Alster"));
 }
 
@@ -19,6 +22,7 @@ function testParity() {
   for (const lang of ["de", "en", "fr", "it", "nl"] as const) {
     const p = plannerCopy(lang);
     assert.ok(p.inMappe.includes("Mappe"), lang);
+    assert.ok(p.tourLead.length > 8, lang);
     assert.equal(p.via, "Via", lang);
     assert.ok(p.tourIdeaLoaded("X").includes("X"), lang);
   }

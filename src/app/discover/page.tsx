@@ -149,6 +149,10 @@ import {
   type QuickOption,
 } from "@/lib/routing/planDraft";
 import { pointAlongRoute } from "@/lib/routing/routeProgress";
+import {
+  planManualComputeVisible,
+  SCALE_RIBBON_COLOR,
+} from "@/lib/routing/routeHonesty";
 import { warmupLiveRouting } from "@/lib/routing/warmupClient";
 import { snapPointOntoTrails, trailIsCorridorEligible, trailsForViaSnap, viaMaySnapOntoTrail } from "@/lib/routing/snapTrailCorridor";
 import {
@@ -373,6 +377,19 @@ function PlanRibbonLegend({
   }
   if (roles.has("steep") || keys.has("steep")) {
     items.push({ color: "#C2410C", label: copy.planMapSteep });
+  }
+  for (const scale of ["S0", "S1", "S2", "S3", "S3+"] as const) {
+    if (roles.has("scale") && keys.has(scale)) {
+      items.push({
+        color: SCALE_RIBBON_COLOR[scale],
+        label: scale,
+      });
+    } else if (keys.has(scale)) {
+      items.push({
+        color: SCALE_RIBBON_COLOR[scale],
+        label: scale,
+      });
+    }
   }
   if (!items.length) return null;
   return (
@@ -1151,20 +1168,27 @@ function DiscoverPageInner() {
     const line = (mapDraft.computed?.geometry?.coordinates ?? []) as
       | [number, number][]
       | [];
+    const surfaceBands =
+      mapDraft.computed?.surfaceBands?.length
+        ? mapDraft.computed.surfaceBands
+        : planElev?.surfaceBands;
+    const scaleBands =
+      mapDraft.computed?.scaleBands?.length
+        ? mapDraft.computed.scaleBands
+        : planElev?.scaleBands;
+    const elevPts = planElev?.points ?? [];
     const grade =
-      sheetMode === "plan" &&
-      planElev &&
-      line.length >= 2 &&
-      planElev.points.length >= 2
+      sheetMode === "plan" && line.length >= 2
         ? buildPlanGradeOverlayLayers({
             line,
-            elevM: planElev.points
+            elevM: elevPts
               .filter((p) => p.elevM != null && Number.isFinite(p.elevM))
               .map((p) => p.elevM as number),
-            distKm: planElev.points
+            distKm: elevPts
               .filter((p) => p.elevM != null && Number.isFinite(p.elevM))
               .map((p) => p.distKm),
-            surfaceBands: planElev.surfaceBands,
+            surfaceBands,
+            scaleBands,
           })
         : [];
     return [...heat, ...base, ...grade];
@@ -4133,15 +4157,22 @@ function DiscoverPageInner() {
                 canUndo={planCanUndo}
                 canRedo={planCanRedo}
               />
+              {planManualComputeVisible({
+                hasStart: Boolean(startOf(draft)),
+                hasEnd: Boolean(endOf(draft)),
+                routingBusy,
+                hasComputed: Boolean(draft.computed),
+              }) ? (
               <button
                 type="button"
                 data-testid="discover-compute-route"
                 disabled={routingBusy || !startOf(draft) || !endOf(draft)}
                 onClick={() => void runPlanRoute()}
-                className="w-full rounded-xl bg-chrome py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
+                className="w-full rounded-xl border border-border bg-surface py-2.5 text-sm font-semibold disabled:opacity-40"
               >
                 {routingBusy ? d.computingRoute : d.computeRoute}
               </button>
+              ) : null}
               {draft.computed ? (
                 <>
                 <PlanRouteInsight
@@ -4149,6 +4180,8 @@ function DiscoverPageInner() {
                   distanceM={draft.computed.distanceM}
                   durationS={draft.computed.durationS}
                   looped={isClosedLoop(draft)}
+                  surfaceBands={draft.computed.surfaceBands}
+                  scaleBands={draft.computed.scaleBands}
                   copy={d}
                   hoverKm={elevHoverKm}
                   onHoverKm={setElevHoverKm}
@@ -4197,11 +4230,7 @@ function DiscoverPageInner() {
                   </button>
                 ))}
               </div>
-                ) : (
-                  <p className="text-[11px] text-text-secondary">
-                    {d.variantValhallaOnly}
-                  </p>
-                )}
+                ) : null}
                 <p className="text-[11px] text-text-secondary">
                   {d.tapLineVia}
                 </p>
@@ -5114,7 +5143,10 @@ function DiscoverPageInner() {
             layers={mapLayers}
             copy={d}
             kinds={planRibbonLegendKinds({
-              bands: planElev?.surfaceBands,
+              bands:
+                draft.computed?.surfaceBands ?? planElev?.surfaceBands,
+              scaleBands:
+                draft.computed?.scaleBands ?? planElev?.scaleBands,
               hasSteep: mapLayers.some((l) => l.role === "steep"),
             })}
           />

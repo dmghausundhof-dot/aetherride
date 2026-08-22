@@ -67,6 +67,11 @@ import {
   graphhopperWarmupCell,
   graphhopperWarmupTo,
 } from "@/lib/routing/graphhopperWarmup";
+import {
+  honestyFromOsmTrails,
+  surfaceBandsAfterTrim,
+  surfaceBandsFromOrs,
+} from "@/lib/routing/routeHonesty";
 
 export type RoutingEngineKind =
   | "valhalla"
@@ -121,6 +126,10 @@ export type RouteResult = {
   orsExtras?: OrsExtras;
   /** GraphHopper road_class vertex shares — snap gate, not shown in UI. */
   roadClassShares?: Record<string, number>;
+  /** OSM surface along the line — GraphHopper/ORS details, never weather. */
+  surfaceBands?: { fromKm: number; toKm: number; surface: string | null }[];
+  /** OSM mtb:scale along the line — never SAC / weather. */
+  scaleBands?: { fromKm: number; toKm: number; scale: string | null }[];
   /** Costing variant. Absent = planned. */
   variant?: RouteVariant;
   variantApplied?: boolean;
@@ -599,9 +608,10 @@ async function routeGraphhopper(
     );
   }
 
-  let coordinates = (path.points.coordinates as number[][]).map(
+  const rawCoordinates = (path.points.coordinates as number[][]).map(
     (c) => [c[0], c[1]] as [number, number]
   );
+  let coordinates = rawCoordinates;
   let distanceM = Math.round(path.distance || 0);
   let durationS = Math.round((path.time || 0) / 1000);
   let didTrimFarm = false;
@@ -620,6 +630,11 @@ async function routeGraphhopper(
       didTrimFarm = true;
     }
   }
+  const surfaceBands = surfaceBandsAfterTrim(
+    rawCoordinates,
+    coordinates,
+    path.details?.surface
+  );
   const geometry: GeoJSON.LineString = {
     type: "LineString",
     coordinates,
@@ -658,6 +673,7 @@ async function routeGraphhopper(
     warnings: warnings.length ? warnings : undefined,
     roadClassShares:
       Object.keys(roadClassShares).length > 0 ? roadClassShares : undefined,
+    surfaceBands: surfaceBands.length ? surfaceBands : undefined,
   };
 }
 
@@ -813,6 +829,10 @@ async function routeOpenRouteService(
       signal: ac.signal,
       language: lang,
     });
+    const surfaceBands = surfaceBandsFromOrs(
+      r.extras,
+      (r.geometry.coordinates ?? []) as [number, number][]
+    );
     return {
       distanceM: r.distanceM,
       durationS: r.durationS,
@@ -822,6 +842,7 @@ async function routeOpenRouteService(
       steps: r.steps,
       orsExtras: r.extras,
       warnings: r.warnings.length ? r.warnings : undefined,
+      surfaceBands: surfaceBands.length ? surfaceBands : undefined,
     };
   } finally {
     clearTimeout(timer);
@@ -898,6 +919,17 @@ async function maybeEnrichCorridorCycleway(
       route: result,
       trails: segs,
     });
+    if (next.geometry !== result.geometry) {
+      const coords = (next.geometry.coordinates ?? []) as [number, number][];
+      const honesty = honestyFromOsmTrails(coords, segs);
+      return {
+        ...next,
+        surfaceBands: honesty.surfaceBands.length
+          ? honesty.surfaceBands
+          : next.surfaceBands,
+        scaleBands: honesty.scaleBands.length ? honesty.scaleBands : undefined,
+      };
+    }
     if (process.env.NODE_ENV !== "production") {
       const snapped = (next.warnings ?? []).some((w) =>
         /Radweg/.test(w) && w.includes("in die Navi übernommen")
@@ -951,6 +983,20 @@ async function maybeEnrichCorridorTrail(
       route: result,
       trails: segs,
     });
+    if (next.geometry !== result.geometry) {
+      const snappedCoords = (next.geometry.coordinates ?? []) as [
+        number,
+        number,
+      ][];
+      const honesty = honestyFromOsmTrails(snappedCoords, segs);
+      return {
+        ...next,
+        surfaceBands: honesty.surfaceBands.length
+          ? honesty.surfaceBands
+          : next.surfaceBands,
+        scaleBands: honesty.scaleBands.length ? honesty.scaleBands : undefined,
+      };
+    }
     if (process.env.NODE_ENV !== "production") {
       const snapped = (next.warnings ?? []).some((w) =>
         w.includes("in die Navi übernommen")

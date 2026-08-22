@@ -377,7 +377,8 @@ export type MapRouteRole =
   | "steep"
   | "unpaved"
   | "paved"
-  | "gravel";
+  | "gravel"
+  | "scale";
 
 export type MapRouteLayer = {
   id: string;
@@ -471,6 +472,11 @@ const ROLE_STYLE: Record<
     color: "#5C8FBF",
     width: 4.5,
     opacity: 0.94,
+  },
+  scale: {
+    color: "#8BC34A",
+    width: 2.4,
+    opacity: 0.92,
   },
 };
 
@@ -2011,7 +2017,8 @@ export function MapView({
       r === "steep" ||
       r === "unpaved" ||
       r === "paved" ||
-      r === "gravel";
+      r === "gravel" ||
+      r === "scale";
     const ordered = [
       ...layers.filter((l) => l.role !== "active" && !overlayRole(l.role)),
       ...layers.filter((l) => l.role === "active"),
@@ -2019,6 +2026,7 @@ export function MapView({
       ...layers.filter((l) => l.role === "gravel"),
       ...layers.filter((l) => l.role === "unpaved"),
       ...layers.filter((l) => l.role === "steep"),
+      ...layers.filter((l) => l.role === "scale"),
     ];
     for (const layer of ordered) {
       const style = ROLE_STYLE[layer.role];

@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
 import { surfaceMixShares } from "@/lib/routing/elevationProfile";
 import { ElevationChart } from "@/components/discover/ElevationChart";
 import { SurfaceMixBar } from "@/components/discover/SurfaceMixBar";
 import { osmSurfaceLabel } from "@/lib/routing/osmSurfaceLabel";
+import {
+  dominantHonestScale,
+  mergeHonestyIntoElevation,
+  type ScaleBand,
+  type SurfaceBand,
+} from "@/lib/routing/routeHonesty";
 import type { discoverUi } from "@/lib/i18n/discoverUi";
 
 type Copy = ReturnType<typeof discoverUi>;
@@ -22,6 +28,8 @@ export function PlanRouteInsight({
   onPickKm,
   onProfile,
   adapting,
+  surfaceBands,
+  scaleBands,
 }: {
   geometry: GeoJSON.LineString | null | undefined;
   distanceM?: number;
@@ -34,6 +42,8 @@ export function PlanRouteInsight({
   onPickKm?: (km: number) => void;
   onProfile?: (elev: ElevationProfile | null) => void;
   adapting?: boolean;
+  surfaceBands?: SurfaceBand[];
+  scaleBands?: ScaleBand[];
 }) {
   const [elev, setElev] = useState<ElevationProfile | null>(null);
 
@@ -66,26 +76,43 @@ export function PlanRouteInsight({
     };
   }, [geometry]);
 
+  const honesty = useMemo(
+    () => ({
+      surfaceBands: surfaceBands ?? [],
+      scaleBands: scaleBands ?? [],
+    }),
+    [surfaceBands, scaleBands]
+  );
+  const shown = useMemo(
+    () => (elev ? mergeHonestyIntoElevation(elev, honesty) : null),
+    [elev, honesty]
+  );
+
   useEffect(() => {
-    onProfile?.(elev);
-  }, [elev, onProfile]);
+    onProfile?.(shown);
+  }, [shown, onProfile]);
 
   if (!distanceM) return null;
   const km = (distanceM / 1000).toFixed(distanceM < 10_000 ? 1 : 0);
   const min = durationS != null ? Math.round(durationS / 60) : null;
-  const mix = elev ? surfaceMixShares(elev.surfaceBands) : [];
+  const mix = shown
+    ? surfaceMixShares(shown.surfaceBands)
+    : surfaceMixShares(honesty.surfaceBands);
   const labels = {
     asphalt: copy.surfaceAsphalt,
     gravel: copy.surfaceSchotter,
     trail: copy.surfaceNatur,
   };
   const climb =
-    elev && Number.isFinite(elev.totalClimbM) && elev.totalClimbM > 0
-      ? `↑ ${Math.round(elev.totalClimbM)} m`
+    shown && Number.isFinite(shown.totalClimbM) && shown.totalClimbM > 0
+      ? `↑ ${Math.round(shown.totalClimbM)} m`
       : "—";
   const surface = mix[0]
     ? `${osmSurfaceLabel(mix[0].key, labels)} ${Math.round(mix[0].share * 100)}%`
     : elevationSummary?.trim() || "—";
+  const scale = dominantHonestScale(
+    shown?.scaleBands ?? honesty.scaleBands
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -108,27 +135,40 @@ export function PlanRouteInsight({
         </div>
         <div className="grid grid-cols-2 border-t border-border">
           <Stat label={copy.statAscent} value={climb} />
-          <Stat label={copy.statSurface} value={surface} borderLeft />
+          <Stat
+            label={copy.statSurface}
+            value={scale ? `${surface} · ${scale}` : surface}
+            borderLeft
+          />
         </div>
       </div>
-      {elev ? (
+      {shown || mix.length ? (
         <>
           <SurfaceMixBar
-            bands={elev.surfaceBands}
+            bands={shown?.surfaceBands ?? honesty.surfaceBands}
             asphalt={copy.surfaceAsphalt}
             gravel={copy.surfaceSchotter}
             trail={copy.surfaceNatur}
           />
+          {scale ? (
+            <p className="text-[11px] font-semibold text-text-secondary">
+              {copy.difficultyTitle}: {scale} · OSM mtb:scale
+            </p>
+          ) : null}
+          {shown ? (
           <p className="text-[11px] font-semibold text-text-secondary">
             {copy.elevTitle}
           </p>
+          ) : null}
+          {shown ? (
           <ElevationChart
-            elev={elev}
+            elev={shown}
             compact
             onHoverKm={onHoverKm}
             hoverKm={hoverKm}
             onPickKm={adapting ? undefined : onPickKm}
           />
+          ) : null}
         </>
       ) : null}
     </div>

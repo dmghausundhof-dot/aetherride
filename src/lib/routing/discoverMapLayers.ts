@@ -7,7 +7,9 @@ import {
   endOf,
   planSteepLineSlices,
   planSurfaceLineSlices,
+  planScaleLineSlices,
 } from "@/lib/routing/planDraft";
+import { SCALE_RIBBON_COLOR } from "@/lib/routing/routeHonesty";
 import type { TrailSegment } from "@/lib/routing/trailSegments";
 import { buildElevationFromTrack } from "@/lib/routing/elevationProfile";
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
@@ -182,6 +184,7 @@ export function buildPlanGradeOverlayLayers(opts: {
   elevM: number[];
   distKm?: number[] | null;
   surfaceBands?: { fromKm: number; toKm: number; surface: string | null }[];
+  scaleBands?: { fromKm: number; toKm: number; scale: string | null }[];
 }): MapRouteLayer[] {
   const layers: MapRouteLayer[] = [];
   const surfaces = planSurfaceLineSlices({
@@ -217,6 +220,20 @@ export function buildPlanGradeOverlayLayers(opts: {
       id: `steep-${i}`,
       geometry: { type: "LineString", coordinates: coords },
       role: "steep",
+    });
+  });
+  const scales = planScaleLineSlices({
+    line: opts.line,
+    bands: opts.scaleBands ?? [],
+  });
+  scales.forEach((slice, i) => {
+    layers.push({
+      id: `scale-${slice.scale}-${i}`,
+      geometry: { type: "LineString", coordinates: slice.coords },
+      role: "scale",
+      color: SCALE_RIBBON_COLOR[slice.scale],
+      width: 2.4,
+      opacity: 0.92,
     });
   });
   return layers;

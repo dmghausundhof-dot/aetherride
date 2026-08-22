@@ -43,6 +43,8 @@ export type OrsExtras = {
   dominantWaytype?: string;
   trailDifficultyMax?: number;
   steepnessHint?: string;
+  /** Vertex ranges `[from, to, surfaceCode]` — honesty paint, not S-scale. */
+  surfaceRanges?: [number, number, number][];
 };
 
 /** ORS surface codes — https://giscience.github.io/openrouteservice/documentation/extra-info/Surface */
@@ -268,6 +270,18 @@ export function parseOrsExtras(
     else steepnessHint = "flach";
   }
 
+  const surfaceRanges: [number, number, number][] = [];
+  for (const row of extras?.surface?.values ?? []) {
+    const a = Number(row[0]);
+    const b = Number(row[1]);
+    const id = Number(row[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(id)) {
+      continue;
+    }
+    if (b <= a) continue;
+    surfaceRanges.push([a, b, id]);
+  }
+
   return {
     surfaces,
     waytypes,
@@ -281,6 +295,7 @@ export function parseOrsExtras(
         : undefined,
     trailDifficultyMax,
     steepnessHint,
+    surfaceRanges: surfaceRanges.length ? surfaceRanges : undefined,
   };
 }
 

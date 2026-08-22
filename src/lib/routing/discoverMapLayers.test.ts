@@ -270,6 +270,26 @@ function testGradeOverlays() {
     layers.some((l) => l.role === "unpaved"),
     "unpaved overlay missing"
   );
+
+  const withScale = buildPlanGradeOverlayLayers({
+    line,
+    elevM,
+    surfaceBands: [
+      { fromKm: 0, toKm: 2.4, surface: "dirt" },
+    ],
+    scaleBands: [
+      { fromKm: 0.4, toKm: 1.8, scale: "S2" },
+      { fromKm: 1.8, toKm: 2.4, scale: null },
+    ],
+  });
+  assert(
+    withScale.some((l) => l.role === "scale" && l.id.startsWith("scale-S2")),
+    "honest mtb:scale overlay missing"
+  );
+  assert(
+    !withScale.some((l) => l.id.includes("null")),
+    "unrated scale must not paint a fake S-grade"
+  );
 }
 
 async function main() {

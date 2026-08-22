@@ -1210,5 +1210,15 @@ assert.deepEqual(
   }),
   ["asphalt", "unknown"]
 );
+assert.deepEqual(
+  planRibbonLegendKinds({
+    bands: [{ surface: "dirt", fromKm: 0, toKm: 2 }],
+    scaleBands: [
+      { scale: "S2", fromKm: 0.2, toKm: 1.4 },
+      { scale: "wet_likely", fromKm: 1.4, toKm: 2 },
+    ],
+  }),
+  ["trail", "S2"]
+);
 
 console.log("planDraft.edit.test.ts OK");
